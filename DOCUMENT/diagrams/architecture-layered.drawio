@@ -1,0 +1,34 @@
+﻿<mxfile host="app.diagrams.net" modified="2025-11-07T03:00:00.000Z" agent="5.0 (Windows)" version="24.7.10" type="device">
+  <diagram id="layered" name="Layered Architecture">
+    <mxGraphModel dx="1288" dy="748" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1024" pageHeight="768">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="layer1" value="Presentation &amp; Web Integration&#10;Viewer::WasmViewer, ViewManager, SelectionManager, TypeScript bindings, Emscripten glue" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="80" y="40" width="640" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="layer2" value="Visualization Services&#10;ViewBase, ViewShape, ViewCae, ViewCaeGeom, ViewDim" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="80" y="150" width="640" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="layer3" value="Data Domain &amp; Processing&#10;RWShape, RWCae, RWMeshConv/Exchanger, RWMed, RWVtk, SimMesh, LodCae" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="80" y="260" width="640" height="110" as="geometry"/>
+        </mxCell>
+        <mxCell id="layer4" value="Platform &amp; Infrastructure&#10;RWBase (TaskManager, FileSystemMap, IPromise), FileExchange CLI, Viewer::Utils" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="80" y="390" width="640" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#6c8ebf;" edge="1" parent="1" source="layer1" target="layer2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#6c8ebf;" edge="1" parent="1" source="layer2" target="layer3">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#6c8ebf;" edge="1" parent="1" source="layer3" target="layer4">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="note" value="Cross-cutting: async tasking, file-system emulation, OCCT runtime" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="510" width="640" height="60" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

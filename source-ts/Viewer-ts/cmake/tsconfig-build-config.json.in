@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "es2017",
+    "module": "es2020",
+    "outDir": "${CMAKE_BINARY_DIR}/source-ts/${PROJECT_NAME}/js-gen/",
+    "removeComments": false,
+    "declaration": true,
+    "sourceMap": true,
+    "stripInternal": true
+  },
+  "files": [
+    "${CMAKE_BINARY_DIR}/source-ts/${PROJECT_NAME}/ts-gen/ViewerBuildConfig.ts"
+  ]
+}

@@ -1,0 +1,7 @@
+! Hierarchy of plug-ins
+ALL                : VIEWDRAW, ViewerTest
+DEFAULT            : VIEWDRAW, ViewerTest
+
+! Mapping from naming to toolkits (libraries)
+VIEWDRAW          : ViewDraw
+ViewerTest         : TKViewerTest

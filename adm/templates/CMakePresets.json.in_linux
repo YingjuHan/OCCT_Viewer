@@ -1,0 +1,65 @@
+{
+    "version": 3,
+    "configurePresets": [
+        {
+            "name": "default",
+            "description": "Default preset of build and install directory",
+            "hidden": true,
+            "installDir": "${sourceDir}/install",
+            "cacheVariables": {
+                "OCCTViewer_USE_MEDFILE": "ON",
+                "OCCTViewer_BUILD_DRAW": "ON",
+                "OCCTViewer_USE_DRACO": "ON",
+                "OCCTViewer_WARNINGS_AS_ERRORS": "ON",
+                "OpenCASCADE_ROOT_DIR": "${sourceDir}/../3rdparty/occt",
+                "draco_ROOT_DIR": "${sourceDir}/../3rdparty/draco"
+            }
+        },
+        {
+            "name": "makefiles-debug",
+            "description": "Unix Makefiles preset for debug",
+            "inherits": "default",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/work/build-debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "OCCTViewer_USE_VSCODE": "ON"
+            }
+        },
+        {
+            "name": "makefiles-release",
+            "description": "Unix Makefiles preset for release",
+            "inherits": "default",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/work/build-release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "OCCTViewer_USE_VSCODE": "ON"
+            }
+        },
+        {
+            "name": "ninja-multi",
+            "description": "Ninja Multi-Config preset",
+            "inherits": "default",
+            "generator": "Ninja Multi-Config",
+            "binaryDir": "${sourceDir}/work/build-multi"
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "Debug",
+            "configurePreset": "ninja-multi",
+            "configuration": "Debug"
+        },
+        {
+            "name": "Release",
+            "configurePreset": "ninja-multi",
+            "configuration": "Release"
+        },
+        {
+            "name": "RelWithDebInfo",
+            "configurePreset": "ninja-multi",
+            "configuration": "RelWithDebInfo"
+        }
+    ]
+}

@@ -1,0 +1,98 @@
+#ifndef _VIEWCORNER_LXX_HEADERFILE
+#define _VIEWCORNER_LXX_HEADERFILE
+
+namespace Viewer {
+
+//! Return ViewCorner.
+ViewCorner occToViewCorner(Aspect_TypeOfTriedronPosition thePos)
+{
+    switch (thePos) {
+        case Aspect_TOTP_CENTER: return ViewCorner::CENTER_CENTER;
+        case Aspect_TOTP_TOP: return ViewCorner::CENTER_UPPER;
+        case Aspect_TOTP_BOTTOM: return ViewCorner::CENTER_LOWER;
+        case Aspect_TOTP_LEFT: return ViewCorner::LEFT_CENTER;
+        case Aspect_TOTP_LEFT_UPPER: return ViewCorner::LEFT_UPPER;
+        case Aspect_TOTP_LEFT_LOWER: return ViewCorner::LEFT_LOWER;
+        case Aspect_TOTP_RIGHT: return ViewCorner::RIGHT_CENTER;
+        case Aspect_TOTP_RIGHT_UPPER: return ViewCorner::RIGHT_UPPER;
+        case Aspect_TOTP_RIGHT_LOWER: return ViewCorner::RIGHT_LOWER;
+        default: return ViewCorner::FREE3D;
+    }
+}
+
+//! Convert ViewCorner to OCCT enum.
+Aspect_TypeOfTriedronPosition occFromViewCorner(ViewCorner thePos)
+{
+    switch (thePos) {
+        case ViewCorner::FREE3D: return Aspect_TOTP_CENTER;
+        case ViewCorner::CENTER_CENTER: return Aspect_TOTP_CENTER;
+        case ViewCorner::CENTER_UPPER: return Aspect_TOTP_TOP;
+        case ViewCorner::CENTER_LOWER: return Aspect_TOTP_BOTTOM;
+        case ViewCorner::LEFT_CENTER: return Aspect_TOTP_LEFT;
+        case ViewCorner::LEFT_UPPER: return Aspect_TOTP_LEFT_UPPER;
+        case ViewCorner::LEFT_LOWER: return Aspect_TOTP_LEFT_LOWER;
+        case ViewCorner::RIGHT_CENTER: return Aspect_TOTP_RIGHT;
+        case ViewCorner::RIGHT_UPPER: return Aspect_TOTP_RIGHT_UPPER;
+        case ViewCorner::RIGHT_LOWER: return Aspect_TOTP_RIGHT_LOWER;
+        default: return Aspect_TOTP_CENTER;
+    }
+}
+
+//! Convert view corner into horizontal text alignment.
+Graphic3d_HorizontalTextAlignment viewCornerToHAlignment(ViewCorner thePos)
+{
+    switch (thePos) {
+        case ViewCorner::FREE3D: return Graphic3d_HTA_LEFT;
+        case ViewCorner::CENTER_CENTER: return Graphic3d_HTA_CENTER;
+        case ViewCorner::CENTER_UPPER: return Graphic3d_HTA_CENTER;
+        case ViewCorner::CENTER_LOWER: return Graphic3d_HTA_CENTER;
+        case ViewCorner::LEFT_CENTER: return Graphic3d_HTA_LEFT;
+        case ViewCorner::LEFT_UPPER: return Graphic3d_HTA_LEFT;
+        case ViewCorner::LEFT_LOWER: return Graphic3d_HTA_LEFT;
+        case ViewCorner::RIGHT_CENTER: return Graphic3d_HTA_RIGHT;
+        case ViewCorner::RIGHT_UPPER: return Graphic3d_HTA_RIGHT;
+        case ViewCorner::RIGHT_LOWER: return Graphic3d_HTA_RIGHT;
+        default: return Graphic3d_HTA_LEFT;
+    }
+}
+
+//! Convert view corner into vertical text alignment.
+Graphic3d_VerticalTextAlignment viewCornerToVAlignment(ViewCorner thePos)
+{
+    switch (thePos) {
+        case ViewCorner::FREE3D: return Graphic3d_VTA_BOTTOM;
+        case ViewCorner::CENTER_CENTER: return Graphic3d_VTA_CENTER;
+        case ViewCorner::CENTER_UPPER: return Graphic3d_VTA_TOP;
+        case ViewCorner::CENTER_LOWER: return Graphic3d_VTA_BOTTOM;
+        case ViewCorner::LEFT_CENTER: return Graphic3d_VTA_CENTER;
+        case ViewCorner::LEFT_UPPER: return Graphic3d_VTA_TOP;
+        case ViewCorner::LEFT_LOWER: return Graphic3d_VTA_BOTTOM;
+        case ViewCorner::RIGHT_CENTER: return Graphic3d_VTA_CENTER;
+        case ViewCorner::RIGHT_UPPER: return Graphic3d_VTA_TOP;
+        case ViewCorner::RIGHT_LOWER: return Graphic3d_VTA_BOTTOM;
+        default: return Graphic3d_VTA_BOTTOM;
+    }
+}
+
+//! Convert text alignment into view corner.
+ViewCorner viewCornerFromTextAlignment(Graphic3d_HorizontalTextAlignment theHPos,
+                                       Graphic3d_VerticalTextAlignment   theVPos)
+{
+    unsigned int aPos = 0;
+    switch (theHPos) {
+        case Graphic3d_HTA_LEFT: aPos |= (unsigned int)Aspect_TOTP_LEFT; break;
+        case Graphic3d_HTA_CENTER: break;
+        case Graphic3d_HTA_RIGHT: aPos |= (unsigned int)Aspect_TOTP_RIGHT; break;
+    }
+    switch (theVPos) {
+        case Graphic3d_VTA_BOTTOM: aPos |= (unsigned int)Aspect_TOTP_BOTTOM; break;
+        case Graphic3d_VTA_CENTER: break;
+        case Graphic3d_VTA_TOP: aPos |= (unsigned int)Aspect_TOTP_TOP; break;
+        case Graphic3d_VTA_TOPFIRSTLINE: aPos |= (unsigned int)Aspect_TOTP_TOP; break;
+    }
+    return occToViewCorner((Aspect_TypeOfTriedronPosition)aPos);
+}
+
+} // namespace
+
+#endif // _VIEWCORNER_LXX_HEADERFILE

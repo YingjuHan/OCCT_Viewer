@@ -1,0 +1,14 @@
+// Generated header file
+
+#ifndef _OCCTViewerConfig_HeaderFile
+#define _OCCTViewerConfig_HeaderFile
+
+#define OCCTViewer_PACKAGE      "OCCTViewer"
+#define OCCTViewer_VER_MAJOR     0
+#define OCCTViewer_VER_MINOR     0
+#define OCCTViewer_VER_PATCH     1
+#define OCCTViewer_VER_STRING   "@OCCTViewer_VER_MAJOR@.@OCCTViewer_VER_MINOR@"
+#define OCCTViewer_VER_COMPLETE "@OCCTViewer_VER_MAJOR@.@OCCTViewer_VER_MINOR@.@OCCTViewer_VER_PATCH@"
+#define OCCTViewer_GIT_HASH     "test version"
+
+#endif // _OCCTViewerConfig_HeaderFile

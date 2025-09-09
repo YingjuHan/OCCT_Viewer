@@ -1,0 +1,31 @@
+{
+    "folders": [
+        {
+            "name": "@CMAKE_BUILD_TYPE@",
+            "path": "@CMAKE_BINARY_DIR@"
+        },
+        {
+            "name": "occt-viewer SOURCES",
+            "path": "@CMAKE_SOURCE_DIR@"
+        }
+    ],
+    "settings": {
+        "makefile.configureOnOpen": false,
+        "makefile.configureOnEdit": false,
+        "makefile.configureAfterCompile": false,
+        "makefile.configurations": [
+            {
+                "name": "build",
+                "makeArgs": [
+                    "-j",
+                    "@VSCODE_PROC_COUNT@"
+                ]
+            }
+        ],
+        "C_Cpp.default.includePath": [
+            "@CMAKE_SOURCE_DIR@/source",
+            "@OpenCASCADE_INCLUDE_DIR@"
+        ],
+        "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
+    }
+}

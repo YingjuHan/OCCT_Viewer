@@ -1,0 +1,41 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(gdb) Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "@VSCODE_LAUNCH_EXECUTABLE@",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "@CMAKE_LIBRARY_OUTPUT_DIRECTORY@",
+            "environment": [
+                {
+                    "name": "@VSCODE_LAUNCH_ENV_VAR@",
+                    "value": "@VSCODE_LAUNCH_PATH@"
+                },
+                {"name": "CSF_SCPRSDRAWDefaults", "value": "@CMAKE_SOURCE_DIR@/source-draw/ViewDraw"},
+                {"name": "CSF_TestScriptsPath", "value": "@CMAKE_SOURCE_DIR@/tests"},
+                {"name": "CSF_TestDataPath", "value": "@CMAKE_SOURCE_DIR@/resources"}
+            ],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "@VSCODE_DEBUGGER@",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Enable break on all exceptions",
+                    "text": "catch throw",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ]
+}

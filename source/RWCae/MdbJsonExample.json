@@ -1,0 +1,69 @@
+{
+    "asset": {
+        "generator":  string, // optional
+        "subversion": int, // optional
+        "compression": { // optional binary data compression info
+            "codec": string, // compression codec name
+            "draco": { // draco-specific parameters
+                "nodesquantbits": int, // for draco
+                "propsquantbits": int // for draco
+            }
+        }
+    },
+    "mesh": {
+        "name": string,
+        "geometry": { // optional field
+            "boundsMax": [x, y, z
+            ], // optional pre-computed AABB of the mesh
+            "boundsMin": [x, y, z
+            ], // optional pre-computed AABB of the mesh
+            "nodes": int, // index of buffer in the "buffers" section
+            "elements": [ // array of mesh data elements
+                {
+                    "type":    string, // type of element
+                    "indices": int // index of buffer in the "buffers" section
+                }
+            ]
+        },
+        "properties": [ // optional field - array of mesh data quantities
+            {
+                "comptype":        string, // layout of property data buffer
+                // (element's nodes, groups, regular scalars)
+                "id":              string, // id
+                "name":            string, // name
+                "description":     string, // human-readable property description
+                "iselemental":     bool, // true for properties on elements
+                "nbcomponents":    int, // number of scalar components in this property
+                "timestamp":       double // time stamp value
+        "timestep":        double // time step ID
+        "type":            string, // type of property (set of 1+ scalars, vector, tensor)
+                "timedescription": string, // description of time step semantics (i.e. time. frequency etc.)
+                "timeunits":       string, // display units for time stamp values
+                "components": [
+                    {
+                        "id":          string, // id
+                        "name":        string, // name
+                        "description": string, // human-readable component description
+                        "isenabled":   bool, // true if the component is enabled and should be visible in UI
+                        "min":         double, // min stored value
+                        "max":         double, // max stored value
+                        "units":       string, // optional display units
+                        "values":      int, // index of buffer in the "buffers" section
+                        "groups": [ // optional arrays of group data (up to 32 groups supported)
+                            {
+                                "id":   string, // group ID
+                                "name": string, // group name
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "buffers": [ // array of buffer chunks info
+        {
+            "length": int, // size of buffer chunk
+            "offset": int // offset of buffer chunk in the binary section
+        }
+    ]
+}

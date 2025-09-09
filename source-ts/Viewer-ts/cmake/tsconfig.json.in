@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "es2017",
+    "module": "es2020",
+    "outDir": "${CMAKE_BINARY_DIR}/source-ts/${PROJECT_NAME}/js/",
+    "removeComments": false,
+    "declaration": true,
+    "sourceMap": true,
+    "stripInternal": true
+  },
+  "files": [
+    "${CMAKE_CURRENT_SOURCE_DIR}/Camera.ts",
+    "${CMAKE_CURRENT_SOURCE_DIR}/CommonTools.ts",
+    "${CMAKE_CURRENT_SOURCE_DIR}/InteractiveCaeMesh.ts",
+    "${CMAKE_CURRENT_SOURCE_DIR}/InteractiveColorScale.ts",
+    "${CMAKE_CURRENT_SOURCE_DIR}/InteractiveObject.ts",
+    "${CMAKE_CURRENT_SOURCE_DIR}/InteractiveShape.ts",
+    "${CMAKE_CURRENT_SOURCE_DIR}/InteractiveViewCube.ts",
+    "${CMAKE_CURRENT_SOURCE_DIR}/SCwebviewer.ts",
+    "${CMAKE_CURRENT_SOURCE_DIR}/Subview.ts",
+    "${CMAKE_CURRENT_SOURCE_DIR}/ViewerBuildConfig.ts",
+    "${CMAKE_CURRENT_SOURCE_DIR}/ViewerEventManager.ts",
+    "${CMAKE_CURRENT_SOURCE_DIR}/ViewManager.ts"
+  ],
+  "typedocOptions": {
+    "entryPointStrategy": "resolve",
+    "excludeInternal": true,
+    "excludePrivate": true,
+    "disableSources": true,
+    "name": "@OCCTViewer_PACKAGE@",
+    "includeVersion": false,
+  }
+}
