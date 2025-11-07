@@ -1,0 +1,47 @@
+{
+  "name": "@hyj/OCCTViewer",
+  "version": "0.0.1",
+  "description": "Lightweight 3D viewer for CAD/CAE",
+  "type": "module",
+  "files": [
+    "wasm32/*.ts",
+    "wasm32/*.js",
+    "wasm32/*.map",
+    "wasm32/Viewer-wasm.wasm",
+    "wasm32-pthread/Viewer-wasm.js",
+    "wasm32-pthread/Viewer-wasm.worker.js",
+    "wasm32-pthread/Viewer-wasm.d.ts",
+    "wasm32-pthread/Viewer-wasm.wasm",
+    "wasm32-pthread/Viewer-wasm.wasm.dwp",
+    "wasm32-pthread/Viewer-wasm.debug.wasm",
+    "wasm64/*.ts",
+    "wasm64/*.js",
+    "wasm64/*.map",
+    "wasm64/Viewer-wasm.wasm",
+    "wasm64-pthread/Viewer-wasm.js",
+    "wasm64-pthread/Viewer-wasm.worker.js",
+    "wasm64-pthread/Viewer-wasm.d.ts",
+    "wasm64-pthread/Viewer-wasm.wasm",
+    "wasm64-pthread/Viewer-wasm.wasm.dwp",
+    "wasm64-pthread/Viewer-wasm.debug.wasm",
+    "source-ts/Viewer-ts/*.ts",
+    "fonts/OpenSans-Bold.ttf",
+    "fonts/OpenSans-Italic.ttf",
+    "fonts/OpenSans-Regular.ttf",
+    "fonts/UbuntuMono-R.ttf",
+    "fonts/HarmonyOS_Sans_SC_Regular.woff",
+    "ReadMe.md",
+    "models/as1-oc-214.glb",
+    "samples/html-hello/index.html",
+    "images/lamp.ico",
+    "images/sc-logo.svg",
+    "doc"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "browser": {
+    "wasi_snapshot_preview1": false,
+    "env": false
+  }
+}

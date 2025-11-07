@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang=en-us>
+
+<head>
+  <meta charset=utf-8>
+  <meta content="text/html; charset=utf-8" http-equiv=Content-Type>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <link rel="shortcut icon" href="/images/sc-logo.svg" type="image/x-icon" />
+  <title>SC WebGL Viewer Sample</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div class="cp-main">
+    <div>
+      <div id="cpHeader" class="cp-header"></div>
+    </div>
+    <div class="scviewer" id="scTestFileDropZone">
+      <canvas id="ViewerCanvas" class="webviewer-canvas" tabindex=-1
+        width="409" height="409"
+        oncontextmenu="event.preventDefault()"
+        ondrop="scSample.onDropEvent(event);" ondragover="scSample.onDragOverEvent(event);"
+      ></canvas>
+      <div id="cpBody" class="cp-body"></div>
+    </div>
+  </div>
+</body>
+
+<style>
+</style>
+
+<script type="module">
+// library imports
+import * as SCwebviewer from '/wasm32/SCwebviewer.js';
+
+import {SCViewerSample} from './SCsample.js'
+import {ControlPanel} from './SCcontrols.js';
+import {SettingsPanel} from './Panels/SettingsPanel.js'
+import {MeshPanel} from './Panels/MeshPanel.js'
+import {ShapePanel} from './Panels/ShapePanel.js'
+import {BuildersPanel} from './Panels/BuildersPanel.js'
+import {ClippingPanel} from './Panels/ClippingPanel.js'
+import {ImportPanel} from './Panels/ImportPanel.js'
+import {ScenePanel} from './Panels/ScenePanel.js'
+import {TemplatePanel} from './Panels/TemplatePanel.js'
+
+var scSample = window.scSample = new SCViewerSample();
+scSample.createViewer()
+
+let aCp = new ControlPanel("cp");
+
+aCp.addPanel(new ImportPanel(scSample));
+aCp.addPanel(new ScenePanel(scSample));
+aCp.addPanel(new ShapePanel(scSample));
+aCp.addPanel(new BuildersPanel(scSample));
+aCp.addPanel(new MeshPanel(scSample));
+aCp.addPanel(new ClippingPanel(scSample));
+aCp.addPanel(new SettingsPanel(scSample));
+
+//aCp.addPanel(new TemplatePanel(scSample)); // for testing all control types
+
+aCp.redraw();
+aCp.switchPanel("Import");
+
+scSample.initViewer()
+.then(() =>
+{
+  window.dispatchEvent(new Event('resize'));
+})
+.catch(anErr => {
+  throw anErr;
+})
+
+</script>
+</html>

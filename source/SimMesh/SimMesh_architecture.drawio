@@ -1,0 +1,64 @@
+<mxfile host="65bd71144e">
+    <diagram id="architecture" name="Architecture">
+        <mxGraphModel dx="1506" dy="1521" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="2" value="CAD Input&#xa;TopoDS_Shape / Poly_Triangulation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
+                    <mxGeometry x="20" y="135" width="200" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="SimMesh Facade&#xa;ModelFromShape / ShapeFromModel / ExtractTriangulation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="280" y="120" width="220" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" value="SimMesh_Model&#xa;Vertices / Triangles / Edges&#xa;VertexDataLists + Attributes&#xa;Group + Color metadata" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+                    <mxGeometry x="560" y="100" width="260" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="5" value="Geometry Entities&#xa;SimMesh_Vertex / Triangle / Edge&#xa;SimMesh_Attributes / VertexDataList" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" parent="1" vertex="1">
+                    <mxGeometry x="560" y="320" width="260" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="6" value="SimMesh_Simplifier&#xa;Quadric Errors + VertexPair Heap&#xa;Contraction + Boundary Constraints" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="1" vertex="1">
+                    <mxGeometry x="870" y="100" width="260" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="7" value="Outputs&#xa;Simplified Shape / Triangulation&#xa;Max error + statistics" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#cce5ff;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="1160" y="125" width="220" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="8" value="SimMesh_Persistence&#xa;Load / Save .smesh&#xa;Versioned format" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+                    <mxGeometry x="580" y="-50" width="220" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="9" value="Quadrics &amp; Pair Utilities&#xa;SimMesh_Quadric / VertexPair*&#xa;CellFilter search + heaps" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" parent="1" vertex="1">
+                    <mxGeometry x="890" y="320" width="220" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="10" style="endArrow=block;html=1;strokeColor=#6c8ebf;" parent="1" source="2" target="3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="11" style="endArrow=block;html=1;strokeColor=#6c8ebf;" parent="1" source="3" target="4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="12" style="endArrow=block;html=1;strokeColor=#6c8ebf;" parent="1" source="4" target="6" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="13" style="endArrow=block;html=1;strokeColor=#6c8ebf;" parent="1" source="6" target="7" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="14" style="endArrow=open;dashed=1;html=1;strokeColor=#9673a6;" parent="1" source="4" target="8" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="15" style="endArrow=open;dashed=1;html=1;strokeColor=#b85450;" parent="1" source="5" target="4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="16" style="endArrow=open;dashed=1;html=1;strokeColor=#999999;" parent="1" source="9" target="6" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="17" style="endArrow=open;dashed=1;html=1;strokeColor=#6c8ebf;" parent="1" source="7" target="3" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1270" y="500"/>
+                            <mxPoint x="880" y="500"/>
+                            <mxPoint x="390" y="500"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

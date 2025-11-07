@@ -17,20 +17,60 @@ import { SCwebviewer,
     ColorMapperChangedEvent,
     ColorScaleChangeStatus,
     CaeMeshPresentationType,
-    ICaeMeshPropInfo} from '@hyj/SCwebviewer/wasm32/SCwebviewer.js';
+    CaeMeshPresentation,
+    ICaeMeshPropInfo,
+    CaeMeshObjectSelMode,
+    Subview} from '@hyj/SCwebviewer/wasm32/SCwebviewer.js';
 import { markRaw } from 'vue';
 // import {} from 'crypto';
 
 const PATH_TO_WASM = '/others/';
 
+export interface LocalLoadResult {
+    fileName: string;
+    success: boolean;
+    format?: string;
+    kind?: 'mesh' | 'shape' | 'mesh-properties';
+    message?: string;
+    objectId?: ObjectId;
+}
+
+export interface MeshSummary {
+    id: ObjectId;
+    label: string;
+}
+
 export class ViewerService {
     private _viewer?: SCwebviewer;
+    private _shape?: InteractiveShape;
+    private _mesh?: InteractiveCaeMesh;
+    private _lastLoadedMeshId?: ObjectId;
+    private _lastLoadedShapeId?: ObjectId;
+    public toExplodeShape = false;
+    public shapeExplodeDepth = -1;
+    public useMeshGenGeom = false;
+    public useMeshTestCacheGenGeom = false;
+    public subview1?: Subview;
+    public subview2?: Subview;
+    private _readyPromise: Promise<void>;
+    private _resolveReady?: () => void;
 
     get viewer(): SCwebviewer | undefined {
         return this._viewer;
     }
 
+    get scViewer(): SCwebviewer | undefined {
+        return this._viewer;
+    }
+
+    public whenReady(): Promise<void> {
+        return this._readyPromise;
+    }
+
     constructor() {
+        this._readyPromise = new Promise((resolve) => {
+            this._resolveReady = resolve;
+        });
         window.addEventListener("resize", this.onResize.bind(this));
     }
 
@@ -45,6 +85,153 @@ export class ViewerService {
         this._viewer.camera?.setOrientation (CameraOrientation.FRONT);
 
         this._viewer.eventManager.addEventListener(UserEvents.onColorMapperChanged, this.updateColorScale.bind(this));
+        this._resolveReady?.();
+    }
+
+    public async loadLocalFiles(files: File[] | FileList): Promise<LocalLoadResult[]> {
+        const normalized = Array.isArray(files) ? files : Array.from(files);
+        const results: LocalLoadResult[] = [];
+        for (const file of normalized) {
+            results.push(await this.loadLocalFile(file));
+        }
+        return results;
+    }
+
+    public async loadLocalFile(file: File): Promise<LocalLoadResult> {
+        if (this._viewer == null) {
+            return { fileName: file.name, success: false, message: "Viewer is not ready" };
+        }
+
+        try {
+            const buffer = await file.arrayBuffer();
+            const meshFormat = InteractiveCaeMesh.probeFileFormat(this._viewer, buffer, file.name);
+            const shapeFormat = InteractiveShape.probeFileFormat(this._viewer, buffer, file.name);
+
+            if (meshFormat !== "") {
+                if (meshFormat === "MDBPROP") {
+                    const meshId = await this.applyMeshPropertiesBuffer(buffer);
+                    return {
+                        fileName: file.name,
+                        success: true,
+                        format: meshFormat,
+                        kind: 'mesh-properties',
+                        objectId: meshId,
+                        message: "成功更新网格属性"
+                    };
+                }
+
+                const meshId = await this.onMeshFileRead(file.name, buffer);
+                return {
+                    fileName: file.name,
+                    success: true,
+                    format: meshFormat,
+                    kind: 'mesh',
+                    objectId: meshId,
+                    message: "网格模型加载成功"
+                };
+            }
+
+            if (shapeFormat !== "") {
+                const shapeId = await this.onShapeFileRead(file.name, buffer);
+                return {
+                    fileName: file.name,
+                    success: true,
+                    format: shapeFormat,
+                    kind: 'shape',
+                    objectId: shapeId,
+                    message: "几何模型加载成功"
+                };
+            }
+
+            return {
+                fileName: file.name,
+                success: false,
+                message: "当前文件格式未被SCwebviewer识别"
+            };
+        } catch (error: any) {
+            const message = error?.message ?? "本地文件加载失败";
+            return { fileName: file.name, success: false, message };
+        }
+    }
+
+    public async onShapeFileRead(fileName: string, buffer: ArrayBuffer): Promise<ObjectId> {
+        if (this._viewer == null) {
+            return "";
+        }
+
+        let filePath = "/models/" + fileName;
+        const shape = new InteractiveShape();
+        try {
+            const isOpened = await shape.openBufferAsync(this._viewer, buffer, filePath);
+            if (!isOpened) {
+                throw new Error("无法打开几何文件");
+            }
+
+            this._shape = shape;
+            this._lastLoadedShapeId = shape.id;
+
+            const isLoaded = await (shape as any).loadDataAsync(this._viewer);
+            if (!isLoaded) {
+                throw new Error("加载几何数据失败");
+            }
+
+            filePath = shape.getFilePathFromObjId();
+            if (!this._viewer.unlinkFile(filePath)) {
+                throw new Error("Cannot unlink a file '" + filePath + "'");
+            }
+
+            const explodedObjects = this.toExplodeShape
+                ? shape.explodeShape(this._viewer, this.shapeExplodeDepth)
+                : null;
+            if (explodedObjects && explodedObjects.length > 0) {
+                explodedObjects.forEach(obj => obj.isVisible = true);
+                this.onLoad(explodedObjects[0]);
+            } else {
+                shape.isVisible = true;
+                this.onLoad(shape);
+            }
+
+            return shape.id;
+        } catch (error) {
+            console.error("Loading shape failed: ", error);
+            throw error;
+        }
+    }
+
+    public async onMeshFileRead(fileName: string, buffer: ArrayBuffer): Promise<ObjectId> {
+        if (this._viewer == null) {
+            return "";
+        }
+
+        const filePath = "/models/" + fileName;
+        const mesh = new InteractiveCaeMesh();
+        mesh.toCacheProperties = true;
+        const isLoaded = await mesh.loadBufferAsync(this._viewer, buffer, filePath);
+        if (!isLoaded) {
+            throw new Error("加载网格失败");
+        }
+
+        this._mesh = mesh;
+        this._lastLoadedMeshId = mesh.id;
+        this.applyMeshGenerationOptions(mesh);
+        mesh.isVisible = true;
+        this.setMeshDefaultProps(mesh);
+        this.onLoad(mesh);
+        return mesh.id;
+    }
+
+    public setMeshDefaultProps(mesh: InteractiveCaeMesh): void {
+        this.configureMeshAfterLoading(mesh);
+    }
+
+    public onLoad(object?: InteractiveObject): void {
+        if (this._viewer == null || this._viewer.camera == null) {
+            return;
+        }
+
+        this._viewer.camera.fitAllAuto(true);
+        this._viewer.requestViewUpdate();
+        window.dispatchEvent(new Event('sceneChanged'));
     }
 
     public getInteractiveObject(theObjectId: ObjectId): InteractiveObject | undefined {
@@ -205,6 +392,8 @@ export class ViewerService {
         }
 
         aShape.isVisible = true;
+        this._shape = aShape;
+        this._lastLoadedShapeId = aShape.id;
         return aShape.id;
     }
 
@@ -224,6 +413,8 @@ export class ViewerService {
         }
 
         aShape.isVisible = true;
+        this._shape = aShape;
+        this._lastLoadedShapeId = aShape.id;
         return aShape.id;
     }
 
@@ -238,8 +429,11 @@ export class ViewerService {
             return "";
         }
 
-        aMesh.createPresentation(CaeMeshPresentationType.Scalar);
+        this.applyMeshGenerationOptions(aMesh);
+        this.configureMeshAfterLoading(aMesh);
         aMesh.isVisible = true;
+        this._mesh = aMesh;
+        this._lastLoadedMeshId = aMesh.id;
         return aMesh.id;
     }
 
@@ -254,8 +448,11 @@ export class ViewerService {
             return "";
         }
 
-        aMesh.createPresentation(CaeMeshPresentationType.Scalar);
+        this.applyMeshGenerationOptions(aMesh);
+        this.configureMeshAfterLoading(aMesh);
         aMesh.isVisible = true;
+        this._mesh = aMesh;
+        this._lastLoadedMeshId = aMesh.id;
         return aMesh.id;
     }
 
@@ -303,6 +500,20 @@ export class ViewerService {
         }
 
         return [];
+    }
+
+    public listMeshSummaries(): MeshSummary[] {
+        const result: MeshSummary[] = [];
+        if (this._viewer == null || this._viewer.interactiveContext == null) {
+            return result;
+        }
+        for (const obj of this._viewer.interactiveContext.objectsInside) {
+            if (obj instanceof InteractiveCaeMesh) {
+                const label = (obj as any)?.metadata?.name ?? (obj as any)?.label ?? obj.id;
+                result.push({ id: obj.id, label });
+            }
+        }
+        return result;
     }
 
     public setActiveMeshProperty(theObjectId: ObjectId, thePropertyId: string, toUpdate: boolean): void {
@@ -502,6 +713,80 @@ export class ViewerService {
         }
         
         aMesh.presentations[0].deformedScaleCoeff = value;
+    }
+
+    private applyMeshGenerationOptions(mesh: InteractiveCaeMesh): void {
+        if (this.useMeshGenGeom) {
+            mesh.setUseGenGeometry();
+        }
+        if (this.useMeshTestCacheGenGeom) {
+            mesh.setUseTestCacheGenGeometry();
+        }
+    }
+
+    private configureMeshAfterLoading(mesh: InteractiveCaeMesh): void {
+        let presentation: CaeMeshPresentation | null = mesh.presentations.length > 0 ? mesh.presentations[0] : null;
+        if (presentation == null) {
+            presentation = mesh.createPresentation(CaeMeshPresentationType.Scalar);
+        }
+        if (presentation == null) {
+            return;
+        }
+
+        let properties = mesh.properties;
+        if (properties.length > 0) {
+            presentation.activeProperty = properties[0].propId;
+            let timeSteps = mesh.availableTimeSteps;
+            if (timeSteps.length > 0) {
+                mesh.activeTimeStep = timeSteps[0].timeStep;
+            }
+        }
+
+        presentation.presentationMode = CaeMeshObjectPrsMode.FlatShaded;
+        mesh.selectionMode = CaeMeshObjectSelMode.Elements | CaeMeshObjectSelMode.Nodes;
+    }
+
+    private async applyMeshPropertiesBuffer(theArray: ArrayBuffer): Promise<ObjectId> {
+        if (this._viewer == null) {
+            return "";
+        }
+
+        let targetMesh = this.getLastLoadedMesh();
+        if (targetMesh == null) {
+            throw new Error("请先加载一个网格模型，再导入属性文件");
+        }
+
+        await targetMesh.loadPropertiesAsync(this._viewer, theArray);
+        this.configureMeshAfterLoading(targetMesh);
+        this._viewer.requestViewUpdate();
+        this._lastLoadedMeshId = targetMesh.id;
+        this._mesh = targetMesh;
+        return targetMesh.id;
+    }
+
+    private getLastLoadedMesh(): InteractiveCaeMesh | null {
+        if (this._viewer == null || this._viewer.interactiveContext == null) {
+            return null;
+        }
+
+        if (this._mesh) {
+            return this._mesh;
+        }
+
+        if (this._lastLoadedMeshId) {
+            const mesh = this.getMeshById(this._lastLoadedMeshId);
+            if (mesh != null) {
+                return mesh;
+            }
+        }
+
+        for (let obj of this._viewer.interactiveContext.objectsInside) {
+            if (obj instanceof InteractiveCaeMesh) {
+                return obj as InteractiveCaeMesh;
+            }
+        }
+
+        return null;
     }
 
     public updateColorScale(theEvent: Event): void {

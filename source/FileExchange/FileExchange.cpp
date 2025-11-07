@@ -8,6 +8,8 @@
 #include <OSD.hxx>
 #include <Standard_Version.hxx>
 
+#include <algorithm>
+#include <cctype>
 #include <iostream>
 #include <string>
 
@@ -37,136 +39,127 @@ static void DisablePrinterColors()
     }
 }
 
-//! Parse med argument.
-static bool parseMedArg(const TCollection_AsciiString&    theArgCase,
-                        int                               theArgIter,
-                        int                               theNbArgs,
-                        const RWMeshConv::MedConverter& theConv)
+enum class ParseStatus
 {
-    return (theArgCase == "-med" || theArgCase == "--med") && theArgIter + 1 < theNbArgs && theConv.InputPath().empty();
-}
+    Success,
+    HelpRequested,
+    Failure
+};
 
-//! Parse input argument.
-static bool parseInputArg(const TCollection_AsciiString&    theArgCase,
-                          int                               theArgIter,
-                          int                               theNbArgs,
-                          const RWMeshConv::MedConverter& theConv)
+static std::string ToLower(std::string theValue)
 {
-    return (theArgCase == "-input" || theArgCase == "--input" || theArgCase == "-i") && theArgIter + 1 < theNbArgs
-        && theConv.InputPath().empty();
-}
-
-//! Parse mdb argument.
-static bool parseMdbArg(const TCollection_AsciiString&    theArgCase,
-                        int                               theArgIter,
-                        int                               theNbArgs,
-                        const RWMeshConv::MedConverter& theConv)
-{
-    return (theArgCase == "-mdb" || theArgCase == "--mdb") && theArgIter + 1 < theNbArgs
-        && theConv.OutputPath().empty();
-}
-
-//! Parse output argument.
-static bool parseOutputArg(const TCollection_AsciiString&    theArgCase,
-                           int                               theArgIter,
-                           int                               theNbArgs,
-                           const RWMeshConv::MedConverter& theConv)
-{
-    return (theArgCase == "-output" || theArgCase == "--output" || theArgCase == "-o") && theArgIter + 1 < theNbArgs
-        && theConv.OutputPath().empty();
-}
-
-//! Parse mapping argument.
-static bool parseMappingArg(const TCollection_AsciiString&    theArgCase,
-                            int                               theArgIter,
-                            int                               theNbArgs,
-                            const RWMeshConv::MedConverter& theConv)
-{
-    return (theArgCase == "-mapping" || theArgCase == "--mapping") && theArgIter + 1 < theNbArgs
-        && theConv.MappingPath().empty();
-}
-
-//! Parse artifact argument.
-static bool parseArtifactArg(const TCollection_AsciiString&    theArgCase,
-                             int                               theArgIter,
-                             int                               theNbArgs,
-                             const RWMeshConv::MedConverter& theConv)
-{
-    return (theArgCase == "-missing" || theArgCase == "--missing" || theArgCase == "-artifact"
-            || theArgCase == "--artifact")
-        && theArgIter + 1 < theNbArgs && theConv.MissingFieldsPath().empty();
-}
-
-//! Parse properties temp folder.
-static bool parsePropsTempFolderArg(const TCollection_AsciiString& theArgCase, int theArgIter, int theNbArgs)
-{
-    return theArgCase == "-propstempfolder" && theArgIter + 1 < theNbArgs;
-}
-
-static bool parseHelpArg(const TCollection_AsciiString& theArgCase)
-{
-    return theArgCase == "-help" || theArgCase == "--help" || theArgCase == "-h" || theArgCase == "/h";
-}
-
-bool parseExFunArg(TCollection_AsciiString&    anArgCase,
-                   int&                        anArgIter,
-                   int                         theNbArgs,
-                   RWMeshConv::MedConverter& theConv,
-                   const char* const*          theArgVec,
-                   bool&                       theResFlag)
-{
-    theResFlag = true;
-    if (parseMedArg(anArgCase, anArgIter, theNbArgs, theConv)) {
-        theConv.SetInputFormat(RWMeshConv::FileFormat::MED);
-        theConv.SetInputPath(theArgVec[++anArgIter]);
-    } else if (parseInputArg(anArgCase, anArgIter, theNbArgs, theConv)) {
-        theConv.SetInputPath(theArgVec[++anArgIter]);
-    } else if (parseMdbArg(anArgCase, anArgIter, theNbArgs, theConv)) {
-        theConv.SetOutputFormat(RWMeshConv::FileFormat::MDB);
-        theConv.SetOutputPath(theArgVec[++anArgIter]);
-    } else if (parseOutputArg(anArgCase, anArgIter, theNbArgs, theConv)) {
-        theConv.SetOutputPath(theArgVec[++anArgIter]);
-    } else if (parseMappingArg(anArgCase, anArgIter, theNbArgs, theConv)) {
-        theConv.SetMappingPath(theArgVec[++anArgIter]);
-    } else if (parseArtifactArg(anArgCase, anArgIter, theNbArgs, theConv)) {
-        theConv.SetMissingFieldsPath(theArgVec[++anArgIter]);
-    } else if (parsePropsTempFolderArg(anArgCase, anArgIter, theNbArgs)) {
-        theConv.SetDumpPropsToTempFolder(theArgVec[++anArgIter]);
-    } else if (parseHelpArg(anArgCase)) {
-        PrintHelp();
-    } else if (anArgCase == "-sort") {
-        theConv.SetSortMeshData(true);
-    } else if (anArgCase == "-nodevecasscalar") {
-        theConv.SetReadNodeVecAsScalar(true);
-    } else if (anArgCase == "-nocolorizelog" || anArgCase == "-nocolorlog") {
-        DisablePrinterColors();
-    } else if (theConv.InputPath().empty()) {
-        theConv.SetInputPath(theArgVec[anArgIter]);
-    } else if (theConv.OutputPath().empty()) {
-        theConv.SetOutputPath(theArgVec[anArgIter]);
-    } else {
-        std::cerr << "Syntax error at '" << theArgVec[anArgIter] << "'\n";
-        return false;
-    }
-    theResFlag = false;
-    return false;
+    std::transform(theValue.begin(), theValue.end(), theValue.begin(),
+        [](unsigned char theChar) { return static_cast<char>(std::tolower(theChar)); });
+    return theValue;
 }
 
 //! Parse input arguments.
-static bool parseArguments(RWMeshConv::MedConverter& theConv, int theNbArgs, const char* const* theArgVec)
+static ParseStatus parseArguments(RWMeshConv::MedConverter& theConv, int theNbArgs, char* const* theArgVec)
 {
-    TCollection_AsciiString aLicensePath = "";
-    for (int anArgIter = 1; anArgIter < theNbArgs; ++anArgIter) {
-        TCollection_AsciiString anArgCase(theArgVec[anArgIter]);
-        anArgCase.LowerCase();
+    auto requireValue = [theNbArgs, theArgVec](int& theIndex, const std::string& theSwitch) -> const char* {
+        if (theIndex + 1 >= theNbArgs) {
+            std::cerr << "Missing value for '" << theSwitch << "'.\n";
+            return nullptr;
+        }
+        return theArgVec[++theIndex];
+    };
 
-        bool aResFlag;
-        bool aIsParseExFunArg = parseExFunArg(anArgCase, anArgIter, theNbArgs, theConv, theArgVec, aResFlag);
-        if (aResFlag) {
-            return aIsParseExFunArg;
+    for (int anArgIter = 1; anArgIter < theNbArgs; ++anArgIter) {
+        std::string anArgument(theArgVec[anArgIter]);
+        std::string anArgLower = ToLower(anArgument);
+
+        if (anArgLower == "-help" || anArgLower == "--help" || anArgLower == "-h" || anArgLower == "/h") {
+            return ParseStatus::HelpRequested;
+        } else if (anArgLower == "-med" || anArgLower == "--med") {
+            const char* aValue = requireValue(anArgIter, anArgument);
+            if (aValue == nullptr) {
+                return ParseStatus::Failure;
+            }
+            if (!theConv.InputPath().empty()) {
+                std::cerr << "Multiple input paths are not allowed.\n";
+                return ParseStatus::Failure;
+            }
+            theConv.SetInputFormat(RWMeshConv::FileFormat::MED);
+            theConv.SetInputPath(aValue);
+        } else if (anArgLower == "-input" || anArgLower == "--input" || anArgLower == "-i") {
+            const char* aValue = requireValue(anArgIter, anArgument);
+            if (aValue == nullptr) {
+                return ParseStatus::Failure;
+            }
+            if (!theConv.InputPath().empty()) {
+                std::cerr << "Multiple input paths are not allowed.\n";
+                return ParseStatus::Failure;
+            }
+            theConv.SetInputPath(aValue);
+        } else if (anArgLower == "-mdb" || anArgLower == "--mdb") {
+            const char* aValue = requireValue(anArgIter, anArgument);
+            if (aValue == nullptr) {
+                return ParseStatus::Failure;
+            }
+            if (!theConv.OutputPath().empty()) {
+                std::cerr << "Multiple output paths are not allowed.\n";
+                return ParseStatus::Failure;
+            }
+            theConv.SetOutputFormat(RWMeshConv::FileFormat::MDB);
+            theConv.SetOutputPath(aValue);
+        } else if (anArgLower == "-output" || anArgLower == "--output" || anArgLower == "-o") {
+            const char* aValue = requireValue(anArgIter, anArgument);
+            if (aValue == nullptr) {
+                return ParseStatus::Failure;
+            }
+            if (!theConv.OutputPath().empty()) {
+                std::cerr << "Multiple output paths are not allowed.\n";
+                return ParseStatus::Failure;
+            }
+            theConv.SetOutputPath(aValue);
+        } else if (anArgLower == "-mapping" || anArgLower == "--mapping") {
+            const char* aValue = requireValue(anArgIter, anArgument);
+            if (aValue == nullptr) {
+                return ParseStatus::Failure;
+            }
+            if (!theConv.MappingPath().empty()) {
+                std::cerr << "Multiple mapping files are not allowed.\n";
+                return ParseStatus::Failure;
+            }
+            theConv.SetMappingPath(aValue);
+        } else if (anArgLower == "-missing" || anArgLower == "--missing" || anArgLower == "-artifact"
+                   || anArgLower == "--artifact") {
+            const char* aValue = requireValue(anArgIter, anArgument);
+            if (aValue == nullptr) {
+                return ParseStatus::Failure;
+            }
+            if (!theConv.MissingFieldsPath().empty()) {
+                std::cerr << "Multiple missing-field logs are not allowed.\n";
+                return ParseStatus::Failure;
+            }
+            theConv.SetMissingFieldsPath(aValue);
+        } else if (anArgLower == "-propstempfolder" || anArgLower == "--propstempfolder"
+                   || anArgLower == "--props-temp-folder") {
+            const char* aValue = requireValue(anArgIter, anArgument);
+            if (aValue == nullptr) {
+                return ParseStatus::Failure;
+            }
+            theConv.SetDumpPropsToTempFolder(aValue);
+        } else if (anArgLower == "-sort") {
+            theConv.SetSortMeshData(true);
+        } else if (anArgLower == "-nodevecasscalar") {
+            theConv.SetReadNodeVecAsScalar(true);
+        } else if (anArgLower == "-nocolorizelog" || anArgLower == "-nocolorlog") {
+            DisablePrinterColors();
+        } else if (anArgument.rfind("-", 0) == 0) {
+            std::cerr << "Unknown option '" << anArgument << "'.\n";
+            return ParseStatus::Failure;
+        } else if (theConv.InputPath().empty()) {
+            theConv.SetInputPath(anArgument.c_str());
+        } else if (theConv.OutputPath().empty()) {
+            theConv.SetOutputPath(anArgument.c_str());
+        } else {
+            std::cerr << "Syntax error at '" << anArgument << "'.\n";
+            return ParseStatus::Failure;
         }
     }
-    return true;
+
+    return ParseStatus::Success;
 }
 
 int main(int theNbArgs, char* theArgVec[])
@@ -174,7 +167,12 @@ int main(int theNbArgs, char* theArgVec[])
     OSD::SetSignal(false);
 
     RWMeshConv::MedConverter aConv;
-    if (!parseArguments(aConv, theNbArgs, theArgVec)) {
+    const ParseStatus aStatus = parseArguments(aConv, theNbArgs, theArgVec);
+    if (aStatus == ParseStatus::HelpRequested) {
+        PrintHelp();
+        return 0;
+    }
+    if (aStatus == ParseStatus::Failure) {
         PrintHelp();
         return 1;
     }

@@ -43,6 +43,14 @@ module.exports = defineConfig({
                 toType: 'dir'
               })
             }
+            let path5 = path.resolve(__dirname, 'node_modules/@hyj/SCwebviewer/fonts');
+            if (fs.existsSync(path5)) {
+              args[0].patterns.push({
+                from: path5,
+                to: path.resolve(__dirname, 'dist/others/fonts'),
+                toType: 'dir'
+              })
+            }
             return args
           })
         }

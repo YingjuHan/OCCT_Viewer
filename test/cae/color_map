@@ -1,0 +1,83 @@
+pload VISUALIZATION
+pload -VIEWDRAW
+scvdefaultfonts
+vdriver -load GLES
+scvinit View1
+
+scvreadmesh m [locate_data_file buckling22.pos]
+scvdisplay  m
+scvmeshactiveprop m -nodal 0
+vfit
+scvmeshaspects m -prsMode edgeShading
+
+scvcolorscale a -attachProp m prop_1 0 -font 12 -textPos right -nbIntervals 3
+
+# Check individual cases
+scvcolorscale a -smooth -colorRange purple green
+vdump $imagedir/${casename}_smooth_range.png
+
+scvcolorscale a -smooth -colorRange purple green -range 0.0 5.74024 3
+vdump $imagedir/${casename}_smooth_subrange.png
+
+scvcolorscale a -smooth off -colorRange purple green -range -5.74024 5.74024 3
+vdump $imagedir/${casename}_discrete_range.png
+
+scvcolorscale a -smooth -colors blue green red
+vdump $imagedir/${casename}_smooth_custom.png
+
+scvcolorscale a -smooth off -colors blue green red
+vdump $imagedir/${casename}_discrete_custom.png
+
+scvcolorscale a -smooth off -colors PURPLE 11B0F700 GREEN
+vdump $imagedir/${casename}_discrete_transp.png
+
+vremove -all
+del m
+
+# Check multiple colorscales at once
+scvreadmesh m1 [locate_data_file buckling22.pos]
+scvdisplay  m1
+scvcolorscale a -attach m1 -font 12 -textPos right -nbIntervals 3 -smooth -colorRange purple green
+scvmeshactiveprop m1 -nodal 0
+
+scvreadmesh m2 [locate_data_file Code_Aster_00.msh]
+scvdisplay  m2
+scvcolorscale b -attach m2 -font 12 -textPos right -nbIntervals 3
+scvmeshactiveprop m2 -nodal 0
+
+vfit
+vdump $imagedir/${casename}_several_objects.png
+
+scvviewcube e
+
+scvreadmesh m3 [locate_data_file disp_stress_conv.msh]
+scvdisplay  m3
+scvcolorscale c -horizontal on -attach m3 -font 12 -nbIntervals 3
+scvmeshactiveprop m3 -nodal 0
+
+scvreadmesh m4 [locate_data_file elem_nodes_stress.msh]
+scvdisplay  m4
+scvcolorscale d -horizontal on -attach m4 -font 12 -smooth -colorRange blue red
+scvmeshactiveprop m4 -elemental 0
+
+vfit
+vdump $imagedir/${casename}_several_colorscales_and_viewcube.png
+
+vremove -all
+del m
+
+# Check color mapping and logarithmic mode
+scvreadmesh m [locate_data_file cube_all_float.mdb]
+scvdisplay  m
+scvmeshactiveprop m -prop prop_1
+vfront
+vfit
+scvcolorscale a -attachProp m prop_1 0 -font 12 -textPos right -nbIntervals 10 -smooth -colorRange purple green
+
+vdump $imagedir/${casename}_scale_linear1.png
+scvcolorscale a -log on
+vdump $imagedir/${casename}_scale_logarithmic1.png
+scvcolorscale a -log off
+vdump $imagedir/${casename}_scale_linear2.png
+scvcolorscale a -log on
+vdump $imagedir/${casename}_scale_logarithmic2.png

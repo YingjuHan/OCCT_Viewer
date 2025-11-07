@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang=en-us>
+
+<head>
+  <meta charset=utf-8>
+  <meta content="text/html; charset=utf-8" http-equiv=Content-Type>
+  <link rel="shortcut icon" href="/images/sc-logo.svg" type="image/x-icon" />
+  <title>Hello from SC WebGL Viewer</title>
+</head>
+
+<body>
+  <h2>Hello from SC WebGL Viewer</h2>
+  <div>
+    <canvas id="ViewerCanvas" oncontextmenu="event.preventDefault()" tabindex=-1
+      style="border:0 none;background-color:#000; user-select: none;" width="409" height="409"></canvas>
+  </div>
+</body>
+
+<script type="module">
+// library imports
+import * as SCwebviewer from '/wasm32/SCwebviewer.js';
+
+// create viewer object and specify prefix for loading extra files
+var scViewer = window.scViewer = new SCwebviewer.SCwebviewer('/');
+
+// setup log verbose level BEFORE initialization
+scViewer.traceLevel = SCwebviewer.MessageGravity.Trace; // all messages (for development)
+
+// load WASM, initialize WebGL context and 3D Viewer
+if (!scViewer.isWasmSupported())
+{
+  var anElement = document.getElementById('output');
+  anElement.innerHTML += "Browser is too old - WebAssembly support is missing!<br>Please check updates or install a modern browser.<br>";
+}
+
+scViewer.init()
+.then(() =>
+{
+  //! Resize canvas to fit into window.
+  function updateCanvasSize()
+  {
+    // size of canvas in logical (density-independent) units
+    let aSizeX = Math.min(window.innerWidth,  window.screen.availWidth);
+    let aSizeY = Math.min(window.innerHeight, window.screen.availHeight);
+    aSizeX = Math.max(300, aSizeX - 30);
+    aSizeY = Math.max(300, aSizeY - 100);
+    ViewerCanvas.style.width  = aSizeX + "px";
+    ViewerCanvas.style.height = aSizeY + "px";
+
+    // drawing buffer size (aka backing store)
+    let aDevicePixelRatio = window.devicePixelRatio || 1;
+    ViewerCanvas.width  = aSizeX * aDevicePixelRatio;
+    ViewerCanvas.height = aSizeY * aDevicePixelRatio;
+    scViewer.resizeViewport();
+  }
+  window.onresize = updateCanvasSize;
+  updateCanvasSize();
+
+  // adjust rendering parameters
+  scViewer.renderingParams.backgroundColor = "black";
+  //let aSkyBox = "/textures/sky.jpg";
+  //scViewer.renderingParams.setBackgroundCubemap(aSkyBox, false, true);
+  scViewer.viewCube.isVisible = true;
+  scViewer.camera.setOrientation (SCwebviewer.CameraOrientation.FRONT);
+
+  // load some models
+  let aDefModel = "/models/gltf/as1-oc-214.glb";
+  let aShapeLoader = new SCwebviewer.InteractiveShape();
+  aShapeLoader.loadUrlAsync (scViewer, aDefModel).then(() => {
+    // explode roots
+    let aShapes = aShapeLoader.explodeShape (scViewer);
+
+    // display AFTER loading completed
+    for (const aShapeIter of aShapes)
+    {
+      aShapeIter.isVisible = true;
+    }
+    scViewer.camera.fitAllAuto (true);
+    scViewer.requestViewUpdate(); // should be added to redraw Viewer contents
+  });
+})
+.catch(anErr => {
+  throw anErr;
+})
+
+</script>
+</html>

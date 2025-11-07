@@ -1,0 +1,36 @@
+{
+  "name": "geom_poc",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build"
+  },
+  "dependencies": {
+    "@hw/SCwebviewer": "../../",
+    "cli-spinners": "^3.3.0",
+    "core-js": "^3.8.3",
+    "crypto": "^1.0.1",
+    "postprocessing": "6.29.0",
+    "three": "^0.145.0",
+    "three-trackballcontrols": "^0.9.0",
+    "vue": "^3.2.13",
+    "vue-router": "^4.0.3",
+    "vuex": "^4.0.0"
+  },
+  "devDependencies": {
+    "@vue/cli-plugin-babel": "~5.0.0",
+    "@vue/cli-plugin-router": "~5.0.0",
+    "@vue/cli-plugin-typescript": "~5.0.8",
+    "@vue/cli-plugin-vuex": "~5.0.0",
+    "@vue/cli-service": "~5.0.0",
+    "@vue/compiler-sfc": "~3.2.41",
+    "typescript": "^4.6.4"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie 11"
+  ]
+}

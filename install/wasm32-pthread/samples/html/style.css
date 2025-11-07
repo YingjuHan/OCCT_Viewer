@@ -1,0 +1,150 @@
+html, body {
+  height: 100%;
+  margin: 0;
+}
+.app {
+  height: 100%;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.cp-main {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100%;
+}
+.cp-header {
+  background-color: gray;
+  height: 100%;
+}
+.panel {
+  background-color: lightgray;
+  opacity: 0.9;
+  padding: 5px;
+}
+.cp-body {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  overflow-y: auto;
+  max-height: 95vh;
+}
+.scviewer {
+  flex: 1;
+  position: relative;
+}
+.webviewer-canvas {
+  min-width: 400px;
+  min-height: 400px;
+  user-select: none;
+  border: 0;
+  background-color: #000;
+  display:block;
+}
+
+input[type=range] {
+  width: 250px;
+}
+
+input {
+  margin: 0px;
+}
+
+label {
+  margin: 5px;
+}
+
+.controlItem {
+  margin: 5px;
+}
+.controlItemInlineBlock {
+  margin: 5px;
+  display: inline-block;
+}
+
+.text-value {
+  display: inline-block;
+}
+
+.header-button {
+  cursor:pointer;
+  user-select: none;
+  color: rgb(255, 255, 255);
+  text-transform: uppercase;
+  text-align: center;
+  line-height: 1;
+  font-size: 17px;
+  background-color: transparent;
+  outline: none;
+  border-radius: 4px;
+  box-sizing: border-box;
+  padding: calc(.875rem - 1px) calc(1.5rem - 1px);
+}
+
+.header-button:hover {
+  color: rgb(255, 255, 255);
+  background-color: rgb(200, 200, 200);
+}
+
+.header-button.selected {
+  color: rgb(255, 255, 255);
+  background-color: rgb(175, 175, 175);
+}
+
+.slider-value {
+  margin-left: 5px;
+  display: inline-block;
+}
+
+.dual-slider-left {
+  margin-right: -3px;
+  display: inline-block;
+  width: 125px !important;
+  direction: rtl;
+}
+
+.dual-slider-right {
+  margin-left: -3px;
+  width: 125px !important;
+}
+
+.collapsible {
+  background-color: #777;
+  color: white;
+  cursor: pointer;
+  border: none;
+  text-align: left;
+  outline: none;
+  width: 100%;
+}
+
+.active, .collapsible:hover {
+  background-color: #555;
+}
+
+.treeul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  padding-left: 10px;
+  display: none;
+}
+
+.treeul-active {
+  display: block;
+}
+
+.tree-exp {
+  appearance: none;
+  margin: 2px;
+}
+
+.tree-exp::before {
+  content: "\25B6";
+  color: black;
+  display: inline-block;
+}
+
+.tree-exp:checked::before {
+  transform: rotate(90deg);
+}

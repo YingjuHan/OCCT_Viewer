@@ -1571,20 +1571,29 @@ void InteractiveColorScale::UpdateRangeDragging(const Handle(AIS_InteractiveCont
                                                 const Handle(RangeTipOwner)&          theOwner,
                                                 const Graphic3d_Vec2i&                theDragTo)
 {
-    const double    aResRatio = theView->RenderingParams().ResolutionRatio();
-    Graphic3d_Vec2i aDragToCorrection(-myBarPosCorrection, myBarPosCorrection);
-    aDragToCorrection = Graphic3d_Vec2i(Graphic3d_Vec2d(aDragToCorrection * GetOrientationAxisI()) * aResRatio);
-    Graphic3d_Vec2i aCorrectedDragTo(theDragTo);
-    aCorrectedDragTo                  = aCorrectedDragTo + aDragToCorrection;
-    Graphic3d_Vec2d       anAxis      = GetOrientationAxis();
-    Graphic3d_Vec2d       anAxisFlipY = Graphic3d_Vec2d(anAxis.x(), -anAxis.y());
-    const Graphic3d_Vec2d aBarBottom  = anAxis * myBarPos.barBottom * aResRatio;
-    const double          aBarLength  = (anAxis * myBarPos.barHeight * aResRatio).Modulus();
-    const Graphic3d_Vec2i aBot2d = IInteractiveObject::GetPointOnScreen2d(this, theView, Graphic3d_Vec2i(aBarBottom));
+    const double aResRatio = theView->RenderingParams().ResolutionRatio();
 
-    double aProjectedDragPoint = anAxisFlipY.Dot(Graphic3d_Vec2d(aCorrectedDragTo));
-    double aBot2dProjected     = anAxisFlipY.Dot(Graphic3d_Vec2d(aBot2d));
-    double aNewPos             = Max(0.0, Min(1.0, (aProjectedDragPoint - aBot2dProjected) / aBarLength));
+    const Graphic3d_Vec2i aBarBotScreen = IInteractiveObject::GetPointOnScreen2d(
+        this,
+        theView,
+        Graphic3d_Vec2i(Graphic3d_Vec2d(Graphic3d_Vec2i(GetRangeTipX(),
+                                                         (int)GetRangeTipY(0.0) + myBarPosCorrection))
+                        * aResRatio));
+    const Graphic3d_Vec2i aBarTopScreen = IInteractiveObject::GetPointOnScreen2d(
+        this,
+        theView,
+        Graphic3d_Vec2i(Graphic3d_Vec2d(Graphic3d_Vec2i(GetRangeTipX(),
+                                                         (int)GetRangeTipY(1.0) + myBarPosCorrection))
+                        * aResRatio));
+
+    Graphic3d_Vec2d aBarVec(aBarTopScreen - aBarBotScreen);
+    const double    aBarLength = aBarVec.Modulus();
+    if (aBarLength <= 0.0) {
+        return;
+    }
+
+    const Graphic3d_Vec2d aDragVec(theDragTo - aBarBotScreen);
+    double                aNewPos = Max(0.0, Min(1.0, aDragVec.Dot(aBarVec) / (aBarLength * aBarLength)));
     if (theOwner->GetTipSide() == RangeTipOwner::RangeSide::MinSide) {
         aNewPos = Max(0.0, Min(mySelRangeTo - 8.0 / aBarLength, aNewPos));
         if (mySelRangeFrom == aNewPos) {

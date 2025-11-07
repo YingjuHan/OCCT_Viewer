@@ -1,0 +1,46 @@
+<mxfile host="app.diagrams.net" modified="2024-04-05T00:00:00.000Z" agent="5.0">
+  <diagram id="uml" name="UML">
+    <mxGraphModel dx="1280" dy="720" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="simmesh" value="SimMesh&#xa;---------------------&#xa;+ ModelFromShape(shape)&#xa;+ ShapeFromModel(model)&#xa;+ ExtractTriangulation(model)" style="swimlane;fontStyle=1;align=left;verticalAlign=top;rounded=0;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="60" width="260" height="150" as="geometry"/>
+        </mxCell>
+        <mxCell id="model" value="SimMesh_Model : Standard_Transient&#xa;---------------------&#xa;- myVertices : vector&lt;SimMesh_Vertex&gt;&#xa;- myTriangles : vector&lt;SimMesh_Triangle&gt;&#xa;- myEdges : vector&lt;SimMesh_Edge&gt;&#xa;- myVertDataLists : vector&lt;SimMesh_VertexDataList&gt;&#xa;---------------------&#xa;+ AddVertex()/AddTriangle()/AddEdge()&#xa;+ GetVertex/Edge/Triangle(id)&#xa;+ SplitVertices()/CompactVertices()&#xa;+ GetBndBox()/GetMaxError()" style="swimlane;fontStyle=1;align=left;verticalAlign=top;rounded=0;html=1;" vertex="1" parent="1">
+          <mxGeometry x="360" y="20" width="340" height="260" as="geometry"/>
+        </mxCell>
+        <mxCell id="simplifier" value="SimMesh_Simplifier&#xa;---------------------&#xa;- myModel : Handle&lt;SimMesh_Model&gt;&#xa;- myVertexPairs / Heap&#xa;- myContraction&#xa;---------------------&#xa;+ Initialize(model)&#xa;+ SetTargetRatio(ratio)&#xa;+ Perform(targetType, allowedError)&#xa;+ GetMaxDeviation()" style="swimlane;fontStyle=1;align=left;verticalAlign=top;rounded=0;html=1;" vertex="1" parent="1">
+          <mxGeometry x="760" y="20" width="320" height="240" as="geometry"/>
+        </mxCell>
+        <mxCell id="persistence" value="SimMesh_Persistence&#xa;---------------------&#xa;+ Save(model, path)&#xa;+ Load(path)&#xa;+ CurrentVersion = 1" style="swimlane;fontStyle=1;align=left;verticalAlign=top;rounded=0;html=1;" vertex="1" parent="1">
+          <mxGeometry x="360" y="320" width="240" height="130" as="geometry"/>
+        </mxCell>
+        <mxCell id="entities" value="Geometry Entities&#xa;---------------------&#xa;SimMesh_Vertex&#xa;SimMesh_Triangle&#xa;SimMesh_Edge&#xa;SimMesh_VertexDataList&#xa;SimMesh_Attributes&#xa;SimMesh_Color" style="swimlane;fontStyle=1;align=left;verticalAlign=top;rounded=0;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="260" width="260" height="190" as="geometry"/>
+        </mxCell>
+        <mxCell id="utilities" value="Simplification Utilities&#xa;---------------------&#xa;SimMesh_Quadric&#xa;SimMesh_VertexPair&#xa;SimMesh_VertexPairHeap&#xa;SimMesh_VertexPairContraction&#xa;SimMesh_VertexPairList" style="swimlane;fontStyle=1;align=left;verticalAlign=top;rounded=0;html=1;" vertex="1" parent="1">
+          <mxGeometry x="760" y="300" width="300" height="180" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge1" style="endArrow=block;html=1;" edge="1" parent="1" source="simmesh" target="model">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge2" style="endArrow=block;html=1;" edge="1" parent="1" source="model" target="simplifier">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge3" style="endArrow=open;dashed=1;html=1;" edge="1" parent="1" source="persistence" target="model">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge4" style="endArrow=open;dashed=1;html=1;" edge="1" parent="1" source="model" target="entities">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge5" style="endArrow=open;dashed=1;html=1;" edge="1" parent="1" source="simplifier" target="utilities">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge6" style="endArrow=open;dashed=1;html=1;" edge="1" parent="1" source="utilities" target="model">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
