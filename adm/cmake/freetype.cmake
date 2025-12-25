@@ -6,7 +6,7 @@ set (FREETYPE_ROOT_DIR "" CACHE PATH "Path to freetype root directory")
 
 simake_additional_search_dirs(${_package} "freetype-")
 
-find_package(${_package} REQUIRED CMAKE_FIND_ROOT_PATH_BOTH)
+find_package(${_package} REQUIRED)
 
 if (freetype_FOUND)
   message(STATUS "${_package} library has been found:")

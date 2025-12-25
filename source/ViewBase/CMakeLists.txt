@@ -47,7 +47,7 @@ source_group ("Source Files" FILES ${SRCFILES})
 source_group ("Header Files" FILES ${INCFILES})
 
 # library to build
-add_library (${PROJECT_NAME} ${OCCTViewer_LIBTYPE} ${SRCFILES} ${INCFILES})
+add_library (${PROJECT_NAME} ${OCCTV_LIBTYPE} ${SRCFILES} ${INCFILES})
 set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER "Libraries")
 
 # OCCT libraries to link
@@ -55,7 +55,7 @@ target_link_libraries (${PROJECT_NAME}
                        PUBLIC TKernel TKMath TKService TKBRep TKGeomBase TKV3d TKXCAF TKG3d TKTopAlgo)
 
 # MED libraries to link
-if (OCCTViewer_USE_MEDFILE)
+if (OCCTV_USE_MEDFILE)
   target_link_libraries (${PROJECT_NAME} PRIVATE ${MEDFILE_C_LIBRARIES})
 endif()
 

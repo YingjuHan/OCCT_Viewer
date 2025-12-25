@@ -1,6 +1,6 @@
 # 开发环境准备指南
 
-本指南整理自 `adm/scripts/wasm_build.bat`, 顶层 `CmakeLists.txt` 以及 `source-ts/Viewer-ts/CMakeLists.txt` 中的约束，帮助新开发者一次性补齐 OCC_VIEWER 的所有构建依赖。
+本指南整理自 `adm/scripts/wasm_build.bat`, 顶层 `CMakeLists.txt` 以及 `source-ts/Viewer-ts/CMakeLists.txt` 中的约束，帮助新开发者一次性补齐 OCC_VIEWER 的所有构建依赖。
 
 ## 1. 基础环境
 - **操作系统**：Windows 10/11（桌面 + Bat 脚本默认路径），其他平台可按 CMake 配置手动调整。
@@ -11,7 +11,7 @@
 ## 2. 第三方依赖一览
 | 依赖 | 作用 | 配置方式 |
 | --- | --- | --- |
-| **OpenCASCADE** | Viewer 依赖的核心 OCCT SDK | 安装后把路径写入 `OpenCASCADE_DIR`/`OPENCASCADE_ROOT_DIR`（Bat 中默认为 `C:\Users\hanyi\workspace\code_repo\OCCT\OGG_2024.4\install\wasm64-fallback-fwasm-exceptions`）。 |
+| **OpenCASCADE** | Viewer 依赖的核心 OCCT SDK | 安装后把路径写入 `OpenCASCADE_DIR`/`OpenCASCADE_ROOT_DIR`（建议复制 `adm/scripts/wasm_custom.bat.sample` 为 `wasm_custom.bat` 并在其中配置）。 |
 | **RapidJSON** | Mesh/属性解析 | 通过 `RAPIDJSON_DIR` 或 `3RDPARTY_DIR` 提供；找到后自动定义 `HAVE_RAPIDJSON`。 |
 | **HDF5 + MEDFile** | 解析 MED 网格 | 仅当 `OCCTV_USE_MEDFILE=ON` 时必需；CMake 模块会根据 `HDF5_ROOT_DIR`、`MEDFile_ROOT_DIR` 搜索并定义 `HAVE_MEDFILE`。 |
 | **Draco** | 网格压缩 | 受 `OCCTV_USE_DRACO` 控制，需提供 `draco_DIR` 或 `DRACO_DIR`；成功后定义 `OCCTV_HAVE_DRACO`。 |
@@ -19,7 +19,7 @@
 | **SMESH** | Mesh Exchanger 插件 | 当 `OCCTV_BUILD_MESH_EXCHANGER=ON` 时需要，通过 `SMESH_DIR`（见 `include(SMESH)`）。 |
 | **TypeScript / TypeDoc** | Web Viewer 与文档 | EMSDK 自带 Node，可 `npm install -g typescript` 以提供 `tsc.cmd`；若启用 TS 文档需另外全局安装 `typedoc` 与 `typedoc-plugin-markdown`。 |
 
-> 运行时 DLL：如依赖落在非标准路径，可在 `CmakeLists.txt` 的 `3RDPARTY_DLL_DIRS` cache 变量中填入分号分隔的目录列表，CMake 会自动加入 PATH。
+> 运行时 DLL：如依赖落在非标准路径，可在 `CMakeLists.txt` 的 `3RDPARTY_DLL_DIRS` cache 变量中填入分号分隔的目录列表，CMake 会自动加入 PATH。
 
 ## 3. EMSDK / Wasm 工具链
 1. 安装 Emscripten SDK，并确认 `EMSDK_ROOT\emsdk_env.bat` 可执行（脚本中直接 `call "%EMSDK_ROOT%\emsdk_env.bat"`）。
@@ -28,7 +28,7 @@
    - `OCC_VIEWER_USE_PTHREADS`：多线程（自动随 `*-pthread` 开启）。
    - `OCC_VIEWER_USE_WASM_MEMORY64`：Memory64 支持（`wasm64*`）。
    - `OCC_VIEWER_USE_WASM_EXCEPTION`：`-fwasm-exceptions`，单线程 `wasm32` 默认关闭防止兼容性问题。
-4. 脚本会把 `CMAKE_C_FLAGS/CMAKE_CXX_FLAGS` 注入额外参数（如 Memory64、PThreads），不需要手动修改 `CmakeLists.txt`。
+4. 脚本会把 `CMAKE_C_FLAGS/CMAKE_CXX_FLAGS` 注入额外参数（如 Memory64、PThreads），不需要手动修改 `CMakeLists.txt`。
 
 ## 4. 构建脚本用法
 脚本入口：`adm/scripts/wasm_build.bat [-nopause]`
@@ -57,7 +57,7 @@
 - `OCC_VIEWER_WEB_DEST_DIR` 下会出现以下内容：
   - `wasm32*/`：Wasm 模块、JS glue、TS 编译产物。
   - `source-ts/Viewer-ts`、`source-ts/SCwebviewer-ts`：原始 TS 与生成文件备份。
-  - `scripts/`, `samples/html`, `samples/vue-viewer` 等资源，由顶层 `CmakeLists.txt` 的 install 规则拷贝。
+  - `scripts/`, `samples/html`, `samples/vue-viewer` 等资源，由顶层 `CMakeLists.txt` 的 install 规则拷贝。
 
 ## 6. Vue 示例环境
 - 目录：`samples/vue-viewer`。

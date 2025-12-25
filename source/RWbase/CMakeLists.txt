@@ -20,7 +20,7 @@ source_group ("Source Files" FILES ${SRCFILES})
 source_group ("Header Files" FILES ${INCFILES})
 
 # library to build
-add_library (${PROJECT_NAME} ${OCCTViewer_LIBTYPE} ${SRCFILES} ${INCFILES})
+add_library (${PROJECT_NAME} ${OCCTV_LIBTYPE} ${SRCFILES} ${INCFILES})
 set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER "Libraries")
 
 

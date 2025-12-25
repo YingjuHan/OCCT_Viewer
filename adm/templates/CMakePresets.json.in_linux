@@ -7,10 +7,10 @@
             "hidden": true,
             "installDir": "${sourceDir}/install",
             "cacheVariables": {
-                "OCCTViewer_USE_MEDFILE": "ON",
-                "OCCTViewer_BUILD_DRAW": "ON",
-                "OCCTViewer_USE_DRACO": "ON",
-                "OCCTViewer_WARNINGS_AS_ERRORS": "ON",
+                "OCCTV_USE_MEDFILE": "ON",
+                "OCCTV_BUILD_DRAW": "ON",
+                "OCCTV_USE_DRACO": "ON",
+                "OCCTV_WARNINGS_AS_ERRORS": "ON",
                 "OpenCASCADE_ROOT_DIR": "${sourceDir}/../3rdparty/occt",
                 "draco_ROOT_DIR": "${sourceDir}/../3rdparty/draco"
             }
@@ -23,7 +23,7 @@
             "binaryDir": "${sourceDir}/work/build-debug",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
-                "OCCTViewer_USE_VSCODE": "ON"
+                "OCCTV_USE_VSCODE": "ON"
             }
         },
         {
@@ -34,7 +34,7 @@
             "binaryDir": "${sourceDir}/work/build-release",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
-                "OCCTViewer_USE_VSCODE": "ON"
+                "OCCTV_USE_VSCODE": "ON"
             }
         },
         {

@@ -402,7 +402,7 @@ set_property (GLOBAL PROPERTY USE_FOLDERS ON)
 # 设置全局属性 USE_FOLDERS 为 ON
 
 # add_subdirectory (dox)
-add_subdirectory (source/RWBase)
+add_subdirectory (source/RWbase)
 add_subdirectory (source/ViewBase)
 # 添加 SCPrsBase 子目录
 
@@ -421,7 +421,11 @@ if (OCCTV_BUILD_MESH_EXCHANGER)
   # 添加 SCRWMeshExchanger 子目录
   if (OCCTV_BUILD_OPENFOAM_DRIVER)
     # 如果构建 OpenFOAM 驱动
-    add_subdirectory (source/SCRWMeshExchanger/DriverFOAM)
+    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/source/RWMeshExchanger/DriverFOAM/CMakeLists.txt")
+      add_subdirectory (source/RWMeshExchanger/DriverFOAM)
+    else()
+      message (WARNING "OCCTV_BUILD_OPENFOAM_DRIVER is ON but DriverFOAM sources are missing; skipping.")
+    endif()
     # 添加 DriverFOAM 子目录
   endif()
 endif()
@@ -435,7 +439,7 @@ add_subdirectory (source/SimMesh)
 add_subdirectory (source/LodCae)
 # 添加 SCLodCae 子目录
 
-if (EMSCRIPTEN AND OCCTV_BUILD_WEB_VIEWER OR OCCTV_BUILD_DRAW)
+if ((EMSCRIPTEN AND OCCTV_BUILD_WEB_VIEWER) OR OCCTV_BUILD_DRAW)
   # 如果是 EMSCRIPTEN 环境且构建 Web 查看器，或者构建 DRAW
   add_subdirectory (source/Viewer)
   # 添加 SCwebviewer 子目录
@@ -571,8 +575,9 @@ install (FILES
         ${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
         DESTINATION ${OCCTV_INSTALL_CMAKE_CONFIG})
 # 安装配置文件
-# TODO
-# install (EXPORT ${PROJECT_NAME} DESTINATION ${OCCTV_INSTALL_CMAKE_CONFIG} FILE ${PROJECT_NAME}Targets.cmake)
+install (EXPORT ${OCCTViewer_PACKAGE}Targets
+         FILE ${PROJECT_NAME}Targets.cmake
+         DESTINATION ${OCCTV_INSTALL_CMAKE_CONFIG})
 
 # 安装导出目标文件
 
