@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { PropType } from 'vue';
 import { ViewerService } from '../services/viewer.service';
+import SceneGraphPanel from './SceneGraphPanel.vue';
 
 const props = defineProps({
     viewerService: {
@@ -38,6 +39,8 @@ const run = (callback: () => void | Promise<void>) => {
                 </v-btn>
             </v-card-text>
         </v-card>
+
+        <SceneGraphPanel :viewerService="props.viewerService" />
     </div>
 </template>
 

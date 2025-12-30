@@ -208,6 +208,27 @@ public:
                                                 const int       theElemType,
                                                 const int       theIndex) const;
 
+    //! Measure minimal distance between two shapes / subshapes (identified by selection mode + entity index).
+    //! @param[in] theObjId1 first shape object id
+    //! @param[in] theSelMode1 ViewShape::InteractiveShapeSelMode value (0 for whole shape)
+    //! @param[in] theEntityId1 subshape index (ignored for whole shape)
+    //! @param[in] theObjId2 second shape object id
+    //! @param[in] theSelMode2 ViewShape::InteractiveShapeSelMode value (0 for whole shape)
+    //! @param[in] theEntityId2 subshape index (ignored for whole shape)
+    //! @return JSON string: {"distance":number,"pnt1":{"x":..,"y":..,"z":..},"pnt2":{"x":..,"y":..,"z":..}}
+    Standard_EXPORT std::string MeasureDistanceJson(const ObjectId& theObjId1,
+                                                    const int       theSelMode1,
+                                                    const int       theEntityId1,
+                                                    const ObjectId& theObjId2,
+                                                    const int       theSelMode2,
+                                                    const int       theEntityId2) const;
+
+    //! Compute circle parameters for specified subshape (currently supports circular Edge).
+    //! @return JSON string: {"ax2":{"location":{...},"direction":{...},"xDirection":{...}},"radius":number,"anchor":{...}}
+    Standard_EXPORT std::string GetCircleParamsJson(const ObjectId& theObjId,
+                                                    const int       theSelMode,
+                                                    const int       theEntityId) const;
+
     //! Remove all selection group.
     Standard_EXPORT void ClearSelectionGroups(const ObjectId& theObjId);
 

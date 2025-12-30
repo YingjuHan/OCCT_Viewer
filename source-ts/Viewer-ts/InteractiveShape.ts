@@ -1377,6 +1377,13 @@ export interface InteractiveShapeManager extends IManager {
   /** @internal Get subshape dump or empty string. */
   getSubshapeDump: (theObjId: ObjectId, theElemType: number, theIndex: number) => string;
 
+  /** @internal Measure minimal distance between two shapes/subshapes and return JSON string. */
+  measureDistanceJson: (theObjId1: ObjectId, theSelMode1: number, theEntityId1: number,
+                        theObjId2: ObjectId, theSelMode2: number, theEntityId2: number) => string;
+
+  /** @internal Return circle params for specified subshape (currently Edge only) as JSON string. */
+  getCircleParamsJson: (theObjId: ObjectId, theSelMode: number, theEntityId: number) => string;
+
   /** @internal Remove all selection groups. */
   clearSelectionGroups: (theObjId: ObjectId) => void;
 

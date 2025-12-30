@@ -6,6 +6,8 @@ import {ViewerEventTarget} from './ViewerEventTarget.js';
 import type {SCwebviewer, ShapeObjectSelMode} from './SCwebviewer.js';
 
 import type {UserEvents} from './ViewerEventManager.js';
+import type {ISceneGraph} from './SceneGraph.js';
+import {SceneGraph} from './SceneGraph.js';
 
 /**
  * Font aspect defined by `Font_FontAspect` enumeration.
@@ -638,6 +640,15 @@ export interface InteractiveContext extends IManager {
   /** Return the array of created objects */
   readonly objectsInside: InteractiveObject[];
 
+  /** Return SceneGraph (parsed from JSON returned by C++ side). */
+  getSceneGraph: (theIdPrefix?: string) => ISceneGraph | null;
+
+  /** Set visible state for multiple objects. */
+  setVisibleManyObjects: (theObjIds: ObjectId[], theToShow: boolean) => void;
+
+  /** Isolate objects (show only these, hide others). */
+  setVisibleOnlyObjects: (theObjIds: ObjectId[]) => void;
+
   /** @internal Add interactive object */
   addInteractiveObject: (theObj: InteractiveObject) => void;
 
@@ -669,6 +680,12 @@ export interface InteractiveContext extends IManager {
 
   /** @internal Set object {@link ObjectId} visibility state. */
   setVisible: (theObjId: ObjectId, theToShow: boolean) => void;
+
+  /** @internal Set object visibility for newline-separated list of ObjectId. */
+  setVisibleMany: (theObjIds: string, theToShow: boolean) => void;
+
+  /** @internal Isolate objects by newline-separated list of ObjectId. */
+  setVisibleOnly: (theObjIds: string) => void;
 
   /** @internal Return view id where object is set to be visible or -2 if visibility state is undefined or active in multiple views. */
   getVisibleInView: (theObjId: ObjectId) => ViewId;
@@ -739,6 +756,9 @@ export interface InteractiveContext extends IManager {
    */
   getObjectsInside: (theIdPrefix: string) => string;
 
+  /** @internal Return SceneGraph serialized as JSON string. */
+  getSceneGraphJson: (theIdPrefix: string) => string;
+
   /**
    * Return id of last dragged object or empty string.
    */
@@ -797,6 +817,19 @@ export class InteractiveContextExtensions {
         theObj.remove(); // invalidate objects
       });
       return aCppRemoveAllObjects() || anObjsToRemove.length !== 0;
+    };
+
+    theCtx.getSceneGraph = function(theIdPrefix: string = ''): ISceneGraph | null {
+      const aJson = theCtx.getSceneGraphJson(theIdPrefix);
+      return SceneGraph.parseJson(aJson);
+    };
+
+    theCtx.setVisibleManyObjects = function(theObjIds: ObjectId[], theToShow: boolean): void {
+      theCtx.setVisibleMany(theObjIds.join('\n'), theToShow);
+    };
+
+    theCtx.setVisibleOnlyObjects = function(theObjIds: ObjectId[]): void {
+      theCtx.setVisibleOnly(theObjIds.join('\n'));
     };
   }
 };

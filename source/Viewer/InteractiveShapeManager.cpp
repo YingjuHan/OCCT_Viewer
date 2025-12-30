@@ -16,6 +16,8 @@
 #include <AIS_InteractiveContext.hxx>
 #include <BinTools.hxx>
 #include <BRep_Tool.hxx>
+#include <BRepAdaptor_Curve.hxx>
+#include <BRepExtrema_DistShapeShape.hxx>
 #include <BRepMesh_IncrementalMesh.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepBuilderAPI_MakeVertex.hxx>
@@ -24,8 +26,12 @@
 #include <BRepPrimAPI_MakeCylinder.hxx>
 #include <BRepPrimAPI_MakeSphere.hxx>
 #include <BRepTools.hxx>
+#include <GeomAbs_CurveType.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Iterator.hxx>
+
+#include <iomanip>
+#include <sstream>
 
 #ifdef __EMSCRIPTEN__
     #include <emscripten/bind.h>
@@ -861,6 +867,153 @@ std::string InteractiveShapeManager::GetSubshapeDump(const ObjectId& theObjId,
     return aString.str();
 }
 
+namespace {
+std::string jsonPoint(const gp_Pnt& thePnt)
+{
+    std::ostringstream aJson;
+    aJson << std::setprecision(17);
+    aJson << "{\"x\":" << thePnt.X() << ",\"y\":" << thePnt.Y() << ",\"z\":" << thePnt.Z() << "}";
+    return aJson.str();
+}
+
+bool resolveShapeForMeasurement(TopoDS_Shape&                                    theOut,
+                                const Handle(ViewShape::InteractiveShapeOwner)& theOwner,
+                                const int                                       theSelMode,
+                                const int                                       theEntityId)
+{
+    if (theOwner.IsNull() || theOwner->ShapeData().IsNull()) {
+        return false;
+    }
+
+    if (theSelMode == (int)ViewShape::InteractiveShapeSelMode::Global || theSelMode == 0 || theEntityId < 0) {
+        theOut = theOwner->ShapeData()->GetSingleShape();
+        return !theOut.IsNull();
+    }
+
+    ViewShape::ShapeSelElemType anElemType = ViewShape::ShapeSelElemType::Face;
+    if (!ViewShape::ShapeElemTypeFromSelMode(anElemType, theSelMode)) {
+        return false;
+    }
+
+    theOut = theOwner->GetSubshape(anElemType, theEntityId);
+    return !theOut.IsNull();
+}
+} // namespace
+
+// ================================================================
+// Function : MeasureDistanceJson
+// ================================================================
+std::string InteractiveShapeManager::MeasureDistanceJson(const ObjectId& theObjId1,
+                                                         const int       theSelMode1,
+                                                         const int       theEntityId1,
+                                                         const ObjectId& theObjId2,
+                                                         const int       theSelMode2,
+                                                         const int       theEntityId2) const
+{
+    Handle(ViewShape::InteractiveShapeOwner) aOwner1;
+    if (!FindPrsOwner(aOwner1, theObjId1)) {
+        Message::SendFail() << "Error: MeasureDistanceJson() called for non-existing object '" << theObjId1 << "'";
+        return std::string();
+    }
+
+    Handle(ViewShape::InteractiveShapeOwner) aOwner2;
+    if (!FindPrsOwner(aOwner2, theObjId2)) {
+        Message::SendFail() << "Error: MeasureDistanceJson() called for non-existing object '" << theObjId2 << "'";
+        return std::string();
+    }
+
+    TopoDS_Shape aSh1;
+    TopoDS_Shape aSh2;
+    if (!resolveShapeForMeasurement(aSh1, aOwner1, theSelMode1, theEntityId1)) {
+        Message::SendFail() << "Error: MeasureDistanceJson() failed to resolve subshape (" << theObjId1 << ", "
+                            << theSelMode1 << ", " << theEntityId1 << ")";
+        return std::string();
+    }
+    if (!resolveShapeForMeasurement(aSh2, aOwner2, theSelMode2, theEntityId2)) {
+        Message::SendFail() << "Error: MeasureDistanceJson() failed to resolve subshape (" << theObjId2 << ", "
+                            << theSelMode2 << ", " << theEntityId2 << ")";
+        return std::string();
+    }
+
+    BRepExtrema_DistShapeShape aDist(aSh1, aSh2, Extrema_ExtFlag_MIN);
+    aDist.Perform();
+    if (!aDist.IsDone() || aDist.NbSolution() < 1) {
+        Message::SendFail() << "Error: MeasureDistanceJson() failed to compute distance";
+        return std::string();
+    }
+
+    const gp_Pnt aPnt1 = aDist.PointOnShape1(1);
+    const gp_Pnt aPnt2 = aDist.PointOnShape2(1);
+
+    std::ostringstream aJson;
+    aJson << std::setprecision(17);
+    aJson << "{\"distance\":" << aDist.Value() << ",\"pnt1\":" << jsonPoint(aPnt1) << ",\"pnt2\":" << jsonPoint(aPnt2)
+          << "}";
+    return aJson.str();
+}
+
+// ================================================================
+// Function : GetCircleParamsJson
+// ================================================================
+std::string InteractiveShapeManager::GetCircleParamsJson(const ObjectId& theObjId,
+                                                         const int       theSelMode,
+                                                         const int       theEntityId) const
+{
+    if (theEntityId < 0) {
+        Message::SendFail() << "Error: GetCircleParamsJson() called with invalid entityId";
+        return std::string();
+    }
+
+    ViewShape::ShapeSelElemType anElemType = ViewShape::ShapeSelElemType::Face;
+    if (!ViewShape::ShapeElemTypeFromSelMode(anElemType, theSelMode)) {
+        Message::SendFail() << "Error: GetCircleParamsJson(" << theObjId << ", " << theSelMode << ") invalid selMode";
+        return std::string();
+    }
+
+    if (anElemType != ViewShape::ShapeSelElemType::Edge) {
+        Message::SendFail() << "Error: GetCircleParamsJson() currently supports Edge only";
+        return std::string();
+    }
+
+    Handle(ViewShape::InteractiveShapeOwner) aOwner;
+    if (!FindPrsOwner(aOwner, theObjId)) {
+        Message::SendFail() << "Error: GetCircleParamsJson() called for non-existing object '" << theObjId << "'";
+        return std::string();
+    }
+
+    const TopoDS_Shape aSub = aOwner->GetSubshape(anElemType, theEntityId);
+    if (aSub.IsNull() || aSub.ShapeType() != TopAbs_EDGE) {
+        Message::SendFail() << "Error: GetCircleParamsJson() failed to resolve Edge subshape";
+        return std::string();
+    }
+
+    const TopoDS_Edge anEdge = TopoDS::Edge(aSub);
+    BRepAdaptor_Curve aCurve(anEdge);
+    if (aCurve.GetType() != GeomAbs_Circle) {
+        Message::SendFail() << "Error: GetCircleParamsJson() selected edge is not a circle";
+        return std::string();
+    }
+
+    const gp_Circ aCirc = aCurve.Circle();
+    const gp_Ax2  anAx2 = aCirc.Position();
+    const double  aRad  = aCirc.Radius();
+
+    const gp_Pnt aLoc = anAx2.Location();
+    const gp_Dir aDir = anAx2.Direction();
+    const gp_Dir aXDir = anAx2.XDirection();
+
+    const gp_Pnt anAnchor = aLoc.Translated(gp_Vec(aXDir) * aRad);
+
+    std::ostringstream aJson;
+    aJson << std::setprecision(17);
+    aJson << "{\"ax2\":{\"location\":" << jsonPoint(aLoc)
+          << ",\"direction\":" << jsonPoint(gp_Pnt(aDir.X(), aDir.Y(), aDir.Z()))
+          << ",\"xDirection\":" << jsonPoint(gp_Pnt(aXDir.X(), aXDir.Y(), aXDir.Z()))
+          << "},\"radius\":" << aRad
+          << ",\"anchor\":" << jsonPoint(anAnchor) << "}";
+    return aJson.str();
+}
+
 // ================================================================
 // Function : GetSubshapeInfo
 // ================================================================
@@ -1250,6 +1403,8 @@ EMSCRIPTEN_BINDINGS(InteractiveShapeManager)
         .function("setSubshapeHidden", &InteractiveShapeManager::SetSubshapeHidden)
         .function("getConnectedSubshapes", &InteractiveShapeManager::GetConnectedSubshapes)
         .function("getSubshapeDump", &InteractiveShapeManager::GetSubshapeDump)
+        .function("measureDistanceJson", &InteractiveShapeManager::MeasureDistanceJson)
+        .function("getCircleParamsJson", &InteractiveShapeManager::GetCircleParamsJson)
         //
         .function("clearSelectionGroups", &InteractiveShapeManager::ClearSelectionGroups)
         .function("addSelectionGroup", &InteractiveShapeManager::AddSelectionGroup);

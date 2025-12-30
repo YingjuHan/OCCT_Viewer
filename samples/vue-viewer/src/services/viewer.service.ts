@@ -246,6 +246,67 @@ export class ViewerService {
         }
     }
 
+    public getSceneGraph(theIdPrefix: string = ''): any | null {
+        if (this._viewer == null || this._viewer.interactiveContext == null) {
+            return null;
+        }
+
+        const ctx: any = this._viewer.interactiveContext as any;
+        const fn = ctx?.getSceneGraph;
+        if (typeof fn !== 'function') {
+            return null;
+        }
+        return fn.call(ctx, theIdPrefix);
+    }
+
+    public selectObjectById(theObjectId: ObjectId): void {
+        if (this._viewer == null || this._viewer.interactiveContext == null || this._viewer.selectionManager == null) {
+            return;
+        }
+
+        const obj = this.getInteractiveObject(theObjectId);
+        this._viewer.selectionManager.oneSelectedObject = obj ?? null;
+        this._viewer.requestViewUpdate();
+    }
+
+    public setObjectVisible(theObjectId: ObjectId, theVisible: boolean): void {
+        const obj = this.getInteractiveObject(theObjectId);
+        if (obj == null || this._viewer == null) {
+            return;
+        }
+
+        obj.isVisible = theVisible;
+        this._viewer.requestViewUpdate();
+        window.dispatchEvent(new Event('sceneChanged'));
+    }
+
+    public showAllObjects(): void {
+        if (this._viewer == null || this._viewer.interactiveContext == null) {
+            return;
+        }
+
+        for (const obj of this._viewer.interactiveContext.objectsInside) {
+            obj.isVisible = true;
+        }
+
+        this._viewer.requestViewUpdate();
+        window.dispatchEvent(new Event('sceneChanged'));
+    }
+
+    public isolateObjectIds(theObjectIds: ObjectId[]): void {
+        if (this._viewer == null || this._viewer.interactiveContext == null) {
+            return;
+        }
+
+        const visibleSet = new Set(theObjectIds);
+        for (const obj of this._viewer.interactiveContext.objectsInside) {
+            obj.isVisible = visibleSet.has(obj.id);
+        }
+
+        this._viewer.requestViewUpdate();
+        window.dispatchEvent(new Event('sceneChanged'));
+    }
+
     public toggleViewCube(): void {
         if (this._viewer != null && this._viewer.viewCube != null ) {
             this._viewer.viewCube.isVisible = !this._viewer.viewCube.isVisible;

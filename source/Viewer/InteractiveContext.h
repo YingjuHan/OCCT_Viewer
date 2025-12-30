@@ -11,6 +11,8 @@
 
 #include <AIS_DataMapOfIOStatus.hxx>
 
+#include <string>
+
 namespace Viewer {
 //! Class provides public interface for managing Interactive Objects.
 class InteractiveContext : public IManager {
@@ -54,6 +56,12 @@ public:
 
     //! Set visible state.
     Standard_EXPORT void SetVisible(const ObjectId& theObjId, const bool theToShow);
+
+    //! Set visible state for multiple objects identified by newline-separated list.
+    Standard_EXPORT void SetVisibleMany(const std::string& theObjIds, const bool theToShow);
+
+    //! Isolate objects identified by newline-separated list (show only these, hide others).
+    Standard_EXPORT void SetVisibleOnly(const std::string& theObjIds);
 
     //! Return visible state within specific View.
     Standard_EXPORT bool IsVisibleInView(const ObjectId& theObjId, const int theViewId) const;
@@ -100,6 +108,11 @@ public:
     //! Return ids of all named objects.
     //! @param[in] theIdPrefix optional id prefix that should present in returned named object
     Standard_EXPORT std::string GetObjectsInside(const std::string& theIdPrefix = "") const;
+
+    //! Return SceneGraph serialized into JSON (see DOCUMENT/TODO/format-step-iges-conversion-spec.md).
+    //! The returned JSON is intended to be parsed on JavaScript side.
+    //! @param[in] theIdPrefix optional id prefix filter ("*" or empty for all)
+    Standard_EXPORT std::string GetSceneGraphJson(const std::string& theIdPrefix = "") const;
 
     //! Return id of last dragged object.
     Standard_EXPORT std::string GetLastDraggedObject() const;

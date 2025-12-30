@@ -33,6 +33,7 @@ export * from './InteractiveTextLabel.js';
 export * from './InteractiveDimension.js';
 export * from './InteractiveViewCube.js';
 export * from './InteractiveSphericalAxes.js';
+export * from './SceneGraph.js';
 export * from './ViewerEventManager.js';
 export * from './ViewerEventTarget.js';
 export * from './ViewManager.js';
