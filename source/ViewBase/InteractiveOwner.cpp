@@ -11,7 +11,10 @@
 
 //! Callback on object mouse click.
 EM_JS(bool, jsOnObjectMouseClick, (const char *theObjId, int thePart, int theSub, int theX, int theY, int theFlags), {
-    return Module.eventManager ?.onObjectMouseClick(jsUTF8ToString(theObjId), thePart, theSub, theX, theY, theFlags);
+    const aPtr = typeof theObjId === "bigint"
+        ? (typeof bigintToI53Checked === "function" ? bigintToI53Checked(theObjId) : Number(theObjId))
+        : theObjId;
+    return Module.eventManager ?.onObjectMouseClick(UTF8ToString(aPtr), thePart, theSub, theX, theY, theFlags);
 });
 #endif
 
