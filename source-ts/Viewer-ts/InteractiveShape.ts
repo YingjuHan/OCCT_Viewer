@@ -80,6 +80,50 @@ export enum ShapeObjectSelMode {
   Group = 0x0080
 };
 
+export interface IShapeMassProps {
+  area: number;
+  volume: number | null;
+  centroid: IVec3;
+  centroidSource: 'surface' | 'volume';
+  volumeValid: boolean;
+};
+
+export class ShapeMassProps {
+  public static parseJson(theJson: string): IShapeMassProps | null {
+    if (!theJson) {
+      return null;
+    }
+
+    let aParsed: any;
+    try {
+      aParsed = JSON.parse(theJson);
+    } catch {
+      return null;
+    }
+
+    if (!aParsed || !aParsed.centroid) {
+      return null;
+    }
+
+    const aCentroid = aParsed.centroid;
+    if (typeof aCentroid.x !== 'number' || typeof aCentroid.y !== 'number' || typeof aCentroid.z !== 'number') {
+      return null;
+    }
+
+    const volumeValid = aParsed.volumeValid === true || typeof aParsed.volume === 'number';
+    const volume = volumeValid && typeof aParsed.volume === 'number' ? aParsed.volume : null;
+    const centroidSource = aParsed.centroidSource === 'volume' ? 'volume' : 'surface';
+
+    return {
+      area: typeof aParsed.area === 'number' ? aParsed.area : Number(aParsed.area ?? 0),
+      volume,
+      centroid: {x: aCentroid.x, y: aCentroid.y, z: aCentroid.z},
+      centroidSource,
+      volumeValid,
+    };
+  }
+};
+
 /**
  * @internal Class to define detected/selected shape elements.
  */
@@ -1383,6 +1427,9 @@ export interface InteractiveShapeManager extends IManager {
 
   /** @internal Return circle params for specified subshape (currently Edge only) as JSON string. */
   getCircleParamsJson: (theObjId: ObjectId, theSelMode: number, theEntityId: number) => string;
+
+  /** @internal Return mass properties for specified shape as JSON string. */
+  getMassPropsJson: (theObjId: ObjectId) => string;
 
   /** @internal Remove all selection groups. */
   clearSelectionGroups: (theObjId: ObjectId) => void;

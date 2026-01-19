@@ -18,6 +18,7 @@
 #include <BRep_Tool.hxx>
 #include <BRepAdaptor_Curve.hxx>
 #include <BRepExtrema_DistShapeShape.hxx>
+#include <BRepGProp.hxx>
 #include <BRepMesh_IncrementalMesh.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepBuilderAPI_MakeVertex.hxx>
@@ -27,6 +28,8 @@
 #include <BRepPrimAPI_MakeSphere.hxx>
 #include <BRepTools.hxx>
 #include <GeomAbs_CurveType.hxx>
+#include <GProp_GProps.hxx>
+#include <TopExp_Explorer.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Iterator.hxx>
 
@@ -1015,6 +1018,78 @@ std::string InteractiveShapeManager::GetCircleParamsJson(const ObjectId& theObjI
 }
 
 // ================================================================
+// Function : GetMassPropsJson
+// ================================================================
+std::string InteractiveShapeManager::GetMassPropsJson(const ObjectId& theObjId) const
+{
+    Handle(ViewShape::InteractiveShapeOwner) aOwner;
+    if (!FindPrsOwner(aOwner, theObjId)) {
+        Message::SendFail() << "Error: GetMassPropsJson() called for non-existing object '" << theObjId << "'";
+        return std::string();
+    }
+    if (aOwner->ShapeData().IsNull()) {
+        Message::SendFail() << "Error: GetMassPropsJson() called for object without shape data '" << theObjId << "'";
+        return std::string();
+    }
+
+    const TopoDS_Shape aShape = aOwner->ShapeData()->GetSingleShape();
+    if (aShape.IsNull()) {
+        Message::SendFail() << "Error: GetMassPropsJson() failed to resolve shape '" << theObjId << "'";
+        return std::string();
+    }
+
+    GProp_GProps aSurfProps;
+    BRepGProp::SurfaceProperties(aShape, aSurfProps);
+    const double aArea = aSurfProps.Mass();
+    const gp_Pnt aSurfCenter = aSurfProps.CentreOfMass();
+
+    bool hasSolid = false;
+    bool allClosed = true;
+    for (TopExp_Explorer anExp(aShape, TopAbs_SOLID); anExp.More(); anExp.Next()) {
+        hasSolid = true;
+        const TopoDS_Solid& aSolid = TopoDS::Solid(anExp.Value());
+        if (!aSolid.Closed()) {
+            allClosed = false;
+            break;
+        }
+    }
+
+    bool volumeValid = hasSolid && allClosed;
+    double aVolume = 0.0;
+    gp_Pnt aVolCenter = aSurfCenter;
+    if (volumeValid) {
+        GProp_GProps aVolProps;
+        BRepGProp::VolumeProperties(aShape, aVolProps);
+        aVolume = aVolProps.Mass();
+        aVolCenter = aVolProps.CentreOfMass();
+        if (aVolume <= 0.0) {
+            volumeValid = false;
+        }
+    }
+
+    if (!volumeValid) {
+        Message::SendWarning() << "Warning: GetMassPropsJson() volume is unavailable for non-closed shape '"
+                               << theObjId << "'";
+    }
+
+    const gp_Pnt aCentroid = volumeValid ? aVolCenter : aSurfCenter;
+    const char* aSource = volumeValid ? "volume" : "surface";
+
+    std::ostringstream aJson;
+    aJson << std::setprecision(17);
+    aJson << "{\"area\":" << aArea << ",\"volume\":";
+    if (volumeValid) {
+        aJson << aVolume;
+    } else {
+        aJson << "null";
+    }
+    aJson << ",\"centroid\":" << jsonPoint(aCentroid)
+          << ",\"centroidSource\":\"" << aSource << "\""
+          << ",\"volumeValid\":" << (volumeValid ? "true" : "false") << "}";
+    return aJson.str();
+}
+
+// ================================================================
 // Function : GetSubshapeInfo
 // ================================================================
 ShapeInfo InteractiveShapeManager::GetSubshapeInfo(const ObjectId& theObjId,
@@ -1405,6 +1480,7 @@ EMSCRIPTEN_BINDINGS(InteractiveShapeManager)
         .function("getSubshapeDump", &InteractiveShapeManager::GetSubshapeDump)
         .function("measureDistanceJson", &InteractiveShapeManager::MeasureDistanceJson)
         .function("getCircleParamsJson", &InteractiveShapeManager::GetCircleParamsJson)
+        .function("getMassPropsJson", &InteractiveShapeManager::GetMassPropsJson)
         //
         .function("clearSelectionGroups", &InteractiveShapeManager::ClearSelectionGroups)
         .function("addSelectionGroup", &InteractiveShapeManager::AddSelectionGroup);

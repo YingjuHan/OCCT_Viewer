@@ -229,6 +229,11 @@ public:
                                                     const int       theSelMode,
                                                     const int       theEntityId) const;
 
+    //! Compute mass properties for specified shape object.
+    //! @return JSON string: {"area":number,"volume":number|null,"centroid":{"x":..,"y":..,"z":..},
+    //!                       "centroidSource":"volume|surface","volumeValid":bool}
+    Standard_EXPORT std::string GetMassPropsJson(const ObjectId& theObjId) const;
+
     //! Remove all selection group.
     Standard_EXPORT void ClearSelectionGroups(const ObjectId& theObjId);
 
