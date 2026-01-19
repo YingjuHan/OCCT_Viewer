@@ -649,6 +649,9 @@ export interface InteractiveContext extends IManager {
   /** Isolate objects (show only these, hide others). */
   setVisibleOnlyObjects: (theObjIds: ObjectId[]) => void;
 
+  /** Set transparency for multiple objects. */
+  setTransparencyManyObjects: (theObjIds: ObjectId[], theTransparency: number) => void;
+
   /** @internal Add interactive object */
   addInteractiveObject: (theObj: InteractiveObject) => void;
 
@@ -824,12 +827,61 @@ export class InteractiveContextExtensions {
       return SceneGraph.parseJson(aJson);
     };
 
+    const filterObjectIds = function(theObjIds: ObjectId[], theAction: string): ObjectId[] {
+      if (!Array.isArray(theObjIds) || theObjIds.length === 0) {
+        return [];
+      }
+
+      const missing: ObjectId[] = [];
+      const existing: ObjectId[] = [];
+      for (const anId of theObjIds) {
+        if (!anId) {
+          continue;
+        }
+        const anObj = theCtx.findInteractiveObject(anId);
+        if (anObj == null) {
+          missing.push(anId);
+        } else {
+          existing.push(anId);
+        }
+      }
+
+      if (missing.length > 0) {
+        console.warn(`InteractiveContext.${theAction}: skip missing objects: ${missing.join(', ')}`);
+      }
+
+      return existing;
+    };
+
     theCtx.setVisibleManyObjects = function(theObjIds: ObjectId[], theToShow: boolean): void {
-      theCtx.setVisibleMany(theObjIds.join('\n'), theToShow);
+      const ids = filterObjectIds(theObjIds, 'setVisibleManyObjects');
+      if (ids.length === 0) {
+        return;
+      }
+      theCtx.setVisibleMany(ids.join('\n'), theToShow);
     };
 
     theCtx.setVisibleOnlyObjects = function(theObjIds: ObjectId[]): void {
-      theCtx.setVisibleOnly(theObjIds.join('\n'));
+      const ids = filterObjectIds(theObjIds, 'setVisibleOnlyObjects');
+      if (ids.length === 0) {
+        return;
+      }
+      theCtx.setVisibleOnly(ids.join('\n'));
+    };
+
+    theCtx.setTransparencyManyObjects = function(theObjIds: ObjectId[], theTransparency: number): void {
+      const aMgr = theViewer.interactiveAspectsManager;
+      if (!aMgr) {
+        return;
+      }
+      const ids = filterObjectIds(theObjIds, 'setTransparencyManyObjects');
+      if (ids.length === 0) {
+        return;
+      }
+      const aClamped = Math.min(1.0, Math.max(0.0, theTransparency));
+      for (const anId of ids) {
+        aMgr.setTransparency(anId, aClamped);
+      }
     };
   }
 };

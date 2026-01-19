@@ -186,6 +186,45 @@ export class ScenePanel extends SCcontrols.PanelInput {
     aVisGroup.addControls([this._showAllButton, this._showOnlyButton, this._visibleCheckbox]);
     this.addControl(aVisGroup);
 
+    let aBatchVisGroup = new SCcontrols.GroupInput("BatchVisibility");
+    const applyToSelection = (label, handler) => {
+      if (this._scViewer.interactiveContext == null || this._scViewer.selectionManager == null) {
+        console.warn(`${label}: viewer is not ready`);
+        return;
+      }
+      const ids = this._scViewer.selectionManager.selectedObjects
+        .map((obj) => obj.id)
+        .filter((id) => id !== "");
+      if (ids.length === 0) {
+        console.warn(`${label}: select at least one object`);
+        return;
+      }
+      handler(ids);
+      this._scViewer.requestViewUpdate();
+      window.dispatchEvent(new Event('sceneChanged'));
+    };
+
+    const aShowSelectedButton = new SCcontrols.ButtonInput("Show Selected", () => {
+      applyToSelection("Show Selected", (ids) => {
+        this._scViewer.interactiveContext.setVisibleManyObjects(ids, true);
+      });
+    }, { inlineBlock: true });
+
+    const aHideSelectedButton = new SCcontrols.ButtonInput("Hide Selected", () => {
+      applyToSelection("Hide Selected", (ids) => {
+        this._scViewer.interactiveContext.setVisibleManyObjects(ids, false);
+      });
+    }, { inlineBlock: true });
+
+    const aIsolateSelectedButton = new SCcontrols.ButtonInput("Isolate Selected", () => {
+      applyToSelection("Isolate Selected", (ids) => {
+        this._scViewer.interactiveContext.setVisibleOnlyObjects(ids);
+      });
+    }, { inlineBlock: true });
+
+    aBatchVisGroup.addControls([aShowSelectedButton, aHideSelectedButton, aIsolateSelectedButton]);
+    this.addControl(aBatchVisGroup);
+
     let aRemGroup = new SCcontrols.GroupInput("RemoveGroup");
     this._clearAllButton = new SCcontrols.ButtonInput("Clear Scene", ()=> {
       let objects = [];
