@@ -514,7 +514,7 @@ Location:  ${aLoc}
 
   /** Return initial root shape location WITHOUT considering local transformation of interactive object. */
   public get shapeLocation(): ITrsf {
-    return this.shapeMgr?.getSubshapeInfo(this._myObjId, ShapeObjectSelMode.Global, 0, false).location ?? new Trsf();
+    return this.getSubshapeInfo(ShapeObjectSelMode.Global, 0, false).location;
   }
 
   /** Return multiplication of initial root shape location and local transformation of interactive object. */
@@ -1183,8 +1183,81 @@ Location:  ${aLoc}
     return this.shapeMgr?.getSubshapeDump(this._myObjId, theElemType, theIndex) ?? '';
   }
 
+  private getRootShapeInfo(theToExplore: boolean): IShapeInfo {
+    const aMgr: any = this.shapeMgr;
+    if (aMgr && typeof aMgr.getShapeInfo === 'function') {
+      const aMgrInfo = aMgr.getShapeInfo(this._myObjId, theToExplore);
+      const aRes = Object.assign(new ShapeInfo(), aMgrInfo);
+      aRes.objectId = this._myObjId;
+      return aRes;
+    }
+
+    const aInfo = new ShapeInfo();
+    aInfo.objectId = this._myObjId;
+
+    const aLoc = this.getAnySubshapeLocation();
+    if (aLoc) {
+      aInfo.location = aLoc;
+    }
+
+    if (theToExplore && this.shapeMgr) {
+      const aFaces = this.getSubshapesIndexes(ShapeObjectSelMode.Face, false);
+      if (aFaces.length > 0) {
+        const aFaceInfos = this.getSubshapesInfo(ShapeObjectSelMode.Face, aFaces, false);
+        for (const aFaceInfo of aFaceInfos) {
+          aInfo.nbTriangles += aFaceInfo.nbTriangles;
+          aInfo.nbTriNodes += aFaceInfo.nbTriNodes;
+        }
+      }
+
+      const anEdges = this.getSubshapesIndexes(ShapeObjectSelMode.Edge, false);
+      if (anEdges.length > 0) {
+        const anEdgeInfos = this.getSubshapesInfo(ShapeObjectSelMode.Edge, anEdges, false);
+        for (const anEdgeInfo of anEdgeInfos) {
+          aInfo.nbPolySegments += anEdgeInfo.nbPolySegments;
+        }
+      }
+    }
+
+    return aInfo;
+  }
+
+  private getAnySubshapeLocation(): ITrsf | null {
+    if (!this.shapeMgr) {
+      return null;
+    }
+
+    const aTypes: ShapeObjectSelMode[] = [
+      ShapeObjectSelMode.Face,
+      ShapeObjectSelMode.Edge,
+      ShapeObjectSelMode.Wire,
+      ShapeObjectSelMode.Vertex,
+      ShapeObjectSelMode.Shell,
+      ShapeObjectSelMode.Solid,
+      ShapeObjectSelMode.CompSolid,
+      ShapeObjectSelMode.Group,
+    ];
+
+    for (const aType of aTypes) {
+      const aIds = this.getSubshapesIndexes(aType, false);
+      if (aIds.length === 0) {
+        continue;
+      }
+
+      const aInfo = this.shapeMgr.getSubshapeInfo(this._myObjId, aType, aIds[0], false);
+      if (aInfo && aInfo.location) {
+        return aInfo.location;
+      }
+    }
+
+    return null;
+  }
+
   /** @internal Return subshape info */
   public getSubshapeInfo(theElemType: ShapeObjectSelMode, theIndex: number, theToExplore: boolean = true): IShapeInfo {
+    if (theElemType === ShapeObjectSelMode.Global) {
+      return this.getRootShapeInfo(theToExplore);
+    }
     let anInfo = this.shapeMgr?.getSubshapeInfo(this._myObjId, theElemType, theIndex, theToExplore) ?? new ShapeInfo();
     let aRes = Object.assign(new ShapeInfo(), anInfo);
     aRes.objectId = this._myObjId; // avoid duplicating string - rely on JS sharing

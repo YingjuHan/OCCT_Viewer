@@ -416,7 +416,14 @@ export class InteractiveObject extends ViewerEventTarget {
   public get viewCornerOffset(): IVec2 { return this.objMgr?.getViewCornerOffset(this._myObjId) ?? {x: 0, y: 0}; }
 
   /** Return local transformation. */
-  public get localTransformation(): ITrsf { return this.objMgr?.getLocalTransformation(this._myObjId) ?? new Trsf(); }
+  public get localTransformation(): ITrsf {
+    const aMgr = this.objMgr;
+    const aGetter = aMgr?.getLocalTransformation;
+    if (typeof aGetter === 'function') {
+      return aGetter.call(aMgr, this._myObjId) ?? new Trsf();
+    }
+    return new Trsf();
+  }
 
   /** Return object AABB (axes-aligned bounding box). */
   public get minMax(): IBndBox3 { return this.objMgr?.getMinMax(this._myObjId) ?? BndBox3.voidBox(); }
