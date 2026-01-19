@@ -11,6 +11,7 @@ import { SCwebviewer,
     CaeMeshObjectPrsMode,
     InteractiveColorScale,
     ColorScaleParams,
+    IBndBox3,
     BndBox3,
     ViewCorner, 
     UserEvents,
@@ -320,6 +321,20 @@ export class ViewerService {
         }
 
         this._viewer.camera.fitAllAuto (true);
+        if (toUpdate) {
+            this._viewer.requestViewUpdate();
+        }
+    }
+
+    public fitToBBox(theBox: IBndBox3, toUpdate: boolean = true): void {
+        if (this._viewer == null || this._viewer.camera == null) {
+            return;
+        }
+        if (theBox == null || BndBox3.isVoid(theBox)) {
+            return;
+        }
+
+        this._viewer.camera.fitMinMax(theBox, true);
         if (toUpdate) {
             this._viewer.requestViewUpdate();
         }

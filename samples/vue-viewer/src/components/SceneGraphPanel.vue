@@ -2,12 +2,18 @@
 import { computed, onMounted, ref } from 'vue';
 import { ViewerService } from '../services/viewer.service';
 
+type BndBox3 = {
+  cornerMin: { x: number; y: number; z: number };
+  cornerMax: { x: number; y: number; z: number };
+};
+
 type SceneGraphNode = {
   id: string;
   name: string;
   type: string;
   parentId: string | null;
   children: string[];
+  bbox?: BndBox3 | null;
 };
 
 type SceneGraph = {
@@ -107,6 +113,11 @@ const toggleExpanded = (id: string) => {
 
 const selectAndFit = (id: string) => {
   props.viewerService.selectObjectById(id);
+  const node = nodesById.value.get(id);
+  if (node?.bbox) {
+    props.viewerService.fitToBBox(node.bbox);
+    return;
+  }
   props.viewerService.fitAll(true);
 };
 
@@ -205,4 +216,3 @@ onMounted(() => {
     </v-card-text>
   </v-card>
 </template>
-
