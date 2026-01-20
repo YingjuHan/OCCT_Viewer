@@ -2,6 +2,11 @@
 
 本文件把前期分析结论与 `DOCUMENT/TODO/codex-plan.md` 的模板落到“可直接创建的 Issue 列表”。每条 Issue 都包含：背景/范围/验收/样例/失败策略/建议改动点/可复制的 Codex 提示词。
 
+## 已完成（近期修复）
+
+- 修正 `source/RWBase` 目录大小写并同步引用（`CMakeLists.txt`、`TS_API_GUIDE.md`）。
+- 修复 wasm32-pthread-fwasm-exceptions 运行时 JS 兼容问题：补齐 `jsUTF8ToString`/指针转换并为 `localTransformation` 增加容错（`install/wasm32-pthread-fwasm-exceptions/wasm32-pthread/Viewer-wasm.js`、`install/wasm32-pthread-fwasm-exceptions/wasm32/InteractiveObject.js`）。
+
 ## 约定
 
 - **优先级**
@@ -412,4 +417,3 @@
 - **建议改动点**：samples/vue-viewer。
 - **Codex 提示词**
   - “在 Vue 示例加入水印与本地审计：水印覆盖在 viewer 上并影响截图/报告；审计记录导出为 JSON（打开/导出/分享动作）。”
-
