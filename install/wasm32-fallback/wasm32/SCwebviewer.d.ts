@@ -18,10 +18,15 @@ export * from './InteractiveTextLabel.js';
 export * from './InteractiveDimension.js';
 export * from './InteractiveViewCube.js';
 export * from './InteractiveSphericalAxes.js';
+export * from './SceneGraph.js';
+export * from './MeasurementStore.js';
+export * from './SavedViewStore.js';
+export * from './ProjectStore.js';
 export * from './ViewerEventManager.js';
 export * from './ViewerEventTarget.js';
 export * from './ViewManager.js';
 export * from './Subview.js';
+export { ViewerBuildConfig } from './ViewerBuildConfig.js';
 declare global {
     interface Window {
         Atomics: any;
@@ -405,6 +410,7 @@ export declare class SCwebviewer {
      * @param {string} theText text to print
      */
     printErr(theText: string): void;
+    private parseMessage;
     /**
      * C++ `Message::Send()` callback redirecting to Terminal.
      * @param {string} theText text to print

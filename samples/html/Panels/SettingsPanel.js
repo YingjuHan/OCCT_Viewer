@@ -232,7 +232,8 @@ export class SettingsPanel extends SCcontrols.PanelInput {
       (val)=> {
         this._scViewer.selectionManager.toAllowMultiselection = val;
         this._scViewer.requestViewUpdate();
-      })
+      }),
+      new SCcontrols.LabelInput("Box selection", "Alt + LMB drag (Shift + Alt to add)", null)
     ]);
     this.addControl(this._groupSelection);
   }

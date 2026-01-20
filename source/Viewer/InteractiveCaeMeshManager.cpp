@@ -1370,12 +1370,14 @@ bool InteractiveCaeMeshManager::saveModelMesh(const ObjectId& theObjId, const st
 {
     Handle(ViewCae::InteractiveCaeMeshOwner) aMesh;
     if (!FindPrsOwner(aMesh, theObjId)) {
-        Message::SendFail() << "Error: saveModelMesh (" << theObjId << ") called for non-existing mesh object";
+        Message::SendFail() << "[ERR_EXPORT_MESH] saveModelMesh (" << theObjId << ") called for non-existing mesh object";
         return false;
     }
 
     RWCae::MeshBinWriter aWriter(aMesh->GetMeshData());
     if (!aWriter.Perform(theFile.c_str())) {
+        Message::SendFail() << "[ERR_EXPORT_MESH] saveModelMesh (" << theObjId << ") failed to write '" << theFile
+                            << "'";
         return false;
     }
     return true;

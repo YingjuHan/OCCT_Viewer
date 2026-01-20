@@ -2,7 +2,7 @@
 
 import { defineComponent, PropType } from "vue"
 import { ViewerService } from "../services/viewer.service";
-import { CaeMeshObjectPrsMode, ICaeMeshPropInfo, ObjectId } from '@hw/SCwebviewer/wasm32/SCwebviewer.js';
+import { CaeMeshObjectPrsMode, ICaeMeshPropInfo, ObjectId } from '@hyj/SCwebviewer/wasm32/SCwebviewer.js';
 
 export default defineComponent({
     props: {

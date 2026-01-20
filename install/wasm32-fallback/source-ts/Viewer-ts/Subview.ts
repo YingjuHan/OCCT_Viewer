@@ -1,6 +1,3 @@
-// Created by: Kirill Gavrilov
-// Copyright (c) 2022 Huawei Technologies Co., Ltd.
-
 import type {IVec2, ViewId} from './CommonTools.js';
 import {ViewCorner} from './CommonTools.js';
 import {Camera} from './Camera.js';

@@ -67,14 +67,14 @@ bool GmshLoader::performMesh(const TCollection_AsciiString& theFile, const Messa
     Standard_CLocaleSentry aLocaleSentry;
     FileSentry             aFile(theFile);
     if (aFile.File == NULL) {
-        Message::SendFail() << "File '" << theFile << "' is not found";
+        Message::SendFail() << "[ERR_MESH_LOAD] file '" << theFile << "' is not found";
         return false;
     }
 
     // determine length of file
     const int64_t aFileLen = aFile.FileLen;
     if (aFileLen <= 0L) {
-        Message::SendFail() << "File '" << theFile << "' is empty";
+        Message::SendFail() << "[ERR_MESH_LOAD] file '" << theFile << "' is empty";
         return false;
     }
 
@@ -86,7 +86,7 @@ bool GmshLoader::performMesh(const TCollection_AsciiString& theFile, const Messa
     // Let GmshLoaderContext fill myMeshMap with loaded data
     GmshLoaderContext aCtx(aFile, myCoordSysConverter, myToSplitSubMeshes, mySectionTypes, myMeshMap);
     if (!aCtx.ReadLine() || !aCtx.CheckKeyWord(aFile.Line, "$MeshFormat")) {
-        Message::SendFail() << "Missing Gmsh file header in '" << theFile << "'";
+        Message::SendFail() << "[ERR_MESH_FORMAT] missing Gmsh file header in '" << theFile << "'";
         return false;
     }
 
@@ -151,14 +151,14 @@ bool GmshLoader::readHeader(GmshLoaderContext& theCtx)
 
     if (!theCtx.ReadLine() || !parseHeader(theCtx.File().Line, aVerMaj, aVerMin, aFileType, aFloatSize)
         || aFloatSize != int(sizeof(double))) {
-        Message::SendFail() << "Unsupported Gmsh file version in '" << theCtx.File().FileName << "'";
+        Message::SendFail() << "[ERR_MESH_FORMAT] unsupported Gmsh file version in '" << theCtx.File().FileName << "'";
         return false;
     } else if (aFileType != 0) {
-        Message::SendFail() << "Unsupported Gmsh file format in '" << theCtx.File().FileName << "'";
+        Message::SendFail() << "[ERR_MESH_FORMAT] unsupported Gmsh file format in '" << theCtx.File().FileName << "'";
         return false;
     }
     if (!theCtx.ReadLine() || !theCtx.CheckKeyWord(theCtx.File().Line, "$EndMeshFormat")) {
-        Message::SendFail() << "Broken Gmsh file header in '" << theCtx.File().FileName << "'";
+        Message::SendFail() << "[ERR_MESH_FORMAT] broken Gmsh file header in '" << theCtx.File().FileName << "'";
         return false;
     }
     return true;

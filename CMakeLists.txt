@@ -128,6 +128,11 @@ option (OCCTV_USE_DRACO "Use Draco library" ON)
 option (OCCTV_BUILD_WEB_VIEWER "Build ts web viewer" ON)
 # 是否构建 TypeScript Web 查看器，开启状态
 
+# Option to enable/disable STEP/IGES readers
+# 启用/禁用 STEP/IGES 读取器
+option (OCCTV_USE_STEP "Enable STEP reader support" OFF)
+option (OCCTV_USE_IGES "Enable IGES reader support" OFF)
+
 # Option to enable/disable MedFile option
 # 启用/禁用 MedFile 选项
 cmake_dependent_option (OCCTV_USE_MEDFILE "Use MEDFile library for MED parser" ON "NOT EMSCRIPTEN" OFF)
@@ -402,7 +407,7 @@ set_property (GLOBAL PROPERTY USE_FOLDERS ON)
 # 设置全局属性 USE_FOLDERS 为 ON
 
 # add_subdirectory (dox)
-add_subdirectory (source/RWbase)
+add_subdirectory (source/RWBase)
 add_subdirectory (source/ViewBase)
 # 添加 SCPrsBase 子目录
 

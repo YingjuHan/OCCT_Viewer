@@ -2,3 +2,4 @@ build/*
 .vscode/settings.json
 samples/vue-viewer/dist/*
 install/mingw/*
+work/

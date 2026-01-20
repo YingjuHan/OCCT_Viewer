@@ -34,10 +34,14 @@ export * from './InteractiveDimension.js';
 export * from './InteractiveViewCube.js';
 export * from './InteractiveSphericalAxes.js';
 export * from './SceneGraph.js';
+export * from './MeasurementStore.js';
+export * from './SavedViewStore.js';
+export * from './ProjectStore.js';
 export * from './ViewerEventManager.js';
 export * from './ViewerEventTarget.js';
 export * from './ViewManager.js';
 export * from './Subview.js';
+export {ViewerBuildConfig} from './ViewerBuildConfig.js';
 
 declare global {
   interface Window {
@@ -1014,12 +1018,25 @@ export class SCwebviewer {
    */
   public printErr(theText: string): void { this.printMessage(theText, MessageGravity.Fail); }
 
+  private parseMessage(theText: string): { message: string; errorCode: string | null } {
+    if (!theText) {
+      return { message: '', errorCode: null };
+    }
+    const aMatch = /^\[([A-Z0-9_-]+)\]\s*(.*)$/.exec(theText);
+    if (!aMatch) {
+      return { message: theText, errorCode: null };
+    }
+    return { message: aMatch[2], errorCode: aMatch[1] };
+  }
+
   /**
    * C++ `Message::Send()` callback redirecting to Terminal.
    * @param {string} theText text to print
    * @param {number} theGravity message gravity within 0..4 range
    */
   public printMessage(theText: string, theGravity: MessageGravity): void {
+    const aParsed = this.parseMessage(theText);
+    this._myEventManager?.onViewerMessage(aParsed.message, theGravity, aParsed.errorCode, theText);
     if (theGravity.valueOf() < this._myTraceLevel) {
       return;
     }

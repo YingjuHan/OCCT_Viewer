@@ -43,5 +43,5 @@
   "browser": {
     "wasi_snapshot_preview1": false,
     "env": false
-  }
+  },
 }

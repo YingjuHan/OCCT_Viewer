@@ -72,6 +72,16 @@ export declare enum ShapeObjectSelMode {
     /** Selection of groups. */
     Group = 128
 }
+export interface IShapeMassProps {
+    area: number;
+    volume: number | null;
+    centroid: IVec3;
+    centroidSource: 'surface' | 'volume';
+    volumeValid: boolean;
+}
+export declare class ShapeMassProps {
+    static parseJson(theJson: string): IShapeMassProps | null;
+}
 /**
  * Auxiliary class for accessing InteractiveShape subshapes.
  */
@@ -489,6 +499,8 @@ export declare class InteractiveShape extends InteractiveObject {
     indexArrayFromString(theIndices: string): number[];
     /** Format index list into a string. */
     indexArrayToString(theIndices: number[]): string;
+    private getRootShapeInfo;
+    private getAnySubshapeLocation;
     /** Open shape from file path. */
     private openShapeFromFile;
 }

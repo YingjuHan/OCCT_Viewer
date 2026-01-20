@@ -21,7 +21,15 @@ import { SCwebviewer,
     CaeMeshPresentation,
     ICaeMeshPropInfo,
     CaeMeshObjectSelMode,
-    Subview} from '@hyj/SCwebviewer/wasm32/SCwebviewer.js';
+    Subview,
+    UnitManager,
+    ViewerBuildConfig} from '@hyj/SCwebviewer/wasm32/SCwebviewer.js';
+import { MeasurementStore } from '../../../../source-ts/Viewer-ts/MeasurementStore';
+import { SavedViewStore } from '../../../../source-ts/Viewer-ts/SavedViewStore';
+import { ProjectStore } from '../../../../source-ts/Viewer-ts/ProjectStore';
+import type { ProjectData, ProjectSource } from '../../../../source-ts/Viewer-ts/ProjectStore';
+import { SceneGraph } from '../../../../source-ts/Viewer-ts/SceneGraph';
+import type { SceneSearchResult } from '../../../../source-ts/Viewer-ts/SceneGraph';
 import { markRaw } from 'vue';
 // import {} from 'crypto';
 
@@ -47,6 +55,12 @@ export class ViewerService {
     private _mesh?: InteractiveCaeMesh;
     private _lastLoadedMeshId?: ObjectId;
     private _lastLoadedShapeId?: ObjectId;
+    public measurementStore: MeasurementStore | null = null;
+    public savedViewStore: SavedViewStore | null = null;
+    public projectStore: ProjectStore | null = null;
+    private _projectSources: ProjectSource[] = [];
+    private _pendingProject: ProjectData | null = null;
+    private _pendingMissing: ProjectSource[] = [];
     public toExplodeShape = false;
     public shapeExplodeDepth = -1;
     public useMeshGenGeom = false;
@@ -62,6 +76,10 @@ export class ViewerService {
 
     get scViewer(): SCwebviewer | undefined {
         return this._viewer;
+    }
+
+    get unitManager(): UnitManager | null {
+        return this._viewer?.unitManager ?? null;
     }
 
     public whenReady(): Promise<void> {
@@ -86,6 +104,9 @@ export class ViewerService {
         this._viewer.camera?.setOrientation (CameraOrientation.FRONT);
 
         this._viewer.eventManager.addEventListener(UserEvents.onColorMapperChanged, this.updateColorScale.bind(this));
+        this.measurementStore = new MeasurementStore(this._viewer);
+        this.savedViewStore = new SavedViewStore(this._viewer);
+        this.projectStore = new ProjectStore(this._viewer);
         this._resolveReady?.();
     }
 
@@ -132,6 +153,26 @@ export class ViewerService {
                 };
             }
 
+            if (shapeFormat === "STEP" && !ViewerBuildConfig.useStep) {
+                return {
+                    fileName: file.name,
+                    success: false,
+                    format: shapeFormat,
+                    kind: 'shape',
+                    message: "STEP 构建未启用，建议使用服务端转换或开启 OCCTV_USE_STEP"
+                };
+            }
+
+            if (shapeFormat === "IGES" && !ViewerBuildConfig.useIges) {
+                return {
+                    fileName: file.name,
+                    success: false,
+                    format: shapeFormat,
+                    kind: 'shape',
+                    message: "IGES 构建未启用，建议使用服务端转换或开启 OCCTV_USE_IGES"
+                };
+            }
+
             if (shapeFormat !== "") {
                 const shapeId = await this.onShapeFileRead(file.name, buffer);
                 return {
@@ -169,7 +210,14 @@ export class ViewerService {
             }
 
             this._shape = shape;
-            this._lastLoadedShapeId = shape.id;
+            const shapeId = shape.id;
+            this._lastLoadedShapeId = shapeId;
+            this.registerProjectSource({
+                id: shapeId,
+                kind: 'shape',
+                sourceType: 'local',
+                source: fileName
+            });
 
             const isLoaded = await (shape as any).loadDataAsync(this._viewer);
             if (!isLoaded) {
@@ -192,7 +240,7 @@ export class ViewerService {
                 this.onLoad(shape);
             }
 
-            return shape.id;
+            return shapeId;
         } catch (error) {
             console.error("Loading shape failed: ", error);
             throw error;
@@ -214,6 +262,12 @@ export class ViewerService {
 
         this._mesh = mesh;
         this._lastLoadedMeshId = mesh.id;
+        this.registerProjectSource({
+            id: mesh.id,
+            kind: 'mesh',
+            sourceType: 'local',
+            source: fileName
+        });
         this.applyMeshGenerationOptions(mesh);
         mesh.isVisible = true;
         this.setMeshDefaultProps(mesh);
@@ -247,6 +301,23 @@ export class ViewerService {
         }
     }
 
+    public getSelectedShape(): InteractiveShape | null {
+        const obj = this._viewer?.selectionManager?.oneSelectedObject;
+        return obj instanceof InteractiveShape ? obj : null;
+    }
+
+    public getSelectedMesh(): InteractiveCaeMesh | null {
+        const obj = this._viewer?.selectionManager?.oneSelectedObject;
+        return obj instanceof InteractiveCaeMesh ? obj : null;
+    }
+
+    public getMassPropsJson(theObjectId: ObjectId): string {
+        if (this._viewer == null || this._viewer.interactiveShapeManager == null) {
+            return '';
+        }
+        return this._viewer.interactiveShapeManager.getMassPropsJson(theObjectId) ?? '';
+    }
+
     public getSceneGraph(theIdPrefix: string = ''): any | null {
         if (this._viewer == null || this._viewer.interactiveContext == null) {
             return null;
@@ -258,6 +329,29 @@ export class ViewerService {
             return null;
         }
         return fn.call(ctx, theIdPrefix);
+    }
+
+    public searchScene(theQuery: string, theOptions?: { caseSensitive?: boolean; useRegex?: boolean }): SceneSearchResult[] {
+        const graph = this.getSceneGraph();
+        if (graph) {
+            return SceneGraph.search(graph, theQuery, theOptions);
+        }
+
+        if (!theQuery || !this._viewer?.interactiveContext) {
+            return [];
+        }
+
+        const query = (theOptions?.caseSensitive ? theQuery : theQuery.toLowerCase());
+        const results: SceneSearchResult[] = [];
+        for (const obj of this._viewer.interactiveContext.objectsInside) {
+            const id = obj.id ?? '';
+            const name = id;
+            const value = theOptions?.caseSensitive ? id : id.toLowerCase();
+            if (value.includes(query)) {
+                results.push({ id, name, type: obj.constructor?.name ?? 'Object', matchField: 'id' });
+            }
+        }
+        return results;
     }
 
     public selectObjectById(theObjectId: ObjectId): void {
@@ -457,6 +551,14 @@ export class ViewerService {
             return "";
         }
 
+        const lowerUrl = theFileUrl.toLowerCase();
+        if ((lowerUrl.endsWith('.step') || lowerUrl.endsWith('.stp')) && !ViewerBuildConfig.useStep) {
+            throw new Error("STEP 构建未启用，无法直接加载该文件");
+        }
+        if ((lowerUrl.endsWith('.iges') || lowerUrl.endsWith('.igs')) && !ViewerBuildConfig.useIges) {
+            throw new Error("IGES 构建未启用，无法直接加载该文件");
+        }
+
         let aShape = new InteractiveShape(this.generateUUID());
         let isOk = await aShape.loadUrlAsync (this._viewer, theFileUrl);
         if (!isOk) {
@@ -470,6 +572,12 @@ export class ViewerService {
         aShape.isVisible = true;
         this._shape = aShape;
         this._lastLoadedShapeId = aShape.id;
+        this.registerProjectSource({
+            id: aShape.id,
+            kind: 'shape',
+            sourceType: 'url',
+            source: theFileUrl
+        });
         return aShape.id;
     }
 
@@ -510,6 +618,12 @@ export class ViewerService {
         aMesh.isVisible = true;
         this._mesh = aMesh;
         this._lastLoadedMeshId = aMesh.id;
+        this.registerProjectSource({
+            id: aMesh.id,
+            kind: 'mesh',
+            sourceType: 'url',
+            source: theFileUrl
+        });
         return aMesh.id;
     }
 
@@ -1058,10 +1172,264 @@ export class ViewerService {
         }
 
         this.removeObjectsByType(undefined, [InteractiveViewCube]);
+        this.measurementStore?.clear();
+        this.savedViewStore?.clear();
+        this._projectSources = [];
+        this._pendingProject = null;
+        this._pendingMissing = [];
 
         if (toUpdate) {
             this._viewer.requestViewUpdate();
         }
+    }
+
+    public exportProject(): string {
+        if (this._viewer == null || this.projectStore == null) {
+            return "";
+        }
+
+        const safeParse = (text: string): any | null => {
+            if (!text) {
+                return null;
+            }
+            try {
+                return JSON.parse(text);
+            } catch {
+                return null;
+            }
+        };
+
+        const savedViews = this.savedViewStore ? safeParse(this.savedViewStore.exportJson()) : null;
+        const measurements = this.measurementStore ? safeParse(this.measurementStore.exportJson()) : null;
+
+        return this.projectStore.exportJson({
+            sources: this._projectSources,
+            savedViews,
+            measurements
+        });
+    }
+
+    public async importProject(theJson: string): Promise<{ project: ProjectData | null; missingSources: ProjectSource[]; message?: string }> {
+        if (this.projectStore == null || this._viewer == null) {
+            return { project: null, missingSources: [], message: "Viewer 未就绪" };
+        }
+
+        const parsed = this.projectStore.importJson(theJson);
+        if (!parsed) {
+            return { project: null, missingSources: [], message: "Project JSON 无法解析" };
+        }
+
+        this.clearScene(true);
+        this._pendingProject = parsed.project;
+        this._pendingMissing = parsed.missingSources.filter((src) => src.sourceType !== 'url');
+
+        const urlSources = parsed.project.sources.filter((src) => src.sourceType === 'url');
+        for (const src of urlSources) {
+            await this.loadProjectSource(src);
+        }
+
+        if (this._pendingMissing.length === 0) {
+            this.finalizeProjectImport();
+        }
+
+        return { project: parsed.project, missingSources: [...this._pendingMissing] };
+    }
+
+    public async rebindProjectSource(theSourceId: ObjectId, theFile: File): Promise<boolean> {
+        if (this._viewer == null) {
+            return false;
+        }
+
+        const idx = this._pendingMissing.findIndex((src) => src.id === theSourceId);
+        if (idx < 0) {
+            return false;
+        }
+
+        const src = this._pendingMissing[idx];
+        const buffer = await theFile.arrayBuffer();
+        if (src.kind === 'shape') {
+            await this.loadShapeBufferWithId(src.id, theFile.name, buffer, src.sourceType);
+        } else {
+            await this.loadMeshBufferWithId(src.id, theFile.name, buffer, src.sourceType);
+        }
+
+        this._pendingMissing.splice(idx, 1);
+        if (this._pendingMissing.length === 0) {
+            this.finalizeProjectImport();
+        }
+        return true;
+    }
+
+    private async loadProjectSource(src: ProjectSource): Promise<ObjectId> {
+        if (src.kind === 'shape') {
+            return this.loadShapeUrlWithId(src.id, src.source);
+        }
+        return this.loadMeshUrlWithId(src.id, src.source);
+    }
+
+    private finalizeProjectImport(): void {
+        if (this._pendingProject == null) {
+            return;
+        }
+
+        this.applyProjectStyles(this._pendingProject.styles);
+
+        if (this.savedViewStore && this._pendingProject.savedViews) {
+            this.savedViewStore.importJson(JSON.stringify(this._pendingProject.savedViews));
+        }
+        if (this.measurementStore && this._pendingProject.measurements) {
+            this.measurementStore.importJson(JSON.stringify(this._pendingProject.measurements));
+        }
+
+        this._pendingProject = null;
+        this._pendingMissing = [];
+        this._viewer?.requestViewUpdate();
+    }
+
+    private applyProjectStyles(theStyles: ProjectData['styles']): void {
+        if (!Array.isArray(theStyles)) {
+            return;
+        }
+
+        for (const style of theStyles) {
+            const obj = this.getInteractiveObject(style.id);
+            if (!obj) {
+                continue;
+            }
+            if (typeof style.visible === 'boolean') {
+                obj.isVisible = style.visible;
+            }
+            if (typeof style.baseColor === 'string') {
+                obj.baseColor = style.baseColor;
+            }
+            if (typeof style.transparency === 'number') {
+                obj.transparency = style.transparency;
+            }
+        }
+    }
+
+    private registerProjectSource(theSource: ProjectSource): void {
+        const idx = this._projectSources.findIndex((src) => src.id === theSource.id);
+        if (idx >= 0) {
+            this._projectSources[idx] = theSource;
+            return;
+        }
+        this._projectSources.push(theSource);
+    }
+
+    private async loadShapeUrlWithId(theObjId: ObjectId, theUrl: string): Promise<ObjectId> {
+        if (this._viewer == null) {
+            return "";
+        }
+
+        const lowerUrl = theUrl.toLowerCase();
+        if ((lowerUrl.endsWith('.step') || lowerUrl.endsWith('.stp')) && !ViewerBuildConfig.useStep) {
+            throw new Error("STEP 构建未启用，无法直接加载该文件");
+        }
+        if ((lowerUrl.endsWith('.iges') || lowerUrl.endsWith('.igs')) && !ViewerBuildConfig.useIges) {
+            throw new Error("IGES 构建未启用，无法直接加载该文件");
+        }
+
+        const shape = new InteractiveShape(theObjId);
+        const isOk = await shape.loadUrlAsync(this._viewer, theUrl);
+        if (!isOk) {
+            return "";
+        }
+
+        const filePath = shape.getFilePathFromObjId();
+        if (!this._viewer.unlinkFile(filePath)) {
+            throw new Error("Cannot unlink a file '" + filePath + "'");
+        }
+
+        shape.isVisible = true;
+        this._shape = shape;
+        this._lastLoadedShapeId = shape.id;
+        this.registerProjectSource({
+            id: shape.id,
+            kind: 'shape',
+            sourceType: 'url',
+            source: theUrl
+        });
+        return shape.id;
+    }
+
+    private async loadMeshUrlWithId(theObjId: ObjectId, theUrl: string): Promise<ObjectId> {
+        if (this._viewer == null) {
+            return "";
+        }
+
+        const mesh = new InteractiveCaeMesh(theObjId);
+        const isOk = await mesh.loadUrlAsync(this._viewer, theUrl);
+        if (!isOk) {
+            return "";
+        }
+
+        this.applyMeshGenerationOptions(mesh);
+        this.configureMeshAfterLoading(mesh);
+        mesh.isVisible = true;
+        this._mesh = mesh;
+        this._lastLoadedMeshId = mesh.id;
+        this.registerProjectSource({
+            id: mesh.id,
+            kind: 'mesh',
+            sourceType: 'url',
+            source: theUrl
+        });
+        return mesh.id;
+    }
+
+    private async loadShapeBufferWithId(theObjId: ObjectId, theFileName: string, theBuffer: ArrayBuffer, theSourceType: ProjectSource['sourceType']): Promise<ObjectId> {
+        if (this._viewer == null) {
+            return "";
+        }
+
+        const shape = new InteractiveShape(theObjId);
+        const isOk = await shape.loadBufferAsync(this._viewer, theBuffer, theFileName);
+        if (!isOk) {
+            return "";
+        }
+
+        const filePath = shape.getFilePathFromObjId();
+        if (!this._viewer.unlinkFile(filePath)) {
+            throw new Error("Cannot unlink a file '" + filePath + "'");
+        }
+
+        shape.isVisible = true;
+        this._shape = shape;
+        this._lastLoadedShapeId = shape.id;
+        this.registerProjectSource({
+            id: shape.id,
+            kind: 'shape',
+            sourceType: theSourceType,
+            source: theFileName
+        });
+        return shape.id;
+    }
+
+    private async loadMeshBufferWithId(theObjId: ObjectId, theFileName: string, theBuffer: ArrayBuffer, theSourceType: ProjectSource['sourceType']): Promise<ObjectId> {
+        if (this._viewer == null) {
+            return "";
+        }
+
+        const mesh = new InteractiveCaeMesh(theObjId);
+        mesh.toCacheProperties = true;
+        const isOk = await mesh.loadBufferAsync(this._viewer, theBuffer, theFileName);
+        if (!isOk) {
+            return "";
+        }
+
+        this.applyMeshGenerationOptions(mesh);
+        this.configureMeshAfterLoading(mesh);
+        mesh.isVisible = true;
+        this._mesh = mesh;
+        this._lastLoadedMeshId = mesh.id;
+        this.registerProjectSource({
+            id: mesh.id,
+            kind: 'mesh',
+            sourceType: theSourceType,
+            source: theFileName
+        });
+        return mesh.id;
     }
 
     public onResize(): void {

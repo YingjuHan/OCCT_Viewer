@@ -19,6 +19,7 @@ export class ScenePanel extends SCcontrols.PanelInput {
     this.addObjectSelector();
     this.addCurrentObjectControls();
     this.addSceneGraphControls();
+    this.addSelectionControls();
     this._measureA = null;
     this._measureB = null;
     this._measureDim = null;
@@ -286,6 +287,37 @@ export class ScenePanel extends SCcontrols.PanelInput {
   }
 
   /**
+   * Add selection controls and box-selection hint.
+   */
+  addSelectionControls() {
+    this._selectionGroup = new SCcontrols.GroupInput("Selection", true, false);
+    this._selectionGroup.addControl(
+      new SCcontrols.LabelInput("Box selection", "Alt + LMB drag (Shift + Alt to add)", null)
+    );
+
+    this._selectionInfo = new SCcontrols.TextAreaInput("Selected objects", "", null,
+      { autoHeight: true, readOnly: true });
+    this._selectionInfo.minWidth = 240;
+    this._selectionGroup.addControl(this._selectionInfo);
+    this.addControl(this._selectionGroup);
+  }
+
+  /**
+   * Update selected objects list.
+   */
+  _updateSelectionInfo() {
+    if (!this._selectionInfo || !this._scViewer?.selectionManager) {
+      return;
+    }
+    const ids = (this._scViewer.selectionManager.selectedObjects || [])
+      .map((obj) => obj.id)
+      .filter((id) => id !== "");
+    const header = `Count: ${ids.length}`;
+    const body = ids.length ? `${header}\n${ids.join("\n")}` : header;
+    this._selectionInfo.setValue(body);
+  }
+
+  /**
    * Capture measure target from currently detected shape element.
    */
   _captureMeasureTarget() {
@@ -366,8 +398,9 @@ export class ScenePanel extends SCcontrols.PanelInput {
         console.warn("Auto Radius: hover a shape edge first");
         return;
       }
-      if (aTgt.entityType !== SCwebviewer.ShapeObjectSelMode.Edge) {
-        console.warn("Auto Radius: only Edge selection is supported for now");
+      if (aTgt.entityType !== SCwebviewer.ShapeObjectSelMode.Edge
+       && aTgt.entityType !== SCwebviewer.ShapeObjectSelMode.Face) {
+        console.warn("Auto Radius: only Edge/Face selection is supported for now");
         return;
       }
       const aMgr = this._scViewer.interactiveShapeManager;
@@ -391,8 +424,9 @@ export class ScenePanel extends SCcontrols.PanelInput {
         console.warn("Auto Diameter: hover a shape edge first");
         return;
       }
-      if (aTgt.entityType !== SCwebviewer.ShapeObjectSelMode.Edge) {
-        console.warn("Auto Diameter: only Edge selection is supported for now");
+      if (aTgt.entityType !== SCwebviewer.ShapeObjectSelMode.Edge
+       && aTgt.entityType !== SCwebviewer.ShapeObjectSelMode.Face) {
+        console.warn("Auto Diameter: only Edge/Face selection is supported for now");
         return;
       }
       const aMgr = this._scViewer.interactiveShapeManager;
@@ -591,6 +625,7 @@ export class ScenePanel extends SCcontrols.PanelInput {
     this._infiniteCheckbox.setVisibility(this._selectedObject != null);
     this._showOnlyButton.setVisibility(this._selectedObject != null);
     this._removeButton.setVisibility(this._selectedObject != null);
+    this._updateSelectionInfo();
     if (!this._trsfExpGroup.isCollapsed) {
       this._trsfExpGroup.setVisibility(this._selectedObject != null);
     }

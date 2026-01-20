@@ -1,5 +1,3 @@
-// Created by: Kirill Gavrilov
-// Copyright (c) 2022-2024 Huawei Technologies Co., Ltd.
 /**
  * Extends EventTarget with map of registered callbacks.
  */

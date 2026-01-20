@@ -127,7 +127,7 @@ Handle(RWCae::MeshData) MeshLoader::OpenMesh(const Handle(OSD_FileSystem)&  theF
     {
         std::shared_ptr<std::istream> aFile = theFileSystem->OpenIStream(theFilePath, std::ios::in | std::ios::binary);
         if (aFile.get() == nullptr) {
-            Message::SendFail() << "Error: the file '" << theFilePath << "' cannot be opened";
+            Message::SendFail() << "[ERR_MESH_LOAD] the file '" << theFilePath << "' cannot be opened";
             return nullptr;
         }
         aFile->read(aBytes, sizeof(aBytes) - 1);
@@ -154,7 +154,7 @@ Handle(RWCae::MeshData) MeshLoader::OpenMesh(const Handle(OSD_FileSystem)&  theF
         return OpenBrepMesh(theFilePath, aForm == "BINBREP");
     }
 
-    Message::SendFail() << "Error: file '" << theFilePath << "' has unsupported mesh format '" << aBytes << "'";
+    Message::SendFail() << "[ERR_MESH_FORMAT] file '" << theFilePath << "' has unsupported mesh format '" << aBytes << "'";
     return nullptr;
 }
 
@@ -178,7 +178,7 @@ static bool IsShapeTriangulated(const TopoDS_Shape& theShape, const TCollection_
     }
 
     if (aNbTris == 0 || aNbTriNodes == 0) {
-        Message::SendFail() << "Error: BREP file '" << theFilePath << "' doesn't define triangulations";
+        Message::SendFail() << "[ERR_MESH_LOAD] BREP file '" << theFilePath << "' doesn't define triangulations";
         return false;
     } else if (aNbNullFaces != 0) {
         Message::SendWarning() << "Warning: skipping " << aNbNullFaces << " faces without triangles from '"
@@ -198,7 +198,7 @@ Handle(RWCae::MeshData) MeshLoader::OpenBrepMesh(const TCollection_AsciiString& 
                                                                                            std::ios::in
                                                                                                | std::ios::binary);
     if (aFile.get() == nullptr) {
-        Message::SendFail() << "Error: unable to open file '" << theFilePath << "'";
+        Message::SendFail() << "[ERR_MESH_LOAD] unable to open file '" << theFilePath << "'";
         return Handle(RWCae::MeshData)();
     }
 
@@ -206,7 +206,7 @@ Handle(RWCae::MeshData) MeshLoader::OpenBrepMesh(const TCollection_AsciiString& 
     BRep_Builder aBuilder;
     theIsBinary ? BinTools::Read(aShape, *aFile) : BRepTools::Read(aShape, *aFile, aBuilder);
     if (aShape.IsNull()) {
-        Message::SendFail() << "Error: unable to read BREP file '" << theFilePath << "'";
+        Message::SendFail() << "[ERR_MESH_LOAD] unable to read BREP file '" << theFilePath << "'";
         return Handle(RWCae::MeshData)();
     } else if (!IsShapeTriangulated(aShape, theFilePath)) {
         return Handle(RWCae::MeshData)();
@@ -261,7 +261,7 @@ Handle(RWCae::MeshData) MeshLoader::OpenMdbMesh(const TCollection_AsciiString& t
     aBinReader.SetOptions(myOptions);
     aBinReader.SetPropsToProcess(myPropsToProcess);
     if (!aBinReader.Perform(theFilePath)) {
-        Message::SendFail() << "Error: '" << theFilePath << "' is not a valid mesh binary file";
+        Message::SendFail() << "[ERR_MESH_FORMAT] '" << theFilePath << "' is not a valid mesh binary file";
         return nullptr;
     }
     return aBinReader.GetMeshData();
@@ -276,13 +276,13 @@ Handle(RWCae::MeshData) MeshLoader::OpenGmshMesh(const TCollection_AsciiString& 
 
     RWMeshConv::GmshLoader aLoader;
     if (!aLoader.Perform(theFilePath)) {
-        Message::SendFail() << "Error: '" << theFilePath << "' is not a valid Gmsh mesh/postpro file";
+        Message::SendFail() << "[ERR_MESH_FORMAT] '" << theFilePath << "' is not a valid Gmsh mesh/postpro file";
         return nullptr;
     }
 
     const RWMeshConv::GmshSubMeshMap& aMeshes = aLoader.Meshes();
     if (aMeshes.IsEmpty()) {
-        Message::SendFail() << "Error: '" << theFilePath << "' doesn't contain any meshes";
+        Message::SendFail() << "[ERR_MESH_LOAD] '" << theFilePath << "' doesn't contain any meshes";
         return nullptr;
     }
 
@@ -322,7 +322,7 @@ Handle(RWCae::MeshData) MeshLoader::OpenVtuMesh(const TCollection_AsciiString& t
     RWVtk::VtkUnstructuredGridReader aVtuReader;
     aVtuReader.SetMappingFile(theMappingFilePath);
     if (!aVtuReader.Perform(theFilePath)) {
-        Message::SendFail() << "Error: '" << theFilePath << "' is not a valid vtk unstructured grid file";
+        Message::SendFail() << "[ERR_MESH_FORMAT] '" << theFilePath << "' is not a valid vtk unstructured grid file";
         return nullptr;
     }
     return aVtuReader.GetMeshData();
@@ -339,7 +339,7 @@ Handle(RWCae::MeshData) MeshLoader::OpenVtpMesh(const TCollection_AsciiString& t
     RWVtk::VtkPolyDataReader aVtpReader;
     aVtpReader.SetMappingFile(theMappingFilePath);
     if (!aVtpReader.Perform(theFilePath)) {
-        Message::SendFail() << "Error: '" << theFilePath << "' is not a valid vtk poly data file";
+        Message::SendFail() << "[ERR_MESH_FORMAT] '" << theFilePath << "' is not a valid vtk poly data file";
         return nullptr;
     }
     return aVtpReader.GetMeshData();
@@ -356,7 +356,7 @@ Handle(RWCae::MeshData) MeshLoader::OpenVtmMesh(const TCollection_AsciiString& t
     RWVtk::VtkMultiBlockDataReader aVtmReader;
     aVtmReader.SetMappingFile(theMappingFilePath);
     if (!aVtmReader.Perform(theFilePath)) {
-        Message::SendFail() << "Error: '" << theFilePath << "' is not a valid vtk multi-block data file";
+        Message::SendFail() << "[ERR_MESH_FORMAT] '" << theFilePath << "' is not a valid vtk multi-block data file";
         return nullptr;
     }
     return aVtmReader.GetMergedMeshData();
@@ -373,7 +373,7 @@ Handle(RWCae::MeshData) MeshLoader::OpenVtmSeriesMesh(const TCollection_AsciiStr
     RWVtk::VtkSeriesReader aVtmSeriesReader;
     aVtmSeriesReader.SetMappingFile(theMappingFilePath);
     if (!aVtmSeriesReader.Perform(theFilePath)) {
-        Message::SendFail() << "Error: '" << theFilePath << "' is not a valid vtk multi-block data series file";
+        Message::SendFail() << "[ERR_MESH_FORMAT] '" << theFilePath << "' is not a valid vtk multi-block data series file";
         return nullptr;
     }
     return aVtmSeriesReader.GetMergedMeshData();
@@ -392,7 +392,7 @@ bool MeshLoader::LoadMeshProperties(const Handle(RWCae::MeshData)&              
     {
         std::shared_ptr<std::istream> aFile = theFileSystem->OpenIStream(theFilePath, std::ios::in | std::ios::binary);
         if (aFile.get() == nullptr) {
-            Message::SendFail() << "Error: the file '" << theFilePath << "' cannot be opened";
+            Message::SendFail() << "[ERR_MESH_LOAD] the file '" << theFilePath << "' cannot be opened";
             return false;
         }
         aFile->read(aBytes, sizeof(aBytes) - 1);
@@ -402,7 +402,7 @@ bool MeshLoader::LoadMeshProperties(const Handle(RWCae::MeshData)&              
         RWMeshConv::GmshLoader aLoader(theMesh);
         aLoader.SetSectionTypesToRead((unsigned int)RWMeshConv::GmshSectionType::Property);
         if (!aLoader.Perform(theFilePath)) {
-            Message::SendFail() << "Error: '" << theFilePath << "' is not a valid Gmsh mesh/postpro file";
+            Message::SendFail() << "[ERR_MESH_FORMAT] '" << theFilePath << "' is not a valid Gmsh mesh/postpro file";
             return false;
         }
     } else if (aForm == "MDB" || aForm == "MDBPROP") {
@@ -410,12 +410,12 @@ bool MeshLoader::LoadMeshProperties(const Handle(RWCae::MeshData)&              
         myOptions |= (unsigned int)RWCae::MeshDataImportExportOptions::SKIP_GEOMETRY;
         aBinReader.SetOptions(myOptions);
         if (!aBinReader.Perform(theFilePath)) {
-            Message::SendFail() << "Error: '" << theFilePath << "' is not a valid mesh binary file";
+            Message::SendFail() << "[ERR_MESH_FORMAT] '" << theFilePath << "' is not a valid mesh binary file";
             return false;
         }
         theUpdatedProps = aBinReader.UpdatedProps();
     } else {
-        Message::SendFail() << "Error: file '" << theFilePath << "' has unsupported mesh format '" << aBytes << "'";
+        Message::SendFail() << "[ERR_MESH_FORMAT] file '" << theFilePath << "' has unsupported mesh format '" << aBytes << "'";
         return false;
     }
 

@@ -1,6 +1,3 @@
-// Created by: Kirill Gavrilov
-// Copyright (c) 2022 Huawei Technologies Co., Ltd.
-
 import type {IManager, ObjectId} from './CommonTools.js';
 import {CameraOrientation} from './CommonTools.js';
 import {InteractiveObject} from './InteractiveObject.js';

@@ -119,6 +119,75 @@ if /I ["%OCC_VIEWER_WASM_ABI%"] == ["wasm64"] (
 
 set "OCC_VIEWER_DEST_DIR=%OCC_VIEWER_BUILD_ROOT%\%OCC_VIEWER_BUILD_FOLDER_NAME%%OCC_VIEWER_WASM_ABI_SUFFIX%"
 
+rem Try to auto-detect 3rd-party packages in OCCT_3rdparty when paths are not set.
+set "OCC_VIEWER_THIRDPARTY_ROOT=%OCC_VIEWER_GIT_ROOT%\..\OCCT_3rdparty"
+set "OCC_VIEWER_THIRDPARTY_PKG="
+if exist "%OCC_VIEWER_THIRDPARTY_ROOT%" (
+  if /I ["%OCC_VIEWER_USE_WASM_MEMORY64%"] == ["ON"] (
+    set "OCC_VIEWER_THIRDPARTY_PKG=%OCC_VIEWER_THIRDPARTY_ROOT%\package\mingw-wasm64"
+  ) else (
+    set "OCC_VIEWER_THIRDPARTY_PKG=%OCC_VIEWER_THIRDPARTY_ROOT%\package\mingw-wasm32"
+  )
+)
+set "OCC_VIEWER_THIRDPARTY_ABI="
+if /I ["%OCC_VIEWER_WASM_ABI%"] == ["wasm32"] set "OCC_VIEWER_THIRDPARTY_ABI=wasm-fallback"
+if /I ["%OCC_VIEWER_WASM_ABI%"] == ["wasm32-pthread"] set "OCC_VIEWER_THIRDPARTY_ABI=wasm-pthread"
+if /I ["%OCC_VIEWER_WASM_ABI%"] == ["wasm64"] set "OCC_VIEWER_THIRDPARTY_ABI=wasm64-fallback"
+if /I ["%OCC_VIEWER_WASM_ABI%"] == ["wasm64-pthread"] set "OCC_VIEWER_THIRDPARTY_ABI=wasm64-pthread"
+set "OCC_VIEWER_THIRDPARTY_EXC_SUFFIX="
+if /I ["%OCC_VIEWER_USE_WASM_EXCEPTION%"] == ["ON"] set "OCC_VIEWER_THIRDPARTY_EXC_SUFFIX=-fwasm-exceptions"
+
+if ["%FREETYPE_DIR%"] == [""] if not ["%OCC_VIEWER_THIRDPARTY_PKG%"] == [""] if not ["%OCC_VIEWER_THIRDPARTY_ABI%"] == [""] (
+  for /d %%i in ("%OCC_VIEWER_THIRDPARTY_PKG%\\freetype-*-%OCC_VIEWER_THIRDPARTY_ABI%%OCC_VIEWER_THIRDPARTY_EXC_SUFFIX%") do set "FREETYPE_DIR=%%i"
+)
+if ["%FREETYPE_DIR%"] == [""] if not ["%OCC_VIEWER_THIRDPARTY_PKG%"] == [""] if not ["%OCC_VIEWER_THIRDPARTY_ABI%"] == [""] (
+  for /d %%i in ("%OCC_VIEWER_THIRDPARTY_PKG%\\freetype-*-%OCC_VIEWER_THIRDPARTY_ABI%") do set "FREETYPE_DIR=%%i"
+)
+if /I ["%OCC_VIEWER_USE_DRACO%"] == ["ON"] if ["%DRACO_DIR%"] == [""] if not ["%OCC_VIEWER_THIRDPARTY_PKG%"] == [""] if not ["%OCC_VIEWER_THIRDPARTY_ABI%"] == [""] (
+  for /d %%i in ("%OCC_VIEWER_THIRDPARTY_PKG%\\draco-*-%OCC_VIEWER_THIRDPARTY_ABI%%OCC_VIEWER_THIRDPARTY_EXC_SUFFIX%") do set "DRACO_DIR=%%i"
+)
+if /I ["%OCC_VIEWER_USE_DRACO%"] == ["ON"] if ["%DRACO_DIR%"] == [""] if not ["%OCC_VIEWER_THIRDPARTY_PKG%"] == [""] if not ["%OCC_VIEWER_THIRDPARTY_ABI%"] == [""] (
+  for /d %%i in ("%OCC_VIEWER_THIRDPARTY_PKG%\\draco-*-%OCC_VIEWER_THIRDPARTY_ABI%") do set "DRACO_DIR=%%i"
+)
+
+set "OCC_VIEWER_OPENCASCADE_ROOT_DIR="
+if not ["%OpenCASCADE_DIR%"] == [""] (
+  if exist "%OpenCASCADE_DIR%%OCC_VIEWER_WASM_ABI_SUFFIX%" (
+    set "OCC_VIEWER_OPENCASCADE_ROOT_DIR=%OpenCASCADE_DIR%%OCC_VIEWER_WASM_ABI_SUFFIX%"
+  ) else if exist "%OpenCASCADE_DIR%" (
+    set "OCC_VIEWER_OPENCASCADE_ROOT_DIR=%OpenCASCADE_DIR%"
+  )
+)
+set "OCC_VIEWER_FREETYPE_ROOT_DIR="
+if not ["%FREETYPE_DIR%"] == [""] (
+  if exist "%FREETYPE_DIR%%OCC_VIEWER_WASM_ABI_SUFFIX%" (
+    set "OCC_VIEWER_FREETYPE_ROOT_DIR=%FREETYPE_DIR%%OCC_VIEWER_WASM_ABI_SUFFIX%"
+  ) else if exist "%FREETYPE_DIR%" (
+    set "OCC_VIEWER_FREETYPE_ROOT_DIR=%FREETYPE_DIR%"
+  )
+)
+set "OCC_VIEWER_DRACO_ROOT_DIR="
+if not ["%DRACO_DIR%"] == [""] (
+  if exist "%DRACO_DIR%%OCC_VIEWER_WASM_ABI_SUFFIX%" (
+    set "OCC_VIEWER_DRACO_ROOT_DIR=%DRACO_DIR%%OCC_VIEWER_WASM_ABI_SUFFIX%"
+  ) else if exist "%DRACO_DIR%" (
+    set "OCC_VIEWER_DRACO_ROOT_DIR=%DRACO_DIR%"
+  )
+)
+
+if ["%OCC_VIEWER_OPENCASCADE_ROOT_DIR%"] == [""] (
+  echo OpenCASCADE_DIR is not set or does not exist. Configure adm/scripts/wasm_custom.bat.
+  exit /B 1
+)
+if ["%OCC_VIEWER_FREETYPE_ROOT_DIR%"] == [""] (
+  echo FREETYPE_DIR is not set or does not exist. Configure adm/scripts/wasm_custom.bat.
+  exit /B 1
+)
+if /I ["%OCC_VIEWER_USE_DRACO%"] == ["ON"] if ["%OCC_VIEWER_DRACO_ROOT_DIR%"] == [""] (
+  echo DRACO_DIR is not set or does not exist. Configure adm/scripts/wasm_custom.bat.
+  exit /B 1
+)
+
 if ["%OCC_VIEWER_DO_CMAKE%"] == ["1"] (
   if ["%OCC_VIEWER_DO_CLEAN%"] == ["1"] (
     if exist "%OCC_VIEWER_DEST_DIR%" (
@@ -136,7 +205,7 @@ if ["%OCC_VIEWER_DO_CMAKE%"] == ["1"] (
 )
 if not exist "%OCC_VIEWER_WORK_DIR%" ( mkdir "%OCC_VIEWER_WORK_DIR%" )
 if     exist "%OCC_VIEWER_LOG_FILE%" ( del   "%OCC_VIEWER_LOG_FILE%" )
-echo "%OpenCASCADE_DIR%%OCC_VIEWER_WASM_ABI_SUFFIX%/lib/cmake/opencascade"
+echo "%OCC_VIEWER_OPENCASCADE_ROOT_DIR%/lib/cmake/opencascade"
 if ["%OCC_VIEWER_DO_CMAKE%"] == ["1"] (
   cmake -G "%OCC_VIEWER_GENERATOR%" ^
  -D CMAKE_TOOLCHAIN_FILE:FILEPATH="%OCC_VIEWER_TOOLCHAIN%" ^
@@ -145,11 +214,11 @@ if ["%OCC_VIEWER_DO_CMAKE%"] == ["1"] (
  -D CMAKE_C_FLAGS="%OCC_VIEWER_EXTRA_CFLAGS%" ^
  -D CMAKE_CXX_FLAGS="%OCC_VIEWER_EXTRA_CFLAGS%" ^
  -D OCCTV_WARNINGS_AS_ERRORS:BOOL="%OCC_VIEWER_WARNINGS_AS_ERRORS%" ^
- -D OpenCASCADE_ROOT_DIR:PATH="%OpenCASCADE_DIR%%OCC_VIEWER_WASM_ABI_SUFFIX%" ^
- -D FREETYPE_ROOT_DIR:PATH="%FREETYPE_DIR%%OCC_VIEWER_WASM_ABI_SUFFIX%" ^
+ -D OpenCASCADE_ROOT_DIR:PATH="%OCC_VIEWER_OPENCASCADE_ROOT_DIR%" ^
+ -D FREETYPE_ROOT_DIR:PATH="%OCC_VIEWER_FREETYPE_ROOT_DIR%" ^
  -D RapidJSON_ROOT_DIR:PATH="%RAPIDJSON_DIR%" ^
  -D OCCTV_USE_DRACO:BOOL="%OCC_VIEWER_USE_DRACO%" ^
- -D draco_ROOT_DIR:PATH="%DRACO_DIR%%OCC_VIEWER_WASM_ABI_SUFFIX%" ^
+ -D draco_ROOT_DIR:PATH="%OCC_VIEWER_DRACO_ROOT_DIR%" ^
  -D OCCTV_USE_PTHREADS:BOOL="%OCC_VIEWER_USE_PTHREADS%" ^
  -D OCCTViewer_BUILD_DOC_TYPESCRIPT:BOOL="%OCC_VIEWER_BUILD_DOC_TYPESCRIPT%" ^
  -D TYPEDOC_EXE:PATH="%TYPEDOC_EXE%" ^

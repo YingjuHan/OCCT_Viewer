@@ -1498,7 +1498,7 @@ export interface InteractiveShapeManager extends IManager {
   measureDistanceJson: (theObjId1: ObjectId, theSelMode1: number, theEntityId1: number,
                         theObjId2: ObjectId, theSelMode2: number, theEntityId2: number) => string;
 
-  /** @internal Return circle params for specified subshape (currently Edge only) as JSON string. */
+  /** @internal Return circle params for specified subshape (Edge/Face) as JSON string. */
   getCircleParamsJson: (theObjId: ObjectId, theSelMode: number, theEntityId: number) => string;
 
   /** @internal Return mass properties for specified shape as JSON string. */

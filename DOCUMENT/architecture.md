@@ -73,3 +73,32 @@ See `DOCUMENT/diagrams/architecture-layered.drawio` for the visual version.
 3. Mapping errors: expose `MedConverter` `ConversionStatus::MissingFields` in UI for better diagnostics.
 4. Memory pressure: large shapes/meshes cached in `MeshPresentation`/`InteractiveShape` should leverage LOD (`LodCae::Simplifier`) or cache toggles (`Presentation()->SetCachePrimitives`).
 5. TS API docs: generate examples/docs from the .d.ts definitions to reduce integration friction.
+
+## 8. Web Support Matrix (Samples)
+### 8.1 Shape formats
+| Category | Extensions | Notes |
+| --- | --- | --- |
+| Default | .glb, .gltf | glTF 2.0 |
+| Default | .brep, .bbrep, .binbrep, .sbrep | OCCT B-Rep |
+| Default | .stl | Triangulated mesh |
+| Optional | .step, .stp | Requires `OCCTV_USE_STEP=ON` |
+| Optional | .iges, .igs | Requires `OCCTV_USE_IGES=ON` |
+
+### 8.2 CAE mesh formats
+| Category | Extensions | Notes |
+| --- | --- | --- |
+| Default | .pos, .msh | Gmsh |
+| Default | .mdb | Mesh binary |
+| Desktop only | .med, .rmed | Requires `OCCTV_USE_MEDFILE=ON` and non-EMSCRIPTEN |
+
+### 8.3 Web build flags
+| Flag | Purpose | Default |
+| --- | --- | --- |
+| OCCTV_BUILD_WEB_VIEWER | Build Web TS/Wasm artifacts | ON |
+| OCCTV_USE_STEP | STEP reader | OFF |
+| OCCTV_USE_IGES | IGES reader | OFF |
+| OCCTV_USE_DRACO | glTF Draco decode | ON |
+| OCCTV_USE_PTHREADS | Wasm multithreading | OFF |
+| OCCTV_USE_WASM_EXCEPTION | Native Wasm exceptions | OFF |
+| OCCTV_USE_WASM_MEMORY64 | Wasm 64-bit memory | OFF |
+| OCCTV_WASM_CONFIGS | Wasm targets order | "wasm32-pthread wasm32" |

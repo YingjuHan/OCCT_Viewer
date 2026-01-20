@@ -27,25 +27,28 @@ endmacro()
 
 ####################################################################################
 
-if(NOT TARGET SCRWBase)
-  include(${CMAKE_CURRENT_LIST_DIR}/OCCTViewerTargets.cmake)
+if (NOT TARGET RWBase)
+  include (${CMAKE_CURRENT_LIST_DIR}/OCCTViewerTargets.cmake)
 endif()
 
 # Libraries
 # =========
-set(OCCTViewer_LIBRARIES
+set (_OCCTViewer_KNOWN_LIBRARIES
   RWBase
   ViewBase
-  RWRWShape
+  RWShape
   RWShapeConv
   ViewShape
+  ViewDim
   RWCae
   RWMed
   RWVtk
   RWMeshConv
   RWMeshExchanger
   ViewCae
+  ViewCaeGeom
   Viewer
+  FileExchange
   DrawBase
   RWCaeTest
   RWShapeTest
@@ -53,4 +56,11 @@ set(OCCTViewer_LIBRARIES
   ViewCaeTest
   ViewShapeTest
   ViewDraw
-  )
+)
+
+set(OCCTViewer_LIBRARIES "")
+foreach (_lib IN LISTS _OCCTViewer_KNOWN_LIBRARIES)
+  if (TARGET ${_lib})
+    list (APPEND OCCTViewer_LIBRARIES ${_lib})
+  endif()
+endforeach()

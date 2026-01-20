@@ -17,6 +17,7 @@
 #include <BinTools.hxx>
 #include <BRep_Tool.hxx>
 #include <BRepAdaptor_Curve.hxx>
+#include <BRepAdaptor_Surface.hxx>
 #include <BRepExtrema_DistShapeShape.hxx>
 #include <BRepGProp.hxx>
 #include <BRepMesh_IncrementalMesh.hxx>
@@ -29,6 +30,8 @@
 #include <BRepTools.hxx>
 #include <GeomAbs_CurveType.hxx>
 #include <GProp_GProps.hxx>
+#include <gp_Cylinder.hxx>
+#include <gp_Sphere.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Iterator.hxx>
@@ -627,7 +630,7 @@ bool InteractiveShapeManager::saveModelShape(const ObjectId&                    
     TopoDS_Shape aShape;
     if (theObjId == "*") {
         if (theElems.IsValid()) {
-            Message::SendFail() << "Error: saveModelShape(" << theFile << "," << theObjId
+            Message::SendFail() << "[ERR_EXPORT_SHAPE] saveModelShape(" << theFile << "," << theObjId
                                 << ") is called with non-empty subshape reference";
             return false;
         }
@@ -636,7 +639,7 @@ bool InteractiveShapeManager::saveModelShape(const ObjectId&                    
     } else {
         Handle(ViewShape::InteractiveShapeOwner) aShapeOwner;
         if (!FindPrsOwner(aShapeOwner, theObjId)) {
-            Message::SendFail() << "Error: saveModelShape(" << theFile << "," << theObjId
+            Message::SendFail() << "[ERR_EXPORT_SHAPE] saveModelShape(" << theFile << "," << theObjId
                                 << ") is called for non-existing object";
             return false;
         }
@@ -649,12 +652,12 @@ bool InteractiveShapeManager::saveModelShape(const ObjectId&                    
     }
 
     if (aShape.IsNull()) {
-        Message::SendFail() << "Error: saveModelShape(" << theFile << "," << theObjId << ") is called for NULL shape";
+        Message::SendFail() << "[ERR_EXPORT_SHAPE] saveModelShape(" << theFile << "," << theObjId << ") is called for NULL shape";
         return false;
     }
 
     if (!BinTools::Write(aShape, theFile.c_str())) {
-        Message::SendFail() << "Error: saveModelShape(" << theFile << "," << theObjId << ") failed to save file";
+        Message::SendFail() << "[ERR_EXPORT_SHAPE] saveModelShape(" << theFile << "," << theObjId << ") failed to save file";
         return false;
     }
     return true;
@@ -973,8 +976,9 @@ std::string InteractiveShapeManager::GetCircleParamsJson(const ObjectId& theObjI
         return std::string();
     }
 
-    if (anElemType != ViewShape::ShapeSelElemType::Edge) {
-        Message::SendFail() << "Error: GetCircleParamsJson() currently supports Edge only";
+    if (anElemType != ViewShape::ShapeSelElemType::Edge
+        && anElemType != ViewShape::ShapeSelElemType::Face) {
+        Message::SendFail() << "Error: GetCircleParamsJson() supports Edge or Face only";
         return std::string();
     }
 
@@ -985,36 +989,67 @@ std::string InteractiveShapeManager::GetCircleParamsJson(const ObjectId& theObjI
     }
 
     const TopoDS_Shape aSub = aOwner->GetSubshape(anElemType, theEntityId);
-    if (aSub.IsNull() || aSub.ShapeType() != TopAbs_EDGE) {
-        Message::SendFail() << "Error: GetCircleParamsJson() failed to resolve Edge subshape";
+    auto toJson = [](const gp_Ax2& theAx2, const double theRad) -> std::string {
+        const gp_Pnt aLoc = theAx2.Location();
+        const gp_Dir aDir = theAx2.Direction();
+        const gp_Dir aXDir = theAx2.XDirection();
+        const gp_Pnt anAnchor = aLoc.Translated(gp_Vec(aXDir) * theRad);
+
+        std::ostringstream aJson;
+        aJson << std::setprecision(17);
+        aJson << "{\"ax2\":{\"location\":" << jsonPoint(aLoc)
+              << ",\"direction\":" << jsonPoint(gp_Pnt(aDir.X(), aDir.Y(), aDir.Z()))
+              << ",\"xDirection\":" << jsonPoint(gp_Pnt(aXDir.X(), aXDir.Y(), aXDir.Z()))
+              << "},\"radius\":" << theRad
+              << ",\"anchor\":" << jsonPoint(anAnchor) << "}";
+        return aJson.str();
+    };
+
+    if (anElemType == ViewShape::ShapeSelElemType::Edge) {
+        if (aSub.IsNull() || aSub.ShapeType() != TopAbs_EDGE) {
+            Message::SendFail() << "Error: GetCircleParamsJson() failed to resolve Edge subshape";
+            return std::string();
+        }
+
+        const TopoDS_Edge anEdge = TopoDS::Edge(aSub);
+        BRepAdaptor_Curve aCurve(anEdge);
+        if (aCurve.GetType() != GeomAbs_Circle) {
+            Message::SendFail() << "Error: GetCircleParamsJson() selected edge is not a circle";
+            return std::string();
+        }
+
+        const gp_Circ aCirc = aCurve.Circle();
+        return toJson(aCirc.Position(), aCirc.Radius());
+    }
+
+    if (aSub.IsNull() || aSub.ShapeType() != TopAbs_FACE) {
+        Message::SendFail() << "Error: GetCircleParamsJson() failed to resolve Face subshape";
         return std::string();
     }
 
-    const TopoDS_Edge anEdge = TopoDS::Edge(aSub);
-    BRepAdaptor_Curve aCurve(anEdge);
-    if (aCurve.GetType() != GeomAbs_Circle) {
-        Message::SendFail() << "Error: GetCircleParamsJson() selected edge is not a circle";
-        return std::string();
+    const TopoDS_Face aFace = TopoDS::Face(aSub);
+    BRepAdaptor_Surface aSurf(aFace, true);
+    if (aSurf.GetType() == GeomAbs_Cylinder) {
+        const gp_Cylinder aCyl = aSurf.Cylinder();
+        return toJson(aCyl.Position().Ax2(), aCyl.Radius());
+    }
+    if (aSurf.GetType() == GeomAbs_Sphere) {
+        const gp_Sphere aSphere = aSurf.Sphere();
+        return toJson(aSphere.Position().Ax2(), aSphere.Radius());
+    }
+    if (aSurf.GetType() == GeomAbs_Plane) {
+        for (TopExp_Explorer anExp(aFace, TopAbs_EDGE); anExp.More(); anExp.Next()) {
+            const TopoDS_Edge anEdge = TopoDS::Edge(anExp.Current());
+            BRepAdaptor_Curve aCurve(anEdge);
+            if (aCurve.GetType() == GeomAbs_Circle) {
+                const gp_Circ aCirc = aCurve.Circle();
+                return toJson(aCirc.Position(), aCirc.Radius());
+            }
+        }
     }
 
-    const gp_Circ aCirc = aCurve.Circle();
-    const gp_Ax2  anAx2 = aCirc.Position();
-    const double  aRad  = aCirc.Radius();
-
-    const gp_Pnt aLoc = anAx2.Location();
-    const gp_Dir aDir = anAx2.Direction();
-    const gp_Dir aXDir = anAx2.XDirection();
-
-    const gp_Pnt anAnchor = aLoc.Translated(gp_Vec(aXDir) * aRad);
-
-    std::ostringstream aJson;
-    aJson << std::setprecision(17);
-    aJson << "{\"ax2\":{\"location\":" << jsonPoint(aLoc)
-          << ",\"direction\":" << jsonPoint(gp_Pnt(aDir.X(), aDir.Y(), aDir.Z()))
-          << ",\"xDirection\":" << jsonPoint(gp_Pnt(aXDir.X(), aXDir.Y(), aXDir.Z()))
-          << "},\"radius\":" << aRad
-          << ",\"anchor\":" << jsonPoint(anAnchor) << "}";
-    return aJson.str();
+    Message::SendFail() << "Error: GetCircleParamsJson() face is not a circle/cylinder/sphere";
+    return std::string();
 }
 
 // ================================================================

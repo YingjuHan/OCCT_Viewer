@@ -19,10 +19,15 @@ export * from './InteractiveTextLabel.js';
 export * from './InteractiveDimension.js';
 export * from './InteractiveViewCube.js';
 export * from './InteractiveSphericalAxes.js';
+export * from './SceneGraph.js';
+export * from './MeasurementStore.js';
+export * from './SavedViewStore.js';
+export * from './ProjectStore.js';
 export * from './ViewerEventManager.js';
 export * from './ViewerEventTarget.js';
 export * from './ViewManager.js';
 export * from './Subview.js';
+export { ViewerBuildConfig } from './ViewerBuildConfig.js';
 /**
  * This enumeration defines gravity level of messages.
  * It reflects values of corresponding C++ `Message_Gravity` enumeration defined by OCCT,
@@ -733,12 +738,25 @@ export class SCwebviewer {
      * @param {string} theText text to print
      */
     printErr(theText) { this.printMessage(theText, MessageGravity.Fail); }
+    parseMessage(theText) {
+        if (!theText) {
+            return { message: '', errorCode: null };
+        }
+        const aMatch = /^\[([A-Z0-9_-]+)\]\s*(.*)$/.exec(theText);
+        if (!aMatch) {
+            return { message: theText, errorCode: null };
+        }
+        return { message: aMatch[2], errorCode: aMatch[1] };
+    }
     /**
      * C++ `Message::Send()` callback redirecting to Terminal.
      * @param {string} theText text to print
      * @param {number} theGravity message gravity within 0..4 range
      */
     printMessage(theText, theGravity) {
+        var _a;
+        const aParsed = this.parseMessage(theText);
+        (_a = this._myEventManager) === null || _a === void 0 ? void 0 : _a.onViewerMessage(aParsed.message, theGravity, aParsed.errorCode, theText);
         if (theGravity.valueOf() < this._myTraceLevel) {
             return;
         }

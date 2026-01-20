@@ -9,6 +9,14 @@
 #include <BinTools_ShapeReader.hxx>
 #include <BRep_Builder.hxx>
 #include <BRepTools.hxx>
+#ifdef OCCTV_USE_STEP
+  #include <STEPControl_Reader.hxx>
+  #include <IFSelect_ReturnStatus.hxx>
+#endif
+#ifdef OCCTV_USE_IGES
+  #include <IGESControl_Reader.hxx>
+  #include <IFSelect_ReturnStatus.hxx>
+#endif
 #include <Message.hxx>
 #include <OSD_MemInfo.hxx>
 #include <OSD_Timer.hxx>
@@ -410,7 +418,7 @@ namespace RWShapeConv
                                                                          std::ios::in | std::ios::binary);
         if (aFile.get() == nullptr)
         {
-            Message::SendFail() << "Error: unable to open file '" << theFilePath << "'";
+            Message::SendFail() << "[ERR_SHAPE_LOAD] unable to open file '" << theFilePath << "'";
             return false;
         }
 
@@ -510,7 +518,7 @@ namespace RWShapeConv
                                                                                    std::ios::in | std::ios::binary);
             if (aRootStream.get() == nullptr || !aParser.ParseGltfFromMemory(*aRootStream, theFilePath.c_str()))
             {
-                Message::SendFail() << "Error: invalid glTF file '" << theFilePath << "'";
+                Message::SendFail() << "[ERR_SHAPE_LOAD] invalid glTF file '" << theFilePath << "'";
                 return false;
             }
 
@@ -551,7 +559,7 @@ namespace RWShapeConv
         Handle(Poly_Triangulation) aTris = RWStl::ReadFile(theFilePath.c_str());
         if (aTris.IsNull())
         {
-            Message::SendFail() << "Error: file '" << theFilePath << "' cannot be read as STL";
+            Message::SendFail() << "[ERR_SHAPE_LOAD] file '" << theFilePath << "' cannot be read as STL";
             return false;
         }
 
@@ -596,6 +604,10 @@ namespace RWShapeConv
             {
                 return "BREP";
             }
+            else if (IsDataStartsWithHeader(aBytes, "ISO-10303-21"))
+            {
+                return "STEP";
+            }
             else if (IsDataStartsWithHeader(aBytes, "glTF") || IsDataStartsWithHeader(aBytes, "OCO"))
             {
                 return "GLTF";
@@ -608,6 +620,14 @@ namespace RWShapeConv
         else if (aFileNameLower.EndsWith(".brep") || aFileNameLower.EndsWith(".sbrep"))
         {
             return "BREP";
+        }
+        else if (aFileNameLower.EndsWith(".step") || aFileNameLower.EndsWith(".stp"))
+        {
+            return "STEP";
+        }
+        else if (aFileNameLower.EndsWith(".iges") || aFileNameLower.EndsWith(".igs"))
+        {
+            return "IGES";
         }
         else if (aFileNameLower.EndsWith(".gltf") || aFileNameLower.EndsWith(".glb"))
         {
@@ -640,7 +660,7 @@ namespace RWShapeConv
                                                                              std::ios::in | std::ios::binary);
             if (aFile.get() == nullptr)
             {
-                Message::SendFail() << "Error: the file '" << theFilePath << "' cannot be opened";
+                Message::SendFail() << "[ERR_SHAPE_LOAD] the file '" << theFilePath << "' cannot be opened";
                 return false;
             }
             aFile->read(aBytes, sizeof(aBytes) - 1);
@@ -668,8 +688,124 @@ namespace RWShapeConv
         {
             return OpenStlShape(theShapeList, theName, theFileSystem, theFilePath);
         }
+        else if (aFileNameLower.EndsWith(".step") || aFileNameLower.EndsWith(".stp") || IsDataStartsWithHeader(aBytes, "ISO-10303-21"))
+        {
+#ifdef OCCTV_USE_STEP
+            STEPControl_Reader aReader;
+            IFSelect_ReturnStatus aStatus = aReader.ReadFile(theFilePath.c_str());
+            if (aStatus != IFSelect_RetDone)
+            {
+                Message::SendFail() << "[ERR_SHAPE_LOAD] failed to read STEP file '" << theFilePath << "'";
+                return false;
+            }
+            aReader.TransferRoots();
+            const TopoDS_Shape aShape = aReader.OneShape();
+            if (aShape.IsNull())
+            {
+                Message::SendFail() << "[ERR_SHAPE_LOAD] STEP file '" << theFilePath << "' has no shape";
+                return false;
+            }
 
-        Message::SendFail() << "Error: file '" << theFilePath << "' has unsupported mesh format '" << aBytes << "'";
+            if (myForceSinglePrec)
+            {
+                ShrinkTessellationPrecision(aShape);
+            }
+
+            if (myExpParams.toExplode)
+            {
+                Handle(RWShape::ShapeData) aRootOwner = new RWShape::ShapeData(myExpParams.toUsePrefix ? theName : "",
+                                                                               theFileSystem);
+                aRootOwner->SetShape(aShape);
+
+                ExplodeContext anExpTool;
+                theShapeList = anExpTool.Explode(aRootOwner, myExpParams);
+            }
+            else
+            {
+                TCollection_AsciiString aName = theName;
+                if (aName.IsEmpty())
+                {
+                    TCollection_AsciiString aFileFolder;
+                    OSD_Path::FolderAndFileFromPath(theFilePath.c_str(), aFileFolder, aName);
+                }
+
+                ExplodeContext anExpTool(theFileSystem);
+                Handle(RWShape::ShapeData) aShapeIO = anExpTool.AddShape(aName, aShape);
+                theShapeList.Append(aShapeIO);
+            }
+            if (theShapeList.IsEmpty())
+            {
+                return false;
+            }
+
+            Message::SendInfo() << "Loaded STEP file '" << theFilePath << "' in " << aReadTimer.ElapsedTime() << " s";
+            Message::DefaultMessenger()->Send(OSD_MemInfo::PrintInfo(), Message_Trace);
+            return true;
+#else
+            Message::SendFail() << "[ERR_STEP_DISABLED] STEP support is disabled (OCCTV_USE_STEP=OFF)";
+            return false;
+#endif
+        }
+        else if (aFileNameLower.EndsWith(".iges") || aFileNameLower.EndsWith(".igs"))
+        {
+#ifdef OCCTV_USE_IGES
+            IGESControl_Reader aReader;
+            IFSelect_ReturnStatus aStatus = aReader.ReadFile(theFilePath.c_str());
+            if (aStatus != IFSelect_RetDone)
+            {
+                Message::SendFail() << "[ERR_SHAPE_LOAD] failed to read IGES file '" << theFilePath << "'";
+                return false;
+            }
+            aReader.TransferRoots();
+            const TopoDS_Shape aShape = aReader.OneShape();
+            if (aShape.IsNull())
+            {
+                Message::SendFail() << "[ERR_SHAPE_LOAD] IGES file '" << theFilePath << "' has no shape";
+                return false;
+            }
+
+            if (myForceSinglePrec)
+            {
+                ShrinkTessellationPrecision(aShape);
+            }
+
+            if (myExpParams.toExplode)
+            {
+                Handle(RWShape::ShapeData) aRootOwner = new RWShape::ShapeData(myExpParams.toUsePrefix ? theName : "",
+                                                                               theFileSystem);
+                aRootOwner->SetShape(aShape);
+
+                ExplodeContext anExpTool;
+                theShapeList = anExpTool.Explode(aRootOwner, myExpParams);
+            }
+            else
+            {
+                TCollection_AsciiString aName = theName;
+                if (aName.IsEmpty())
+                {
+                    TCollection_AsciiString aFileFolder;
+                    OSD_Path::FolderAndFileFromPath(theFilePath.c_str(), aFileFolder, aName);
+                }
+
+                ExplodeContext anExpTool(theFileSystem);
+                Handle(RWShape::ShapeData) aShapeIO = anExpTool.AddShape(aName, aShape);
+                theShapeList.Append(aShapeIO);
+            }
+            if (theShapeList.IsEmpty())
+            {
+                return false;
+            }
+
+            Message::SendInfo() << "Loaded IGES file '" << theFilePath << "' in " << aReadTimer.ElapsedTime() << " s";
+            Message::DefaultMessenger()->Send(OSD_MemInfo::PrintInfo(), Message_Trace);
+            return true;
+#else
+            Message::SendFail() << "[ERR_IGES_DISABLED] IGES support is disabled (OCCTV_USE_IGES=OFF)";
+            return false;
+#endif
+        }
+
+        Message::SendFail() << "[ERR_SHAPE_FORMAT] file '" << theFilePath << "' has unsupported format '" << aBytes << "'";
         return false;
     }
 

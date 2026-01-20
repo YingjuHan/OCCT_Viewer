@@ -16,6 +16,13 @@ export interface ISceneGraph {
   nodes: ISceneGraphNode[];
 }
 
+export interface SceneSearchResult {
+  id: ObjectId;
+  name: string;
+  type: string;
+  matchField: 'id' | 'name' | 'type';
+}
+
 interface ISceneGraphJsonBBox {
   min: [number, number, number];
   max: [number, number, number];
@@ -69,6 +76,55 @@ export class SceneGraph {
     };
   }
 
+  public static search(theGraph: ISceneGraph | null,
+                       theQuery: string,
+                       theOptions?: { caseSensitive?: boolean; useRegex?: boolean }): SceneSearchResult[] {
+    if (!theGraph || !theQuery) {
+      return [];
+    }
+
+    const caseSensitive = theOptions?.caseSensitive === true;
+    const useRegex = theOptions?.useRegex === true;
+    const query = caseSensitive ? theQuery : theQuery.toLowerCase();
+    let regex: RegExp | null = null;
+
+    if (useRegex) {
+      try {
+        regex = new RegExp(theQuery, caseSensitive ? '' : 'i');
+      } catch {
+        regex = null;
+      }
+    }
+
+    const matches: SceneSearchResult[] = [];
+    for (const node of theGraph.nodes) {
+      const id = node.id ?? '';
+      const name = node.name ?? node.id ?? '';
+      const type = node.type ?? '';
+
+      const check = (value: string): boolean => {
+        if (!value) {
+          return false;
+        }
+        if (regex) {
+          return regex.test(value);
+        }
+        const val = caseSensitive ? value : value.toLowerCase();
+        return val.includes(query);
+      };
+
+      if (check(id)) {
+        matches.push({ id, name, type, matchField: 'id' });
+      } else if (check(name)) {
+        matches.push({ id, name, type, matchField: 'name' });
+      } else if (check(type)) {
+        matches.push({ id, name, type, matchField: 'type' });
+      }
+    }
+
+    return matches;
+  }
+
   private static parseBBox(theBBox: ISceneGraphJsonBBox | null | undefined): IBndBox3 | null {
     if (!theBBox || !theBBox.min || !theBBox.max) {
       return null;
@@ -78,4 +134,3 @@ export class SceneGraph {
     return {cornerMin, cornerMax};
   }
 }
-

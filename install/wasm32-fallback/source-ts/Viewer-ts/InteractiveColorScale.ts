@@ -1,6 +1,3 @@
-// Created by: Kirill Gavrilov
-// Copyright (c) 2022 Huawei Technologies Co., Ltd.
-
 import type {IManager, ColorString, IVec2, ObjectId} from './CommonTools.js';
 import {ViewCorner} from './CommonTools.js';
 import {InteractiveObject} from './InteractiveObject.js';
