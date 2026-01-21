@@ -2,10 +2,21 @@
 
 本文件把前期分析结论与 `DOCUMENT/TODO/codex-plan.md` 的模板落到“可直接创建的 Issue 列表”。每条 Issue 都包含：背景/范围/验收/样例/失败策略/建议改动点/可复制的 Codex 提示词。
 
-## 已完成（近期修复）
+## 已完成（阶段落地）
 
-- 修正 `source/RWBase` 目录大小写并同步引用（`CMakeLists.txt`、`TS_API_GUIDE.md`）。
-- 修复 wasm32-pthread-fwasm-exceptions 运行时 JS 兼容问题：补齐 `jsUTF8ToString`/指针转换并为 `localTransformation` 增加容错（`install/wasm32-pthread-fwasm-exceptions/wasm32-pthread/Viewer-wasm.js`、`install/wasm32-pthread-fwasm-exceptions/wasm32/InteractiveObject.js`）。
+- 基础修复：修正 `source/RWBase` 目录大小写并同步引用（`CMakeLists.txt`、`TS_API_GUIDE.md`）；修复 wasm32-pthread-fwasm-exceptions 运行时 JS 兼容问题（`install/wasm32-pthread-fwasm-exceptions/wasm32-pthread/Viewer-wasm.js`、`install/wasm32-pthread-fwasm-exceptions/wasm32/InteractiveObject.js`）。
+- P0-001：STEP/IGES 转换产物规范已落地（`DOCUMENT/TODO/format-step-iges-conversion-spec.md`）。
+- P0-002/003/004/015：SceneGraph 全链路落地（C++ JSON 导出 + TS 解析 + Vue 树/搜索/批量可见性）。
+- P0-005/006/007/008：Measurement 体系落地（距离/半径/直径 + 质量属性 + 结果列表/导出）。
+- P0-009/010：Saved Views + Project 导入导出落地（`source-ts/Viewer-ts/SavedViewStore.ts`、`source-ts/Viewer-ts/ProjectStore.ts`）。
+- P0-012/013/014/016/017/018：STEP/IGES 直读开关、错误码/Toast、Benchmark 面板、Clipping 预设、Export 面板、README 支持矩阵已覆盖（`ReadMe.md` 等）。
+- P0-011：Box Selection 交互收尾（SelectionManager 框选模式）。
+- P1-001：PMI/MBD 只读展示落地（PMI 数据 → TextLabel/Dimension + Vue 列表/定位）。
+
+## 下一阶段（启动清单）
+
+- P1-002：干涉检测（AABB 粗筛 + 精确检测）：结果列表/高亮/定位流程。
+- P1-004：CAE Probe（点值查询）+ 结果面板：复用现有 picking + Vue 面板 + 导出。
 
 ## 约定
 
