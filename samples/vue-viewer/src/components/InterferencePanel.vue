@@ -99,7 +99,7 @@ const formatSummary = (record: InterferenceRecord): string => {
     return 'AABB separated';
   }
   const distText = formatDistance(res.distance);
-  return res.interferes ? `Interferes · d=${distText}` : `Clear · d=${distText}`;
+  return res.interferes ? `Interferes - d=${distText}` : `Clear - d=${distText}`;
 };
 
 const runCheck = () => {
