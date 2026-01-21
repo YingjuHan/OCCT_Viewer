@@ -25,6 +25,8 @@ import { SCwebviewer,
     UnitManager,
     ViewerBuildConfig} from '@hyj/SCwebviewer/wasm32/SCwebviewer.js';
 import { MeasurementStore } from '../../../../source-ts/Viewer-ts/MeasurementStore';
+import { PmiStore } from '../../../../source-ts/Viewer-ts/PmiStore';
+import type { PmiItem } from '../../../../source-ts/Viewer-ts/PmiStore';
 import { SavedViewStore } from '../../../../source-ts/Viewer-ts/SavedViewStore';
 import { ProjectStore } from '../../../../source-ts/Viewer-ts/ProjectStore';
 import type { ProjectData, ProjectSource } from '../../../../source-ts/Viewer-ts/ProjectStore';
@@ -56,6 +58,7 @@ export class ViewerService {
     private _lastLoadedMeshId?: ObjectId;
     private _lastLoadedShapeId?: ObjectId;
     public measurementStore: MeasurementStore | null = null;
+    public pmiStore: PmiStore | null = null;
     public savedViewStore: SavedViewStore | null = null;
     public projectStore: ProjectStore | null = null;
     private _projectSources: ProjectSource[] = [];
@@ -105,9 +108,21 @@ export class ViewerService {
 
         this._viewer.eventManager.addEventListener(UserEvents.onColorMapperChanged, this.updateColorScale.bind(this));
         this.measurementStore = new MeasurementStore(this._viewer);
+        this.pmiStore = new PmiStore(this._viewer);
         this.savedViewStore = new SavedViewStore(this._viewer);
         this.projectStore = new ProjectStore(this._viewer);
         this._resolveReady?.();
+    }
+
+    public importPmiJson(theJson: string): { items: PmiItem[]; invalidCount: number } {
+        if (!this.pmiStore) {
+            return { items: [], invalidCount: 0 };
+        }
+        return this.pmiStore.importJson(theJson);
+    }
+
+    public clearPmi(): void {
+        this.pmiStore?.clear();
     }
 
     public async loadLocalFiles(files: File[] | FileList): Promise<LocalLoadResult[]> {
@@ -1173,6 +1188,7 @@ export class ViewerService {
 
         this.removeObjectsByType(undefined, [InteractiveViewCube]);
         this.measurementStore?.clear();
+        this.pmiStore?.clear();
         this.savedViewStore?.clear();
         this._projectSources = [];
         this._pendingProject = null;

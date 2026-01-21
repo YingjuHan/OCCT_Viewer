@@ -35,6 +35,7 @@ export * from './InteractiveViewCube.js';
 export * from './InteractiveSphericalAxes.js';
 export * from './SceneGraph.js';
 export * from './MeasurementStore.js';
+export * from './PmiStore.js';
 export * from './SavedViewStore.js';
 export * from './ProjectStore.js';
 export * from './ViewerEventManager.js';

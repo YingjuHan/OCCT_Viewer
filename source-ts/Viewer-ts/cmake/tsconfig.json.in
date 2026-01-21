@@ -23,6 +23,7 @@
     "${CMAKE_CURRENT_SOURCE_DIR}/InteractiveTextLabel.ts",
     "${CMAKE_CURRENT_SOURCE_DIR}/InteractiveViewCube.ts",
     "${CMAKE_CURRENT_SOURCE_DIR}/MeasurementStore.ts",
+    "${CMAKE_CURRENT_SOURCE_DIR}/PmiStore.ts",
     "${CMAKE_CURRENT_SOURCE_DIR}/ProjectStore.ts",
     "${CMAKE_CURRENT_SOURCE_DIR}/SCwebviewer.ts",
     "${CMAKE_CURRENT_SOURCE_DIR}/SceneGraph.ts",

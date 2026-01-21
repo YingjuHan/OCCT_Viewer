@@ -15,6 +15,7 @@ set (Viewer_TSFILES
   InteractiveScaleRuler.ts
   InteractiveShape.ts
   MeasurementStore.ts
+  PmiStore.ts
   ProjectStore.ts
   SavedViewStore.ts
   SceneGraph.ts
