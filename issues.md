@@ -12,11 +12,13 @@
 - P0-012/013/014/016/017/018：STEP/IGES 直读开关、错误码/Toast、Benchmark 面板、Clipping 预设、Export 面板、README 支持矩阵已覆盖（`ReadMe.md` 等）。
 - P0-011：Box Selection 交互收尾（SelectionManager 框选模式）。
 - P1-001：PMI/MBD 只读展示落地（PMI 数据 → TextLabel/Dimension + Vue 列表/定位）。
+- P1-002：干涉检测（AABB 粗筛 + 精确检测）：结果列表/高亮/定位流程。
+- P1-004：CAE Probe（点值查询）+ 结果面板：复用现有 picking + Vue 面板 + 导出。
 
 ## 下一阶段（启动清单）
 
-- P1-002：干涉检测（AABB 粗筛 + 精确检测）：结果列表/高亮/定位流程。
-- P1-004：CAE Probe（点值查询）+ 结果面板：复用现有 picking + Vue 面板 + 导出。
+- P1-003：截面分析增强：剖切填充/剖面线/多剖面。
+- P1-005：CAE Plot：沿线/随时间曲线（XY Plot）。
 
 ## 约定
 
