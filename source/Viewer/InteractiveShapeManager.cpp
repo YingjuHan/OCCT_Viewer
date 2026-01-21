@@ -15,9 +15,11 @@
 
 #include <AIS_InteractiveContext.hxx>
 #include <BinTools.hxx>
+#include <Bnd_Box.hxx>
 #include <BRep_Tool.hxx>
 #include <BRepAdaptor_Curve.hxx>
 #include <BRepAdaptor_Surface.hxx>
+#include <BRepBndLib.hxx>
 #include <BRepExtrema_DistShapeShape.hxx>
 #include <BRepGProp.hxx>
 #include <BRepMesh_IncrementalMesh.hxx>
@@ -32,6 +34,7 @@
 #include <GProp_GProps.hxx>
 #include <gp_Cylinder.hxx>
 #include <gp_Sphere.hxx>
+#include <Precision.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Iterator.hxx>
@@ -1125,6 +1128,95 @@ std::string InteractiveShapeManager::GetMassPropsJson(const ObjectId& theObjId) 
 }
 
 // ================================================================
+// Function : CheckInterferenceJson
+// ================================================================
+std::string InteractiveShapeManager::CheckInterferenceJson(const ObjectId& theObjId1,
+                                                           const ObjectId& theObjId2,
+                                                           const double    theTolerance) const
+{
+    Handle(ViewShape::InteractiveShapeOwner) aOwner1;
+    if (!FindPrsOwner(aOwner1, theObjId1)) {
+        Message::SendFail() << "[ERR_SHAPE_INTERF] CheckInterferenceJson() called for non-existing object '"
+                            << theObjId1 << "'";
+        return std::string();
+    }
+    if (aOwner1->ShapeData().IsNull()) {
+        Message::SendFail() << "[ERR_SHAPE_INTERF] CheckInterferenceJson() called for object without shape data '"
+                            << theObjId1 << "'";
+        return std::string();
+    }
+
+    Handle(ViewShape::InteractiveShapeOwner) aOwner2;
+    if (!FindPrsOwner(aOwner2, theObjId2)) {
+        Message::SendFail() << "[ERR_SHAPE_INTERF] CheckInterferenceJson() called for non-existing object '"
+                            << theObjId2 << "'";
+        return std::string();
+    }
+    if (aOwner2->ShapeData().IsNull()) {
+        Message::SendFail() << "[ERR_SHAPE_INTERF] CheckInterferenceJson() called for object without shape data '"
+                            << theObjId2 << "'";
+        return std::string();
+    }
+
+    const TopoDS_Shape aShape1 = aOwner1->ShapeData()->GetSingleShape();
+    if (aShape1.IsNull()) {
+        Message::SendFail() << "[ERR_SHAPE_INTERF] CheckInterferenceJson() failed to resolve shape '"
+                            << theObjId1 << "'";
+        return std::string();
+    }
+
+    const TopoDS_Shape aShape2 = aOwner2->ShapeData()->GetSingleShape();
+    if (aShape2.IsNull()) {
+        Message::SendFail() << "[ERR_SHAPE_INTERF] CheckInterferenceJson() failed to resolve shape '"
+                            << theObjId2 << "'";
+        return std::string();
+    }
+
+    Bnd_Box aBox1;
+    Bnd_Box aBox2;
+    BRepBndLib::Add(aShape1, aBox1);
+    BRepBndLib::Add(aShape2, aBox2);
+    if (aBox1.IsVoid() || aBox2.IsVoid()) {
+        Message::SendFail() << "[ERR_SHAPE_INTERF] CheckInterferenceJson() failed to compute bounding boxes";
+        return std::string();
+    }
+
+    const bool isBBoxHit = !aBox1.IsOut(aBox2);
+    bool isExactDone = false;
+    bool isInterferes = false;
+    bool hasDistance = false;
+    double aDistVal = 0.0;
+    const double aTol = theTolerance > 0.0 ? theTolerance : Precision::Confusion();
+
+    if (isBBoxHit) {
+        isExactDone = true;
+        BRepExtrema_DistShapeShape aDist(aShape1, aShape2, Extrema_ExtFlag_MIN);
+        aDist.Perform();
+        if (!aDist.IsDone() || aDist.NbSolution() < 1) {
+            Message::SendFail() << "[ERR_SHAPE_INTERF] CheckInterferenceJson() failed to compute distance";
+            return std::string();
+        }
+        aDistVal = aDist.Value();
+        hasDistance = true;
+        isInterferes = aDistVal <= aTol;
+    }
+
+    std::ostringstream aJson;
+    aJson << std::setprecision(17);
+    aJson << "{\"objId1\":\"" << theObjId1 << "\",\"objId2\":\"" << theObjId2
+          << "\",\"bboxHit\":" << (isBBoxHit ? "true" : "false")
+          << ",\"exactDone\":" << (isExactDone ? "true" : "false")
+          << ",\"distance\":";
+    if (hasDistance) {
+        aJson << aDistVal;
+    } else {
+        aJson << "null";
+    }
+    aJson << ",\"interferes\":" << (isInterferes ? "true" : "false") << "}";
+    return aJson.str();
+}
+
+// ================================================================
 // Function : GetSubshapeInfo
 // ================================================================
 ShapeInfo InteractiveShapeManager::GetSubshapeInfo(const ObjectId& theObjId,
@@ -1516,6 +1608,7 @@ EMSCRIPTEN_BINDINGS(InteractiveShapeManager)
         .function("measureDistanceJson", &InteractiveShapeManager::MeasureDistanceJson)
         .function("getCircleParamsJson", &InteractiveShapeManager::GetCircleParamsJson)
         .function("getMassPropsJson", &InteractiveShapeManager::GetMassPropsJson)
+        .function("checkInterferenceJson", &InteractiveShapeManager::CheckInterferenceJson)
         //
         .function("clearSelectionGroups", &InteractiveShapeManager::ClearSelectionGroups)
         .function("addSelectionGroup", &InteractiveShapeManager::AddSelectionGroup);

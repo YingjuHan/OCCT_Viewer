@@ -234,6 +234,13 @@ public:
     //!                       "centroidSource":"volume|surface","volumeValid":bool}
     Standard_EXPORT std::string GetMassPropsJson(const ObjectId& theObjId) const;
 
+    //! Check interference between two shape objects (AABB coarse test + exact distance).
+    //! @return JSON string: {"objId1":"..","objId2":"..","bboxHit":bool,"exactDone":bool,
+    //!                       "distance":number|null,"interferes":bool}
+    Standard_EXPORT std::string CheckInterferenceJson(const ObjectId& theObjId1,
+                                                      const ObjectId& theObjId2,
+                                                      const double    theTolerance) const;
+
     //! Remove all selection group.
     Standard_EXPORT void ClearSelectionGroups(const ObjectId& theObjId);
 
