@@ -82,6 +82,17 @@ export interface IShapeMassProps {
 export declare class ShapeMassProps {
     static parseJson(theJson: string): IShapeMassProps | null;
 }
+export interface IInterferenceResult {
+    objId1: ObjectId;
+    objId2: ObjectId;
+    bboxHit: boolean;
+    exactDone: boolean;
+    distance: number | null;
+    interferes: boolean;
+}
+export declare class InterferenceResult {
+    static parseJson(theJson: string): IInterferenceResult | null;
+}
 /**
  * Auxiliary class for accessing InteractiveShape subshapes.
  */

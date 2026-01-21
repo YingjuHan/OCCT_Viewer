@@ -23,13 +23,13 @@ import { SCwebviewer,
     CaeMeshObjectSelMode,
     Subview,
     UnitManager,
-    ViewerBuildConfig} from '@hyj/SCwebviewer/wasm32/SCwebviewer.js';
-import { MeasurementStore } from '../../../../source-ts/Viewer-ts/MeasurementStore';
-import { SavedViewStore } from '../../../../source-ts/Viewer-ts/SavedViewStore';
-import { ProjectStore } from '../../../../source-ts/Viewer-ts/ProjectStore';
-import type { ProjectData, ProjectSource } from '../../../../source-ts/Viewer-ts/ProjectStore';
-import { SceneGraph } from '../../../../source-ts/Viewer-ts/SceneGraph';
-import type { SceneSearchResult } from '../../../../source-ts/Viewer-ts/SceneGraph';
+    ViewerBuildConfig,
+    MeasurementStore,
+    PmiStore,
+    SavedViewStore,
+    ProjectStore,
+    SceneGraph} from '@hyj/SCwebviewer/wasm32/SCwebviewer.js';
+import type { PmiItem, ProjectData, ProjectSource, SceneSearchResult } from '@hyj/SCwebviewer/wasm32/SCwebviewer.js';
 import { markRaw } from 'vue';
 // import {} from 'crypto';
 
@@ -56,6 +56,7 @@ export class ViewerService {
     private _lastLoadedMeshId?: ObjectId;
     private _lastLoadedShapeId?: ObjectId;
     public measurementStore: MeasurementStore | null = null;
+    public pmiStore: PmiStore | null = null;
     public savedViewStore: SavedViewStore | null = null;
     public projectStore: ProjectStore | null = null;
     private _projectSources: ProjectSource[] = [];
@@ -105,9 +106,21 @@ export class ViewerService {
 
         this._viewer.eventManager.addEventListener(UserEvents.onColorMapperChanged, this.updateColorScale.bind(this));
         this.measurementStore = new MeasurementStore(this._viewer);
+        this.pmiStore = new PmiStore(this._viewer);
         this.savedViewStore = new SavedViewStore(this._viewer);
         this.projectStore = new ProjectStore(this._viewer);
         this._resolveReady?.();
+    }
+
+    public importPmiJson(theJson: string): { items: PmiItem[]; invalidCount: number } {
+        if (!this.pmiStore) {
+            return { items: [], invalidCount: 0 };
+        }
+        return this.pmiStore.importJson(theJson);
+    }
+
+    public clearPmi(): void {
+        this.pmiStore?.clear();
     }
 
     public async loadLocalFiles(files: File[] | FileList): Promise<LocalLoadResult[]> {
@@ -312,10 +325,10 @@ export class ViewerService {
     }
 
     public getMassPropsJson(theObjectId: ObjectId): string {
-        if (this._viewer == null || this._viewer.interactiveShapeManager == null) {
+        if (this._viewer == null) {
             return '';
         }
-        return this._viewer.interactiveShapeManager.getMassPropsJson(theObjectId) ?? '';
+        return this._viewer.getMassPropsJson(theObjectId);
     }
 
     public getSceneGraph(theIdPrefix: string = ''): any | null {
@@ -1173,6 +1186,7 @@ export class ViewerService {
 
         this.removeObjectsByType(undefined, [InteractiveViewCube]);
         this.measurementStore?.clear();
+        this.pmiStore?.clear();
         this.savedViewStore?.clear();
         this._projectSources = [];
         this._pendingProject = null;

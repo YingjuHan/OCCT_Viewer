@@ -1,5 +1,5 @@
 import { Camera } from './Camera.js';
-import type { IVec2, CameraOrientation, ColorString, IPromise, UnitManager } from './CommonTools.js';
+import type { IVec2, CameraOrientation, ColorString, IPromise, UnitManager, ObjectId } from './CommonTools.js';
 import type { InteractiveContext, SelectionManager } from './InteractiveObject.js';
 import { InteractiveScaleRuler } from './InteractiveScaleRuler.js';
 import { InteractiveViewCube } from './InteractiveViewCube.js';
@@ -20,6 +20,7 @@ export * from './InteractiveViewCube.js';
 export * from './InteractiveSphericalAxes.js';
 export * from './SceneGraph.js';
 export * from './MeasurementStore.js';
+export * from './PmiStore.js';
 export * from './SavedViewStore.js';
 export * from './ProjectStore.js';
 export * from './ViewerEventManager.js';
@@ -278,6 +279,20 @@ export declare class SCwebviewer {
      * @return {InteractiveViewCube} InteractiveViewCube object
      */
     get viewCube(): InteractiveViewCube | null;
+    /**
+     * Get mass properties for specified shape as JSON string.
+     * @param {ObjectId} theObjId shape object id
+     * @return {string} JSON string or empty string if unavailable
+     */
+    getMassPropsJson(theObjId: ObjectId): string;
+    /**
+     * Run interference check for a pair of shapes and return JSON string.
+     * @param {ObjectId} theObjId1 first object id
+     * @param {ObjectId} theObjId2 second object id
+     * @param {number} theTolerance tolerance (0 = auto)
+     * @return {string} JSON string or empty string if unavailable
+     */
+    checkInterferenceJson(theObjId1: ObjectId, theObjId2: ObjectId, theTolerance: number): string;
     /**
      * Set gravity level for logging messages.
      * @param {MessageGravity} theGravity lower message gravity to log

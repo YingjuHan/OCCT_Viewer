@@ -3,6 +3,8 @@ import { PropType } from 'vue';
 import { ViewerService } from '../services/viewer.service';
 import SceneGraphPanel from './SceneGraphPanel.vue';
 import MeasurementPanel from './MeasurementPanel.vue';
+import InterferencePanel from './InterferencePanel.vue';
+import PmiPanel from './PmiPanel.vue';
 import SavedViewsPanel from './SavedViewsPanel.vue';
 import MassPropsPanel from './MassPropsPanel.vue';
 import ProjectPanel from './ProjectPanel.vue';
@@ -45,7 +47,9 @@ const run = (callback: () => void | Promise<void>) => {
         </v-card>
 
         <SceneGraphPanel :viewerService="props.viewerService" />
+        <PmiPanel :viewerService="props.viewerService" />
         <MeasurementPanel :viewerService="props.viewerService" />
+        <InterferencePanel :viewerService="props.viewerService" />
         <SavedViewsPanel :viewerService="props.viewerService" />
         <MassPropsPanel :viewerService="props.viewerService" />
         <ProjectPanel :viewerService="props.viewerService" />

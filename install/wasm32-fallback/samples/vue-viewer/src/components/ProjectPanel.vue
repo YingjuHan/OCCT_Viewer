@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, PropType } from 'vue';
-import type { ProjectData, ProjectSource } from '../../../../source-ts/Viewer-ts/ProjectStore';
+import type { ProjectData, ProjectSource } from '@hyj/SCwebviewer/wasm32/SCwebviewer.js';
 import type { ViewerService } from '../services/viewer.service';
 
 const props = defineProps({

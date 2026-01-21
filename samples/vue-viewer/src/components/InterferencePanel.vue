@@ -104,7 +104,7 @@ const formatSummary = (record: InterferenceRecord): string => {
 
 const runCheck = () => {
   const viewer = props.viewerService.viewer;
-  if (!viewer?.interactiveShapeManager) {
+  if (!viewer) {
     setNotice('Viewer not ready', 'warning');
     return;
   }
@@ -120,7 +120,7 @@ const runCheck = () => {
   const tol = Number.isFinite(tolerance.value) ? tolerance.value : 0;
   busy.value = true;
   try {
-    const json = viewer.interactiveShapeManager.checkInterferenceJson(objA.value, objB.value, tol);
+    const json = viewer.checkInterferenceJson(objA.value, objB.value, tol);
     const parsed = InterferenceResult.parseJson(json);
     if (!parsed) {
       setNotice('Failed to parse interference result', 'error');

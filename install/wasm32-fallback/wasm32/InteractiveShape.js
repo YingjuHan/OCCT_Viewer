@@ -109,6 +109,38 @@ export class ShapeMassProps {
     }
 }
 ;
+;
+export class InterferenceResult {
+    static parseJson(theJson) {
+        if (!theJson) {
+            return null;
+        }
+        let aParsed;
+        try {
+            aParsed = JSON.parse(theJson);
+        }
+        catch (_a) {
+            return null;
+        }
+        if (!aParsed) {
+            return null;
+        }
+        const objId1 = typeof aParsed.objId1 === 'string' ? aParsed.objId1 : '';
+        const objId2 = typeof aParsed.objId2 === 'string' ? aParsed.objId2 : '';
+        if (!objId1 || !objId2) {
+            return null;
+        }
+        return {
+            objId1,
+            objId2,
+            bboxHit: aParsed.bboxHit === true,
+            exactDone: aParsed.exactDone === true,
+            distance: typeof aParsed.distance === 'number' ? aParsed.distance : null,
+            interferes: aParsed.interferes === true,
+        };
+    }
+}
+;
 /**
  * @internal Class to define detected/selected shape elements.
  */

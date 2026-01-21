@@ -21,6 +21,7 @@ export * from './InteractiveViewCube.js';
 export * from './InteractiveSphericalAxes.js';
 export * from './SceneGraph.js';
 export * from './MeasurementStore.js';
+export * from './PmiStore.js';
 export * from './SavedViewStore.js';
 export * from './ProjectStore.js';
 export * from './ViewerEventManager.js';
@@ -297,6 +298,26 @@ export class SCwebviewer {
      * @return {InteractiveViewCube} InteractiveViewCube object
      */
     get viewCube() { return this._myViewCube; }
+    /**
+     * Get mass properties for specified shape as JSON string.
+     * @param {ObjectId} theObjId shape object id
+     * @return {string} JSON string or empty string if unavailable
+     */
+    getMassPropsJson(theObjId) {
+        var _a, _b;
+        return (_b = (_a = this._myInteractiveShapeManager) === null || _a === void 0 ? void 0 : _a.getMassPropsJson(theObjId)) !== null && _b !== void 0 ? _b : '';
+    }
+    /**
+     * Run interference check for a pair of shapes and return JSON string.
+     * @param {ObjectId} theObjId1 first object id
+     * @param {ObjectId} theObjId2 second object id
+     * @param {number} theTolerance tolerance (0 = auto)
+     * @return {string} JSON string or empty string if unavailable
+     */
+    checkInterferenceJson(theObjId1, theObjId2, theTolerance) {
+        var _a, _b;
+        return (_b = (_a = this._myInteractiveShapeManager) === null || _a === void 0 ? void 0 : _a.checkInterferenceJson(theObjId1, theObjId2, theTolerance)) !== null && _b !== void 0 ? _b : '';
+    }
     /** @internal generate screenshot (short-cut for diagnostics). */
     get doScreenshot() { return this.makeScreenshot('viewer.png', -1, -1); }
     /**

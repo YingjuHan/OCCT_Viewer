@@ -124,6 +124,49 @@ export class ShapeMassProps {
   }
 };
 
+export interface IInterferenceResult {
+  objId1: ObjectId;
+  objId2: ObjectId;
+  bboxHit: boolean;
+  exactDone: boolean;
+  distance: number | null;
+  interferes: boolean;
+};
+
+export class InterferenceResult {
+  public static parseJson(theJson: string): IInterferenceResult | null {
+    if (!theJson) {
+      return null;
+    }
+
+    let aParsed: any;
+    try {
+      aParsed = JSON.parse(theJson);
+    } catch {
+      return null;
+    }
+
+    if (!aParsed) {
+      return null;
+    }
+
+    const objId1 = typeof aParsed.objId1 === 'string' ? aParsed.objId1 : '';
+    const objId2 = typeof aParsed.objId2 === 'string' ? aParsed.objId2 : '';
+    if (!objId1 || !objId2) {
+      return null;
+    }
+
+    return {
+      objId1,
+      objId2,
+      bboxHit: aParsed.bboxHit === true,
+      exactDone: aParsed.exactDone === true,
+      distance: typeof aParsed.distance === 'number' ? aParsed.distance : null,
+      interferes: aParsed.interferes === true,
+    };
+  }
+};
+
 /**
  * @internal Class to define detected/selected shape elements.
  */
@@ -1503,6 +1546,9 @@ export interface InteractiveShapeManager extends IManager {
 
   /** @internal Return mass properties for specified shape as JSON string. */
   getMassPropsJson: (theObjId: ObjectId) => string;
+
+  /** @internal Return interference results for specified shape pair as JSON string. */
+  checkInterferenceJson: (theObjId1: ObjectId, theObjId2: ObjectId, theTolerance: number) => string;
 
   /** @internal Remove all selection groups. */
   clearSelectionGroups: (theObjId: ObjectId) => void;
