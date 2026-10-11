@@ -1,0 +1,360 @@
+# Cut View Manager 原生开发接续说明
+
+## 1. 接续范围与当前停点
+
+本说明记录 2026-10-12 工作区的开发停点。用户已暂停自动开发，当前只整理并提交接续文档。恢复功能开发前，应获得新的继续指令。
+
+- 仓库：`/home/hyj/Desktop/workspace/OCCT_Viewer`；分支：`develop`；整理前 HEAD：`d2428a5`。
+- 目标：完成原生 Cut View Manager 的 N02-N09 及对应 TODO，实施、修复并通过 native/DRAW 验收。
+- 排除：Web/Vue/TypeScript、浏览器测试、WASM SDK 与打包。排除项不是 done。
+- 当前停在 N02 扩展曲面参考验收与 N03 恢复策略增量；N03 尚未整体完成，N04-N09 尚未实施。
+- 本次提交仅包含本说明。功能源码、测试、既有规划文档及用户的会话归档仍留在工作区，不随本说明提交。仅 checkout 本说明的提交不能复现功能实现，应保留并单独审查、提交相关工作区文件。
+
+接续时以本说明的最新证据为准，再同步旧文档中的状态。旧文档仍有“N03 queued”“31 cases”等历史描述，不代表最新源码不存在恢复策略，也不能据此把未完成阶段改为 done。
+
+相关规划与说明：
+
+- [完整需求与 TODO](cut-view-development.md)
+- [任务依赖和执行队列](cut-view-execution.md)
+- [原生设计、模块职责和契约](cut-view-native-design.md)
+- [VTK 单元支持矩阵及限制](vtk-cell-support.md)
+- [构建、DRAW 测试说明](../test/README.md)
+- [OCCT SDK 修复补丁](occt-cut-view-sdk.patch)
+
+## 2. 不可退化的要求
+
+1. 平面、球、圆柱截面是与原始体网格/面网格的几何求交。不得以场等值面替代几何截面。
+2. 鼠标按住拖曳期间必须更新几何、原始 FE 插值、云图和显示版本；不能只更新切面辅助图形或等松开再计算。
+3. 负侧/切面/正侧对应位掩码 `1/2/4`，八种组合包含 `0`。多个 cut 独立定义，不能意外变为串联 AND 裁剪。
+4. 非原始 node 上的结果来自原始单元形函数。高阶权重可以为负或大于一，不能按线性插值习惯截断。
+5. element-node 数据必须保留原始单元来源及不连续值；不能通过全局坐标焊接抹掉材料跳变。
+6. 显示恢复与物理积分必须分离。颜色平滑不能改变原始应力、热流等物理结果。
+7. 使用现有 `VIEWDRAW` 插件，保留一个 VIEWDRAW launch 配置；不新增 `CUTVIEW` 插件。
+8. Tcl 脚本放在 `test/`，新增控件必须扩展实际交互测试与控件清单，不能只测试命令调用。
+9. 保留 `AGENTS.md` 和用户既有修改；不要 reset、覆盖、删除或批量暂存不相关文件。
+10. 小模型截图、几何耗时及 48 类型矩阵通过，不等于所有数据均无 bug，也不等于满足百万单元全帧指标。
+
+结构探索使用安装的 `codebase-memory` skill。两个 MCP project 为 `home-hyj-Desktop-workspace-OCCT_Viewer` 与 `home-hyj-Desktop-workspace-OCCT_private`。每个依赖文件检查 index coverage；C++ 模板/Handle 相关解析不完整或关系不可信时，读取对应源码。不要重复此前已证实的结构发现。
+
+## 3. 环境与构建位置
+
+| 项目 | 路径或配置 |
+| --- | --- |
+| OCCT 源码 | `/home/hyj/Desktop/workspace/OCCT_private` |
+| 当前 OCCT SDK | `/home/hyj/Desktop/workspace/OCCT_private/install` |
+| OCCT SDK/DRAW 版本 | 当前使用 7.7 系列，本地 SDK 有交互修复 |
+| 可选原生 VTK SDK | `/home/hyj/Desktop/workspace/OCCT_Viewer/build/deps/vtk/sdk/usr`，9.5.2 |
+| VTK CMake package | `build/deps/vtk/sdk/usr/lib/x86_64-linux-gnu/cmake/vtk-9.5` |
+| VTK 源码/真实数据 | `/home/hyj/Desktop/workspace/vtk`；`build/ExternalData/Testing/Data` |
+| 主构建 | `build`，Debug，VTK ON，DRAW ON，Web OFF，DRAW visual ON |
+| 无 VTK 构建 | `build/cut-release`，Release，VTK OFF，DRAW ON，Web OFF，visual OFF |
+| 主构建产物 | `build/bind/`、`build/libd/` |
+| 无 VTK 产物 | `build/cut-release/bin/`、`build/cut-release/lib/` |
+
+使用自定义 OCCT SDK，不能随意切换到系统 OCCT。已有补丁修复了 DRAW/Tk `grid` 命令冲突及空对象问题、阻塞事件和拖曳同步等；新机器上要核对补丁和实际安装库，而不只是检查源码文件存在。外部 VTK fixtures 不要修改。
+
+## 4. 已有架构与实现入口
+
+| 文件或模块 | 职责与接续注意点 |
+| --- | --- |
+| `source/RWCae/MeshData.{h,cpp}` | 原始拓扑、GenericCell、原始节点/单元 ID、字段与高阶元数据 |
+| `source/RWVtk/` | Legacy/XML/composite/series 读取，原生 VTK fallback、导入报告 |
+| `source/RWMeshConv/MeshLoader.cpp` | 上层导入入口，后续结构化诊断和相对引用 staging |
+| `source/ViewCaeGeom/MeshCutViewManager.{h,cpp}` | cut 定义、生命周期、源 epoch、几何和字段失效、独立 Evaluate |
+| `MeshVtkCutSource.{h,cpp}` | 原始单元 evaluator、保守 BVH、lazy OCCT shape、共享面邻接 |
+| `MeshVtkCell.{h,cpp}` | 原始 VTK 形函数、逆映射、曲面/曲线离散、来源权重 |
+| `MeshVtkAnalytic.{h,cpp}` | 齐次 Bernstein 转换、OCCT Bezier 曲线/曲面与显式 fallback |
+| `MeshGeometryVtkCut.{h,cpp}` | 一般单元 plane/sphere/cylinder 几何求交、三部分边界网格 |
+| `MeshGeometryQuadric.{h,cpp}` | 原生简单单元球/圆柱路径 |
+| `MeshCutRecovery.{h,cpp}` | 仅用于显示的 region/threshold/element-node 恢复 |
+| `MeshGeometry.cpp`、`MeshGeometrySlice.cpp` | 几何分支字段映射、FE 权重及面网格截线属性 |
+| `MeshCutIntegration.{h,cpp}` | 原始物理场截面力、力矩、热流；目前主要为平面体单元 |
+| `source/ViewCae/InteractiveCaeCutView.*` | AIS 云图、三部分共享样式、点和截线绘制、显示版本同步 |
+| `source/ViewCae/InteractiveCaeCutPlane.*` | 辅助平面/曲面、真实鼠标操作、操纵器和 abort |
+| `source-draw/ViewCaeTest/CutViewCommands.cpp` | `scvcutview` DRAW 接口和有效输入验证 |
+| `test/cae/cut_view_manager.tcl` | 原生 DRAW/Tk manager，后续扩展现有面板 |
+| `source/Viewer/` | 后续 native Viewer API、CAD 同步、时间与 session 编排 |
+
+保持职责分工，不把求交、物理映射或会话解析塞进 Tk 事件回调。类布局变更后，必须重建所有引用这些类的测试和 VIEWDRAW，避免旧二进制造成伪崩溃。
+
+## 5. 已完成的基础能力
+
+- R00：真实 held-drag 的几何/场/像素同步、abort、无效输入、DRAW/Tk 崩溃修复和既有 32/32 控件检查。
+- G01：原生一阶场等值面，独立 field/component/step、below/on/above、threshold 编辑与定义迁移。它是独立功能，不代替几何切面。
+- M01：默认未激活 XYZ 平面、选择不隐式激活、模型 open/replace/close、拖曳期间替换/关闭清理。
+- N01：manager 共享 source epoch、保守 OCCT BVH、lazy source shape、可信内部面隐藏与确定性共享面来源。
+- N02 数值基础：绝对/相对容差、细分与 primitive 限额、匹配曲面邻接、原始 FE 插值及收敛参考。
+- N02 解析增量：支持的多项式/有理边界转换为 OCCT Bezier；numerical/preferred/required 模式；曲面面积/体积使用自适应 OCCT 积分。
+- 可选 VTK 路径：当前 SDK 48 个 concrete cell 类型的规范数值/DRAW 矩阵、六个真实有效 fixture 和两个无效 fixture；支持高阶次数、Bezier 权重及不限于 8-bit 的连接长度。
+
+解析模式覆盖的是可转换的边界 chart，并非所有任意阶几何均精确。转换目前对支持的 chart 有 degree-six 上限；数值 fallback 明确报告，required 模式拒绝不支持的转换。输出显示坐标仍为 float，不能用更小容差声称消除了存储精度限制。
+
+## 6. 最新增量与验证证据
+
+### 6.1 N03 恢复策略：已有代码，阶段仍未完成
+
+新增 `MeshCutRecoveryOptions`：
+
+- `ThresholdPercent`：有效范围 `[0,100]`。
+- `Regions`：空表示一个区域，否则每个原始 element 一个 signed 64-bit ID。
+- `InvariantsBeforeAveraging`：明确平均前后顺序；当前重点验收向量模长，尚不能宣称实现全部张量不变量。
+- `RecoverCutField()`：输出 elemental-per-node `MeshNodeVecProperty`，保留区域边界、被阈值拒绝的跳变和缺失值。
+- 阈值的当前算法：逐分量比较共享节点同 region 的局部 spread 与该分量全局有限值范围乘百分比。它是本项目当前契约，不能未经核对就声称与 Abaqus 阈值完全等同。
+- 默认 `100/no regions/after` 的 scalar-component 字段沿用旧 nodal projection；原始 NodeVec 输入以及自定义策略走恢复函数。
+
+`MeshCutResult` 新增 `PhysicalFields[3]` 和 `DisplayRecovered`。显示场与原始物理场分开映射；积分优先使用 `PhysicalFields`，若 recovered result 缺失该映射则拒绝，不回退到平滑显示值。
+
+线与点的渲染读取补充 NodeVec subnode 索引。`CalculateLineProperty()` 按截线来源单元及 `OriginNode` FE 权重映射 element-node 值。NodeVec FE 插值不再遇到权重接近一或超过一就提前结束，并跳过零权重以避免无关 NaN 污染。
+
+DRAW 新接口：
+
+```tcl
+scvcutview model recovery
+scvcutview model recovery 100 0 material
+scvcutview model recovery 0 0 none
+scvcutview model recovery 100 1 none
+# region field 可带 step；无效/小数 ID、错误 tuple 数和歧义绑定拒绝
+scvcutview model recovery 100 0 material 0
+```
+
+`eval` 对原有 nodal/constant 输出保持兼容，新增 `valueMapping`。element-node 的 `values` 为 `{element node x y z value}`；nodal 为 `{x y z value}`，constant elemental 仍为标量列表。不要把三类输出混读。
+
+新增测试与 fixtures：
+
+- `test/native/CutRecoveryTests.cpp`，target `cut_recovery_tests`，CTest `cut_recovery`。
+- `test/cae/cut_view_recovery.tcl`，CTest `draw_cut_view_recovery` 与 visual variant。
+- `test/native/fixtures/recovery_hex.vtu`、`recovery_surface.vtp`。
+- 验证相邻单元 7/9 的默认平均和材料跳变、阈值 0/99/100、平均前后向量模长、缺失值/无效参数、几何复用、原始 NodeVec 输入、截线映射及 signed FE 权重。
+- 平面 `x=.25` 的显示投影为 7.25，但单位面积原始热流仍为 7；力为 7，关于原点的相应力矩为 `+3.5/-3.5`，所有显示策略保持不变。
+- Visual 用真实鼠标 held motion 检查同步、7/9 跳变、变化的像素与 abort 回滚。
+
+VTK role 注意：三分量数组不会仅凭 component 数自动视为 vector。测试通过 `CellData Vectors="opposing"` 明确绑定向量角色，避免把 raw component 0 误认为模长。
+
+仍缺：完整张量不变量契约、显式界面 physical trace、OR 边界/cap 合并、manager 新恢复控件与控件验收、恢复设置的完整 session 持久化。N03/G04/G05 不得整体标为 done。
+
+### 6.2 N02 曲面家族参考扩展：单次通过，尚未重复验收
+
+`test/native/CutAnalyticTests.cpp` 最后补充并重建了以下独立参考：
+
+- 曲楔体类型 `26/31/32/73/80`，及 non-unit rational Bezier wedge `80`。
+- 非有理曲楔体体积参考：`1/2 + h/24`，其中 Bernstein control-point fixture 的等效 bow 系数与 Lagrange fixture 不同。
+- Rational wedge 使用独立齐次 Bernstein moment 推导与 Simpson 积分，不用被测求交面积/体积作为期望值。
+- 曲金字塔 `27/37`：二次横向 shear，截面面积 `1/4`，负/正体积 `7/24`、`1/24`；截面边界 shift 为 `0.1`，另检查原始二次字段。
+- 新增楔体/金字塔和原有 tetra/hex/curve/polygon 用例一起运行，单次全部通过。
+
+停点还有测试源码编译警告：新 fixture 的 double-to-float 显式转换尚未整理。不要将这批新参考的单次通过冒充三次全量验收。
+
+### 6.3 验证时间顺序
+
+| 时间顺序 | 已证实的结果 | 不应推导出的结论 |
+| --- | --- | --- |
+| 前一基线 | 31/31 native/DRAW，各连续三次；VTK-disabled 6/6，各三次 | 不代表 N03-N09 完成 |
+| 本次恢复增量后 | 34/34 native/DRAW，各连续三次，182.66 秒 | 此全量运行中的 analytic native 测试尚未包含最后加入的曲楔体/金字塔扩展 |
+| 随后曲面家族扩展 | 重建 `cut_analytic_tests`，一次直接运行全部通过 | 尚未完成扩展后的重复全量验收 |
+| VTK-disabled 停点 | ViewDraw、四个 native test targets 重建完成 | 新增 recovery 和扩展后的该构建测试尚未执行 |
+
+截图：`build/test/native/draw-recovery/held_3.png` 已人工查看，材料跳变和非空几何可见；`lines.png` 由测试生成。其他历史图像见 `draw-analytic/`、`draw-cache/`、`draw-geometry/`、`draw-vtk-cells/`。
+
+暂停时已启动的构建均已结束，当前没有本轮仍需等待的构建/测试 session。此前 `git diff --check` 通过；新增文档会另做检查。
+
+## 7. 恢复后的首批操作
+
+1. 阅读本说明、当前 `git status` 和源码差异；保留所有既有文件及 staged/unstaged 状态，不从 HEAD 还原“未知新文件”。
+2. 检查 OCCT/VTK SDK、缓存配置及显示授权；用 MCP 检查相关范围，不重新从零重做整个项目调查。
+3. 收尾最新测试源码的编译警告；检查恢复策略元数据、所有分量 tuple 验证及极端数值，补充必要边界测试。
+4. 重建全部 affected targets；对增加曲面家族后的 native/DRAW suite 跑三次全量回归，再运行 VTK-disabled suite。
+5. 扩充 N02 的 DRAW 家族参考证据和明确支持范围，审核 precision/fallback 契约；通过相应 gate 后再关闭 N02，不泛化为“所有阶精确”。
+6. 继续 N03：physical interface traces、presentation OR union/cap ownership、manager controls 与完整验收。
+7. 再按 N04-N09 顺序推进；更新执行清单只引用实际证据，不批量把 queued 改为 done。
+
+## 8. 可复用命令
+
+### 8.1 保留已有配置并重建
+
+新增 target 后先运行 CMake。直接 `cmake --build ... --target 新名称` 可能在旧 Makefile 尚未重新生成时报告 No rule to make target。
+
+```bash
+cd /home/hyj/Desktop/workspace/OCCT_Viewer
+cmake -S . -B build
+cmake --build build --target ViewDraw occtviewer_tests cut_view_tests \
+  quadric_cut_tests vtk_cell_cut_tests general_cut_cache_tests \
+  cut_geometry_tests cut_analytic_tests cut_recovery_tests --parallel 8
+```
+
+只有在确认 cache 缺失/配置不符时才显式补配置；不要为了这条任务重开 Web/WASM：
+
+```bash
+cmake -S . -B build -DOCCTV_BUILD_TESTS=ON -DOCCTV_BUILD_DRAW=ON \
+  -DOCCTV_BUILD_WEB_VIEWER=OFF -DOCCTV_USE_VTK=ON -DOCCTV_TEST_DRAW_VISUAL=ON \
+  -DVTK_DIR=/home/hyj/Desktop/workspace/OCCT_Viewer/build/deps/vtk/sdk/usr/lib/x86_64-linux-gnu/cmake/vtk-9.5 \
+  -DOCCTV_VTK_TEST_DATA=/home/hyj/Desktop/workspace/vtk/build/ExternalData/Testing/Data
+```
+
+### 8.2 回归
+
+下面的 XAUTHORITY 是本次机器的有效值，新登录后可能变化，先检查 `/run/user/1000/` 的隐藏授权文件及实际 DISPLAY。缺少显示环境时 visual 不得报告通过。
+
+```bash
+export DISPLAY=:0
+export XAUTHORITY=/run/user/1000/.mutter-Xwaylandauth.XGB5W3
+export LIBGL_ALWAYS_SOFTWARE=1
+ctest --test-dir build -R 'cut_analytic|draw_cut_view_analytic|cut_recovery|draw_cut_view_recovery' \
+  --output-on-failure --repeat until-fail:3
+ctest --test-dir build --output-on-failure --repeat until-fail:3 -j 4
+
+cmake -S . -B build/cut-release
+cmake --build build/cut-release --target ViewDraw occtviewer_tests cut_view_tests \
+  quadric_cut_tests cut_recovery_tests --parallel 8
+ctest --test-dir build/cut-release --output-on-failure --repeat until-fail:3 -j 3
+```
+
+无 VTK suite 新增 native/DRAW recovery 后预计由 6 项变为 8 项；以 `ctest -N` 当前列表为准，不拿旧计数当实际执行结果。
+
+调试单个原生测试：
+
+```bash
+env LD_LIBRARY_PATH=/home/hyj/Desktop/workspace/OCCT_Viewer/build/libd:/home/hyj/Desktop/workspace/OCCT_Viewer/build/deps/vtk/sdk/usr/lib/x86_64-linux-gnu:/home/hyj/Desktop/workspace/OCCT_private/install/lib \
+  stdbuf -oL -eL build/bind/cut_analytic_tests
+```
+
+### 8.3 DRAW 交互和演示
+
+配置库搜索路径后运行自定义 SDK 的 DRAWEXE；插件 defaults 指向源码已有 VIEWDRAW 资源。脚本的 source 路径使用绝对路径，不要从 build 推导错误的 `build/native/fixtures`。
+
+```bash
+export LD_LIBRARY_PATH=/home/hyj/Desktop/workspace/OCCT_Viewer/build/libd:/home/hyj/Desktop/workspace/OCCT_Viewer/build/deps/vtk/sdk/usr/lib/x86_64-linux-gnu:/home/hyj/Desktop/workspace/OCCT_private/install/lib
+export CSF_VIEWDRAWDefaults=/home/hyj/Desktop/workspace/OCCT_Viewer/source-draw/ViewDraw
+/home/aaron/Desktop/workspace/OCCT_private/install/bin/DRAWEXE
+```
+
+在 DRAW 内：
+
+```tcl
+pload ALL
+pload -VIEWDRAW
+vinit CutView -width 800 -height 600
+vsetbg -color WHITE
+scvcutview model read /home/hyj/Desktop/workspace/OCCT_Viewer/test/native/fixtures/recovery_hex.vtu
+scvcutview model add cut 0 1 0 -0.5
+scvcutview model visibility cut 2
+scvcutview model field cell pressure 0
+scvcutview model cellmode cut projected
+scvcutview model recovery 100 0 material
+scvcutview model display
+scvcutview model handle cut 1 0
+scvcutview model fit
+scvcutview model eval cut
+```
+
+`help scvcutview` 为当前完整命令入口。`test/cae/cut_view_vtk_demo.tcl`、`cut_view_quadric_demo.tcl` 为交互演示；自动回归脚本通常以 `exit` 结束，不能当常驻 demo source 后继续交互。
+
+## 9. 后续阶段设计与执行顺序
+
+### N03：恢复、物理界面 trace、多 cut 合并
+
+- 先补恢复设置 manager 控件和测试，定义张量不变量/分量阈值、missing-value 行为，避免名字比实际能力更宽。
+- 当前共享界面 section 使用最低原始 element index。增加显式 lowest/negative/positive/region traces，分别绑定显示和物理策略；物理 region 不能隐式复用显示 region，导致改颜色设置就改变积分。
+- 在可信邻接记录中保留两侧来源，根据切面与来源内部点判断哪侧 trace；不依据遍历顺序或浮点焊接推测材料侧。
+- 数值 `Evaluate(id)` 保持独立；另建 presentation union，按源单元与 OCCT 边界操作合并可见侧的 OR，再确定 section/cap 稳定所有权。
+- 必测相同、重叠、相切、多方向 cuts、所有 masks、region 跳变、cap 来源和透明像素；不能只去掉完全相同三角形就宣称一般 OR union 完成。
+
+### N04：VTK 导入与普通 Viewer
+
+- 将点、线/polyline、一般单元能力接到普通 native viewer，不能仅 CutView 分支支持。
+- 列清 Legacy/XML/composite/series 支持范围；fallback 成功不能留下“整体导入失败”的误导信息。
+- composite/series 采用 staged import，保留每步几何与拓扑，验证时间、字段、deformation 和 tuple 对应；失败不替换 live model。
+- 验证截断、endian、offset、数组长度、压缩块、多 appended offsets、坏连接及缺失引用。
+- 配置最大数组/节点/单元/解压资源等限额并在分配前验证，测峰值内存；不能读入后才判断超限。
+- 支持嵌套相对引用 staging、重名引用和缺文件诊断；结构化报告传到 MeshLoader/Viewer。
+
+### N05：完整原生 Manager 和 Viewer API
+
+- 实现 datum/local/global frames、reference axes，数字和鼠标编辑共用验证路径。
+- 增加 cut/portion 样式覆盖、公共选项、透明度、边线、contour range/legend 与空/常量场状态。
+- 实现结果节点/单元选择、probe 和来源值、vector/orientation plots、annotations。
+- CAD section 和全局 clipping 独立且可同步；模型/viewport 生命周期正确清理。
+- 对外 native Viewer API 覆盖生命周期、字段绑定、drag events 和错误契约；复用现有 AIS、mapper、manipulator、probe 设施。
+- 每个新按钮、菜单、数字输入、slider/toggle 必须纳入实际 Tk widget inventory 与自动操作。
+
+### N06：变形、时间与 slicing
+
+- 材料跟随 frame 明确 reference/updated configuration，不仅移动 guide bounds。
+- geometry/result/deformation step 原子切换，支持变化拓扑，拒绝缺字段而不是沿用旧场。
+- 实现 animation pause/restart、regular/range/rotational/path slicing、路径 frame 和 interval results。
+- 测切步后的 provenance、缓存失效、drag 取消、模型替换和拓扑变化。
+
+### N07：物理结果与自动 cuts
+
+- 实现 integration groups、summation、单位与坐标系的显式映射。
+- shell/beam/composite 要有厚度、section semantics 和结果分量契约；不认识的字段不能伪造 physical resultant。
+- 实现 resultant overlays、distributed/interval results 和可导出报告，方向与数值参考同时验证。
+- crack-distance、optimization-density cuts 使用明确来源/符号/范围映射和特殊显示状态，不猜 field 名。
+- 平面以外积分当前拒绝 local-normal 未定义情况，需实现并验证局部法向后才能开放。
+
+### N08：性能、缓存与长会话
+
+- 给 source/result caches 增加硬预算、估算与 eviction，验证重复拖动、时间切换后内存受控。
+- 若引入后台作业，使用 immutable snapshot + generation；只有最新成功结果可在 Viewer 线程发布，关闭/替换必须取消。
+- 对 source preparation、intersection、FE mapping、primitive generation、redraw 分别计时，区分 cold/warm。
+- 百万体单元穿层、旋转、变形工况必须包括实际云图构建和 redraw：至少 15 FPS、p95 不超过 67 ms。
+- 已有百万模型几何/字段穿层 p95 约 214 ms；不能用同拓扑缓存的约 1 ms 或加大测试 timeout 替代全帧优化。
+- 长时间 open/close/edit/drag 检查资源增长、旧 handle、过时结果、abort 和 cancellation。
+
+### N09：原生 session
+
+- versioned JSON 保存 source reference/digest、definitions、field/deformation/step、frames、styles、legend、recovery/integration 和 camera。
+- staged resolve/validate 后原子 commit；无效 session 保留 live model。
+- 迁移测试覆盖现有 definition v1/v2/v3；现有 snapshot 只是定义，不是完整 session。
+- 不序列化 OCCT shapes、裸指针或缓存项；相对引用使用 N04 的 staging 契约。
+
+## 10. 完整原生 TODO 状态速查
+
+下表是暂停时的状态；“待做”不表示前置模块毫无基础，“partial”也不能当完成。
+
+| ID | 原生任务 | 暂停状态/下一步 |
+| --- | --- | --- |
+| R00 | held-drag、所有现有控件、崩溃修复 | verified；后续持续回归 |
+| G01 | 一阶 field isosurface | verified；高阶场等值面仍另行待做，不代替 plane |
+| G02 | sphere/cylinder、一般单元 | partial；全帧性能等仍待验收 |
+| G03 | 高阶几何与 FE、参考精度 | partial；新曲楔体/金字塔重复验收、DRAW 参考与支持边界审核 |
+| G04 | recovery/region/threshold/discontinuity | partial；最新增量已有三次回归，完整 tensor/trace/UI 待做 |
+| G05 | 多 cut OR 边界/cap、opacity | 待做，N03 |
+| M01 | 模型生命周期、defaults、选择/激活分离 | verified |
+| M02 | datum/reference axes、各 shape 编辑 | 待做，N05 |
+| M03 | cut/portion styles 与 overrides | 仅共享样式基础，N05 |
+| M04 | contour options、legend | 待做，N05 |
+| M05 | result picking/probes | 待做，N05 |
+| M06 | vector/orientation/annotations | 待做，N05 |
+| M07 | CAD section/global clipping 同步 | 待做，N05 |
+| D01 | deformation guides/material-following frame | partial；guide 已验收，material frame N06 |
+| V01 | point/line/polyline 普通 Viewer | partial；CutView 路径已有，普通 Viewer N04 |
+| V02 | Legacy 剩余范围及明确诊断 | 待做，N04 |
+| V03 | 变化几何/拓扑 series 与时间校验 | 待做，N04 |
+| V04 | 坏数据、binary/compression/offset 全面回归 | 已有基础，剩余 N04 |
+| V05 | bounded decoding 与资源限额 | 待做，N04 |
+| D02 | coordinated steps/animation | 待做，N06 |
+| D03 | regular/range/rotation/path slicing | 待做，N06 |
+| P01 | cache policy、硬预算和 eviction | partial；epoch/BVH/lazy 基础 verified，预算 N08 |
+| I01 | groups/units/frames/summation | 已有体截面积分基础，剩余 N07 |
+| I02 | shell/beam/composite mapping | 待做，N07 |
+| I03 | overlays/distributed results/reports | 待做，N07 |
+| A01 | mapped crack-distance automatic cuts | 待做，N07 |
+| A02 | mapped optimization-density cuts | 待做，N07 |
+| B01 | structured import reports 到 native caller | 剩余 N04 |
+| B02 | relative-file staging | 待做，N04 |
+| B03 | native Viewer Cut API | 待做，N05；TypeScript 排除 |
+| S01 | native session migration/persistence | 待做，N09 |
+| P02 | 百万单元全帧仪表与优化 | 待做，N08；当前未满足 |
+| P03 | 长会话、memory/cancellation/lifecycle | 待做，N08 |
+| B04/W01/W02 | Vue/WASM/browser | 排除，不标 done |
+
+## 11. 每阶段完成门槛
+
+1. 功能契约与 unsupported diagnostics 明确，不隐藏 fallback 或物理假设。
+2. native 数值参考、来源与字段验证通过，包含无效输入和失败原子性。
+3. DRAW Tcl 可独立复现，相关视觉/控件与真实 held-pointer 测试通过。
+4. affected targets 全部重建；完整 VTK-enabled 与 VTK-disabled suite 按要求重复运行。
+5. 视觉变化查看截图；性能变化记录全帧与内存测量，不能只报告非空画面。
+6. 更新执行文档中的具体证据、限制、命令和状态，再推进下一阶段。
+
+推荐接续指令：先收尾 N02 的新参考和 VTK-disabled acceptance，再完成 N03 的 trace、OR union 与原生控件；之后依 N04-N09 实施，保留原有回归与用户修改，Web/WASM 始终排除。
