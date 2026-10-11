@@ -121,6 +121,10 @@ include (CMakeDependentOption)
 # Build with/without draco option
 # 使用/不使用 draco 库的选项
 option (OCCTV_USE_DRACO "Use Draco library" ON)
+option (OCCTV_USE_VTK "Enable native VTK general-cell evaluation and import (VTK >= 9.5)" OFF)
+if (OCCTV_USE_VTK)
+  find_package (VTK 9.5 REQUIRED COMPONENTS CommonCore CommonDataModel IOXML IOLegacy)
+endif()
 # 是否使用 Draco 库，开启状态
 
 # Option to build typescript web viewer
@@ -290,14 +294,14 @@ endif()
 # ================
 # 查找 OpenCASCADE
 # ================
-include (OpenCASCADE)
+include (opencascade)
 # 包含 OpenCASCADE 查找脚本
 
 # Find RapidJSON
 # ==============
 # 查找 RapidJSON
 # ==============
-include (RapidJSON)
+include (rapidjson)
 # 包含 RapidJSON 查找脚本
 if (RapidJSON_FOUND)
   # 如果找到 RapidJSON
@@ -319,7 +323,7 @@ endif()
 # =========
 if (OCCTV_USE_MEDFILE)
   # 如果使用 MEDFILE
-  include (MedFile)
+  include (medfile)
   # 包含 MedFile 查找脚本
   if (HDF5_FOUND)
     # 如果找到 HDF5
@@ -375,7 +379,7 @@ if (OCCTV_BUILD_MESH_EXCHANGER)
   # 如果构建网格交换器
   # SMESH
   # =====
-  include(SMESH)
+  include(smesh)
   # 包含 SMESH 查找脚本
 endif()
 
@@ -625,4 +629,10 @@ if (OCCTV_INSTALL_DEPENDENCIES)
                                   EXCLUDE_LIBRARIES_REGEXP ${_exclude_regexp})
 
   endif()
+endif()
+
+option (OCCTV_BUILD_TESTS "Build native VTK and cut-view tests" OFF)
+if (OCCTV_BUILD_TESTS AND NOT EMSCRIPTEN)
+  enable_testing()
+  add_subdirectory (test/native)
 endif()

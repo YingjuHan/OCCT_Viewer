@@ -3,6 +3,7 @@
 #include <ViewCaeGeom/MeshGeometryTools.h>
 
 #include <RWCae/MeshAdaptorsIterator.h>
+#include <RWCae/MeshScalarProperty.h>
 
 #include <BVH_Traverse.hxx>
 #include <NCollection_Map.hxx>
@@ -30,12 +31,14 @@ public:
                                const Handle(Graphic3d_ClipPlane)&        theSlicePlane,
                                const Handle(RWCae::MeshData)&          theSliceMeshData,
                                NodesMap*                                 theGenNodes,
-                               ElementsMap*                              theGenElems)
+                               ElementsMap*                              theGenElems,
+                               std::vector<ViewCaeGeom::MeshSliceLine>*   theLines)
         : myMeshGeom(theMeshGeom),
           mySlicePlane(theSlicePlane),
           mySliceMeshData(theSliceMeshData),
           myGenNodes(theGenNodes),
-          myGenElems(theGenElems)
+          myGenElems(theGenElems),
+          myLines(theLines)
     {
     }
 
@@ -74,8 +77,17 @@ protected:
     //! Return true if bounding box is acceptable.
     virtual bool isBndBoxAccepted(const Graphic3d_BndBox3d& theBox) const
     {
-        int aRes = mySlicePlane->ProbeBox(theBox);
-        return aRes == Graphic3d_ClipState_On || mySlicePlane->ProbeBoxTouch(theBox);
+        const auto& aPlane = mySlicePlane->GetEquation();
+        double aMin = aPlane.w(), aMax = aPlane.w();
+        for (int i = 0; i < 3; ++i) {
+            const double a = aPlane[i] * theBox.CornerMin()[i];
+            const double b = aPlane[i] * theBox.CornerMax()[i];
+            aMin += std::min(a, b);
+            aMax += std::max(a, b);
+        }
+        const double aTolerance = CONFUSION
+            * std::sqrt(aPlane.x()*aPlane.x() + aPlane.y()*aPlane.y() + aPlane.z()*aPlane.z());
+        return aMin <= aTolerance && aMax >= -aTolerance;
     }
 
     //! Return a node position.
@@ -96,7 +108,10 @@ protected:
             return AcceptElementSlice(theAdaptor, theGlobalIndex, theElem.Index);
         };
 
-        return RWCae::MeshAdaptorsIterator3dElems::Switch(theElem.Type, process, myMeshGeom->GetMeshData());
+        if ((int)theElem.Type >= RWCae::MeshElem3dLowerType) {
+            return RWCae::MeshAdaptorsIterator3dElems::Switch(theElem.Type, process, myMeshGeom->GetMeshData());
+        }
+        return RWCae::MeshAdaptorsIterator2dElems::Switch(theElem.Type, process, myMeshGeom->GetMeshData());
     }
 
 protected:
@@ -107,6 +122,7 @@ protected:
     NodesMap*                          myGenNodes;
     ElementsMap*                       myGenElems;
     AddedNodeMap                       myAddedNodes;
+    std::vector<ViewCaeGeom::MeshSliceLine>* myLines;
 
 private:
     //! Check and process a mesh element.
@@ -124,11 +140,9 @@ private:
         auto nodeValueFunc = [this, &theAdaptor, &anElem](RWCae::MeshElemEntityId theIdx) -> double {
             Graphic3d_Vec3 aPoint;
             getNodePosition(theAdaptor, &aPoint, anElem[theIdx]);
-            bool isIn = this->mySlicePlane->ProbePoint(Graphic3d_Vec4d(aPoint.x(), aPoint.y(), aPoint.z(), 1.0))
-                     == Graphic3d_ClipState_In;
-            double aDist = this->mySlicePlane->ToPlane().Distance(gp_Pnt(aPoint.x(), aPoint.y(), aPoint.z()))
-                         * (isIn ? 1.0 : -1.0);
-            return aDist;
+            const auto& aPlane = mySlicePlane->GetEquation();
+            return (aPlane.x()*aPoint.x() + aPlane.y()*aPoint.y() + aPlane.z()*aPoint.z() + aPlane.w())
+                 / std::sqrt(aPlane.x()*aPlane.x() + aPlane.y()*aPlane.y() + aPlane.z()*aPlane.z());
         };
 
         using Cutter = ViewCaeGeom::MeshGeometryTools::MeshElementCutter<Elem_T>;
@@ -138,6 +152,33 @@ private:
         }
 
         aCutter.AddCutSurf(myMeshGeom, mySliceMeshData, myGenNodes, myGenElems, &myAddedNodes, theLocalIndex);
+
+        if ((int)Elem_T::Type < RWCae::MeshElem3dLowerType) {
+            RWCae::MeshEntityId aSourceElement = 0;
+            if (!myMeshGeom->OriginElement(ViewCaeGeom::MeshGeomElem(theLocalIndex, Elem_T::Type, false),
+                                           aSourceElement)) {
+                return false;
+            }
+            for (const auto& aContour : aCutter.CutContourNodes()) {
+                // A coplanar surface cell is already emitted as a face above.
+                if (aContour.size() != 2) { continue; }
+                std::array<RWCae::MeshEntityId, 2> aNodes;
+                for (size_t i = 0; i < aNodes.size(); ++i) {
+                    if (!myAddedNodes.Find(aContour[i], aNodes[i])) {
+                        Graphic3d_Vec3 aPosition(0.0f, 0.0f, 0.0f);
+                        for (const auto& aBase : aContour[i].BaseNodes()) {
+                            Graphic3d_Vec3 aNode;
+                            getNodePosition(theAdaptor, &aNode, aBase.first);
+                            aPosition += aNode * (float)aBase.second;
+                        }
+                        aNodes[i] = mySliceMeshData->AddNodePosition(aPosition);
+                        myAddedNodes.Bind(aContour[i], aNodes[i]);
+                        myGenNodes->Bind(aNodes[i], std::make_pair(myMeshGeom.get(), aContour[i]));
+                    }
+                }
+                if (aNodes[0] != aNodes[1]) { myLines->push_back({aNodes, aSourceElement}); }
+            }
+        }
 
         return true;
     }
@@ -163,12 +204,13 @@ void MeshGeometrySlice::generateMeshData()
     myMeshData = new RWCae::MeshData();
     myNodesMap.Clear();
     myElementsMap.Clear();
+    myLines.clear();
 
     for (MeshGeometry* aParent : MeshGeomParents(myParentGeometry.get())) {
         const Handle(RWCae::MeshData)& aParentMeshData = aParent->GetMeshData();
         if (!aParentMeshData.IsNull()) {
             for (Graphic3d_SequenceOfHClipPlane::Iterator anIter(mySlicePlanes); anIter.More(); anIter.Next()) {
-                MeshSliceSelector aSelector(aParent, anIter.Value(), myMeshData, &myNodesMap, &myElementsMap);
+                MeshSliceSelector aSelector(aParent, anIter.Value(), myMeshData, &myNodesMap, &myElementsMap, &myLines);
                 aSelector.SetBVHSet(myBvhData->BvhBoxSet(aParent).get());
                 aSelector.Select();
             }
@@ -188,6 +230,53 @@ Handle(RWCae::MeshNVecProperty) MeshGeometrySlice::CalculateProperty(
     const std::vector<RWCae::MeshEntityId>* theNodes) const
 {
     return calculateCommonProperty(theProp, theElem, theNodes);
+}
+
+Handle(RWCae::MeshNVecProperty) MeshGeometrySlice::CalculateLineProperty(
+    const Handle(RWCae::MeshNVecProperty)& theProp) const
+{
+    if (theProp.IsNull() || !theProp->IsInitialized()
+        || (!theProp->HasScalarComponents() && !theProp->HasNodeVecComponents()) || myLines.empty()) {
+        return nullptr;
+    }
+    if (theProp->IsNodal()) { return CalculateProperty(theProp); }
+    Handle(RWCae::MeshNVecProperty) aResult = new RWCae::MeshNVecProperty(
+        theProp->Name(), theProp->NbComponents(), theProp->MapType(), theProp->Type());
+    if (theProp->HasNodeVecComponents()) {
+        aResult->Init<RWCae::MeshNodeVecProperty>();
+        for (int c = 0; c < theProp->NbComponents(); ++c) {
+            auto source = theProp->GetComponent(c);
+            auto target = Handle(RWCae::MeshNodeVecProperty)::DownCast(aResult->GetComponent(c));
+            target->Init((int)myLines.size(),0,false,false);
+            for (size_t i = 0; i < myLines.size(); ++i) {
+                target->ReserveValueMap((int)i,2);
+                for (auto n : myLines[i].Nodes) {
+                    MeshInterpolatedNode origin;
+                    if (!OriginNode(n,origin)) { continue; }
+                    double value = 0;
+                    for (const auto& base : origin.BaseNodes()) {
+                        if (base.second == 0) { continue; }
+                        value += base.second * source->Value(RWCae::MeshPropertyEntityInfo(myLines[i].SourceElement,base.first));
+                    }
+                    target->SetValue(RWCae::MeshPropertyEntityInfo((int)i,n),value,false);
+                }
+            }
+        }
+        updateGenPropComponents(theProp,aResult);
+        return aResult;
+    }
+    aResult->Init<RWCae::MeshScalarProperty>();
+    for (int c = 0; c < theProp->NbComponents(); ++c) {
+        auto aSource = theProp->GetComponent(c);
+        auto aTarget = Handle(RWCae::MeshScalarProperty)::DownCast(aResult->GetComponent(c));
+        aTarget->Init((int)myLines.size());
+        for (size_t i = 0; i < myLines.size(); ++i) {
+            aTarget->SetValue(RWCae::MeshPropertyEntityInfo((int)i),
+                             aSource->Value(RWCae::MeshPropertyEntityInfo(myLines[i].SourceElement)), false);
+        }
+    }
+    updateGenPropComponents(theProp, aResult);
+    return aResult;
 }
 
 // =======================================================================
@@ -269,4 +358,4 @@ bool MeshGeometrySlice::FromJson(const RWBase::JsonHelper::Value& theJson,
     return true;
 }
 
-} // namespace            
+} // namespace

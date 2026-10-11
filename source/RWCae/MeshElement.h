@@ -30,9 +30,10 @@ namespace RWCae
         Hexahedron,     //!< 8-node hexahedron,
         Hexahedron2nd,  //!< 20-node 2nd order hexahedron,
         Polyhedron,     //!< n-node polyhedron
+        Generic,        //!< external cell topology; never interpreted as a native volume cell
     };
 
-    constexpr int MeshElemNbTypes = (int)MeshElemType::Polyhedron + 1;
+    constexpr int MeshElemNbTypes = (int)MeshElemType::Generic + 1;
     constexpr int MeshElem3dLowerType = (int)MeshElemType::Tetrahedron;
     constexpr int MeshElem3dUpperType = (int)MeshElemType::Polyhedron;
     constexpr int MeshSurfElemLowerType = (int)MeshElemType::Triangle;

@@ -65,6 +65,8 @@ public:
     //! Set time step for all properties.
     void SetTimeStep(int theTimeStep) { myTimeStep = theTimeStep; }
 
+    void SetTimeStamp(double theTime) { myTimeStamp = theTime; myHasExplicitTimeStamp = true; }
+
     //! Merge all mesh data.
     Standard_EXPORT static void MergeMeshData(const Handle(MeshDataTreeNode)& theMeshDataTree,
                                               Handle(RWCae::MeshData)&      theMeshData);
@@ -89,6 +91,8 @@ protected:
     Handle(RWCae::MeshData) myMergedMeshData;
     bool                      myIsMeshDataLoaded = false;
     int                       myTimeStep         = -1;
+    double myTimeStamp = 0.0;
+    bool myHasExplicitTimeStamp = false;
 };
 
 }

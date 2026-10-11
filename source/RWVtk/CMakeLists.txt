@@ -1,6 +1,8 @@
 project (RWVtk)
+find_package (ZLIB REQUIRED)
 
 set (SRCFILES
+  VtkLegacyReader.cpp
   VtkBaseReader.cpp
   VtkBaseXMLReader.cpp
   VtkDataArray.cpp
@@ -11,6 +13,8 @@ set (SRCFILES
   VtkUnstructuredGridReader.cpp
 )
 set (INCFILES
+  VtkLegacyReader.h
+  VtkImportReport.h
   VtkBaseReader.h
   VtkBaseXMLReader.h
   VtkDataArray.h
@@ -29,7 +33,13 @@ add_library (${PROJECT_NAME} ${OCCTV_LIBTYPE} ${SRCFILES} ${INCFILES})
 set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER "Libraries")
 
 # internal dependencies
-target_link_libraries (${PROJECT_NAME} PUBLIC RWCae)
+target_link_libraries (${PROJECT_NAME} PUBLIC RWCae PRIVATE ZLIB::ZLIB)
+if (OCCTV_USE_VTK)
+  target_sources (${PROJECT_NAME} PRIVATE VtkNativeReader.cpp)
+  target_link_libraries (${PROJECT_NAME} PUBLIC VTK::CommonCore VTK::CommonDataModel VTK::IOXML VTK::IOLegacy)
+  target_compile_definitions (${PROJECT_NAME} PUBLIC OCCTV_USE_VTK)
+  list (APPEND INCFILES VtkNativeReader.h)
+endif()
 
 # OCCT libraries
 target_link_libraries (${PROJECT_NAME} PUBLIC

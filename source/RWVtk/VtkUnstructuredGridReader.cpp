@@ -4,6 +4,7 @@
 
 #include <Message.hxx>
 #include <Message_Messenger.hxx>
+#include <map>
 
 namespace {
 
@@ -75,9 +76,12 @@ bool VtkUnstructuredGridReader::readMeshInfo(const LDOM_Element& theElem)
         return false;
     }
 
-    (*myStoredElements)[myCurPiece].resize(myNbElements, 0);
+    if (myToReadMeshGeometry) { (*myStoredElements)[myCurPiece].assign(myNbElements, 0); }
+    else if ((*myStoredElements)[myCurPiece].size() != (size_t)myNbElements) {
+        return fail("VTK time step cell count differs from the original mesh");
+    }
 
-    return true;
+    return myReport.errors.empty();
 }
 
 // =======================================================================
@@ -115,6 +119,10 @@ bool VtkUnstructuredGridReader::parseCells(const LDOM_Element& theElem)
         Message::SendFail() << "Error: Failed to read cells data";
         return false;
     }
+    if (aMeshElements.Connectivity.Components.size() != 1 || aMeshElements.Offsets.Components.size() != 1
+        || aMeshElements.Types.Components.size() != 1) {
+        return fail("VTK cell arrays must have one component");
+    }
 
     if (aMeshElements.Offsets.Data->NbElements() != myNbElements
         || aMeshElements.Types.Data->NbElements() != myNbElements) {
@@ -127,13 +135,17 @@ bool VtkUnstructuredGridReader::parseCells(const LDOM_Element& theElem)
 
     parseCells(aMeshElements, aSkippedElements);
 
+    if (!myReport.errors.empty()) { return false; }
+
     myNbProcessed += myNbElements;
 
     if (!aSkippedElements.IsEmpty()) {
         Message::SendInfo() << "Skipped elements: ";
         for (NCollection_DataMap<int, int>::Iterator anIter(aSkippedElements); anIter.More(); anIter.Next()) {
-            Message::SendInfo() << "Type = " << anIter.Key() << ", Nb elements = " << anIter.Value();
+            fail("Unsupported VTK cell type " + std::to_string(anIter.Key()) + " ("
+                 + std::to_string(anIter.Value()) + " cells)");
         }
+        return false;
     }
 
     return true;
@@ -152,7 +164,29 @@ void VtkUnstructuredGridReader::parseCells(const MeshElements&            theEle
 
         int aCellEnd = theElems.Offsets.Data->GetInt(i, 0);
 
+        if (aCellEnd <= aCellBegin || aCellEnd > theElems.Connectivity.Data->NbElements()) {
+            fail("Invalid VTK connectivity offset");
+            return;
+        }
+        if (aCellEnd - aCellBegin > std::numeric_limits<RWCae::MeshElemEntityId>::max()
+            || (aCellType == (int)VtkCellType::VTK_POLYGON && aCellEnd - aCellBegin < 3)) {
+            fail("Unsupported VTK cell node count");
+            return;
+        }
+
         const Handle(VtkAbstractArray)& aData = theElems.Connectivity.Data;
+
+        static const std::map<int, int> nodeCounts = {{1,1},{5,3},{22,6},{9,4},{23,8},{10,4},{24,10},
+                                                    {14,5},{27,13},{13,6},{26,15},{12,8},{25,20}};
+        const auto expected = nodeCounts.find(aCellType);
+        if (expected != nodeCounts.end() && aCellEnd - aCellBegin != expected->second) {
+            fail("VTK cell connectivity has incorrect node count");
+            return;
+        }
+        for (int node = aCellBegin; node < aCellEnd; ++node) {
+            const int id = aData->GetInt(node, 0);
+            if (id < 0 || id >= myNbNodes) { fail("VTK connectivity point index out of range"); return; }
+        }
 
         switch (aCellType) {
             case (int)VtkCellType::VTK_VERTEX: addElem0d(aData, aCellBegin, i); break;
@@ -170,7 +204,17 @@ void VtkUnstructuredGridReader::parseCells(const MeshElements&            theEle
             case (int)VtkCellType::VTK_HEXAHEDRON: addHexahedron(aData, aCellBegin, i, false); break;
             case (int)VtkCellType::VTK_QUADRATIC_HEXAHEDRON: addHexahedron(aData, aCellBegin, i, true); break;
             case (int)VtkCellType::VTK_POLYHEDRON:
-                addPolyhedron(aData, theElems.Faces.Data, aCellBegin, aCellEnd, aFacesBegin, i);
+                if (theElems.Faces.Data.IsNull() || theElems.FaceOffsets.Data.IsNull()
+                    || theElems.FaceOffsets.Data->NbElements() != myNbElements
+                    || theElems.Faces.Components.size() != 1 || theElems.FaceOffsets.Components.size() != 1
+                    || theElems.FaceOffsets.Data->GetInt(i, 0) <= aFacesBegin
+                    || theElems.FaceOffsets.Data->GetInt(i, 0) > theElems.Faces.Data->NbElements()) {
+                    fail("Invalid or missing VTK polyhedron face arrays");
+                    return;
+                }
+                addPolyhedron(aData, theElems.Faces.Data, aCellBegin, aCellEnd, aFacesBegin,
+                              theElems.FaceOffsets.Data->GetInt(i, 0), i);
+                if (!myReport.errors.empty()) { return; }
                 break;
             default: {
                 int* aNbSkipped = theSkippedElements.ChangeSeek(aCellType);
@@ -187,6 +231,9 @@ void VtkUnstructuredGridReader::parseCells(const MeshElements&            theEle
         if (!theElems.FaceOffsets.Data.IsNull()) {
             aFacesBegin = std::max(aFacesBegin, theElems.FaceOffsets.Data->GetInt(i, 0));
         }
+    }
+    if (aCellBegin != theElems.Connectivity.Data->NbElements()) {
+        fail("Unused VTK connectivity entries");
     }
 }
 
@@ -283,6 +330,7 @@ void VtkUnstructuredGridReader::addPolyhedron(const Handle(VtkAbstractArray)& th
                                               int                             theCellBegin,
                                               int                             theCellEnd,
                                               int                             theFacesBegin,
+                                              int                             theFacesEnd,
                                               int                             theElemIndex)
 {
     int aNbNodes = theCellEnd - theCellBegin;
@@ -297,17 +345,27 @@ void VtkUnstructuredGridReader::addPolyhedron(const Handle(VtkAbstractArray)& th
     }
 
     int aNbFaces = theFacesArray->GetInt(theFacesBegin, 0);
-    if (aNbFaces < 1) {
-        Message::SendWarning() << "Error: Polyhedron without faces, skipped";
+    if (aNbFaces < 4 || aNbFaces > std::numeric_limits<RWCae::MeshElemEntityId>::max()) {
+        fail("Invalid VTK polyhedron face count");
         return;
     }
 
     std::vector<RWCae::MeshElemEntityId> aFaces;
     std::vector<int>                       aFaceNodes;
-    for (int aFaceId = 0, aFaceOffset = 1; aFaceId < aNbFaces; aFaceId++) {
+    int aFaceOffset = 1;
+    for (int aFaceId = 0; aFaceId < aNbFaces; aFaceId++) {
+        if (theFacesBegin + aFaceOffset >= theFacesEnd) { fail("Truncated VTK polyhedron face stream"); return; }
         int aNbFaceNodes = theFacesArray->GetInt(theFacesBegin + aFaceOffset, 0);
+        if (aNbFaceNodes < 3 || aNbFaceNodes > aNbNodes) {
+            fail("Invalid VTK polyhedron face node count");
+            return;
+        }
         aFaces.push_back(aNbFaceNodes);
         aFaceOffset++;
+        if (aNbFaceNodes > theFacesEnd - theFacesBegin - aFaceOffset) {
+            fail("Truncated VTK polyhedron face connectivity");
+            return;
+        }
         aFaceNodes.resize(aNbFaceNodes);
 
         int aMinNode  = 0;
@@ -323,16 +381,17 @@ void VtkUnstructuredGridReader::addPolyhedron(const Handle(VtkAbstractArray)& th
 
         // Face nodes start from the node with min index
         for (int aFaceNode = 0; aFaceNode < aNbFaceNodes; aFaceNode++) {
-            int aNode = aFaceNodes[(aFaceNode + aMinNode) % aNbFaceNodes];
+            int aNode = aFaceNodes[(aFaceNode + aMinIndex) % aNbFaceNodes];
 
             const int* aMappedNode = aNodesMap.Seek(aNode);
             if (aMappedNode == nullptr) {
-                Message::SendWarning() << "Error: Invalid polyhedron face node index, skipped";
+                fail("VTK polyhedron face node is absent from cell connectivity");
                 return;
             }
             aFaces.push_back(*aMappedNode);
         }
     }
+    if (theFacesBegin + aFaceOffset != theFacesEnd) { fail("Unused VTK polyhedron face entries"); return; }
     anElem.SetFaces(aFaces.data(), static_cast<uint16_t>(aFaces.size()), false);
 
     myMeshData->AddElement(anElem);

@@ -2,6 +2,7 @@
 #define _VTKBASEREADER_HEADERFILE
 
 #include <RWCae/MeshFieldMapping.h>
+#include <RWVtk/VtkImportReport.h>
 
 namespace RWVtk {
 //! Base reader class for VTK data.
@@ -25,12 +26,19 @@ public:
     //! Set property mapping info.
     void SetMappingInfo(const std::vector<RWCae::MeshFieldMappingInfo>& theInfo) { myMappingInfo = theInfo; }
 
+    const VtkImportReport& Report() const { return myReport; }
+
+protected:
+    Standard_EXPORT bool fail(const std::string& theMessage);
+    Standard_EXPORT void warn(const std::string& theMessage);
+
 protected:
     std::istream*           myIStream = nullptr;
     TCollection_AsciiString myFileName;
 
     std::vector<RWCae::MeshFieldMappingInfo> myMappingInfo;
     TCollection_AsciiString                    myMappingFileName;
+    VtkImportReport myReport;
 };
 
 }

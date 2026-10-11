@@ -44,7 +44,7 @@ public:
         std::vector<TCollection_AsciiString> Components;
         DataFormat                           Format;
         Handle(VtkAbstractArray)             Data;
-        int                                  Offset = 0;
+        size_t                               Offset = 0;
 
         void Reset()
         {
@@ -102,6 +102,10 @@ protected:
     LDOM_Document myDOM;
     LDOM_Element  myDataElement;
     LDOMString    myAppendedData;
+
+    std::string myRawAppendedData;
+    std::string myCompressor;
+    bool myAppendedIsRaw = false;
 
     int       myHeaderSize = 4;
     ByteOrder myByteOrder  = ByteOrder::LittleEndian;

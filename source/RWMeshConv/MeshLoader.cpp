@@ -8,6 +8,10 @@
 #include <RWVtk/VtkPolyDataReader.h>
 #include <RWVtk/VtkSeriesReader.h>
 #include <RWVtk/VtkUnstructuredGridReader.h>
+#include <RWVtk/VtkLegacyReader.h>
+#ifdef OCCTV_USE_VTK
+#include <RWVtk/VtkNativeReader.h>
+#endif
 
 #include <BinTools.hxx>
 #include <BRep_Builder.hxx>
@@ -34,6 +38,7 @@ static std::string FileFormatFromName(const std::string& theName, bool theIsAll)
 {
     TCollection_AsciiString aFileName(theName.c_str());
     aFileName.LowerCase();
+    if (aFileName.EndsWith(".vtk")) { return "VTK"; }
     if (aFileName.EndsWith(".rmed") || aFileName.EndsWith(".med")) {
         return "MED";
     }
@@ -78,7 +83,9 @@ std::string MeshLoader::ProbeFileFormat(const std::string& theName,
     char aBytes[2048] = {};
     std::copy(theBuffer, theBuffer + Min(theDataLen, (int)sizeof(aBytes)), aBytes);
 
-    if (IsDataStartsWithHeader(aBytes, "$MeshFormat")) {
+    if (IsDataStartsWithHeader(aBytes, "# vtk DataFile Version")) {
+        return "VTK";
+    } else if (IsDataStartsWithHeader(aBytes, "$MeshFormat")) {
         return "GMSH";
     } else if (IsDataStartsWithHeader(aBytes, RWCae::MeshImportExport::MESH_DATA_HEADER)) {
         size_t anOffset = 0;
@@ -134,6 +141,18 @@ Handle(RWCae::MeshData) MeshLoader::OpenMesh(const Handle(OSD_FileSystem)&  theF
     }
 
     const std::string aForm = ProbeFileFormat(theFilePath.ToCString(), aBytes, (int)sizeof(aBytes), true);
+    if (aForm == "VTK") {
+        RWVtk::VtkLegacyReader reader;
+        reader.SetMappingFile(theMappingFilePath);
+        if (reader.Perform(theFilePath)) { return reader.GetMeshData(); }
+#ifdef OCCTV_USE_VTK
+        if (theMappingFilePath.IsEmpty()) {
+            RWVtk::VtkNativeReader general;
+            if (general.Perform(theFilePath)) { return general.GetMeshData(); }
+        }
+#endif
+        return nullptr;
+    }
     if (aForm == "GMSH") {
         return OpenGmshMesh(theFilePath);
     } else if (aForm == "MDB" || aForm == "MDBPROP") {
@@ -322,6 +341,12 @@ Handle(RWCae::MeshData) MeshLoader::OpenVtuMesh(const TCollection_AsciiString& t
     RWVtk::VtkUnstructuredGridReader aVtuReader;
     aVtuReader.SetMappingFile(theMappingFilePath);
     if (!aVtuReader.Perform(theFilePath)) {
+#ifdef OCCTV_USE_VTK
+        if (theMappingFilePath.IsEmpty()) {
+            RWVtk::VtkNativeReader general;
+            if (general.Perform(theFilePath)) { return general.GetMeshData(); }
+        }
+#endif
         Message::SendFail() << "[ERR_MESH_FORMAT] '" << theFilePath << "' is not a valid vtk unstructured grid file";
         return nullptr;
     }
@@ -339,6 +364,12 @@ Handle(RWCae::MeshData) MeshLoader::OpenVtpMesh(const TCollection_AsciiString& t
     RWVtk::VtkPolyDataReader aVtpReader;
     aVtpReader.SetMappingFile(theMappingFilePath);
     if (!aVtpReader.Perform(theFilePath)) {
+#ifdef OCCTV_USE_VTK
+        if (theMappingFilePath.IsEmpty()) {
+            RWVtk::VtkNativeReader general;
+            if (general.Perform(theFilePath)) { return general.GetMeshData(); }
+        }
+#endif
         Message::SendFail() << "[ERR_MESH_FORMAT] '" << theFilePath << "' is not a valid vtk poly data file";
         return nullptr;
     }

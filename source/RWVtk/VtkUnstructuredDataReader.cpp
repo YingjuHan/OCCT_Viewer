@@ -71,12 +71,20 @@ void VtkUnstructuredDataReader::SetLoadedMeshData(
 // =======================================================================
 bool VtkUnstructuredDataReader::perform()
 {
+    myCurPiece = 0;
+    myNodesOffset = 0;
+    myTimeStep = myRequestedTimeStep;
+    myTimeStamp = myHasExplicitTimeStamp ? myRequestedTimeStamp : (double)std::max(myTimeStep, 0);
+    if (myToReadMeshGeometry) {
+        myMeshData = new RWCae::MeshData();
+    }
     LDOM_Element aFieldDataElement = getFirstElement(myDataElement, "FieldData");
     if (!aFieldDataElement.isNull()) {
         std::vector<LDOM_Element> aDataArrayElements = getChildrenElementsByTagName(aFieldDataElement, "DataArray");
         for (const LDOM_Element& aDataArrayElement : aDataArrayElements) {
             DataArray aDataArray = readDataArray(aDataArrayElement);
-            if (aDataArray.Name == "TimeValue" && !aDataArray.Data.IsNull() && aDataArray.Data->NbElements() == 1) {
+            if (!myHasExplicitTimeStamp && aDataArray.Name == "TimeValue"
+                && !aDataArray.Data.IsNull() && aDataArray.Data->NbElements() == 1) {
                 myTimeStamp = aDataArray.Data->GetDouble(0, 0);
                 myTimeStep  = myTimeStep == -1 ? (int)myTimeStamp : myTimeStep;
             }
@@ -84,9 +92,12 @@ bool VtkUnstructuredDataReader::perform()
     }
 
     std::vector<LDOM_Element> aPieceElements = getChildrenElementsByTagName(myDataElement, "Piece");
+    if (aPieceElements.empty()) { return fail("VTK dataset has no Piece"); }
 
     if (myToReadMeshGeometry) {
         myStoredElements->resize(aPieceElements.size());
+    } else if (!myStoredElements || myStoredElements->size() != aPieceElements.size()) {
+        return fail("VTK time step Piece layout differs from the original mesh");
     }
 
     for (const LDOM_Element& aPieceElement : aPieceElements) {
@@ -107,7 +118,10 @@ bool VtkUnstructuredDataReader::perform()
         myCurPiece++;
     }
 
-    return true;
+    myReport.points = myMeshData->NbNodes();
+    myReport.cells = myMeshData->NbIndexedElems();
+    myReport.fields = myMeshData->Properties().Size();
+    return myReport.errors.empty();
 }
 
 // =======================================================================
@@ -190,6 +204,8 @@ bool VtkUnstructuredDataReader::parsePoints(const LDOM_Element& theElem)
         return false;
     }
 
+    if (aDataArray.Data->NbElements() != myNbNodes) { return fail("Point array length does not match NumberOfPoints"); }
+
     constexpr int aComp1 = 0;
     constexpr int aComp2 = 1;
     constexpr int aComp3 = 2;
@@ -198,6 +214,9 @@ bool VtkUnstructuredDataReader::parsePoints(const LDOM_Element& theElem)
         Graphic3d_Vec3 aNode(aDataArray.Data->GetFloat(i, aComp1),
                              aDataArray.Data->GetFloat(i, aComp2),
                              aDataArray.Data->GetFloat(i, aComp3));
+        if (!std::isfinite(aNode.x()) || !std::isfinite(aNode.y()) || !std::isfinite(aNode.z())) {
+            return fail("VTK point coordinates must be finite and fit the mesh coordinate type");
+        }
         myMeshData->AddNodePosition(aNode);
     }
 
@@ -254,17 +273,33 @@ bool VtkUnstructuredDataReader::parseProperties(const LDOM_Element& theElem, boo
     for (const LDOM_Element& anElement : aDataArrays) {
         DataArray aDataArray = readDataArray(anElement);
         if (aDataArray.Data.IsNull()) {
-            Message::SendFail() << "Error: Failed to read property data '" << aDataArray.Name << "'";
-            continue;
+            return fail(std::string("Cannot read property '") + aDataArray.Name.ToCString() + "'");
+        }
+
+        const size_t expected = theIsNodal ? static_cast<size_t>(myNbNodes) : (*myStoredElements)[myCurPiece].size();
+        if (static_cast<size_t>(aDataArray.Data->NbElements()) != expected) {
+            return fail(std::string("Tuple count mismatch in ") + (theIsNodal ? "PointData '" : "CellData '")
+                        + aDataArray.Name.ToCString() + "'");
         }
 
         if (aDataArray.Components.size() == aVectorNbComponents) {
-            aDataArray.Components[aCompIdx0] = "X";
-            aDataArray.Components[aCompIdx1] = "Y";
-            aDataArray.Components[aCompIdx2] = "Z";
+            if (aDataArray.Components[aCompIdx0].IsEmpty()) { aDataArray.Components[aCompIdx0] = "X"; }
+            if (aDataArray.Components[aCompIdx1].IsEmpty()) { aDataArray.Components[aCompIdx1] = "Y"; }
+            if (aDataArray.Components[aCompIdx2].IsEmpty()) { aDataArray.Components[aCompIdx2] = "Z"; }
         }
 
-        std::vector<MappedProp> aMappedProps = extractMappedProps(aDataArray, theIsNodal);
+        RWCae::MeshNVecPropertyType aDefaultType = RWCae::MeshNVecPropertyType::ScalarSet;
+        const TCollection_AsciiString aVectors = getXmlAttribute(theElem, "Vectors", "vectors");
+        const TCollection_AsciiString aNormals = getXmlAttribute(theElem, "Normals", "normals");
+        const TCollection_AsciiString aTensors = getXmlAttribute(theElem, "Tensors", "tensors");
+        if ((!aVectors.IsEmpty() && aDataArray.Name == aVectors) || (!aNormals.IsEmpty() && aDataArray.Name == aNormals)) {
+            if (aDataArray.Components.size() != 3) { return fail("VTK vector/normal attribute must have three components"); }
+            aDefaultType = RWCae::MeshNVecPropertyType::Vector;
+        } else if (!aTensors.IsEmpty() && aDataArray.Name == aTensors) {
+            if (aDataArray.Components.size() != 9) { return fail("VTK tensor attribute must have nine components"); }
+            aDefaultType = RWCae::MeshNVecPropertyType::Tensor;
+        }
+        std::vector<MappedProp> aMappedProps = extractMappedProps(aDataArray, theIsNodal, aDefaultType);
 
         std::vector<Handle(RWCae::MeshNVecProperty)> aProperties(aMappedProps.size());
         RWCae::MeshPropertyBase::MappingType         aMappingType = theIsNodal
@@ -357,7 +392,8 @@ void VtkUnstructuredDataReader::parseMappedProps(
 // =======================================================================
 std::vector<VtkUnstructuredDataReader::MappedProp> VtkUnstructuredDataReader::extractMappedProps(
     const VtkBaseXMLReader::DataArray& theProp,
-    bool                               theIsNodal) const
+    bool                               theIsNodal,
+    RWCae::MeshNVecPropertyType theDefaultType) const
 {
     std::vector<MappedProp> aRes;
 
@@ -410,7 +446,7 @@ std::vector<VtkUnstructuredDataReader::MappedProp> VtkUnstructuredDataReader::ex
             aRes[0].Components[i] = i;
         }
         aRes[0].DisplayUnits.resize(theProp.Components.size(), "");
-        aRes[0].Type = RWCae::MeshNVecPropertyType::ScalarSet;
+        aRes[0].Type = theDefaultType;
     }
 
     return aRes;

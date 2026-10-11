@@ -12,11 +12,11 @@
 #include <RWCae/MeshScalarProperty.h>
 
 #include <Standard_Atomic.hxx>
+#include <limits>
 
 namespace {
 static volatile int g_meshGeomCounter = 0; //!< counter used in auto-generated mesh geometry id
 
-static constexpr double RATIO_CONFUSION = 1e-3;
 }
 
 namespace ViewCaeGeom {
@@ -467,12 +467,13 @@ void MeshGeometry::calculateScalarNodalValue(const Handle(RWCae::MeshScalarPrope
     } else {
         double aResValue = 0.0;
         for (const std::pair<RWCae::MeshEntityId, double>& aBaseNode : aLerpPnt.BaseNodes()) {
+            if (aBaseNode.second == 0.0) { continue; }
             RWCae::MeshEntityId aBaseNodeIdx = aBaseNode.first;
             if (theNodesMap != nullptr) {
                 theNodesMap->Find(aBaseNodeIdx, aBaseNodeIdx);
             }
             double aValue = theBaseComp->Value(RWCae::MeshPropertyEntityInfo(aBaseNodeIdx));
-            if (aBaseNode.second > 1.0 - RATIO_CONFUSION || RWCae::IsNaN(aValue)) {
+            if (RWCae::IsNaN(aValue)) {
                 aResValue = aValue;
                 break;
             }
@@ -587,15 +588,16 @@ void MeshGeometry::calculateNodeVecValue(const Elem_T&                          
     std::vector<int> aSubIndices;
     theBaseComp->SubIndices(theBaseElemIdx, aSubIndices);
     if (aSubIndices.empty()) {
-        theComp->SetValue(RWCae::MeshPropertyEntityInfo(thePropValIdx), 0.0, false);
+        theComp->SetValue(RWCae::MeshPropertyEntityInfo(thePropValIdx), std::numeric_limits<double>::quiet_NaN(), false);
         return;
     }
 
     auto computeLerpValue = [&theBaseComp, &theBaseElemIdx](const MeshInterpolatedNode& theLerpPnt) -> double {
         double aResValue = 0.0;
         for (const std::pair<RWCae::MeshEntityId, double>& aBaseNode : theLerpPnt.BaseNodes()) {
+            if (aBaseNode.second == 0.0) { continue; }
             double aValue = theBaseComp->Value(RWCae::MeshPropertyEntityInfo(theBaseElemIdx, aBaseNode.first));
-            if (aBaseNode.second > 1.0 - RATIO_CONFUSION || RWCae::IsNaN(aValue)) {
+            if (RWCae::IsNaN(aValue)) {
                 aResValue = aValue;
                 break;
             }

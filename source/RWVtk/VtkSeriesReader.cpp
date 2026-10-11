@@ -9,6 +9,7 @@
 #include <OSD_FileSystem.hxx>
 #include <OSD_Path.hxx>
 #include <RWGltf_GltfJsonParser.hxx>
+#include <cmath>
 
 namespace {
 //! Find member of the object in a safe way.
@@ -51,6 +52,8 @@ bool VtkSeriesReader::PerformStream(std::istream& theStream, const TCollection_A
     if (!VtkBaseReader::PerformStream(theStream, theFileName)) {
         return false;
     }
+    myAccumMeshDataTreeRoot.Nullify();
+    myMergedMeshData.Nullify();
 
     TCollection_AsciiString aFileName;
     OSD_Path::FolderAndFileFromPath(myFileName, myPath, aFileName);
@@ -63,13 +66,11 @@ bool VtkSeriesReader::PerformStream(std::istream& theStream, const TCollection_A
                               rapidjson::IStreamWrapper>(aFileStream);
     if (aRes.IsError()) {
         if (aRes.Code() == rapidjson::kParseErrorDocumentEmpty) {
-            Message::SendFail() << "Error: Stream '" << myFileName << "' does not contain a JSON document";
-            return false;
+            return fail("VTK series contains no JSON document");
         }
         TCollection_AsciiString anErrDesc(RWGltf_GltfJsonParser::FormatParseError(aRes.Code()));
-        Message::SendFail() << "Error: Stream '" << myFileName << "' defines invalid JSON document!\n"
-                            << anErrDesc << " [at offset " << (int)aRes.Offset() << "].";
-        return false;
+        return fail(std::string("Invalid VTK series JSON: ") + anErrDesc.ToCString()
+                    + " at offset " + std::to_string(aRes.Offset()));
     }
 
     const JsonValue* aFiles = findObjectMember(*myReader.get(), "files");
@@ -86,16 +87,18 @@ bool VtkSeriesReader::PerformStream(std::istream& theStream, const TCollection_A
 // ================================================================
 bool VtkSeriesReader::readFiles(const JsonValue* theValue)
 {
-    if (theValue == nullptr) {
-        return false;
+    if (theValue == nullptr || !theValue->IsArray() || theValue->Empty()) {
+        return fail("VTK series files must be a nonempty array");
     }
 
     int aTimeStep = -1;
 
     for (rapidjson::Value::ConstValueIterator anIter = theValue->Begin(); anIter != theValue->End(); ++anIter) {
         const JsonValue* aFileNameJson = findObjectMember(*anIter, "name");
-        if (aFileNameJson == nullptr) {
-            return false;
+        const JsonValue* aTimeJson = findObjectMember(*anIter, "time");
+        if (aFileNameJson == nullptr || !aFileNameJson->IsString() || aFileNameJson->GetStringLength() == 0
+            || aTimeJson == nullptr || !aTimeJson->IsNumber() || !std::isfinite(aTimeJson->GetDouble())) {
+            return fail("VTK series entry requires a filename and finite numeric time");
         }
 
         TCollection_AsciiString aFileName = aFileNameJson->GetString();
@@ -103,17 +106,24 @@ bool VtkSeriesReader::readFiles(const JsonValue* theValue)
         VtkMultiBlockDataReader aVtmReader;
         aVtmReader.SetMappingInfo(myMappingInfo);
         aVtmReader.SetTimeStep(++aTimeStep);
+        aVtmReader.SetTimeStamp(aTimeJson->GetDouble());
         if (anIter != theValue->Begin()) {
             aVtmReader.SetMeshDataTree(myAccumMeshDataTreeRoot);
         }
         if (!aVtmReader.Perform(myPath + aFileName)) {
-            Message::SendFail() << "Error: Cannot read '" << aFileName << "' file";
-            return false;
+            for (const auto& anError : aVtmReader.Report().errors) { myReport.errors.push_back(anError); }
+            return fail(std::string("Cannot read series file: ") + aFileName.ToCString());
         }
         if (anIter == theValue->Begin()) {
             myAccumMeshDataTreeRoot = aVtmReader.GetMeshDataTree();
         }
     }
+
+    const auto& aMesh = GetMergedMeshData();
+    if (aMesh.IsNull()) { return fail("VTK series contains no mesh"); }
+    myReport.points = aMesh->NbNodes();
+    myReport.cells = aMesh->NbIndexedElems();
+    myReport.fields = aMesh->Properties().Size();
 
     return true;
 }
@@ -128,6 +138,7 @@ void VtkSeriesReader::mergeMeshData()
     }
 
     VtkMultiBlockDataReader::MergeMeshData(myAccumMeshDataTreeRoot, myMergedMeshData);
+    if (myMergedMeshData.IsNull()) { return; }
 
     RWCae::PropertyRanges      aPropsLimits;
     RWCae::MeshNVecProperties& aProperties = myMergedMeshData->ChangeProperties();

@@ -6,6 +6,8 @@ set (SRCFILES
   CaeMeshStreamlinesBuilder.cpp
   CaeMeshTools.cpp
   ColorScaleTools.cpp
+  InteractiveCaeCutView.cpp
+  InteractiveCaeCutPlane.cpp
   InteractiveCaeMesh.cpp
   InteractiveCaeMeshDrawer.cpp
   InteractiveCaeMeshOwner.cpp
@@ -35,6 +37,8 @@ set (INCFILES
   CaeMeshStreamlinesBuilder.h
   CaeMeshTools.h
   ColorScaleTools.h
+  InteractiveCaeCutView.h
+  InteractiveCaeCutPlane.h
   InteractiveCaeMesh.h
   InteractiveCaeMeshDrawer.h
   InteractiveCaeMeshOwner.h

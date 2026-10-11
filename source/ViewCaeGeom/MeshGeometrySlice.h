@@ -4,10 +4,17 @@
 #include <ViewCaeGeom/MeshGeometry.h>
 
 #include <Graphic3d_SequenceOfHClipPlane.hxx>
+#include <array>
 
 namespace ViewCaeGeom {
+//! Endpoints index the slice mesh nodes; source element indexes the original mesh.
+struct MeshSliceLine {
+    std::array<RWCae::MeshEntityId, 2> Nodes;
+    RWCae::MeshEntityId SourceElement;
+};
+
 //! Mesh geometry for mesh slice.
-//! It generates a new mesh data with 2d elements.
+//! It generates section faces for volume cells and section lines for surface cells.
 class MeshGeometrySlice : public MeshGeometry {
 public:
     //! Constructor.
@@ -18,6 +25,17 @@ public:
 
     //! Return active slice planes.
     const Graphic3d_SequenceOfHClipPlane& SlicePlanes() const { return mySlicePlanes; }
+
+    //! Generate the slice if necessary and return surface-mesh intersections.
+    const std::vector<MeshSliceLine>& Lines()
+    {
+        GetMeshData();
+        return myLines;
+    }
+
+    //! Nodal values index slice nodes; elemental values index Lines(), with generated-node subindices for NodeVec.
+    Standard_EXPORT Handle(RWCae::MeshNVecProperty) CalculateLineProperty(
+        const Handle(RWCae::MeshNVecProperty)& theProp) const;
 
     //! Set active slice planes.
     void SetSlicePlanes(const Graphic3d_SequenceOfHClipPlane& theSlicePlanes)
@@ -47,9 +65,9 @@ protected:
 
 protected:
     Graphic3d_SequenceOfHClipPlane mySlicePlanes;
+    std::vector<MeshSliceLine> myLines;
 };
 
 } // namespace
 
 #endif // _MESHGEOMETRYSLICE_HEADERFILE
- 

@@ -88,6 +88,10 @@ namespace RWCae
     // ================================================================
     bool MeshBinWriter::Perform(const TCollection_AsciiString &theFileName, const Message_ProgressRange &theProgressRange)
     {
+        if (!myMeshData->GenericCells().empty()) {
+            Message::SendFail() << "MeshBinWriter: Generic VTK topology is not supported by the MDB schema";
+            return false;
+        }
         const Handle(OSD_FileSystem) &aFileSystem = OSD_FileSystem::DefaultFileSystem();
         std::shared_ptr<std::ostream> aFile = aFileSystem->OpenOStream(theFileName, std::ios::out | std::ios::binary);
         if (!aFile)
@@ -105,6 +109,10 @@ namespace RWCae
                                 const TCollection_AsciiString &theFileName,
                                 const Message_ProgressRange &theProgressRange)
     {
+        if (!myMeshData->GenericCells().empty()) {
+            Message::SendFail() << "MeshBinWriter: Generic VTK topology is not supported by the MDB schema";
+            return false;
+        }
         if (theProgressRange.UserBreak())
         {
             return false;

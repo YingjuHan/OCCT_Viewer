@@ -1,0 +1,5 @@
+<VTKFile type="vtkMultiBlockDataSet" byte_order="LittleEndian">
+  <vtkMultiBlockDataSet>
+    <DataSet index="0" file="tetra.vtu"/>
+  </vtkMultiBlockDataSet>
+</VTKFile>

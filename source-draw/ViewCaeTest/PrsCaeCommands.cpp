@@ -1,5 +1,6 @@
 
 #include <ViewCaeTest/PrsCaeCommands.h>
+#include <ViewCaeTest/CutViewCommands.h>
 
 #include <ViewCaeTest/ScvMesh2DGrid.h>
 #include <ViewCaeTest/ScvMeshActiveProp.h>
@@ -32,6 +33,7 @@ namespace ViewCaeTest {
 void PrsCaeCommands::Factory(Draw_Interpretor& theDI)
 {
     const char* aGroup = "SC Viewer CAE Prs";
+    CutViewCommands::Factory(theDI);
     DrawBase::DrawCommand::Register<ScvColorScale>(theDI, aGroup);
     DrawBase::DrawCommand::Register<ScvMesh2DGrid>(theDI, aGroup);
     DrawBase::DrawCommand::Register<ScvMeshActiveProp>(theDI, aGroup);

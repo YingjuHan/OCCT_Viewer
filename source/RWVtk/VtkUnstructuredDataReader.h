@@ -37,11 +37,15 @@ public:
     //! Set time step for all properties.
     void SetTimeStep(int theTimeStep)
     {
+        myRequestedTimeStep = theTimeStep;
         myTimeStep = theTimeStep;
         if (myTimeStep != -1) {
             myTimeStamp = (double)myTimeStep;
         }
     }
+
+    //! Explicit manifest time takes precedence over leaf TimeValue.
+    void SetTimeStamp(double theTime) { myRequestedTimeStamp = theTime; myHasExplicitTimeStamp = true; }
 
 public:
     //! DataArrays that is used to define array of VTK elements.
@@ -96,7 +100,8 @@ protected:
 
     //! Map properties according to the mapping info.
     Standard_EXPORT std::vector<MappedProp> extractMappedProps(const VtkBaseXMLReader::DataArray& theProp,
-                                                               bool                               theIsNodal) const;
+                                                               bool                               theIsNodal,
+                                                               RWCae::MeshNVecPropertyType theDefaultType) const;
 
     //! Map property according to the mapping info.
     Standard_EXPORT bool extractMappedProp(const VtkBaseXMLReader::DataArray&   theProp,
@@ -140,6 +145,9 @@ protected:
     int                       myCurPiece           = 0;
     double                    myTimeStamp          = 0.0;
     int                       myTimeStep           = -1;
+    int myRequestedTimeStep = -1;
+    double myRequestedTimeStamp = 0.0;
+    bool myHasExplicitTimeStamp = false;
     bool                      myToReadMeshGeometry = true;
 
     std::shared_ptr<std::vector<std::vector<int>>> myStoredElements;

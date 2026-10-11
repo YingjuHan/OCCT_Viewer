@@ -1,0 +1,102 @@
+diff --git a/src/AIS/AIS_ViewController.cxx b/src/AIS/AIS_ViewController.cxx
+index 691558c3..152b0837 100644
+--- a/src/AIS/AIS_ViewController.cxx
++++ b/src/AIS/AIS_ViewController.cxx
+@@ -2789,6 +2789,7 @@ void AIS_ViewController::OnObjectDragged (const Handle(AIS_InteractiveContext)&
+       theView->Invalidate();
+       myDragObject.Nullify();
+       myDragOwner.Nullify();
++      ResetPreviousMoveTo();
+       return;
+     }
+   }
+diff --git a/src/Draw/Draw_GraphicCommands.cxx b/src/Draw/Draw_GraphicCommands.cxx
+index 6f9cd1ef..ffe20bda 100644
+--- a/src/Draw/Draw_GraphicCommands.cxx
++++ b/src/Draw/Draw_GraphicCommands.cxx
+@@ -29,6 +29,8 @@
+ #include <Standard_Stream.hxx>
+ 
+ #include <stdio.h>
++#include <tcl.h>
++#include <vector>
+ #ifdef _WIN32
+ extern Draw_Viewer dout;
+ extern Standard_Boolean Draw_Batch;
+@@ -851,8 +853,36 @@ static Standard_Integer xwd(Draw_Interpretor& , Standard_Integer n, const char**
+ //purpose  : Creation/Suppression d'une grille.
+ //=======================================================================
+ 
+-static Standard_Integer grid (Draw_Interpretor& , Standard_Integer NbArg, const char **Arg)
++static Standard_Integer grid (Draw_Interpretor& theDI, Standard_Integer NbArg, const char **Arg)
+ {
++  // Tk popdowns and file dialogs use the same command name as the DRAW grid.
++  const char* aTkOptions[] = {"anchor", "bbox", "columnconfigure", "configure", "forget",
++                             "info", "location", "propagate", "remove", "rowconfigure", "size", "slaves"};
++  Standard_Boolean isTkGrid = NbArg > 1 && (Arg[1][0] == '.' || strcmp (Arg[1], "x") == 0 || strcmp (Arg[1], "^") == 0);
++  for (size_t anIndex = 0; NbArg > 1 && anIndex < sizeof(aTkOptions) / sizeof(aTkOptions[0]); ++anIndex)
++  {
++    isTkGrid = isTkGrid || strcmp (Arg[1], aTkOptions[anIndex]) == 0;
++  }
++  if (isTkGrid)
++  {
++    Tcl_Interp* anInterp = static_cast<Tcl_Interp*> (theDI.Interp());
++    Tcl_CmdInfo aCommand;
++    if (!Tcl_GetCommandInfo (anInterp, "::tk::grid", &aCommand))
++    {
++      theDI << "Tk grid command is unavailable";
++      return 1;
++    }
++    std::vector<Tcl_Obj*> anArgs;
++    for (Standard_Integer anIndex = 0; anIndex < NbArg; ++anIndex)
++    {
++      Tcl_Obj* anArg = Tcl_NewStringObj (anIndex == 0 ? "::tk::grid" : Arg[anIndex], -1);
++      Tcl_IncrRefCount (anArg);
++      anArgs.push_back (anArg);
++    }
++    const int aResult = Tcl_EvalObjv (anInterp, NbArg, anArgs.data(), TCL_EVAL_GLOBAL);
++    for (Tcl_Obj* anArg : anArgs) { Tcl_DecrRefCount (anArg); }
++    return aResult;
++  }
+   Standard_Real StepX, StepY, StepZ ;
+ 
+   switch (NbArg) {
+@@ -888,6 +918,11 @@ static Standard_Integer grid (Draw_Interpretor& , Standard_Integer NbArg, const
+ #endif
+   Handle (Draw_Grid) Grille = Handle(Draw_Grid)::DownCast (Draw::Get(temp)) ;
+ 
++  if (Grille.IsNull())
++  {
++    theDI << "DRAW grid object is unavailable";
++    return 1;
++  }
+   Grille->Steps (StepX, StepY, StepZ) ;
+   dout.RepaintAll () ;
+ 
+@@ -1012,7 +1047,9 @@ void Draw::GraphicCommands(Draw_Interpretor& theCommands)
+ 		  __FILE__,xwd,g);
+   theCommands.Add("hcolor","hcolor icol width gray (< 1, 0 black)",
+ 		  __FILE__,hcolor,g);
+-  theCommands.Add("grid", "grid [stepX(100) [stepY [stepZ]]] / 0",
++  theCommands.Eval ("if {[llength [info commands ::grid]] && [package provide Tk] ne {}"
++                    " && ![llength [info commands ::tk::grid]]} {rename ::grid ::tk::grid}");
++  theCommands.Add("grid", "grid [stepX(100) [stepY [stepZ]]] / 0; also accepts Tk grid layout arguments",
+ 		  __FILE__,grid, g);
+   theCommands.Add("dflush","dflush, flush the viewer",
+ 		  __FILE__,dflush,g);
+diff --git a/src/ViewerTest/ViewerTest_ViewerCommands.cxx b/src/ViewerTest/ViewerTest_ViewerCommands.cxx
+index 5c7ab0be..99f3efc8 100644
+--- a/src/ViewerTest/ViewerTest_ViewerCommands.cxx
++++ b/src/ViewerTest/ViewerTest_ViewerCommands.cxx
+@@ -2388,7 +2388,10 @@ static void VProcessEvents (ClientData theDispX, int)
+   // process new events in queue
+   SetDisplayConnection (aDispConn);
+   int aNbRemain = 0;
+-  for (int aNbEventsMax = XPending (aDispX), anEventIter (0);;)
++  // A readable notification can outlive the X events consumed during a redraw.
++  // Never enter blocking XNextEvent from a Tcl file-handler callback.
++  for (int aNbEventsMax = XPending (aDispX), anEventIter (0);
++       aNbEventsMax > 0 && XPending (aDispX) > 0;)
+   {
+     const int anEventResult = ViewerMainLoop (0, NULL);
+     if (anEventResult == 0)
