@@ -43,7 +43,7 @@ void ComputeMeshDataInfo(const RWCae::MeshTools::MeshDataList& theMeshDataList,
 {
     for (const RWCae::MeshTools::MeshDataBlockPair& aMeshDataBlock : theMeshDataList) {
         const Handle(RWCae::MeshData)& aMeshData = aMeshDataBlock.first;
-        if (aMeshData.IsNull() || aMeshData->NbNodes() == 0) {
+        if (aMeshData.IsNull() || (aMeshData->NbNodes() == 0 && aMeshData->NbIndexedElems() == 0)) {
             continue;
         }
 
@@ -64,7 +64,7 @@ void ComputeCommonProperties(const RWCae::MeshTools::MeshDataList& theMeshDataLi
 {
     for (const RWCae::MeshTools::MeshDataBlockPair& aMeshDataBlock : theMeshDataList) {
         const Handle(RWCae::MeshData)& aMeshData = aMeshDataBlock.first;
-        if (aMeshData.IsNull() || aMeshData->NbNodes() == 0) {
+        if (aMeshData.IsNull() || (aMeshData->NbNodes() == 0 && aMeshData->NbIndexedElems() == 0)) {
             continue;
         }
 
@@ -113,6 +113,7 @@ void AddMeshElements(const Handle(RWCae::MeshData)& theSrcMeshData,
 {
     RWCae::MeshEntityId aNbPrevElems  = theDstMeshData->NbIndexedElems();
     RWCae::MeshEntityId aNbElemsToAdd = theSrcMeshData->NbIndexedElems();
+    if (aNbElemsToAdd == 0) { return; }
 
     theDstMeshData->ChangeIndexedElements().SetValue(aNbPrevElems + aNbElemsToAdd - 1,
                                                      RWCae::MeshData::IndexedElement());
@@ -143,6 +144,13 @@ void AddMeshElements(const Handle(RWCae::MeshData)& theSrcMeshData,
         }
     }
 
+    for (auto cell : theSrcMeshData->GenericCells()) {
+        for (auto& node : cell.Nodes) { node += theNodesOffset; }
+        for (auto& face : cell.Faces) {
+            for (auto& node : face) { node += theNodesOffset; }
+        }
+        theDstMeshData->ChangeGenericCells().push_back(std::move(cell));
+    }
     theDstMeshData->SetToUpdateReconstructedSurface();
 }
 
@@ -263,7 +271,7 @@ Handle(MeshData) MeshTools::MergeMeshData(const MeshDataList& theMeshDataList, c
 
     for (const RWCae::MeshTools::MeshDataBlockPair& aMeshDataBlock : theMeshDataList) {
         const Handle(RWCae::MeshData)& aMeshData = aMeshDataBlock.first;
-        if (aMeshData.IsNull() || aMeshData->NbNodes() == 0) {
+        if (aMeshData.IsNull() || (aMeshData->NbNodes() == 0 && aMeshData->NbIndexedElems() == 0)) {
             continue;
         }
 

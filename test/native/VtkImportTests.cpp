@@ -80,6 +80,7 @@ void fixtures()
     write("tetra.vtm", "<VTKFile type=\"vtkMultiBlockDataSet\" byte_order=\"LittleEndian\"><vtkMultiBlockDataSet>"
         "<DataSet file=\"tetra.vtu\"/></vtkMultiBlockDataSet></VTKFile>");
     write("tetra.vtm.series", "{\"files\":[{\"name\":\"tetra.vtm\",\"time\":0.25}]}");
+    write("failed_stage.vtm.series", "{\"files\":[{\"name\":\"tetra.vtm\",\"time\":0.25},{\"name\":\"missing.vtm\",\"time\":1.75}]}");
     write("unsupported_section.vtk", "# vtk DataFile Version 3.0\nUnsupported section\nASCII\n"
         "DATASET UNSTRUCTURED_GRID\nPOINTS 4 float\n0 0 0 1 0 0 0 1 0 0 0 1\n"
         "CELLS 1 5\n4 0 1 2 3\nCELL_TYPES 1\n10\nUNSUPPORTED_SECTION 1\n");
@@ -183,7 +184,7 @@ void viewer()
     const auto oldMesh = Handle(ViewCae::InteractiveCaeMesh)::DownCast(old)->GetMeshData();
     context->Display(old, false);
     AIS_ListOfInteractive originalObjects; context->ObjectsInside(originalObjects);
-    for (const auto& name : {"absent.vtu", "missing.vtm", "invalid.vtu"}) {
+    for (const auto& name : {"absent.vtu", "missing.vtm", "invalid.vtu", "failed_stage.vtm.series"}) {
         require(!Viewer::InteractiveCaeMeshManager::OpenMesh(context, "live", path(name), "", "", 0, &report), "Viewer accepted bad import");
         require(!report.succeeded && !report.errors.empty(), "Viewer final diagnostics missing");
         const auto preserved = ViewBase::IInteractiveObject::FindAisObjectById(*context, "live");

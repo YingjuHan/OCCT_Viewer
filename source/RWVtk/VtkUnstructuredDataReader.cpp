@@ -1,5 +1,6 @@
 #include <RWVtk/VtkUnstructuredDataReader.h>
 #include <set>
+#include <cmath>
 
 #include <Message.hxx>
 #include <Message_Messenger.hxx>
@@ -84,10 +85,15 @@ bool VtkUnstructuredDataReader::perform()
         std::vector<LDOM_Element> aDataArrayElements = getChildrenElementsByTagName(aFieldDataElement, "DataArray");
         for (const LDOM_Element& aDataArrayElement : aDataArrayElements) {
             DataArray aDataArray = readDataArray(aDataArrayElement);
-            if (!myHasExplicitTimeStamp && aDataArray.Name == "TimeValue"
-                && !aDataArray.Data.IsNull() && aDataArray.Data->NbElements() == 1) {
-                myTimeStamp = aDataArray.Data->GetDouble(0, 0);
-                myTimeStep  = myTimeStep == -1 ? (int)myTimeStamp : myTimeStep;
+            if (aDataArray.Data.IsNull()) { return false; }
+            if (aDataArray.Name == "TimeValue") {
+                if (aDataArray.Data->NbElements() != 1 || aDataArray.Components.size() != 1
+                    || !std::isfinite(aDataArray.Data->GetDouble(0, 0))) {
+                    return fail("TimeValue requires one finite scalar tuple");
+                }
+                if (!myHasExplicitTimeStamp) { myTimeStamp = aDataArray.Data->GetDouble(0, 0); }
+                // Time is not an integer index (fractional/negative/large times are legal).
+                if (myTimeStep == -1) { myTimeStep = 0; }
             } else if (aDataArray.Name != "TimeValue") {
                 warn(std::string("Dataset FieldData '") + aDataArray.Name.ToCString()
                     + "' is validated but not exposed as a nodal/elemental field");

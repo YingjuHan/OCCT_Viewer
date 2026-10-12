@@ -42,7 +42,7 @@ if {[catch {
         set info_before [scvmeshinfo live]
         vdump [file join $output before.png]
         import_assert {[dict get [scvcutimagestats [file join $output before.png]] visible] > 500} "Ordinary Viewer reference image is blank"
-        foreach file {absent.vtu invalid.vtu missing.vtm} {
+        foreach file {absent.vtu invalid.vtu missing.vtm failed_stage.vtm.series} {
             import_assert {[catch {scvreadmesh live [file join $fixtures $file] -display 1}]} "DRAW accepted invalid replacement"
             import_assert {[scvmeshinfo live] eq $info_before} "DRAW replacement changed original mesh"
             vrepaint

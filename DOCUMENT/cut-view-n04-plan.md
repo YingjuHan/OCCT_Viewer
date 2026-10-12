@@ -10,7 +10,7 @@ item separately, then explicitly refresh the codebase-memory index.
 | N04.1 | B01 foundation: overall import outcome, backend attempt reports, warnings through composite/series, failed native Viewer/DRAW replacement preservation | VTK ON/OFF native reports, successful fallback without failed-overall message, failed import retains live object/fields and DRAW pixels | verified |
 | N04.2 | V01: ordinary native Viewer points, Lines/polyline and general cells | Legacy/XML fixtures; original CellData and nodal mapping; visible ordinary Viewer primitives and pixels; no CutView-only substitute | verified |
 | N04.3 | V02: explicit Legacy/XML/composite/series support contract and unsupported-section reports | Format-specific fixtures; no silent loss or field mapping substitution | verified |
-| N04.4 | V03: staged composite/time-series import retaining each step's geometry/topology | Moving/remeshed fixtures, time ordering, field/deformation/tuple validation, failed import preserves live model | queued |
+| N04.4 | V03: staged composite/time-series import retaining each step's geometry/topology | Moving/remeshed fixtures, time ordering, field/deformation/tuple validation, failed import preserves live model | verified |
 | N04.5 | V04: malformed/endian/binary/compressed/appended regression matrix | Truncation, bad types/lengths/connections/offsets and compression blocks; all readers reject safely | queued |
 | N04.6 | V05: configurable limits checked before allocation and bounded appended decoding | Arrays/nodes/cells/decompressed-byte limits and measured peak memory | queued |
 | N04.7 | B02 and B01 closure: relative reference staging and contextual reports | Nested references, duplicate basenames, missing files, staging failures and ordinary Viewer report delivery | queued |
@@ -59,3 +59,5 @@ times (5.32 / 0.53 seconds), pass on the final source. Logs: `cut-n04-format-ful
 and `cut-n04-format-focused.log`. The first ON failure exposed XML 2.3 polyhedron
 face encoding; its repaired native path passes the complete concrete-cell suite.
 See [format boundaries](cut-view-import.md). N04.4 per-step staging is next.
+
+N04.4 closure: Each step now owns independent geometry/topology and matching fields in MeshData::SeriesSteps(). Finite strictly increasing manifest times override valid dataset TimeValue; role/component/name/tuple mismatches reject before publication. Stable geometry retains the existing multi-step field API; changing geometry exposes only initial fields on the initial Viewer mesh, with an explicit warning. Generic/empty cells survive merges. Focused ON 5/5 and OFF 4/4 each pass three times (5.96 / 0.84 seconds), including failed later-stage Viewer replacement and zero changed DRAW pixels. Logs: cut-n04-series-focused.log. Coordinated animation remains N06.

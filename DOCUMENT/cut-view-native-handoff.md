@@ -671,3 +671,7 @@ VTK 9.5 XML 2.3 polyhedron 使用 native 路径；不完整/type-invalid 编码�
 5/5、OFF 4/4 各三次通过（5.32 / 0.53 秒）。日志 `cut-n04-format-full.log`
 和 `cut-n04-format-focused.log`；首次 polyhedron 失败日志保留。支持矩阵见
 [import contract](cut-view-import.md)。N04 已闭环 3/8 项，下一项 N04.4。
+
+## N04.4 — 完整时间步 staging
+
+Each step now owns independent geometry/topology and matching fields in MeshData::SeriesSteps(). Finite strictly increasing manifest times override valid dataset TimeValue; role/component/name/tuple mismatches reject before publication. Stable geometry retains the existing multi-step field API; changing geometry exposes only initial fields on the initial Viewer mesh, with an explicit warning. Generic/empty cells survive merges. Focused ON 5/5 and OFF 4/4 each pass three times (5.96 / 0.84 seconds), including failed later-stage Viewer replacement and zero changed DRAW pixels. Logs: cut-n04-series-focused.log. Coordinated animation remains N06.

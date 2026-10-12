@@ -101,6 +101,12 @@ bool VtkNativeReader::Perform(const TCollection_AsciiString& filename)
             throw std::runtime_error("Native VTK requires a dataset within native entity limits");
         }
         Handle(RWCae::MeshData) mesh = new RWCae::MeshData();
+        double time = 0.0;
+        if (const auto array = data->GetFieldData()->GetArray("TimeValue")) {
+            if (array->GetNumberOfComponents() != 1 || array->GetNumberOfTuples() != 1
+                || !std::isfinite(array->GetComponent(0,0))) { throw std::runtime_error("TimeValue requires one finite scalar tuple"); }
+            time = array->GetComponent(0,0);
+        }
         for (vtkIdType n = 0; n < data->GetNumberOfPoints(); ++n) {
             double p[3]; data->GetPoint(n,p);
             for (double value : p) {
@@ -200,8 +206,11 @@ bool VtkNativeReader::Perform(const TCollection_AsciiString& filename)
                 Handle(RWCae::MeshNVecProperty) field = new RWCae::MeshNVecProperty(array->GetName(),array->GetNumberOfComponents(),
                     nodal ? RWCae::MeshPropertyBase::MappingType::Nodal : RWCae::MeshPropertyBase::MappingType::Elemental,type);
                 field->Init<RWCae::MeshScalarProperty>();
+                field->SetTime(time, 0);
                 for (int c = 0; c < array->GetNumberOfComponents(); ++c) {
                     auto component = Handle(RWCae::MeshScalarProperty)::DownCast(field->GetComponent(c));
+                    const char* name = array->GetComponentName(c);
+                    component->SetName(name ? name : array->GetNumberOfComponents() == 3 ? (c == 0 ? "X" : c == 1 ? "Y" : "Z") : "");
                     component->Init((int)count);
                     for (vtkIdType n = 0; n < count; ++n) { component->SetValue(RWCae::MeshPropertyEntityInfo((int)n),array->GetComponent(n,c)); }
                 }
@@ -211,6 +220,7 @@ bool VtkNativeReader::Perform(const TCollection_AsciiString& filename)
         fields(data->GetPointData(),true); fields(data->GetCellData(),false);
         for (int a = 0; a < data->GetFieldData()->GetNumberOfArrays(); ++a) {
             const auto array = data->GetFieldData()->GetAbstractArray(a);
+            if (array->GetName() && std::string(array->GetName()) == "TimeValue") { continue; }
             myReport.warnings.push_back(std::string("Dataset FieldData '")
                 + (array->GetName() ? array->GetName() : "unnamed") + "' is not exposed as a nodal/elemental field");
         }

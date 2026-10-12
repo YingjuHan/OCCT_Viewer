@@ -279,6 +279,16 @@ public:
         return AddElement(MeshElementArb<MeshElemType::Generic>(nullptr, 0));
     }
     const std::vector<GenericCell>& GenericCells() const { return myGenericCells; }
+    std::vector<GenericCell>& ChangeGenericCells() { return myGenericCells; }
+
+    //! Fully staged time steps. Snapshots never refer back to the published mesh.
+    struct SeriesStep {
+        double Time = 0.0;
+        TCollection_AsciiString Source;
+        Handle(MeshData) Mesh;
+    };
+    const std::vector<SeriesStep>& SeriesSteps() const { return mySeriesSteps; }
+    std::vector<SeriesStep>& ChangeSeriesSteps() { return mySeriesSteps; }
 
     template<class Elem_T>
     int AddElement(const Elem_T& theElement, bool theToAddIndexed = true)
@@ -504,6 +514,7 @@ protected:
 
     MeshDataVector<IndexedElement> myIndexedElements;           //!< vector of indexed elements
     std::vector<GenericCell>        myGenericCells;
+    std::vector<SeriesStep>         mySeriesSteps;
     MeshElements                   myElements[MeshElemNbTypes]; //!< per-type elements
 
     mutable MeshElements mySurfElements[MeshSurfElemNbTypes]; //!< per-type outer surface elements
