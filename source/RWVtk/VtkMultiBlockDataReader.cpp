@@ -11,6 +11,7 @@
 #include <OSD_Path.hxx>
 
 #include <functional>
+#include <set>
 
 namespace RWVtk {
 
@@ -42,7 +43,28 @@ bool VtkMultiBlockDataReader::perform()
     if (!myIsMeshDataLoaded) {
         myMeshDataTreeRoot = new MeshDataTreeNode();
     }
-    return processBlock(myDataElement, myMeshDataTreeRoot);
+    if (!processBlock(myDataElement, myMeshDataTreeRoot)) { return false; }
+    // Dense union fields can greatly exceed sparse input arrays. Budget their
+    // complete merged sizes before MeshTools::CopyRaw allocates them.
+    std::set<std::string> fields;
+    std::function<void(const Handle(MeshDataTreeNode)&)> check = [&](const Handle(MeshDataTreeNode)& node) {
+        if (!node->NodeMeshData.IsNull()) {
+            for (const auto& p : node->NodeMeshData->Properties()) {
+                const std::string key = std::string(p->Name().ToCString()) + ":" + p->Description().ToCString()
+                    + ":" + std::to_string((int)p->MapType()) + ":" + std::to_string((int)p->Type())
+                    + ":" + std::to_string(p->NbComponents()) + ":" + std::to_string(p->TimeStep());
+                if (fields.insert(key).second) {
+                    const uint64_t count = p->IsNodal() ? myReport.points : myReport.cells;
+                    for (int c = 0; c < p->NbRawComponents(); ++c) {
+                        myBudget->Array(count*(p->GetRawComponent(c)->ElemType() == RWCae::MeshPropertyElemType::Float ? sizeof(float) : sizeof(double)));
+                    }
+                }
+            }
+        }
+        for (const auto& child : node->SubNodes) { check(child); }
+    };
+    check(myMeshDataTreeRoot);
+    return true;
 }
 
 // ================================================================
@@ -116,6 +138,7 @@ bool VtkMultiBlockDataReader::processDataSet(const TCollection_AsciiString&  the
     if (aProbeFileName.EndsWith(".vtu")) {
         VtkUnstructuredGridReader aVtuReader;
         aVtuReader.SetToReportMessages(myToReportMessages);
+        aVtuReader.SetResourceBudget(myBudget);
         aVtuReader.SetMappingInfo(myMappingInfo);
         aVtuReader.SetTimeStep(myTimeStep);
         if (myHasExplicitTimeStamp) { aVtuReader.SetTimeStamp(myTimeStamp); }
@@ -139,6 +162,7 @@ bool VtkMultiBlockDataReader::processDataSet(const TCollection_AsciiString&  the
     } else if (aProbeFileName.EndsWith(".vtp")) {
         VtkPolyDataReader aVtpReader;
         aVtpReader.SetToReportMessages(myToReportMessages);
+        aVtpReader.SetResourceBudget(myBudget);
         aVtpReader.SetMappingInfo(myMappingInfo);
         aVtpReader.SetTimeStep(myTimeStep);
         if (myHasExplicitTimeStamp) { aVtpReader.SetTimeStamp(myTimeStamp); }

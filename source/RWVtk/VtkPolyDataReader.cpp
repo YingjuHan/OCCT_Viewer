@@ -35,15 +35,16 @@ bool VtkPolyDataReader::readMeshInfo(const LDOM_Element& theElem)
     }
 
     myNbVerts = myNbLines = myNbStrips = myNbPolys = 0;
-    getXmlAttribute(theElem, "NumberOfVerts", "numberOfVerts").GetInteger(myNbVerts);
-    getXmlAttribute(theElem, "NumberOfLines", "numberOfLines").GetInteger(myNbLines);
-    getXmlAttribute(theElem, "NumberOfStrips", "numberOfStrips").GetInteger(myNbStrips);
-    getXmlAttribute(theElem, "NumberOfPolys", "numberOfPolys").GetInteger(myNbPolys);
+    myNbVerts=readCount(theElem,"NumberOfVerts","numberOfVerts",true);
+    myNbLines=readCount(theElem,"NumberOfLines","numberOfLines",true);
+    myNbStrips=readCount(theElem,"NumberOfStrips","numberOfStrips",true);
+    myNbPolys=readCount(theElem,"NumberOfPolys","numberOfPolys",true);
 
     if (myNbVerts < 0 || myNbLines < 0 || myNbStrips < 0 || myNbPolys < 0) {
         return fail("Negative VTK PolyData cell count");
     }
     const size_t aNbCells = (size_t)myNbVerts + myNbLines + myNbStrips + myNbPolys;
+    VtkResourceBudget::Consume(myBudget->Cells,aNbCells,std::min(myLimits.MaxCells,(uint64_t)std::numeric_limits<int>::max()),"cells");
     if (myToReadMeshGeometry) { (*myStoredElements)[myCurPiece].assign(aNbCells, 0); }
     else if ((*myStoredElements)[myCurPiece].size() != aNbCells) {
         return fail("VTK time step PolyData cell count differs from the original mesh");
@@ -134,6 +135,7 @@ bool VtkPolyDataReader::parseVerts(const LDOM_Element& theElem)
     RWCae::MeshElement0d anElem;
     for (int i = 0; i < myNbVerts; i++, aCellBegin = aCurOffset) {
         aCurOffset = aMeshElements.Offsets.Data->GetInt(i, 0);
+        VtkResourceBudget::Consume(myBudget->Cells,aCurOffset-aCellBegin-1,myLimits.MaxCells,"expanded cells");
         for (int aVertIter = aCellBegin; aVertIter < aCurOffset; aVertIter++) {
             uint32_t aNode = aMeshElements.Connectivity.Data->GetInt(aVertIter, 0) + myNodesOffset;
             anElem[0]      = aNode;
@@ -171,6 +173,7 @@ bool VtkPolyDataReader::parseStrips(const LDOM_Element& theElem)
     int aCurOffset = 0;
     for (int i = 0; i < myNbStrips; i++, aCellBegin = aCurOffset) {
         aCurOffset = aMeshElements.Offsets.Data->GetInt(i, 0);
+        VtkResourceBudget::Consume(myBudget->Cells,aCurOffset-aCellBegin-3,myLimits.MaxCells,"expanded cells");
         if (aCurOffset - aCellBegin < aNbTrgPnts) {
             continue;
         }

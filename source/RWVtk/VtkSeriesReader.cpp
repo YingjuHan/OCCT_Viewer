@@ -5,6 +5,7 @@
 #include <cmath>
 #include <map>
 #include <limits>
+#include <sstream>
 
 namespace {
 using Mesh = Handle(RWCae::MeshData);
@@ -53,14 +54,17 @@ bool VtkSeriesReader::PerformStream(std::istream& stream, const TCollection_Asci
     TCollection_AsciiString leaf;
     OSD_Path::FolderAndFileFromPath(myFileName, myPath, leaf);
     myReader.reset(new rapidjson::Document());
-    rapidjson::IStreamWrapper wrapper(stream);
+    std::string document;
+    try { document=myBudget->Read(stream); } catch (const std::exception& error) { return fail(error.what()); }
+    std::istringstream bounded(document);
+    rapidjson::IStreamWrapper wrapper(bounded);
     rapidjson::ParseResult result = myReader->ParseStream<rapidjson::kParseFullPrecisionFlag>(wrapper);
     if (result.IsError()) {
         return fail(std::string("Invalid VTK series JSON: ") + RWGltf_GltfJsonParser::FormatParseError(result.Code())
             + " at offset " + std::to_string(result.Offset()));
     }
     if (!myReader->IsObject() || !myReader->HasMember("files")) { return fail("VTK series has no files array"); }
-    return readFiles(&(*myReader)["files"]);
+    try { return readFiles(&(*myReader)["files"]); } catch (const std::exception& error) { return fail(error.what()); }
 }
 bool VtkSeriesReader::readFiles(const JsonValue* files)
 {
@@ -79,6 +83,7 @@ bool VtkSeriesReader::readFiles(const JsonValue* files)
         const double time = entry["time"].GetDouble(); previous = time;
         const TCollection_AsciiString source = myPath + entry["name"].GetString();
         VtkMultiBlockDataReader reader;
+        reader.SetResourceBudget(myBudget);
         reader.SetToReportMessages(false); reader.SetMappingInfo(myMappingInfo);
         reader.SetTimeStep(step); reader.SetTimeStamp(time);
         if (!reader.Perform(source)) {

@@ -42,6 +42,7 @@ bool VtkBaseReader::Perform(const TCollection_AsciiString& theFileName)
 bool VtkBaseReader::PerformStream(std::istream& theStream, const TCollection_AsciiString& theFileName)
 {
     myReport = VtkImportReport();
+    if (!mySharedBudget || !myBudget) { myBudget = std::make_shared<VtkResourceBudget>(myLimits); }
     if (!myMappingFileName.IsEmpty()) {
         RWCae::MeshFieldMappingReader aMappingReader;
         if (!aMappingReader.Perform(myMappingFileName)) {

@@ -59,6 +59,8 @@ bool VtkValidationReader::perform()
             if (total > std::numeric_limits<int>::max()) { return fail("PolyData cell count overflow"); }
             cells = (int)total;
         }
+        VtkResourceBudget::Consume(myBudget->Nodes,nodes,std::min(myLimits.MaxNodes,(uint64_t)std::numeric_limits<int>::max()),"nodes");
+        VtkResourceBudget::Consume(myBudget->Cells,cells,std::min(myLimits.MaxCells,(uint64_t)std::numeric_limits<int>::max()),"cells");
         for (LDOM_Node node = piece.getFirstChild(); !node.isNull(); node = node.getNextSibling()) {
             if (node.getNodeType() != LDOM_Node::ELEMENT_NODE) { continue; }
             const std::string tag = TCollection_AsciiString(node.getNodeName()).ToCString();

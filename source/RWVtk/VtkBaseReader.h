@@ -3,6 +3,7 @@
 
 #include <RWCae/MeshFieldMapping.h>
 #include <RWVtk/VtkImportReport.h>
+#include <RWVtk/VtkResourceLimits.h>
 
 namespace RWVtk {
 //! Base reader class for VTK data.
@@ -30,6 +31,8 @@ public:
 
     //! Collect diagnostics without printing rejected attempts during fallback.
     void SetToReportMessages(bool theEnabled) { myToReportMessages = theEnabled; }
+    void SetResourceLimits(const VtkResourceLimits& theLimits) { myLimits = theLimits; mySharedBudget = false; }
+    void SetResourceBudget(const std::shared_ptr<VtkResourceBudget>& theBudget) { myBudget = theBudget; myLimits = theBudget->Limits; mySharedBudget = true; }
 
 protected:
     Standard_EXPORT bool fail(const std::string& theMessage);
@@ -43,6 +46,9 @@ protected:
     TCollection_AsciiString                    myMappingFileName;
     VtkImportReport myReport;
     bool myToReportMessages = true;
+    VtkResourceLimits myLimits;
+    std::shared_ptr<VtkResourceBudget> myBudget;
+    bool mySharedBudget = false;
 };
 
 }

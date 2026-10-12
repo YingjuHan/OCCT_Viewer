@@ -6,6 +6,7 @@
 #include <RWCae/MeshData.h>
 #include <RWCae/MeshImportExport.h>
 #include <RWVtk/VtkImportReport.h>
+#include <RWVtk/VtkResourceLimits.h>
 
 #include <NCollection_Map.hxx>
 #include <OSD_FileSystem.hxx>
@@ -88,6 +89,7 @@ public:
 
     //! Keep VTK diagnostics available to callers without printing reader attempts.
     void SetToReportMessages(bool theEnabled) { myToReportMessages = theEnabled; }
+    void SetVtkResourceLimits(const RWVtk::VtkResourceLimits& limits) { myVtkLimits = limits; }
 
     //! Define properties that should be loaded.
     void SetPropsToProcess(const Handle(RWCae::MeshBinIOBase::SharedMapOfAsciiString)& theProps)
@@ -108,6 +110,7 @@ private:
                                       const std::string& theFormat);
 
     RWVtk::VtkImportReport myVtkReport;
+    RWVtk::VtkResourceLimits myVtkLimits;
     bool myToReportMessages = true;
     bool         myHasMissingFields = false;
     unsigned int myOptions          = (unsigned int)RWCae::MeshDataImportExportOptions::DEFAULTS;

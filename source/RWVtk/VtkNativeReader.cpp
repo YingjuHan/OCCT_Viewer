@@ -1,5 +1,6 @@
 #include <RWVtk/VtkNativeReader.h>
 #include <RWVtk/VtkValidationReader.h>
+#include <RWVtk/VtkLegacyReader.h>
 #include <RWCae/MeshScalarProperty.h>
 
 #include <vtkCell.h>
@@ -75,7 +76,11 @@ bool VtkNativeReader::Perform(const TCollection_AsciiString& filename)
         const std::string path(filename.ToCString());
         std::string lowerPath = path;
         std::transform(lowerPath.begin(), lowerPath.end(), lowerPath.begin(), [](unsigned char c) { return (char)std::tolower(c); });
+        const auto budget = myBudget ? myBudget : std::make_shared<VtkResourceBudget>(myLimits);
         if (lowerPath.size() >= 4 && lowerPath.substr(lowerPath.size()-4) == ".vtk") {
+            VtkLegacyReader preflight;
+            preflight.SetValidationOnly(true); preflight.SetResourceBudget(budget); preflight.SetToReportMessages(false);
+            if (!preflight.Perform(filename)) { myReport = preflight.Report(); return false; }
             vtkNew<vtkGenericDataObjectReader> reader;
             reader->AddObserver(vtkCommand::ErrorEvent,errors);
             reader->AddObserver(vtkCommand::WarningEvent,warnings);
@@ -87,6 +92,7 @@ bool VtkNativeReader::Perform(const TCollection_AsciiString& filename)
             data = vtkDataSet::SafeDownCast(reader->GetOutput());
         } else {
             VtkValidationReader preflight(lowerPath.size() >= 4 && lowerPath.substr(lowerPath.size()-4) == ".vtp");
+            preflight.SetResourceBudget(budget);
             preflight.SetToReportMessages(false);
             if (!preflight.Perform(filename)) {
                 myReport = preflight.Report();
@@ -210,6 +216,8 @@ bool VtkNativeReader::Perform(const TCollection_AsciiString& filename)
                 if (array->GetNumberOfTuples() != count) { throw std::runtime_error("VTK field tuple count mismatch"); }
                 const auto type = array == attributes->GetVectors() || array == attributes->GetNormals() ? RWCae::MeshNVecPropertyType::Vector
                     : array == attributes->GetTensors() ? RWCae::MeshNVecPropertyType::Tensor : RWCae::MeshNVecPropertyType::ScalarSet;
+                const int rawComponents = array->GetNumberOfComponents() + (type == RWCae::MeshNVecPropertyType::Vector ? 1 : 0);
+                for (int c = 0; c < rawComponents; ++c) { budget->Array((uint64_t)count*sizeof(double)); }
                 Handle(RWCae::MeshNVecProperty) field = new RWCae::MeshNVecProperty(array->GetName(),array->GetNumberOfComponents(),
                     nodal ? RWCae::MeshPropertyBase::MappingType::Nodal : RWCae::MeshPropertyBase::MappingType::Elemental,type);
                 field->Init<RWCae::MeshScalarProperty>();

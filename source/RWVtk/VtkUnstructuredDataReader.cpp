@@ -156,7 +156,8 @@ bool VtkUnstructuredDataReader::perform()
 // =======================================================================
 bool VtkUnstructuredDataReader::readMeshInfo(const LDOM_Element& theElem)
 {
-    getXmlAttribute(theElem, "NumberOfPoints", "numberOfPoints").GetInteger(myNbNodes);
+    myNbNodes = readCount(theElem,"NumberOfPoints","numberOfPoints");
+    VtkResourceBudget::Consume(myBudget->Nodes,myNbNodes,std::min(myLimits.MaxNodes,(uint64_t)std::numeric_limits<int>::max()),"nodes");
     if (myNbNodes <= 0) {
         return fail(std::string("Invalid number of nodes '") + std::to_string(myNbNodes) + "'");
     }
@@ -345,6 +346,10 @@ bool VtkUnstructuredDataReader::parseProperties(const LDOM_Element& theElem, boo
                 storePropValues(aComp, aDataArray.Data, aMappedProps[i].Components[aCompIter]);
             }
 
+            if (aProperty->IsVector()) {
+                myBudget->Array((uint64_t)aProperty->GetComponent(0)->NbValues()
+                    * (aProperty->GetComponent(0)->ElemType() == RWCae::MeshPropertyElemType::Float ? sizeof(float) : sizeof(double)));
+            }
             aProperty->UpdateComponents();
         }
     }
@@ -550,6 +555,11 @@ void VtkUnstructuredDataReader::storePropValues(RWCae::MeshScalarProperty*    th
 {
     const int aNbValues = theData->NbElements();
     int       isNodal   = theComp->IsNodal();
+    uint64_t generated = 0;
+    for (int i = 0; i < aNbValues; ++i) { generated += isNodal ? 1 : (*myStoredElements)[myCurPiece][i]; }
+    const uint64_t bytes = theComp->ElemType() == RWCae::MeshPropertyElemType::Float ? sizeof(float) : sizeof(double);
+    if (((uint64_t)theComp->NbValues()+generated)*bytes > myLimits.MaxArrayBytes) { throw std::runtime_error("VTK resource limit: output field bytes"); }
+    myBudget->Array(generated*bytes);
     for (int aValueIter = 0; aValueIter < aNbValues; aValueIter++) {
         int aNbGenElems = isNodal ? 1 : (*myStoredElements)[myCurPiece][aValueIter];
         for (int aGenElemIter = 0; aGenElemIter < aNbGenElems; aGenElemIter++) {

@@ -1,6 +1,8 @@
 #include <RWVtk/VtkLegacyReader.h>
 #include <RWVtk/VtkUnstructuredGridReader.h>
 #include <RWVtk/VtkPolyDataReader.h>
+#include <RWVtk/VtkValidationReader.h>
+#include "VtkBoundedTextBuffer.h"
 
 #include <algorithm>
 #include <cmath>
@@ -75,7 +77,7 @@ double readBigEndian(std::istream& input)
     return static_cast<double>(value);
 }
 
-Array readArray(std::istream& input, const std::string& type, size_t tuples, int components, bool binary)
+Array readArray(std::istream& input, const std::string& type, size_t tuples, int components, bool binary, const std::shared_ptr<RWVtk::VtkResourceBudget>& budget)
 {
     const std::vector<std::string> supported = {"float", "double", "int", "vtkTypeInt32", "unsigned_int",
         "short", "unsigned_short", "char", "signed_char", "unsigned_char", "long_long", "vtkTypeInt64", "unsigned_long_long"};
@@ -87,6 +89,9 @@ Array readArray(std::istream& input, const std::string& type, size_t tuples, int
     }
     Array result;
     result.components = components;
+    if ((uint64_t)components > budget->Limits.MaxComponents || tuples*components > (uint64_t)std::numeric_limits<int>::max()) { throw std::runtime_error("VTK resource limit: Legacy array shape"); }
+    RWVtk::VtkResourceBudget::Consume(budget->Arrays,1,budget->Limits.MaxArrays,"arrays");
+    budget->Array(tuples*components*sizeof(double));
     result.values.reserve(tuples * components);
     if (binary) {
         std::string line;
@@ -136,7 +141,7 @@ struct Cells {
     size_t size = 0;
 };
 
-Cells readCells(std::istream& input, bool binary)
+Cells readCells(std::istream& input, bool binary, const std::shared_ptr<RWVtk::VtkResourceBudget>& budget)
 {
     Cells result;
     const size_t cells = count(input);
@@ -150,12 +155,12 @@ Cells readCells(std::istream& input, bool binary)
         std::string keyword, type;
         input >> keyword >> type;
         if (keyword != "OFFSETS") { throw std::runtime_error("Expected OFFSETS"); }
-        Array offsets = readArray(input, type, cells, 1, binary);
+        Array offsets = readArray(input, type, cells, 1, binary, budget);
         input >> keyword >> type;
         if (keyword != "CONNECTIVITY" || cells == 0 || offsets.values.front() != 0) {
             throw std::runtime_error("Invalid legacy offsets/connectivity");
         }
-        result.connectivity = readArray(input, type, entries, 1, binary);
+        result.connectivity = readArray(input, type, entries, 1, binary, budget);
         result.connectivity.name = "connectivity";
         result.offsets.values.assign(offsets.values.begin() + 1, offsets.values.end());
         result.size = cells - 1;
@@ -164,14 +169,16 @@ Cells readCells(std::istream& input, bool binary)
     // The old cell list contains each cell's node count followed by its indices.
     Array packed;
     if (binary) {
+        RWVtk::VtkResourceBudget::Consume(budget->Arrays,1,budget->Limits.MaxArrays,"arrays");
+        budget->Array(entries*sizeof(double));
         packed.values.reserve(entries);
         for (size_t i = 0; i < entries; ++i) { packed.values.push_back(readBigEndian<int32_t>(input)); }
-    } else { packed = readArray(input, "int", entries, 1, false); }
+    } else { packed = readArray(input, "int", entries, 1, false, budget); }
     size_t offset = 0;
     for (size_t cell = 0; cell < cells; ++cell) {
         if (offset >= packed.values.size()) { throw std::runtime_error("Truncated legacy cell list"); }
         const double length = packed.values[offset++];
-        if (length < 1 || length != std::floor(length) || length > packed.values.size() - offset) {
+        if (length < 0 || length != std::floor(length) || length > packed.values.size() - offset) {
             throw std::runtime_error("Invalid legacy cell size");
         }
         result.connectivity.values.insert(result.connectivity.values.end(), packed.values.begin() + offset,
@@ -189,11 +196,12 @@ namespace RWVtk {
 VtkLegacyReader::VtkLegacyReader() = default;
 VtkLegacyReader::~VtkLegacyReader() = default;
 
-bool VtkLegacyReader::PerformStream(std::istream& input, const TCollection_AsciiString& fileName)
+bool VtkLegacyReader::PerformStream(std::istream& rawInput, const TCollection_AsciiString& fileName)
 {
-    if (!VtkBaseReader::PerformStream(input, fileName)) { return false; }
+    if (!VtkBaseReader::PerformStream(rawInput, fileName)) { return false; }
     myMeshData.Nullify();
     try {
+        std::istringstream input(myBudget->Read(rawInput));
         std::string line, keyword, dataset;
         std::getline(input, line);
         if (line.find("# vtk DataFile Version") != 0) { return fail("Invalid legacy VTK header"); }
@@ -214,17 +222,18 @@ bool VtkLegacyReader::PerformStream(std::istream& input, const TCollection_Ascii
         while (input >> keyword) {
             if (keyword == "POINTS") {
                 const size_t n = count(input);
+                if (myBudget->Nodes > myLimits.MaxNodes || n > myLimits.MaxNodes-myBudget->Nodes) { return fail("VTK resource limit: nodes"); }
                 std::string type;
                 input >> type;
-                points = readArray(input, type, n, 3, binary);
-            } else if (keyword == "CELLS") { cells = readCells(input, binary); }
+                points = readArray(input, type, n, 3, binary, myBudget);
+            } else if (keyword == "CELLS") { cells = readCells(input, binary, myBudget); }
             else if (keyword == "CELL_TYPES") {
-                types = readArray(input, "int", count(input), 1, binary);
+                types = readArray(input, "int", count(input), 1, binary, myBudget);
                 types.name = "types";
             } else if (keyword == "VERTICES" || keyword == "POLYGONS" || keyword == "TRIANGLE_STRIPS" || keyword == "LINES") {
                 const std::string tag = keyword == "VERTICES" ? "Verts" : keyword == "POLYGONS" ? "Polys"
                                       : keyword == "TRIANGLE_STRIPS" ? "Strips" : "Lines";
-                polyCells.emplace_back(tag, readCells(input, binary));
+                polyCells.emplace_back(tag, readCells(input, binary, myBudget));
             } else if (keyword == "POINT_DATA" || keyword == "CELL_DATA") {
                 nodal = keyword == "POINT_DATA";
                 tupleCount = count(input);
@@ -240,7 +249,7 @@ bool VtkLegacyReader::PerformStream(std::istream& input, const TCollection_Ascii
                     input >> keyword >> line;
                     if (keyword != "LOOKUP_TABLE") { return fail("Missing legacy LOOKUP_TABLE"); }
                 }
-                Array field = readArray(input, type, tupleCount, components, binary);
+                Array field = readArray(input, type, tupleCount, components, binary, myBudget);
                 field.name = name;
                 field.role = kind == "VECTORS" ? "Vectors" : kind == "NORMALS" ? "Normals" : kind == "TENSORS" ? "Tensors" : "";
                 (nodal ? pointFields : cellFields).push_back(std::move(field));
@@ -253,7 +262,7 @@ bool VtkLegacyReader::PerformStream(std::istream& input, const TCollection_Ascii
                     const int components = static_cast<int>(count(input));
                     const size_t n = count(input);
                     input >> type;
-                    Array field = readArray(input, type, n, components, binary);
+                    Array field = readArray(input, type, n, components, binary, myBudget);
                     field.name = name;
                     if (tupleCount && n == tupleCount) { (nodal ? pointFields : cellFields).push_back(std::move(field)); }
                     else { metadata.push_back(std::move(field)); }
@@ -266,7 +275,7 @@ bool VtkLegacyReader::PerformStream(std::istream& input, const TCollection_Ascii
                 if (components < 1 || components > 3 || tupleCount == 0) {
                     return fail("Invalid legacy TEXTURE_COORDINATES shape/association");
                 }
-                Array field = readArray(input, type, tupleCount, components, binary);
+                Array field = readArray(input, type, tupleCount, components, binary, myBudget);
                 field.name = name;
                 (nodal ? pointFields : cellFields).push_back(std::move(field));
             } else if (keyword == "COLOR_SCALARS") {
@@ -276,7 +285,7 @@ bool VtkLegacyReader::PerformStream(std::istream& input, const TCollection_Ascii
                 if (components < 1 || components > 4 || tupleCount == 0) {
                     return fail("Invalid legacy COLOR_SCALARS shape/association");
                 }
-                Array field = readArray(input, binary ? "unsigned_char" : "float", tupleCount, components, binary);
+                Array field = readArray(input, binary ? "unsigned_char" : "float", tupleCount, components, binary, myBudget);
                 field.name = name;
                 // VTK stores binary colors as bytes and ASCII colors as normalized floats.
                 for (double& value : field.values) {
@@ -289,7 +298,7 @@ bool VtkLegacyReader::PerformStream(std::istream& input, const TCollection_Ascii
                 std::string name;
                 input >> name;
                 const size_t entries = count(input);
-                const Array table = readArray(input, binary ? "unsigned_char" : "float", entries, 4, binary);
+                const Array table = readArray(input, binary ? "unsigned_char" : "float", entries, 4, binary, myBudget);
                 for (double value : table.values) {
                     if (!std::isfinite(value) || value < 0 || value > (binary ? 255 : 1)) {
                         return fail("Legacy LOOKUP_TABLE value out of range");
@@ -298,8 +307,9 @@ bool VtkLegacyReader::PerformStream(std::istream& input, const TCollection_Ascii
                 warn("Legacy LOOKUP_TABLE '" + name + "' is validated but not applied; numeric scalar values are retained");
             } else { return fail("Unsupported legacy VTK section: " + keyword); }
         }
-        if (points.values.empty()) { return fail("Legacy VTK has no points"); }
-        std::ostringstream xml;
+
+        detail::BoundedTextBuffer xmlBuffer(myLimits.MaxFileBytes);
+        std::ostream xml(&xmlBuffer); xml.exceptions(std::ios::badbit | std::ios::failbit);
         const bool volume = dataset == "UNSTRUCTURED_GRID";
         const char* tag = volume ? "UnstructuredGrid" : "PolyData";
         xml << "<VTKFile type=\"" << tag << "\" byte_order=\"LittleEndian\"><" << tag << ">";
@@ -332,11 +342,20 @@ bool VtkLegacyReader::PerformStream(std::istream& input, const TCollection_Ascii
         emitFields(xml, "PointData", pointFields);
         emitFields(xml, "CellData", cellFields);
         xml << "</Piece></" << tag << "></VTKFile>";
-        std::istringstream normalized(xml.str());
+        std::istringstream normalized(xmlBuffer.Text());
+        if (myValidationOnly) {
+            VtkValidationReader reader(!volume);
+            reader.SetResourceBudget(myBudget); reader.SetToReportMessages(false);
+            const bool ok = reader.PerformStream(normalized,fileName);
+            const auto warnings = myReport.warnings; myReport = reader.Report();
+            myReport.warnings.insert(myReport.warnings.begin(),warnings.begin(),warnings.end());
+            return ok;
+        }
         // Reuse the XML reader's cell ordering and field association validation.
         if (volume) {
             VtkUnstructuredGridReader reader;
             reader.SetToReportMessages(myToReportMessages);
+            reader.SetResourceBudget(myBudget);
             reader.SetMappingInfo(myMappingInfo);
             const bool ok = reader.PerformStream(normalized, fileName);
             const auto warnings = myReport.warnings;
@@ -347,6 +366,7 @@ bool VtkLegacyReader::PerformStream(std::istream& input, const TCollection_Ascii
         }
         VtkPolyDataReader reader;
         reader.SetToReportMessages(myToReportMessages);
+            reader.SetResourceBudget(myBudget);
         reader.SetMappingInfo(myMappingInfo);
         const bool ok = reader.PerformStream(normalized, fileName);
         const auto warnings = myReport.warnings;

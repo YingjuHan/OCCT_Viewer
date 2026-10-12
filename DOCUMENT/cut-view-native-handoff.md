@@ -679,3 +679,7 @@ Each step now owns independent geometry/topology and matching fields in MeshData
 ## N04.5 — 畸形与二进制安全矩阵
 
 Strict typed ASCII values and base64 padding, inline trailing-byte rejection, original XML topology/field preflight before the VTK SDK, modern polyhedron face membership and duplicate/unknown topology rejection are verified. The matrix covers both byte orders, UInt32/UInt64 headers, inline/base64/raw appended storage, multiple zlib blocks, truncation, invalid types/offsets/tuples and reader reset. Focused ON 8/8, OFF 6/6 each pass three times (45.36 / 1.20 seconds), including the 48-cell native matrix and ordinary Viewer images. Logs: cut-n04-safety-focused.log. Pre-allocation budgets remain N04.6.
+
+## N04.6 — 分配前限额与 bounded appended 解码
+
+Configurable stream/array/component/node/cell/decoded budgets propagate across composite/series children and native preflight. Legacy normalization, dense merged fields and PolyData expansion/conversion are bounded before allocation. Appended decoding now reads only the requested header/payload. Final focused ON 9/9, OFF 7/7 each pass three times (52.19 / 1.87 seconds). Six kernel peak-memory measurements for 8/32/64 MiB payloads stay below 256 MiB; largest ON/OFF peaks are 154632192 / 150278144 bytes. Evidence and API limits: cut-view-resource-limits.md; logs cut-n04-limits-focused.log and cut-n04-memory-*.log. Recursive reference depth/cycle/staging closure is N04.7.

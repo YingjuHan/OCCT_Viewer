@@ -71,8 +71,9 @@ bool VtkUnstructuredGridReader::readMeshInfo(const LDOM_Element& theElem)
         return false;
     }
 
-    getXmlAttribute(theElem, "NumberOfCells", "numberOfCells").GetInteger(myNbElements);
-    if (myNbElements <= 0) {
+    myNbElements = readCount(theElem,"NumberOfCells","numberOfCells");
+    VtkResourceBudget::Consume(myBudget->Cells,myNbElements,std::min(myLimits.MaxCells,(uint64_t)std::numeric_limits<int>::max()),"cells");
+    if (myNbElements < 0) {
         return fail(std::string("Invalid number of elements '") + std::to_string(myNbElements) + "'");
     }
 

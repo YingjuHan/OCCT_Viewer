@@ -16,6 +16,7 @@ set (SRCFILES
 set (INCFILES
   VtkLegacyReader.h
   VtkValidationReader.h
+  VtkResourceLimits.h
   VtkImportReport.h
   VtkBaseReader.h
   VtkBaseXMLReader.h

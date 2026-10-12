@@ -357,6 +357,7 @@ Handle(RWCae::MeshData) MeshLoader::openVtkMesh(const TCollection_AsciiString& t
         myVtkReport.backend = theBackend;
     };
     auto read = [&](auto& theReader, auto theGetMesh) {
+        theReader.SetResourceLimits(myVtkLimits);
         theReader.SetMappingFile(theMappingFilePath);
         theReader.SetToReportMessages(false);
         bool isRead = false;
@@ -405,6 +406,7 @@ Handle(RWCae::MeshData) MeshLoader::openVtkMesh(const TCollection_AsciiString& t
     if (aMesh.IsNull() && canUseNativeCells && theMappingFilePath.IsEmpty()
         && (theFormat == "VTK" || theFormat == "VTU" || theFormat == "VTP")) {
         RWVtk::VtkNativeReader aReader;
+        aReader.SetResourceLimits(myVtkLimits);
         const bool isRead = aReader.Perform(theFilePath);
         record(aReader.Report(), "native-vtk", isRead);
         if (isRead) { aMesh = aReader.GetMeshData(); }
