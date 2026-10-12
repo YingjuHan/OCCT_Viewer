@@ -602,7 +602,11 @@ if (OCCTV_INSTALL_DEPENDENCIES)
     # 不复制 tcl/tk 库，因为原生 tcl/tk 脚本存在问题
     set (_exclude_regexp "(tcl[0-9]+[.]|tk[0-9]+[.])")
     # 设置排除正则表达式
-    set (_additional_dependencies DRAWEXE TKOpenGlesTest)
+    set (_additional_dependencies DRAWEXE)
+    # TKOpenGlesTest is only produced by an OCCT build with GLES2 enabled.
+    if (OpenCASCADE_WITH_GLES2)
+      list (APPEND _additional_dependencies TKOpenGlesTest)
+    endif()
     # 设置额外依赖
   endif()
   if (OCCTV_USE_DRACO)
