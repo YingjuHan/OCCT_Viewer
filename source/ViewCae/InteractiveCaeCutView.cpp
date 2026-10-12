@@ -80,17 +80,21 @@ void InteractiveCaeCutView::Synchronize()
     if (!hasActiveCut) {
         ViewCaeGeom::MeshCutResult result;
         result.Definition.Id = "uncut_source"; result.SourceField = myField;
+        result.TensorDerived = !myField.IsNull() && myField->Type() == RWCae::MeshNVecPropertyType::Tensor
+            && myCuts.RecoveryOptions().Tensor.Measure != ViewCaeGeom::MeshCutTensorMeasure::Components;
+        if (result.TensorDerived) { result.SourceField = ViewCaeGeom::DeriveCutTensorField(myField,myCuts.RecoveryOptions().Tensor); }
         result.Roots[0] = myCuts.SourceGeometry(); result.Portions[0] = result.Roots[0]->GetLastChild();
         result.Portions[0]->GetMeshData();
         auto slice = Handle(ViewCaeGeom::MeshGeometrySlice)::DownCast(result.Portions[0]);
-        if (!slice.IsNull()) { result.LineField = slice->CalculateLineProperty(myField); }
+        if (!slice.IsNull()) { result.LineField = slice->CalculateLineProperty(result.SourceField); }
         results.push_back(result);
     }
     for (const auto& aResult : results) {
+        const int component = aResult.TensorDerived ? 0 : myComponent;
         if (hasActiveCut) { revisions[aResult.Definition.Id] = aResult.Revision; }
         Handle(MeshPropertyData) aProps = new MeshPropertyData();
         const int aPropIndex = aProps->AddProperty(aResult.SourceField);
-        if (!aResult.SourceField.IsNull()) { aProps->SetPropertyComponentIndex(myComponent, aPropIndex); }
+        if (!aResult.SourceField.IsNull()) { aProps->SetPropertyComponentIndex(component, aPropIndex); }
         for (size_t i = 0; i < aResult.Portions.size(); ++i) {
             if (aResult.Portions[i].IsNull()) { continue; }
             const auto& aStyle = myStyles[i];
@@ -121,7 +125,7 @@ void InteractiveCaeCutView::Synchronize()
                     const auto& element = points.GetElement(e);
                     const int vertex = array->AddVertex(mesh->Nodes()[element[0]]);
                     if (colored && !colors.IsNull()) {
-                        const double value = values->GetRawComponent(myComponent)->Value(RWCae::MeshPropertyEntityInfo(
+                        const double value = values->GetRawComponent(component)->Value(RWCae::MeshPropertyEntityInfo(
                             values->IsNodal() ? element[0] : element.GlobalIndex(),values->HasNodeVecComponents() ? (int)element[0] : -1));
                         const auto uv = CaeMeshTools::GetUVCoords(value,minimum,maximum,CaeMeshTools::NbColorscaleColors);
                         const int column = std::clamp((int)(uv.x()*colors->SizeX()),0,(int)colors->SizeX()-1);
@@ -153,7 +157,7 @@ void InteractiveCaeCutView::Synchronize()
                 for (auto n : aLines[l].Nodes) {
                     const int v = anArray->AddVertex(aSlice->GetMeshData()->Nodes()[n]);
                     if (hasField) {
-                        const auto aComponent = lineField->GetRawComponent(myComponent);
+                        const auto aComponent = lineField->GetRawComponent(component);
                         const double aValue = aComponent->Value(RWCae::MeshPropertyEntityInfo(
                             lineField->IsNodal() ? (int)n : (int)l,lineField->HasNodeVecComponents() ? (int)n : -1));
                         const auto uv = CaeMeshTools::GetUVCoords(aValue, aMin, aMax, CaeMeshTools::NbColorscaleColors);

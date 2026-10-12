@@ -2,8 +2,8 @@
 
 ## 1. 接续范围与当前停点
 
-用户已在 Windows 工作区发出继续开发指令。N02 四项已按文档范围闭环并提交，N03.1 恢复控件/定义持久化已验收，当前推进 N03.2 张量；
-已有恢复数值/元数据保留并回归。最新接续证据在第 14 节，旧停点保留为历史。
+用户已在 Windows 工作区发出继续开发指令。N02 四项已按文档范围闭环并提交，N03.1 恢复控件/定义持久化已验收，N03.2 张量已验收，下一步 N03.3 physical traces；
+已有恢复数值/元数据保留并回归。最新接续证据在第 15 节，旧停点保留为历史。
 后文的 Linux 验证记录保留为历史证据；
 本次 Windows 配置与结果以本节及第 6 节的接续记录为准。
 
@@ -467,3 +467,25 @@ N02 已在该范围 verified，后续物理侧迹和 OR union 属于 N03，百�
 后续按 N03.2 明确六/九分量布局、剪切约定和张量 measures，再做 N03.3
 physical traces、N03.4 OR union/cap ownership、N03.5 闭环。N03 整体仍 partial；
 完整 native session 是 N09，不能以 definitions v5 代替。
+
+## 15. N03.2 张量派生量已验收
+
+- `MeshCutTensor` 提供 Mises、pressure、降序三个 principal、Tresca；六分量
+  两种 shear 排序和九分量 row/column-major，tensor/engineering shear 显式选择。
+- 仅对明确标记的 Tensor 显示启用；scalar/vector 不改绑定。数值范围、
+  NaN/Inf、对称性、单位与 element-node keys 契约见 [张量说明](cut-view-tensors.md)。
+- before：原始 tuple 派生再恢复；after：恢复 tensor components 后在 source
+  tuples 派生；最后均用原始 FE 权重映射 scalar。不是 cut 点处重算非线性张量。
+- `EvaluatePhysical()` 与 DRAW freebody/heatflow 完全绕过显示恢复/派生，
+  物理 shear/component map 不因 engineering 显示选项改变。
+- JSON v6 保存选项、v1-v5 迁移默认；非法 enum/type 原子拒绝。
+- Tk 三个 tensor 菜单实际交互，完整 **39/39**。已查看两张张量梯度图和
+  `draw-controls/tensor_manager.png`、`manager_controls.png`，布局完整。
+- 最终 ON **41/41 每项三次**，OFF **10/10 每项三次**；日志
+  `build/mingw/cut-n03-tensor-tests.log`、OFF 同名文件。
+  实际为 123 / 30 次成功，424.30 / 8.22 秒；Tk 布局统一使用 `pack`，
+  完整回归覆盖 `-b` 延迟 Tk 初始化与 `-i` 交互入口。
+
+N03 仍 partial；后续 N03.3 trace selection、N03.4 真正 OR union/cap ownership、
+N03.5 闭环审计。不要把展示 scalar reconstruction 或 trace/cap 去重称为一般
+非线性 FE invariant 或 OR union 已完成。

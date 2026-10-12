@@ -673,7 +673,7 @@ std::string MeshCutViewManager::DumpDefinitionsJson() const
     rapidjson::OStreamWrapper wrapper(stream);
     RWBase::JsonHelper::Writer writer(wrapper);
     writer.StartObject();
-    writer.Key("version"); writer.Int(5);
+    writer.Key("version"); writer.Int(6);
     writer.Key("isoOptions"); writer.StartObject();
     writer.Key("absolute"); writer.Double(myIsoOptions.AbsoluteTolerance);
     writer.Key("relative"); writer.Double(myIsoOptions.RelativeTolerance);
@@ -684,6 +684,11 @@ std::string MeshCutViewManager::DumpDefinitionsJson() const
     writer.Key("recovery"); writer.StartObject();
     writer.Key("threshold"); writer.Double(myRecoveryOptions.ThresholdPercent);
     writer.Key("before"); writer.Bool(myRecoveryOptions.InvariantsBeforeAveraging);
+    writer.Key("tensor"); writer.StartObject();
+    writer.Key("measure"); writer.Int((int)myRecoveryOptions.Tensor.Measure);
+    writer.Key("layout"); writer.Int((int)myRecoveryOptions.Tensor.Layout);
+    writer.Key("engineeringShear"); writer.Bool(myRecoveryOptions.Tensor.EngineeringShear);
+    writer.EndObject();
     writer.Key("regions"); writer.StartArray();
     for (auto region : myRecoveryOptions.Regions) { writer.Int64(region); }
     writer.EndArray(); writer.EndObject();
@@ -729,7 +734,7 @@ bool MeshCutViewManager::RestoreDefinitionsJson(const std::string& theJson)
     rapidjson::Document document;
     document.Parse<rapidjson::kParseFullPrecisionFlag>(theJson.data(), theJson.size());
     if (document.HasParseError() || !document.IsObject() || !document.HasMember("version")
-        || !document["version"].IsInt() || document["version"].GetInt() < 1 || document["version"].GetInt() > 5
+        || !document["version"].IsInt() || document["version"].GetInt() < 1 || document["version"].GetInt() > 6
         || !document.HasMember("cuts") || !document["cuts"].IsArray()) { return false; }
     std::map<std::string, std::unique_ptr<Entry>> entries;
     MeshCutIsoOptions isoOptions;
@@ -742,6 +747,16 @@ bool MeshCutViewManager::RestoreDefinitionsJson(const std::string& theJson)
             || !recovery.HasMember("regions") || !recovery["regions"].IsArray()) { return false; }
         recoveryOptions.ThresholdPercent = recovery["threshold"].GetDouble();
         recoveryOptions.InvariantsBeforeAveraging = recovery["before"].GetBool();
+        if (document["version"].GetInt() >= 6) {
+            if (!recovery.HasMember("tensor") || !recovery["tensor"].IsObject()) { return false; }
+            const auto& tensor = recovery["tensor"];
+            if (!tensor.HasMember("measure") || !tensor["measure"].IsInt()
+                || !tensor.HasMember("layout") || !tensor["layout"].IsInt()
+                || !tensor.HasMember("engineeringShear") || !tensor["engineeringShear"].IsBool()) { return false; }
+            recoveryOptions.Tensor.Measure = (MeshCutTensorMeasure)tensor["measure"].GetInt();
+            recoveryOptions.Tensor.Layout = (MeshCutTensorLayout)tensor["layout"].GetInt();
+            recoveryOptions.Tensor.EngineeringShear = tensor["engineeringShear"].GetBool();
+        }
         for (const auto& region : recovery["regions"].GetArray()) {
             if (!region.IsInt64()) { return false; } recoveryOptions.Regions.push_back(region.GetInt64());
         }
@@ -938,7 +953,9 @@ void MeshCutViewManager::initialize(Entry& theEntry)
 Handle(RWCae::MeshNVecProperty) MeshCutViewManager::project(const Handle(RWCae::MeshNVecProperty)& theField)
 {
     if (myProjectedSource == theField && !myProjectedField.IsNull()) { return myProjectedField; }
-    if (theField->HasNodeVecComponents() || myRecoveryOptions.ThresholdPercent != 100
+    if (theField->HasNodeVecComponents() || (theField->Type() == RWCae::MeshNVecPropertyType::Tensor
+        && myRecoveryOptions.Tensor.Measure != MeshCutTensorMeasure::Components)
+        || myRecoveryOptions.ThresholdPercent != 100
         || !myRecoveryOptions.Regions.empty() || myRecoveryOptions.InvariantsBeforeAveraging) {
         auto recovered = RecoverCutField(myMesh,theField,myRecoveryOptions);
         myProjectedSource = theField; myProjectedField = recovered; return recovered;
@@ -990,6 +1007,18 @@ Handle(RWCae::MeshNVecProperty) MeshCutViewManager::project(const Handle(RWCae::
 MeshCutResult MeshCutViewManager::Evaluate(const std::string& theId,
     const Handle(RWCae::MeshNVecProperty)& theField)
 {
+    return evaluate(theId,theField,true);
+}
+
+MeshCutResult MeshCutViewManager::EvaluatePhysical(const std::string& theId,
+    const Handle(RWCae::MeshNVecProperty)& theField)
+{
+    return evaluate(theId,theField,false);
+}
+
+MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
+    const Handle(RWCae::MeshNVecProperty)& theField, bool display)
+{
     Entry* anEntry = find(theId);
     if (anEntry == nullptr) { throw std::invalid_argument("Unknown cut id: " + theId); }
     MeshCutResult aResult;
@@ -998,8 +1027,16 @@ MeshCutResult MeshCutViewManager::Evaluate(const std::string& theId,
     if (!anEntry->Definition.Enabled || anEntry->Definition.Visibility == 0) { return aResult; }
     if (!theField.IsNull()) { CutFieldTools::Validate(myMesh,theField); }
     initialize(*anEntry);
-    aResult.SourceField = !theField.IsNull() && theField->IsElemental()
-        && anEntry->Definition.CellMode == MeshCutCellMode::Projected ? project(theField) : theField;
+    const bool projected = display && !theField.IsNull() && theField->IsElemental()
+        && anEntry->Definition.CellMode == MeshCutCellMode::Projected;
+    aResult.TensorDerived = display && !theField.IsNull() && theField->Type() == RWCae::MeshNVecPropertyType::Tensor
+        && myRecoveryOptions.Tensor.Measure != MeshCutTensorMeasure::Components;
+    if (aResult.TensorDerived && projected && myRecoveryOptions.InvariantsBeforeAveraging) {
+        aResult.SourceField = project(DeriveCutTensorField(theField,myRecoveryOptions.Tensor));
+    } else {
+        aResult.SourceField = projected ? project(theField) : theField;
+        if (aResult.TensorDerived) { aResult.SourceField = DeriveCutTensorField(aResult.SourceField,myRecoveryOptions.Tensor); }
+    }
     aResult.DisplayRecovered = aResult.SourceField != theField;
     for (size_t i = 0; i < anEntry->Portions.size(); ++i) {
         if ((anEntry->Definition.Visibility & (1u << i)) == 0) { continue; }
@@ -1146,6 +1183,9 @@ bool MeshCutViewManager::SetRecoveryOptions(const MeshCutRecoveryOptions& option
     if (!options.IsValid(myMesh->NbIndexedElems())) { return false; }
     if (options.ThresholdPercent == myRecoveryOptions.ThresholdPercent
         && options.InvariantsBeforeAveraging == myRecoveryOptions.InvariantsBeforeAveraging
+        && options.Tensor.Measure == myRecoveryOptions.Tensor.Measure
+        && options.Tensor.Layout == myRecoveryOptions.Tensor.Layout
+        && options.Tensor.EngineeringShear == myRecoveryOptions.Tensor.EngineeringShear
         && options.Regions == myRecoveryOptions.Regions) { return true; }
     myRecoveryOptions = options; InvalidateFields(); return true;
 }

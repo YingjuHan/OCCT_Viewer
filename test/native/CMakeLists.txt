@@ -12,6 +12,9 @@ add_test (NAME quadric_cut COMMAND quadric_cut_tests)
 add_executable (cut_recovery_tests CutRecoveryTests.cpp)
 target_link_libraries (cut_recovery_tests PRIVATE ViewCaeGeom)
 add_test (NAME cut_recovery COMMAND cut_recovery_tests)
+add_executable (cut_tensor_tests CutTensorTests.cpp)
+target_link_libraries (cut_tensor_tests PRIVATE ViewCaeGeom ViewCae)
+add_test (NAME cut_tensor COMMAND cut_tensor_tests)
 if (OCCTV_USE_VTK)
   add_executable (vtk_cell_cut_tests VtkCellCutTests.cpp)
   target_link_libraries (vtk_cell_cut_tests PRIVATE RWVtk ViewCaeGeom ViewCae)
@@ -68,7 +71,7 @@ endif()
 add_executable (cut_view_benchmark CutViewBenchmark.cpp)
 target_link_libraries (cut_view_benchmark PRIVATE ViewCaeGeom)
 if (UNIX)
-  set_tests_properties (vtk_reader cut_view quadric_cut cut_recovery PROPERTIES ENVIRONMENT "LD_LIBRARY_PATH=${OpenCASCADE_LIBRARY_DIR}:$ENV{LD_LIBRARY_PATH}")
+  set_tests_properties (vtk_reader cut_view quadric_cut cut_recovery cut_tensor PROPERTIES ENVIRONMENT "LD_LIBRARY_PATH=${OpenCASCADE_LIBRARY_DIR}:$ENV{LD_LIBRARY_PATH}")
 endif()
 
 if (TARGET ViewDraw)
@@ -87,6 +90,9 @@ if (TARGET ViewDraw)
     add_test (NAME draw_cut_view_iso COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_iso.tcl")
     set_tests_properties (draw_cut_view_iso PROPERTIES ENVIRONMENT "${DRAW_TEST_ENV}"
       PASS_REGULAR_EXPRESSION "CUT_VIEW_ISO_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" TIMEOUT 60)
+    add_test (NAME draw_cut_view_tensor COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_tensor.tcl")
+    set_tests_properties (draw_cut_view_tensor PROPERTIES ENVIRONMENT "${DRAW_TEST_ENV}"
+      PASS_REGULAR_EXPRESSION "CUT_VIEW_TENSOR_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" TIMEOUT 60)
     add_test (NAME draw_cut_view_quadric COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_quadric.tcl")
     set_tests_properties (draw_cut_view_quadric PROPERTIES ENVIRONMENT "${DRAW_TEST_ENV}"
       PASS_REGULAR_EXPRESSION "CUT_VIEW_QUADRIC_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" TIMEOUT 60)
@@ -167,6 +173,10 @@ if (TARGET ViewDraw)
       set_tests_properties (draw_cut_view_quadric_visual PROPERTIES ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_QUADRIC_VISUAL=1;CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-quadric"
         PASS_REGULAR_EXPRESSION "CUT_VIEW_QUADRIC_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" RUN_SERIAL TRUE TIMEOUT 120)
       add_test (NAME draw_cut_view_controls COMMAND "${OCCTV_DRAWEXE}" -i -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_controls.tcl")
+      add_test (NAME draw_cut_view_tensor_visual COMMAND "${OCCTV_DRAWEXE}" -i -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_tensor.tcl")
+      set_tests_properties (draw_cut_view_tensor_visual PROPERTIES
+        ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_TENSOR_VISUAL=1;CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-tensor"
+        RUN_SERIAL TRUE PASS_REGULAR_EXPRESSION "CUT_VIEW_TENSOR_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" TIMEOUT 60)
       set_tests_properties (draw_cut_view_controls PROPERTIES ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-controls"
         PASS_REGULAR_EXPRESSION "CUT_VIEW_CONTROLS_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" RUN_SERIAL TRUE TIMEOUT 120)
       if (WIN32)

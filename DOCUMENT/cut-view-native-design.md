@@ -244,8 +244,8 @@ current project contract; equivalence to Abaqus averaging is not claimed.
 
 The default scalar-component policy retains nodal projection. Custom policies
 and original element-node input use `MeshNodeVecProperty`. Vector magnitude
-supports evaluation before or after averaging; full tensor invariants still
-need an explicit component/convention contract. Recovery validates every raw
+supports evaluation before or after averaging; tensor measures now have the explicit
+[component/convention contract](cut-view-tensors.md). Recovery validates every raw
 component, including cached magnitude, and retains component/field/time metadata.
 Finite means, global range comparisons and vector norms avoid intermediate
 overflow; NaN traces are preserved and infinite recovery input is rejected.
@@ -298,3 +298,15 @@ all cuts resolve. Legacy v1-v4 restoration uses default recovery settings. Tk
 threshold edits stay as drafts until Apply/Return; periodic refresh preserves
 drafts, while successful Load refreshes the persisted settings. The region menu
 can retain exact restored IDs without converting them through a floating scalar.
+
+### N03.2 Symmetric Tensor Display
+
+Tensor measures use explicit six/nine layouts and tensor/engineering shear. The
+before path derives source scalar tuples then recovers; the after path recovers
+components then derives source scalar tuples. Both use scalar FE mapping onto
+generated cut points. Missing tuples stay missing, infinity/nonsymmetry/finite
+result overflow reject; normalized Jacobi/norm intermediates cover extreme scales.
+`EvaluatePhysical()` bypasses all display policies; `PhysicalFields` remain original.
+JSON v6 persists conventions with v1-v5 defaults. 39/39 real widgets and independent
+rotated tensor/native/DRAW/visual references form the stage gate. Traces and OR
+union remain N03.3/N03.4.

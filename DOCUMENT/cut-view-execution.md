@@ -43,11 +43,11 @@ active; existing recovery increments remain in the regression suite.
 
 | ID | Task | Depends On | Acceptance | Status |
 | --- | --- | --- | --- | --- |
-| R00 | Plane held-drag recomputation, every existing control, interactive DRAW/Tk crashes and invalid-input handling | Baseline | Interactive (-i) menus/dialogs, current 36/36 controls; pre-release geometry/field/pixel assertions; all regressions | verified |
+| R00 | Plane held-drag recomputation, every existing control, interactive DRAW/Tk crashes and invalid-input handling | Baseline | Interactive (-i) menus/dialogs, current 39/39 controls; pre-release geometry/field/pixel assertions; all regressions | verified |
 | G01 | Field isosurface: fixed field/component/step binding, below/on/above, surface lines, live threshold, definition migration | Baseline | Native numerical tests, all masks, independent contour changes, DRAW pixels and manager controls | verified |
 | G02 | Cylinder and sphere: position/axis/radius, enclosed intersections, three portions | G01 | Analytic volume/area checks, same-sign vertex cases, DRAW interaction | partial: 48 concrete VTK types, shared BVH/cache and conforming curved-reference adjacency verified; mismatching interfaces stay visible; full-frame performance pending |
 | G03 | Exact second-order cell geometry and FE result interpolation | G02 | Curved-cell reference solutions and convergence tests; explicit unsupported-cell diagnostics | verified at bounded N02 scope: independent family references, analytic/precision limits and original-FE higher-order isosurfaces; exact arbitrary-order intersections not claimed |
-| G04 | Cell recovery/averaging thresholds, region boundaries and discontinuity policies | G03 | Constant and recovered results verified across material boundaries; physical fields unchanged | partial: region/threshold and element-node recovery, vector magnitude order and original physical mapping implemented; manager recovery controls and definition options verified; tensor invariants, explicit interface traces and full sessions pending |
+| G04 | Cell recovery/averaging thresholds, region boundaries and discontinuity policies | G03 | Constant and recovered results verified across material boundaries; physical fields unchanged | partial: region/threshold and element-node recovery, vector magnitude order and original physical mapping implemented; manager recovery/tensor controls and definition options verified; explicit interface traces pending; full sessions remain N09 |
 | G05 | Multi-cut OR boundary merging, deduplication and shared opacity | G02 | Overlapping/touching cuts, no duplicate faces or darkened overlap, all masks | queued |
 | M01 | Native model lifecycle, defaults X/Y/Z, selection independent of activation | R00 | Open/replace/close model tests and deterministic defaults | verified |
 | M02 | Datum positioning, reference axes and numeric editing for all shapes | G02, M01 | Local/global transforms, numeric and pointer edits agree | queued |
@@ -107,7 +107,7 @@ active; existing recovery increments remain in the regression suite.
 
 - Current acceptance: **11/11 CTest tests pass**, including interactive `draw_cut_view_controls`;
   `ctest --repeat until-fail:3` also passes all three consecutive runs of every case.
-- The control test inventories widgets and requires **36/36** coverage. It opens actual
+- The control test inventories widgets and requires **39/39** coverage. It opens actual
   combobox popdowns and file dialogs, tests Save/Load/cancel/invalid files, numeric editing,
   every button/checkbutton, three rotation axes, held slider movement and empty-manager states.
 - Pointer tests assert geometry and field values plus completed display synchronization
@@ -331,3 +331,18 @@ options. Original physical fields and fixed isosurface bindings remain independe
 Full ON 38/38 and OFF 8/8 pass every case three times; logs are
 `build/mingw/cut-n03-recovery-tests.log` and the OFF counterpart.
 N03.2 tensor conventions/measures are next; N03 remains partial.
+
+## N03.2 Tensor Measures and Original Physical Evaluation
+
+Six/nine component conventions, symmetric tensor measures, before/after recovery
+and the numerical/missing-value limits are recorded in [the contract](cut-view-tensors.md).
+Native references use 30 rotations of known eigenvalues across four layouts; DRAW
+checks a standard nine-component tensor fixture, original force and all masks.
+The Tk inventory is now **39/39** and tensor/source scalar cloud images are reviewed.
+JSON v6 persists conventions. `EvaluatePhysical()` and DRAW integration bypass display
+recovery/derivation, including invalid unrelated display layouts. Full VTK ON
+**41/41** and OFF **10/10**, every case three times, are recorded in
+`cut-n03-tensor-tests.log` in the respective builds (424.30 / 8.22 seconds;
+123 / 30 successful executions). The full ON gate covers both late batch Tk
+initialization and interactive Tk with the portable `pack` layout. N03.3 physical
+traces is next.

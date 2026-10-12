@@ -40,6 +40,9 @@ namespace eval ::CutViewManager {
     variable recoveryFields {}
     variable recoveryLabels {}
     variable lastRecovery ""
+    variable tensorMeasure components
+    variable tensorLayout xx-yy-zz-xy-xz-yz
+    variable tensorShear tensor
     variable fields {}
     variable fieldLabels {}
     variable status ""
@@ -415,12 +418,21 @@ proc ::CutViewManager::field {{selectionChanged 0}} {
 
 proc ::CutViewManager::recoveryRefresh {} {
     variable model; variable lastRecovery; variable recoveryThreshold; variable recoveryBefore; variable recoveryRegion
+    variable tensorMeasure; variable tensorLayout; variable tensorShear
+    set tensor [scvcutview $model tensor]
+    set tensorMeasure [dict get $tensor measure]; set tensorLayout [dict get $tensor layout]; set tensorShear [dict get $tensor shear]
     set current [scvcutview $model recovery]
     if {$current eq $lastRecovery} { return }
     set recoveryThreshold [dict get $current threshold]
     set recoveryBefore [dict get $current before]
     set recoveryRegion [expr {[llength [dict get $current regions]] ? "Current regions" : "All regions"}]
     set lastRecovery $current
+}
+
+proc ::CutViewManager::tensor {} {
+    variable model; variable tensorMeasure; variable tensorLayout; variable tensorShear
+    scvcutview $model tensor $tensorMeasure $tensorLayout $tensorShear
+    refresh
 }
 
 proc ::CutViewManager::recovery {} {
@@ -611,7 +623,7 @@ proc scvcutmanager {theModel} {
     pack $w.recovery.row0 $w.recovery.row1 -fill x -pady 3
     ttk::label $w.recovery.thresholdLabel -text "Threshold (%)"
     ttk::entry $w.recovery.threshold -textvariable ::CutViewManager::recoveryThreshold -width 7
-    ttk::checkbutton $w.recovery.before -text "Magnitude before averaging" -variable ::CutViewManager::recoveryBefore -command {::CutViewManager::invoke ::CutViewManager::recovery}
+    ttk::checkbutton $w.recovery.before -text "Invariant before averaging" -variable ::CutViewManager::recoveryBefore -command {::CutViewManager::invoke ::CutViewManager::recovery}
     ttk::button $w.recovery.apply -text Apply -command {::CutViewManager::invoke ::CutViewManager::recovery}
     pack $w.recovery.thresholdLabel $w.recovery.threshold $w.recovery.before -in $w.recovery.row0 -side left -padx 3
     pack $w.recovery.apply -in $w.recovery.row0 -side right
@@ -630,6 +642,21 @@ proc scvcutmanager {theModel} {
     bind $w.recovery.threshold <Return> {::CutViewManager::invoke ::CutViewManager::recovery}
     bind $w.recovery.region <<ComboboxSelected>> {::CutViewManager::invoke ::CutViewManager::recovery}
     pack $w.recovery -fill x -padx 8
+    ttk::labelframe $w.tensor -text "Tensor Display (tensor fields only)" -padding 8
+    ttk::frame $w.tensor.row0; ttk::frame $w.tensor.row1
+    pack $w.tensor.row0 $w.tensor.row1 -fill x -pady 3
+    ttk::label $w.tensor.measureLabel -text Measure
+    ttk::combobox $w.tensor.measure -state readonly -width 14 -values {components mises pressure maxprincipal midprincipal minprincipal tresca} -textvariable ::CutViewManager::tensorMeasure
+    ttk::label $w.tensor.shearLabel -text Shear
+    ttk::combobox $w.tensor.shear -state readonly -width 12 -values {tensor engineering} -textvariable ::CutViewManager::tensorShear
+    ttk::label $w.tensor.layoutLabel -text Layout
+    ttk::combobox $w.tensor.layout -state readonly -values {xx-yy-zz-xy-xz-yz xx-yy-zz-xy-yz-xz row-major column-major} -textvariable ::CutViewManager::tensorLayout
+    pack $w.tensor.measureLabel $w.tensor.measure $w.tensor.shearLabel $w.tensor.shear -in $w.tensor.row0 -side left -padx 3
+    pack $w.tensor.measure -fill x -expand 1
+    pack $w.tensor.layoutLabel -in $w.tensor.row1 -side left -padx 3
+    pack $w.tensor.layout -in $w.tensor.row1 -side left -fill x -expand 1 -padx 3
+    foreach control {measure layout shear} { bind $w.tensor.$control <<ComboboxSelected>> {::CutViewManager::invoke ::CutViewManager::tensor} }
+    pack $w.tensor -fill x -padx 8
     ttk::label $w.status -textvariable ::CutViewManager::status -wraplength 530 -foreground #a02020
     pack $w.status -fill x -padx 8
     ttk::button $w.close -text Close -command ::CutViewManager::close

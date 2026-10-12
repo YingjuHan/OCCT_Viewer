@@ -97,6 +97,7 @@ struct MeshCutResult {
     bool BoundaryMesh = false;
     bool SourceApproximate = false;
     bool DisplayRecovered = false;
+    bool TensorDerived = false; //!< Display component is zero; PhysicalFields still retain original tensors.
     double IsoFieldTolerance = 0;
     double IsoFieldResidual = 0;
     double IsoGeometryResidual = 0;
@@ -151,6 +152,9 @@ public:
     //! Computes only enabled portions, sharing source mesh storage and cached BVHs.
     Standard_EXPORT MeshCutResult Evaluate(const std::string& theId,
         const Handle(RWCae::MeshNVecProperty)& theField = nullptr);
+    //! Map only original physical components, independent of display recovery/measures.
+    Standard_EXPORT MeshCutResult EvaluatePhysical(const std::string& theId,
+        const Handle(RWCae::MeshNVecProperty)& theField);
     Standard_EXPORT std::vector<MeshCutResult> EvaluateVisible(
         const Handle(RWCae::MeshNVecProperty)& theField = nullptr);
     //! Full source geometry, respecting deformation, when no cut is active.
@@ -171,6 +175,7 @@ public:
     const MeshCutIsoOptions& IsoOptions() const { return myIsoOptions; }
 
 private:
+    MeshCutResult evaluate(const std::string& theId, const Handle(RWCae::MeshNVecProperty)& theField, bool theDisplay);
     struct Entry;
     Entry* find(const std::string& theId);
     void release(Entry& theEntry);

@@ -323,9 +323,9 @@ jumps, synchronization and changed pixels during held motion, followed by abort.
 
 `MeshCutResult::PhysicalFields` maps the original field separately. Stress/heat-flow
 integration must remain unchanged by display recovery; missing original mapping
-on a recovered result fails explicitly. Tensor invariants, explicit physical
-interface-side selection, OR union and full session settings remain
-open N03 work.
+on a recovered result fails explicitly. Symmetric tensor measures now follow
+[the explicit display contract](../DOCUMENT/cut-view-tensors.md). Physical
+interface-side selection and OR union remain N03 work; full sessions remain N09.
 
 ```powershell
 ctest --test-dir build/mingw -R 'cut_recovery|draw_cut_view_recovery' --output-on-failure --repeat until-fail:3
@@ -421,7 +421,7 @@ scvcutview model move cut1 1 0 0 -0.5
 
 Masks are negative=1, on=2, positive=4. `display` requires `vinit`; other operations work in batch.
 `field` accepts an optional timestep index. `deform` uses the repository's model-size-normalized
-scale convention. `snapshot`/`restore` cover cut definitions and their iso/recovery options (JSON v5),
+scale convention. `snapshot`/`restore` cover cut definitions and their iso/recovery/tensor options (JSON v6),
 not a complete native session.
 
 ## Native Interface
@@ -489,3 +489,14 @@ root wrapper and rejects missing/stale/blank output. Inspect
 extremes, atomic invalid restore and v1-v4 recovery defaults. `recovery ... keep`
 retains restored exact IDs. Final stage logs: `cut-n03-recovery-tests.log` in
 ON/OFF builds; 38/38 and 8/8 respectively, every case three times.
+
+## Tensor display acceptance
+
+`cut_tensor`, `draw_cut_view_tensor` and its visual variant verify explicit symmetric
+tensor measures and physical/display separation; see [the contract](../DOCUMENT/cut-view-tensors.md).
+The manager inventories **39/39** controls. The control test captures
+`draw-controls/tensor_manager.png`; the visual test captures scalar gradients
+`draw-tensor/tensor_cloud.png` and `tensor_before.png` without positioning aids.
+Final ON 41/41 and OFF 10/10 pass each case three times; logs are
+`cut-n03-tensor-tests.log`. Standard VTK tensor fixtures use nine components.
+Definitions v6 persist conventions; complete native sessions remain separate.

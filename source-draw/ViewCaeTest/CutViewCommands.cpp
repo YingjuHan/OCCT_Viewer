@@ -325,6 +325,7 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             for (const auto& field : model.Mesh->Properties()) {
                 di << "{name"; di.AppendElement(field->Name().ToCString());
                 di << " mapping " << (field->IsNodal() ? "point" : "cell") << " components " << field->NbRawComponents()
+                   << " kind " << (field->Type() == RWCae::MeshNVecPropertyType::Tensor ? "tensor" : field->IsVector() ? "vector" : "scalar")
                    << " step " << field->TimeStep() << " active " << (int)(field == model.Field)
                    << " component " << model.Component << "} ";
             }
@@ -538,6 +539,27 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
                 di << "effectiveScale " << cuts.EffectiveDeformationScale();
             }
         }
+        else if (action == "tensor" && (argc == 3 || argc == 6)) {
+            const char* measures[] = {"components","mises","pressure","maxprincipal","midprincipal","minprincipal","tresca"};
+            const char* layouts[] = {"xx-yy-zz-xy-xz-yz","xx-yy-zz-xy-yz-xz","row-major","column-major"};
+            auto options = cuts.RecoveryOptions();
+            if (argc == 3) {
+                di << "measure " << measures[(int)options.Tensor.Measure] << " layout " << layouts[(int)options.Tensor.Layout]
+                   << " shear " << (options.Tensor.EngineeringShear ? "engineering" : "tensor"); return 0;
+            }
+            int measure = -1, layout = -1;
+            for (int i = 0; i < 7; ++i) { if (std::string(argv[3]) == measures[i]) { measure = i; } }
+            for (int i = 0; i < 4; ++i) { if (std::string(argv[4]) == layouts[i]) { layout = i; } }
+            const std::string shear(argv[5]);
+            if (measure < 0 || layout < 0 || (shear != "tensor" && shear != "engineering")) { throw std::invalid_argument("Invalid tensor measure, layout or shear convention"); }
+            options.Tensor.Measure = (ViewCaeGeom::MeshCutTensorMeasure)measure;
+            options.Tensor.Layout = (ViewCaeGeom::MeshCutTensorLayout)layout;
+            options.Tensor.EngineeringShear = shear == "engineering";
+            if (!model.Field.IsNull() && model.Field->Type() == RWCae::MeshNVecPropertyType::Tensor && measure != 0) {
+                ViewCaeGeom::DeriveCutTensorField(model.Field,options.Tensor);
+            }
+            ok = cuts.SetRecoveryOptions(options);
+        }
         else if (action == "recovery" && (argc == 3 || argc == 6 || argc == 7)) {
             if (argc == 3) {
                 const auto& options = cuts.RecoveryOptions();
@@ -547,6 +569,7 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
                 return 0;
             }
             ViewCaeGeom::MeshCutRecoveryOptions options;
+            options.Tensor = cuts.RecoveryOptions().Tensor;
             options.ThresholdPercent = cutReal(argv[3]);
             const int before = cutInteger(argv[4]);
             if (before != 0 && before != 1) { throw std::invalid_argument("Recovery before-invariant flag must be 0 or 1"); }
@@ -609,7 +632,7 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
                 }
             }
             if (field.IsNull()) { throw std::invalid_argument("Integration field not found"); }
-            const auto cut = cuts.Evaluate(argv[3], field);
+            const auto cut = cuts.EvaluatePhysical(argv[3], field);
             ViewCaeGeom::MeshCutResultant integral;
             if (stress) {
                 const int xx = cutInteger(argv[5]), yy = cutInteger(argv[6]), zz = cutInteger(argv[7]);
@@ -626,6 +649,7 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             return 0;
         } else if (action == "eval" && argc == 4) {
             auto result = cuts.Evaluate(argv[3], model.Field);
+            const int displayComponent = result.TensorDerived ? 0 : model.Component;
             di << "visible " << (int)(result.Definition.Enabled ? result.Definition.Visibility : 0)
                << " revision " << (int)result.Revision
                << " sourceGeometry " << (result.SourceApproximate ? "numerical" : "analytic")
@@ -649,7 +673,7 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
                         for (int n = 0; n < (int)mesh->NbNodes(); ++n) {
                             const auto& p = mesh->Nodes()[n];
                             di << "{" << p.x() << " " << p.y() << " " << p.z() << " "
-                               << field->GetRawComponent(model.Component)->Value(RWCae::MeshPropertyEntityInfo(n)) << "} ";
+                               << field->GetRawComponent(displayComponent)->Value(RWCae::MeshPropertyEntityInfo(n)) << "} ";
                         }
                     } else if (!field.IsNull() && field->HasNodeVecComponents()) {
                         for (int e = 0; e < (int)mesh->NbIndexedElems(); ++e) {
@@ -658,12 +682,12 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
                             for (auto n : nodes) {
                                 const auto& p = mesh->Nodes()[n];
                                 di << "{" << e << " " << (int)n << " " << p.x() << " " << p.y() << " " << p.z() << " "
-                                   << field->GetRawComponent(model.Component)->Value(RWCae::MeshPropertyEntityInfo(e,n)) << "} ";
+                                   << field->GetRawComponent(displayComponent)->Value(RWCae::MeshPropertyEntityInfo(e,n)) << "} ";
                             }
                         }
                     } else if (!field.IsNull()) {
                         for (int e = 0; e < (int)mesh->NbIndexedElems(); ++e) {
-                            di << field->GetRawComponent(model.Component)->Value(RWCae::MeshPropertyEntityInfo(e)) << " ";
+                            di << field->GetRawComponent(displayComponent)->Value(RWCae::MeshPropertyEntityInfo(e)) << " ";
                         }
                     }
                     di << "} valueMapping " << (field.IsNull() ? "none" : field->IsNodal() ? "point"
@@ -676,7 +700,7 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             if (!slice.IsNull() && !result.LineField.IsNull()) {
                 for (size_t l = 0; l < slice->Lines().size(); ++l) {
                     for (auto n : slice->Lines()[l].Nodes) {
-                        di << result.LineField->GetRawComponent(model.Component)->Value(RWCae::MeshPropertyEntityInfo(
+                        di << result.LineField->GetRawComponent(displayComponent)->Value(RWCae::MeshPropertyEntityInfo(
                             result.LineField->IsNodal() ? (int)n : (int)l,
                             result.LineField->HasNodeVecComponents() ? (int)n : -1)) << " ";
                     }
@@ -723,6 +747,8 @@ void ViewCaeTest::CutViewCommands::Factory(Draw_Interpretor& di)
         "  | cylinderadd/cylindermove id centerX centerY centerZ axisX axisY axisZ radius\n"
         "  | field point/cell name rawComponent [timeStep] | cellmode id constant/projected\n"
         "  | recovery [thresholdPercent beforeInvariant0/1 regionField/none/keep [timeStep]]\n"
+        "  | tensor [components/mises/pressure/maxprincipal/midprincipal/minprincipal/tresca layout tensor/engineering]\n"
+        "    layout: xx-yy-zz-xy-xz-yz, xx-yy-zz-xy-yz-xz, row-major, column-major\n"
         "  | copy id newId | rename id name | enable id 0/1 | remove id | eval id | display | clear\n"
         "  | snapshot | restore json | deform property/none normalizedScale [timeStep]\n"
         "  | freebody id field xx yy zz xy xz yz originX originY originZ [timeStep]\n"

@@ -4,6 +4,7 @@ set (SRCFILES
   MeshCutViewManager.cpp
   MeshCutIntegration.cpp
   MeshCutRecovery.cpp
+  MeshCutTensor.cpp
   MeshGeometryQuadric.cpp
   MeshBvhData.cpp
   MeshGeometry.cpp
@@ -19,6 +20,7 @@ set (INCFILES
   MeshCutViewManager.h
   MeshCutIntegration.h
   MeshCutRecovery.h
+  MeshCutTensor.h
   MeshGeometryQuadric.h
   MeshBvhData.h
   MeshGeometry.h

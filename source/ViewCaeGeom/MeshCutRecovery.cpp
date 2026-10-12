@@ -11,7 +11,7 @@ namespace ViewCaeGeom {
 bool MeshCutRecoveryOptions::IsValid(size_t count) const
 {
     return std::isfinite(ThresholdPercent) && ThresholdPercent >= 0 && ThresholdPercent <= 100
-        && (Regions.empty() || Regions.size() == count);
+        && Tensor.IsValid() && (Regions.empty() || Regions.size() == count);
 }
 
 Handle(RWCae::MeshNVecProperty) RecoverCutField(const Handle(RWCae::MeshData)& mesh,

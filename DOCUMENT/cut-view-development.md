@@ -17,7 +17,7 @@
 Current execution is native only: Web/Vue/TypeScript and WASM tasks are excluded,
 not completed. Project/session persistence below maps to the native session API.
 
-Current Windows acceptance: VTK-enabled **38/38** and VTK-disabled **8/8**, each case
+Current Windows acceptance: VTK-enabled **41/41** and VTK-disabled **10/10**, each case
 passing three consecutive runs. Curved-family geometry/FE references, analytic
 precision fallback, high-order field isosurfaces and recovery robustness are included.
 N02 is verified at its documented bounded scope;
@@ -48,7 +48,7 @@ for SDK paths, logs, missing historical external fixtures and remaining work.
   rather than averaging vector components before taking a magnitude.
 - [x] DRAW/Tk isosurface creation, copy/edit/delete, field binding and threshold slider; JSON v2
   snapshots with atomic v1 plane migration and missing/ambiguous binding rejection.
-- [x] Interactive DRAW/Tk control acceptance: 36/36 widget inventory, real menus/file dialogs,
+- [x] Interactive DRAW/Tk control acceptance: 39/39 widget inventory, real menus/file dialogs,
   all buttons, editable numeric fields, errors, cancellation and empty-manager states.
 - [x] Pre-release plane-drag checks for completed presentation synchronization and changing pixels,
   all eight masks, constant/projected CellData and deformed meshes beyond original bounds.
@@ -77,8 +77,11 @@ for SDK paths, logs, missing historical external fixtures and remaining work.
   discontinuities, vector magnitude before/after averaging and independent original physical fields.
 - [x] N03.1 manager recovery threshold/order/region controls and atomic JSON v5 options,
   with exact signed 64-bit region IDs and legacy migration.
-- [ ] N03 complete tensor invariants, physical interface traces, OR boundary/cap merging
-  and complete native session persistence.
+- [x] N03.2 symmetric tensor Mises/pressure/principal/Tresca measures, explicit six/nine
+  layouts and shear conventions, recovery order and original physical evaluation.
+  See [the tensor display contract](cut-view-tensors.md).
+- [ ] N03 physical interface traces and OR boundary/cap merging; complete native
+  session persistence remains N09.
 
 These are native building blocks, not completion of the entire Cut View Manager plan.
 
@@ -97,7 +100,7 @@ interface, not the production Vue manager. See the official [view-cut overview](
 | Translate/rotate with numeric values and sliders | Plane controls and scalar-isovalue slider implemented | Explicit datum coordinate systems, reference axes and curved-shape controls |
 | Mouse positioning | Plane picking, normal arrow, rotation rings, cancellation tested | Result-node/element picking and probe tools |
 | Real mesh and nodal-result sections during motion | Original FE functions; 48-cell matrix and held-pointer volume-family checks | Exact curved geometry/convergence and large-model frame budget |
-| Element-result sections | Constant/projected CellData, region/threshold and element-node recovery; display/physical mapping separated | Tensor invariants and explicit physical interface traces |
+| Element-result sections | Constant/projected CellData, region/threshold and element-node recovery; display/physical mapping separated | Explicit physical interface traces |
 | Plane/cylinder/sphere/isosurface shapes | Geometric cuts for concrete VTK cells; native first-order field isosurfaces | General internal walls, exact curved geometry and higher-order isosurfaces |
 | Per-portion/per-cut plot options | Native shared `SetStyle()` API only | Per-cut styles, manager controls, legend/contour options |
 | Deformed plots and following deformation | Native intersection, deformed nodal guide/range/fit bounds and held-drag regression | Material-following reference frames and production GUI controls |
@@ -179,13 +182,14 @@ the 48-concrete-cell native/DRAW matrix. N01 and N02's numerical foundation are 
 N02 includes supported analytic source boundaries and expanded reference fixtures.
 N02 is verified at the [bounded closure scope](cut-view-n02-audit.md).
 The active work is [N03 recovery, traces and union](cut-view-n03-plan.md).
-N03 region/threshold recovery and original physical mapping are implemented; physical
-trace policies, tensor invariants, manager controls and multi-cut boundary/cap union
-remain open. N04-N09 remain queued;
+N03 region/threshold recovery, symmetric tensor measures, manager controls and
+original physical mapping are verified. Explicit physical trace policies and
+multi-cut boundary/cap union remain open. N04-N09 remain queued;
 web/WASM work is excluded.
 First-order isosurfaces currently rebuild scalar-cut geometry when the threshold changes; they
-have not been accepted against the full-frame million-cell target. Second-order meshes are
-rejected for isosurfaces. Non-planar physical integration needs local-normal mapping and is rejected.
+have not been accepted against the full-frame million-cell target. Supported high-order
+VTK chart cells use the bounded numerical isosurface contract recorded in N02.
+Non-planar physical integration needs local-normal mapping and is rejected.
 
 ## Performance Evidence
 

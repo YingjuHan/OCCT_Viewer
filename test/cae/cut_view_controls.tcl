@@ -21,6 +21,28 @@ proc ui_pump {{ms 25}} {
     vwait ::ui_tick
     update idletasks
 }
+proc ui_capture {path} {
+    global controls_dir
+    update idletasks
+    if {$::tcl_platform(platform) eq "windows"} {
+        # Keep Tk responsive while PrintWindow captures the manager root wrapper.
+        set capturePath $path
+        file delete $capturePath
+        set capture [open [list | powershell.exe -NoProfile -NonInteractive -WindowStyle Hidden -File \
+            [file join $controls_dir cut_view_capture.ps1] -WindowHandle [winfo id .scvcutmanager] \
+            -OutputPath $path 2>@1] r]
+        fconfigure $capture -blocking 0
+        set captureLog ""
+        set captureDeadline [expr {[clock milliseconds]+30000}]
+        while {![eof $capture] && [clock milliseconds] < $captureDeadline} {
+            append captureLog [read $capture]
+            ui_pump 25
+        }
+        set captured [eof $capture]
+        close $capture
+        ui_assert {$captured && [string first CUT_VIEW_CAPTURE_PASS $captureLog] >= 0 && [file exists $capturePath]} "Manager capture failed: $captureLog"
+    } elseif {[auto_execok import] ne ""} { exec import -window [winfo id .scvcutmanager] $path }
+}
 proc ui_mark {widget} {
     if {$widget ni $::ui_covered} { lappend ::ui_covered $widget }
 }
@@ -424,33 +446,11 @@ proc ui_run {} {
     scvcutview $ui_model mouse down $px $py
     scvcutview $ui_model mouse move [expr {$px-10}] $py
     ui_assert {[dict get [scvcutview $ui_model handleinfo] dragging]} "Close-during-drag test did not start dragging"
-    update idletasks
-    if {$::tcl_platform(platform) eq "windows"} {
-        # Keep Tk responsive while PrintWindow captures the manager root wrapper.
-        set capturePath [file join $controls_output manager_controls.png]
-        file delete $capturePath
-        set capture [open [list | powershell.exe -NoProfile -NonInteractive -WindowStyle Hidden -File \
-            [file join $controls_dir cut_view_capture.ps1] -WindowHandle [winfo id .scvcutmanager] \
-            -OutputPath [file join $controls_output manager_controls.png] 2>@1] r]
-        fconfigure $capture -blocking 0
-        set captureLog ""
-        set captureDeadline [expr {[clock milliseconds]+30000}]
-        while {![eof $capture] && [clock milliseconds] < $captureDeadline} {
-            append captureLog [read $capture]
-            ui_pump 25
-        }
-        set captured [eof $capture]
-        close $capture
-        ui_assert {$captured && [string first CUT_VIEW_CAPTURE_PASS $captureLog] >= 0 && [file exists $capturePath]} "Manager capture failed: $captureLog"
-    } elseif {[auto_execok import] ne ""} { exec import -window [winfo id .scvcutmanager] [file join $controls_output manager_controls.png] }
+    ui_capture [file join $controls_output manager_controls.png]
     ui_click .scvcutmanager.close
     ui_assert {![winfo exists .scvcutmanager] && $::CutViewManager::timer eq ""} "Close left a window/timer"
     ui_assert {[dict get [scvcutview $ui_model handleinfo] id] eq ""} "Close left a positioning aid"
     foreach actual [dict get [ui_cut $id] plane] expectedValue $plane { ui_near $actual $expectedValue "Close did not cancel active plane drag" }
-    set missing {}
-    foreach widget $expected { if {$widget ni $::ui_covered} { lappend missing $widget } }
-    ui_assert {[llength $missing] == 0} "Untested controls: $missing"
-    puts "CUT_VIEW_CONTROL_COVERAGE: [llength $expected]/[llength $expected] $expected"
     scvcutview $ui_model clear
     # New models receive defaults once; replacements rebuild fields, bounds and controls.
     set ui_model lifecycle
@@ -493,6 +493,26 @@ proc ui_run {} {
         if {[dict get $field active]} { ui_assert {[dict get $field step] == 1} "Result timestep menu failed"; set found 1 }
     }
     ui_assert {$found} "Timestep menu did not bind a result"
+    scvcutview $ui_model replace [file join $fixtures tensor_hex.vtu]
+    ui_pump 200
+    ui_combo .scvcutmanager.results.field "stress (cell)"
+    ui_combo .scvcutmanager.tensor.layout xx-yy-zz-xy-yz-xz
+    ui_combo .scvcutmanager.tensor.layout row-major
+    ui_combo .scvcutmanager.tensor.measure mises
+    ui_combo .scvcutmanager.tensor.shear engineering
+    ui_assert {[dict get [scvcutview $ui_model tensor] measure] eq "mises" && [dict get [scvcutview $ui_model tensor] shear] eq "engineering"} "Tensor controls did not apply conventions"
+    ui_combo .scvcutmanager.tensor.layout column-major
+    ui_combo .scvcutmanager.tensor.layout row-major
+    ui_combo .scvcutmanager.tensor.shear tensor
+    ui_combo .scvcutmanager.tensor.measure maxprincipal
+    ui_combo .scvcutmanager.tensor.measure tresca
+    ui_combo .scvcutmanager.tensor.measure components
+    ui_combo .scvcutmanager.tensor.measure mises
+    ui_capture [file join $controls_output tensor_manager.png]
+    set missing {}
+    foreach widget $expected { if {$widget ni $::ui_covered} { lappend missing $widget } }
+    ui_assert {[llength $missing] == 0} "Untested controls: $missing"
+    puts "CUT_VIEW_CONTROL_COVERAGE: [llength $expected]/[llength $expected] $expected"
     scvcutview $ui_model clear
     ui_pump 200
     ui_assert {![winfo exists .scvcutmanager] && $::CutViewManager::timer eq ""} "Closing a model left stale manager controls"

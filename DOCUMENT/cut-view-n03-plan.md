@@ -8,8 +8,8 @@ fields remain separate from display recovery and presentation merging.
 | Order | Work | Acceptance | Status |
 | --- | --- | --- | --- |
 | N03.1 | Native recovery controls and definition persistence | Real threshold/before-invariant/region controls; complete widget inventory; invalid edits and save/load; versioned options and exact signed region IDs; unchanged physical fields and fixed iso binding | Verified: 36/36 controls, JSON v5, ON/OFF repeat gates |
-| N03.2 | Tensor measures and component conventions | Explicit six/nine component layouts and shear meaning; invariant before/after recovery; independent tensor references, missing-value/extreme-value contract, physical integration unchanged | Next |
-| N03.3 | Physical interface traces | Lowest/negative/positive/region selection preserving both element sources; all masks, region jumps, deformation and line/surface/volume cases | Queued |
+| N03.2 | Tensor measures and component conventions | Explicit six/nine component layouts and shear meaning; invariant before/after recovery; independent tensor references, missing-value/extreme-value contract, physical integration unchanged | Verified: tensor references, 39/39 controls, JSON v6 |
+| N03.3 | Physical interface traces | Lowest/negative/positive/region selection preserving both element sources; all masks, region jumps, deformation and line/surface/volume cases | Next |
 | N03.4 | Presentation OR union and cap ownership | Identical, overlapping, touching and multi-direction cuts; all masks; source/cap provenance; transparent cloud images; independent per-cut numerical results | Queued |
 | N03.5 | Closure audit | Repeated full VTK ON/OFF native/DRAW/visual suites; inspect changed UI/cloud images; preserve explicit unsupported cases and all remaining native stages | Queued |
 
@@ -21,3 +21,8 @@ session state, import references and migration remain N09 work.
 The existing recovery foundation already covers region IDs, threshold semantics,
 element-node values, vector magnitude ordering, finite averaging, NaN trace
 preservation and original physical fields. These remain in the regression suite.
+
+N03.2 is bounded to real symmetric tensors with explicit layouts and display
+conventions; see [the tensor contract](cut-view-tensors.md). Original physical
+evaluation bypasses measures/recovery. Nonlinear measures are computed on source
+tuples before scalar FE mapping, not recomputed at each generated cut point.
