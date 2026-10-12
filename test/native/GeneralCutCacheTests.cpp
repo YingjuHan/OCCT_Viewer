@@ -19,6 +19,11 @@
 #include <stdexcept>
 #include <tuple>
 
+// Windows headers define the historical near qualifier as a macro.
+#ifdef near
+#undef near
+#endif
+
 using namespace ViewCaeGeom;
 namespace {
 void require(bool condition, const char* message) { if (!condition) { throw std::runtime_error(message); } }

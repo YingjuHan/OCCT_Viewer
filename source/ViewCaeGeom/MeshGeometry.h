@@ -150,6 +150,8 @@ public:
     //! Constructor.
     Standard_EXPORT explicit MeshGeometry(const Handle(MeshBvhData)& theBvhData);
 
+    Standard_EXPORT ~MeshGeometry() override;
+
     //! Return calculated mesh data.
     Standard_EXPORT const Handle(RWCae::MeshData)& GetMeshData();
 

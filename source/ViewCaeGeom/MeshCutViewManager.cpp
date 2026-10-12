@@ -1,4 +1,5 @@
 #include <ViewCaeGeom/MeshCutViewManager.h>
+#include "MeshCutFieldTools.h"
 
 #include <RWCae/MeshScalarProperty.h>
 #include <RWCae/MeshTools.h>
@@ -870,18 +871,19 @@ Handle(RWCae::MeshNVecProperty) MeshCutViewManager::project(const Handle(RWCae::
     aResult->Init<RWCae::MeshScalarProperty>();
     const size_t aNbNodes = myMesh->NbNodes();
     for (int c = 0; c < theField->NbComponents(); ++c) {
-        std::vector<double> aSums(aNbNodes, 0.0);
+        std::vector<double> aMeans(aNbNodes, 0.0);
         std::vector<unsigned> aCounts(aNbNodes, 0);
         auto aSource = theField->GetComponent(c);
         // Equal-weight cell-to-node projection; no mixing across disconnected nodes.
         for (RWCae::MeshEntityId i = 0; i < myMesh->NbIndexedElems(); ++i) {
             const double aValue = aSource->Value(RWCae::MeshPropertyEntityInfo(i));
+            if (std::isinf(aValue)) { throw std::invalid_argument("Recovery field contains infinity"); }
             if (!std::isfinite(aValue)) { continue; }
             std::vector<RWCae::MeshEntityId> nodes;
             myMesh->ElementNodes(i,nodes);
+            std::sort(nodes.begin(),nodes.end()); nodes.erase(std::unique(nodes.begin(),nodes.end()),nodes.end());
             for (auto aNode : nodes) {
-                aSums[aNode] += aValue;
-                ++aCounts[aNode];
+                aMeans.at(aNode) = CutFieldTools::Mean(aMeans.at(aNode),aValue,++aCounts.at(aNode));
             }
         }
         auto aTarget = Handle(RWCae::MeshScalarProperty)::DownCast(aResult->GetComponent(c));
@@ -892,7 +894,7 @@ Handle(RWCae::MeshNVecProperty) MeshCutViewManager::project(const Handle(RWCae::
         aTarget->SetEnabled(aSource->IsEnabled());
         for (size_t n = 0; n < aNbNodes; ++n) {
             aTarget->SetValue(RWCae::MeshPropertyEntityInfo((int)n), aCounts[n] == 0
-                ? std::numeric_limits<double>::quiet_NaN() : aSums[n] / aCounts[n]);
+                ? std::numeric_limits<double>::quiet_NaN() : aMeans[n]);
         }
     }
     aResult->SetTime(theField->Time(), theField->TimeStep());
@@ -900,8 +902,7 @@ Handle(RWCae::MeshNVecProperty) MeshCutViewManager::project(const Handle(RWCae::
     aResult->SetTimeDisplayUnits(theField->TimeDisplayUnits());
     aResult->SetDescription(theField->Description());
     if (aResult->IsVector()) {
-        aResult->GetRawComponent(0)->SetDisplayUnits(theField->GetRawComponent(0)->DisplayUnits());
-        aResult->GetRawComponent(0)->SetEnabled(theField->GetRawComponent(0)->IsEnabled());
+        CutFieldTools::CopyMetadata(theField->GetRawComponent(0),aResult->GetRawComponent(0));
     }
     aResult->UpdateComponents();
     myProjectedSource = theField;
@@ -918,9 +919,7 @@ MeshCutResult MeshCutViewManager::Evaluate(const std::string& theId,
     aResult.Definition = anEntry->Definition;
     aResult.Revision = anEntry->Revision;
     if (!anEntry->Definition.Enabled || anEntry->Definition.Visibility == 0) { return aResult; }
-    if (!theField.IsNull() && (!theField->IsInitialized() || (!theField->HasScalarComponents() && !theField->HasNodeVecComponents()))) {
-        throw std::invalid_argument("Cut contours require initialized scalar, vector or tensor components");
-    }
+    if (!theField.IsNull()) { CutFieldTools::Validate(myMesh,theField); }
     initialize(*anEntry);
     aResult.SourceField = !theField.IsNull() && theField->IsElemental()
         && anEntry->Definition.CellMode == MeshCutCellMode::Projected ? project(theField) : theField;

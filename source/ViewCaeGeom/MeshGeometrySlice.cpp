@@ -189,6 +189,11 @@ private:
 namespace ViewCaeGeom {
 
 // =======================================================================
+// function : ~MeshGeometrySlice
+// =======================================================================
+MeshGeometrySlice::~MeshGeometrySlice() = default;
+
+// =======================================================================
 // function : MeshGeometrySlice
 // =======================================================================
 MeshGeometrySlice::MeshGeometrySlice(const Handle(MeshBvhData)& theBvhData) : MeshGeometry(theBvhData)

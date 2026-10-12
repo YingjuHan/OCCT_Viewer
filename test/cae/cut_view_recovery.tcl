@@ -48,6 +48,33 @@ proc run_recovery {} {
     scvcutview recovery_model recovery 99 0 none
     recovery_jump
     scvcutview recovery_model recovery 100 0 none
+    scvcutview recovery_model field cell large 0
+    foreach policy {{100 0 none} {100 0 material}} {
+        scvcutview recovery_model recovery {*}$policy
+        set large [scvcutview recovery_model eval cut]
+        set shared 0
+        foreach value [dict get $large section values] {
+            set scalar [lindex $value end]
+            recovery_assert {$scalar == $scalar && abs($scalar) <= 1.2e308} "Finite recovery overflowed"
+            if {[dict get $large section valueMapping] eq "point" && abs([lindex $value 0]-1) < 1e-6} {
+                recovery_near [expr {$scalar/1e308}] 1 "Default finite mean overflowed"
+                set shared 1
+            }
+        }
+        if {[dict get $large section valueMapping] eq "point"} { recovery_assert {$shared} "No large-value shared node tested" }
+    }
+    scvcutview recovery_model field cell extreme_jump 0
+    scvcutview recovery_model recovery 99 0 none
+    set extreme [scvcutview recovery_model eval cut]
+    foreach value [dict get $extreme section values] { recovery_near [expr {abs([lindex $value end]/1.7e308)}] 1 "Overflowed global range ignored threshold" }
+    scvcutview recovery_model recovery 100 1 none
+    set extreme [scvcutview recovery_model eval cut]
+    set shared 0
+    foreach value [dict get $extreme section values] {
+        if {abs([lindex $value 2]-1) < 1e-6} { recovery_near [lindex $value end] 0 "Opposite-sign recovery overflowed"; set shared 1 }
+    }
+    recovery_assert {$shared} "No opposite-sign shared node tested"
+    scvcutview recovery_model recovery 100 0 none
     scvcutview recovery_model field cell opposing 0
     set after [scvcutview recovery_model eval cut]
     foreach value [dict get $after section values] {

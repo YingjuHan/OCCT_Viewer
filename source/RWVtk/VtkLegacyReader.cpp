@@ -166,6 +166,9 @@ Cells readCells(std::istream& input, bool binary)
 }
 
 namespace RWVtk {
+VtkLegacyReader::VtkLegacyReader() = default;
+VtkLegacyReader::~VtkLegacyReader() = default;
+
 bool VtkLegacyReader::PerformStream(std::istream& input, const TCollection_AsciiString& fileName)
 {
     if (!VtkBaseReader::PerformStream(input, fileName)) { return false; }

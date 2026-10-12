@@ -33,7 +33,70 @@ proc analytic_image {name} {
     analytic_assert {[dict get $pixels colored] > 100 && [dict get $pixels colors] > 20} "Blank analytic cloud"
     return [dict get $pixels checksum]
 }
+proc analytic_wedge_density {u h rational} {
+    set d [expr {0.7+0.4*$u}]
+    set k [expr {$rational ? (0.7+0.2*$u)/$d : 1}]
+    set section [expr {$k*((1-$u)+($rational ? 0.09/$d : $h/2)*$u*(1-$u)**2)}]
+    set derivative [expr {$rational ? ((0.9+0.4*$u)*$d-0.4*(0.9*$u+0.2*$u*$u))/($d*$d) : 1}]
+    return [list $section [expr {$section*$derivative}]]
+}
+proc analytic_wedge_volume {end h rational} {
+    # Integrate an independent Bernstein-moment reference, not the cut output.
+    set count 512
+    set sum [expr {[lindex [analytic_wedge_density 0 $h $rational] 1]+[lindex [analytic_wedge_density $end $h $rational] 1]}]
+    for {set n 1} {$n < $count} {incr n} {
+        set value [lindex [analytic_wedge_density [expr {$end*$n/$count}] $h $rational] 1]
+        set sum [expr {$sum+($n%2 ? 4 : 2)*$value}]
+    }
+    return [expr {$sum*$end/(3*$count)}]
+}
+proc analytic_family_references {} {
+    foreach fixture {curved_wedge_26 curved_wedge_31 curved_wedge_32 curved_wedge_73 curved_wedge_80 curved_wedge_80_rational curved_pyramid_27 curved_pyramid_37} {
+        scvcutview analytic_family read [file join $::analytic_fixtures $fixture.vtu]
+        scvcutview analytic_family geometrymode required
+        scvcutview analytic_family geometry 0.03 0 7 12 2000000
+        set pyramid [string match curved_pyramid_* $fixture]
+        scvcutview analytic_family add cut {*}[expr {$pyramid ? {0 0 1 -0.5} : {1 0 0 -0.25}}]
+        scvcutview analytic_family visibility cut 7
+        scvcutview analytic_family field point temperature 0
+        set cut [scvcutview analytic_family eval cut]
+        analytic_assert {[dict get $cut sourceGeometry] eq "analytic" && [dict get $cut section nodes] > 0} "Missing analytic $fixture section"
+        foreach part {negative section positive} {
+            foreach value [dict get $cut $part values] {
+                lassign $value x y z scalar
+                analytic_near $scalar [expr {$x+2*$y+3*$z}] 2e-5 "$fixture original FE interpolation"
+            }
+        }
+        if {$pyramid} {
+            analytic_near [dict get $cut section area] 0.25 2e-6 "$fixture section area"
+            analytic_near [dict get $cut negative volume] [expr {7.0/24}] 2e-6 "$fixture negative volume"
+            analytic_near [dict get $cut positive volume] [expr {1.0/24}] 2e-6 "$fixture positive volume"
+            set low Inf; set high -Inf
+            foreach value [dict get $cut section values] {
+                set x [lindex $value 0]; set low [expr {min($low,$x)}]; set high [expr {max($high,$x)}]
+            }
+            analytic_near $low 0.35 2e-6 "$fixture curved left edge"
+            analytic_near $high 0.85 2e-6 "$fixture curved right edge"
+            scvcutview analytic_family field point z_squared 0
+            foreach value [dict get [scvcutview analytic_family eval cut] section values] {
+                analytic_near [lindex $value end] 0.25 2e-5 "$fixture original quadratic field"
+            }
+        } else {
+            set rational [string match *_rational $fixture]
+            set h [expr {[string match curved_wedge_80* $fixture] ? 0.2 : 0.4}]
+            set u [expr {$rational ? (-0.8+sqrt(0.64+0.14))/0.4 : 0.25}]
+            analytic_near [dict get $cut section area] [lindex [analytic_wedge_density $u $h $rational] 0] 2e-6 "$fixture section reference"
+            analytic_near [dict get $cut negative volume] [analytic_wedge_volume $u $h $rational] 2e-6 "$fixture partial volume reference"
+            analytic_near [expr {[dict get $cut negative volume]+[dict get $cut positive volume]}] [analytic_wedge_volume 1.0 $h $rational] 2e-6 "$fixture source volume reference"
+        }
+        scvcutview analytic_family field cell pressure 0
+        foreach value [dict get [scvcutview analytic_family eval cut] section values] { analytic_near $value 7 1e-12 "$fixture constant CellData" }
+        scvcutview analytic_family clear
+        puts "CUT_VIEW_ANALYTIC_FAMILY_PASS $fixture"
+    }
+}
 proc run_analytic {} {
+    analytic_family_references
     scvcutview analytic_model read [file join $::analytic_fixtures bowed_tetra.vtu]
     scvcutview analytic_model geometrymode required
     scvcutview analytic_model geometry 0.03 0 7 12 2000000

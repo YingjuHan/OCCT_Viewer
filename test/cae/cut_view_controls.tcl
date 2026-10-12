@@ -133,6 +133,19 @@ proc ui_check_section {id} {
 proc ui_run {} {
     global controls_dir controls_output ui_model
     source [file join $controls_dir cut_view_demo.tcl]
+    if {$::tcl_platform(platform) eq "windows"} {
+        # Exercise real Tk dialogs with the same options and widget assertions.
+        # Windows shell dialogs do not expose Tk widgets to event generate.
+        source [file join $::tk_library tkfbox.tcl]
+        source [file join $::tk_library msgbox.tcl]
+        rename ::tk_getOpenFile ::ui_native_getOpenFile
+        rename ::tk_getSaveFile ::ui_native_getSaveFile
+        rename ::tk_messageBox ::ui_native_messageBox
+        proc ::tk_getOpenFile {args} { return [::tk::dialog::file:: open {*}$args] }
+        proc ::tk_getSaveFile {args} { return [::tk::dialog::file:: save {*}$args] }
+        proc ::tk_messageBox {args} { return [::tk::MessageBox {*}$args] }
+        puts "CONTROL_DIALOG_BACKEND Tk (Windows shell dialogs excluded)"
+    }
     ui_pump
     set expected [ui_controls .scvcutmanager]
     ui_ok

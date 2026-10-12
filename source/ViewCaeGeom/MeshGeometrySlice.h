@@ -20,6 +20,8 @@ public:
     //! Constructor.
     Standard_EXPORT explicit MeshGeometrySlice(const Handle(MeshBvhData)& theBvhData);
 
+    Standard_EXPORT ~MeshGeometrySlice() override;
+
     //! Return geometry type.
     virtual MeshGeometryType Type() const override { return MeshGeometryType::Slice; }
 

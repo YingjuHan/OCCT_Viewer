@@ -223,7 +223,30 @@ consecutive runs per case, and all six VTK-disabled cases pass three times.
 Remaining curved-family reference evidence is still required before closing G03;
 general arbitrary-order geometry is not labelled exact.
 
-### N03 Implementation Strategy (Queued)
+### N03 Recovery Increment (Partial)
+
+`MeshCutRecoveryOptions` and `RecoverCutField()` now implement display recovery
+with one signed 64-bit region ID per original element and a threshold in `[0,100]`.
+For each component, the same-region spread at a shared node is compared with
+the global finite component range times the threshold percentage. Rejected
+averaging and missing traces stay in elemental-per-node storage. This is the
+current project contract; equivalence to Abaqus averaging is not claimed.
+
+The default scalar-component policy retains nodal projection. Custom policies
+and original element-node input use `MeshNodeVecProperty`. Vector magnitude
+supports evaluation before or after averaging; full tensor invariants still
+need an explicit component/convention contract. Recovery validates every raw
+component, including cached magnitude, and retains component/field/time metadata.
+Finite means, global range comparisons and vector norms avoid intermediate
+overflow; NaN traces are preserved and infinite recovery input is rejected.
+
+`MeshCutResult::PhysicalFields` maps the original physical field independently
+of display recovery. Integration uses it and rejects a recovered result that
+has lost the physical mapping. NodeVec line/point adapters retain original
+element provenance and signed FE weights. DRAW exposes recovery configuration;
+manager widgets and complete session persistence remain pending.
+
+### N03 Remaining Implementation
 
 Use the existing `RWCae::MeshNodeVecProperty` elemental-per-node storage for
 recovered values. A shared node can retain separate values for different material
@@ -234,12 +257,11 @@ only when recovery settings change. Vector/tensor recovery must define whether
 invariants are evaluated before or after averaging, rather than silently mixing
 those conventions. Extend line/point contour adapters to carry the same trace.
 
-Add a separate physical evaluation path. `MeshCutIntegration` currently consumes
-the result's mapped `Fields`, so feeding display-projected data into it can change
-physical resultants. Physical evaluation must bypass display recovery, use the
-requested original field, and preserve explicit lowest/negative/positive/region
-interface traces. Tests must compare resultants before and after display-policy
-changes and keep discontinuous CellData distinct.
+Extend the separate physical path with explicit lowest/negative/positive/region
+interface traces. Current integration is invariant under display-policy changes,
+but coincident shared interfaces still use existing deterministic ownership.
+Trace selection must preserve discontinuous CellData and explicit material-side
+semantics rather than reuse a smoothed display field.
 
 Numerical `Evaluate(id)` results remain independent. A separate presentation union
 uses source-cell provenance and OCCT boundary operations for the OR of visible

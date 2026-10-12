@@ -112,6 +112,11 @@ bool MeshInterpolatedNode::IsEqualGeneral(const MeshInterpolatedNode& theElem1, 
 }
 
 // =======================================================================
+// function : ~MeshGeometry
+// =======================================================================
+MeshGeometry::~MeshGeometry() = default;
+
+// =======================================================================
 // function : MeshGeometry
 // =======================================================================
 MeshGeometry::MeshGeometry(const Handle(MeshBvhData)& theBvhData)

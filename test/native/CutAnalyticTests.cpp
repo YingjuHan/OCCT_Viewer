@@ -12,9 +12,15 @@
 #include <vtkXMLUnstructuredGridWriter.h>
 #include <cmath>
 #include <filesystem>
+#include <functional>
 #include <iostream>
 #include <iomanip>
 #include <stdexcept>
+
+// Windows headers define the historical near qualifier as a macro.
+#ifdef near
+#undef near
+#endif
 
 using namespace ViewCaeGeom;
 namespace {
@@ -71,6 +77,7 @@ MeshCutGeometryOptions required(double tolerance = 0.03)
     MeshCutGeometryOptions options; options.Mode = MeshCutGeometryMode::AnalyticRequired;
     options.AbsoluteTolerance = tolerance; options.RelativeTolerance = 0; return options;
 }
+void writeFixture(const Handle(RWCae::MeshData)& mesh, const std::string& name, bool polynomial = false);
 void checkAffine(const MeshCutResult& result)
 {
     require(!result.SourceApproximate,"Required analytic mode returned numerical geometry");
@@ -193,7 +200,7 @@ void wedge(int type, bool rational = false)
     if (type == 73 || type == 80) { topology.Degrees = {2,2,2}; }
     for (int n = 0; n < count; ++n) {
         const double u = coordinates[3*n], v = coordinates[3*n+1], w = coordinates[3*n+2];
-        topology.Nodes.push_back(mesh->AddNodePosition(Graphic3d_Vec3(u,v,w*(1+0.4*u*(1-u-v)))));
+        topology.Nodes.push_back(mesh->AddNodePosition(Graphic3d_Vec3((float)u,(float)v,(float)(w*(1+0.4*u*(1-u-v))))));
         if (rational) { topology.RationalWeights.push_back(0.7+0.4*u); }
     }
     mesh->AddGenericCell(topology); MeshCutViewManager manager(mesh); manager.SetGeometryOptions(required());
@@ -215,6 +222,7 @@ void wedge(int type, bool rational = false)
     near(result.Volumes[0],simpson(density,u),3e-7,"Exact curved-wedge partial volume reference");
     near(result.Volumes[0]+result.Volumes[2],simpson(density,1),3e-7,"Exact curved-wedge volume reference");
     require(manager.Statistics().AnalyticCells == 1 && manager.Statistics().NumericalCells == 0,"Curved wedge fell back to numerical geometry");
+    writeFixture(mesh,"curved_wedge_"+std::to_string(type)+(rational ? "_rational" : ""));
     std::cout << "CUT_ANALYTIC_WEDGE_PASS " << type << " rational " << rational << '\n';
 }
 void pyramid(int type)
@@ -231,7 +239,7 @@ void pyramid(int type)
         const double x = type == 27 ? canonical[n][0] : parameters[3*n];
         const double y = type == 27 ? canonical[n][1] : parameters[3*n+1];
         const double z = type == 27 ? canonical[n][2] : 2*parameters[3*n+2]-1;
-        topology.Nodes.push_back(mesh->AddNodePosition(Graphic3d_Vec3(x+0.4*z*(1-z),y,z)));
+        topology.Nodes.push_back(mesh->AddNodePosition(Graphic3d_Vec3((float)(x+0.4*z*(1-z)),(float)y,(float)z)));
     }
     mesh->AddGenericCell(topology); MeshCutViewManager manager(mesh); manager.SetGeometryOptions(required());
     manager.AddPlane("cut",Graphic3d_Vec4d(0,0,1,-0.5)); manager.SetVisibility("cut",7);
@@ -252,22 +260,35 @@ void pyramid(int type)
     for (RWCae::MeshEntityId n = 0; n < section->NbNodes(); ++n) {
         near(mapped.Fields[1]->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(n)),0.25,3e-6,"Curved-pyramid original quadratic field");
     }
+    writeFixture(mesh,"curved_pyramid_"+std::to_string(type));
     std::cout << "CUT_ANALYTIC_PYRAMID_PASS " << type << '\n';
 }
-void writeFixture()
+void writeFixture(const Handle(RWCae::MeshData)& mesh, const std::string& name, bool polynomial)
 {
-    const auto mesh = fixture(24); vtkNew<vtkUnstructuredGrid> grid; vtkNew<vtkPoints> points; points->SetDataTypeToDouble();
+    vtkNew<vtkUnstructuredGrid> grid; vtkNew<vtkPoints> points; points->SetDataTypeToDouble();
     for (const auto& p : mesh->Nodes()) { points->InsertNextPoint(p.x(),p.y(),p.z()); }
     grid->SetPoints(points); std::vector<vtkIdType> ids(mesh->GenericCells()[0].Nodes.begin(),mesh->GenericCells()[0].Nodes.end());
-    grid->InsertNextCell(24,ids.size(),ids.data());
-    for (bool polynomial : {false,true}) {
-        const auto values = field(mesh,polynomial); vtkNew<vtkDoubleArray> array; array->SetName(polynomial ? "quadratic" : "temperature");
+    const auto& cell = mesh->GenericCells()[0]; grid->InsertNextCell(cell.Type,ids.size(),ids.data());
+    if (!cell.Degrees.empty()) {
+        vtkNew<vtkIntArray> degrees; degrees->SetNumberOfComponents(3); degrees->InsertNextTypedTuple(cell.Degrees.data());
+        grid->GetCellData()->SetHigherOrderDegrees(degrees);
+    }
+    if (!cell.RationalWeights.empty()) {
+        vtkNew<vtkDoubleArray> weights; weights->SetName("RationalWeights");
+        for (double weight : cell.RationalWeights) { weights->InsertNextValue(weight); }
+        grid->GetPointData()->SetRationalWeights(weights);
+    }
+    for (int component = 0; component <= (polynomial ? 1 : 0); ++component) {
+        const auto values = field(mesh,component == 1); vtkNew<vtkDoubleArray> array; array->SetName(component == 1 ? "quadratic" : "temperature");
         for (RWCae::MeshEntityId n = 0; n < mesh->NbNodes(); ++n) { array->InsertNextValue(values->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(n))); }
         grid->GetPointData()->AddArray(array);
     }
+    vtkNew<vtkDoubleArray> squared; squared->SetName("z_squared");
+    for (const auto& p : mesh->Nodes()) { squared->InsertNextValue((double)p.z()*p.z()); }
+    grid->GetPointData()->AddArray(squared);
     vtkNew<vtkDoubleArray> pressure; pressure->SetName("pressure"); pressure->InsertNextValue(7); grid->GetCellData()->AddArray(pressure);
     std::filesystem::create_directories(CUT_ANALYTIC_FIXTURE_DIR);
-    const std::string path = std::string(CUT_ANALYTIC_FIXTURE_DIR)+"/bowed_tetra.vtu";
+    const std::string path = std::string(CUT_ANALYTIC_FIXTURE_DIR)+"/"+name+".vtu";
     vtkNew<vtkXMLUnstructuredGridWriter> writer; writer->SetFileName(path.c_str()); writer->SetInputData(grid); writer->SetDataModeToAscii();
     require(writer->Write(),"Cannot generate analytic DRAW fixture");
 }
@@ -278,7 +299,7 @@ int main()
         for (int type : {25,29,72,79}) { box(type); }
         for (int type : {26,31,32,73,80}) { wedge(type); }
         wedge(80,true); pyramid(27); pyramid(37);
-        tetra(); curveAndFallback(); polygon(); writeFixture(); std::cout << "CUT_ANALYTIC_NATIVE_PASS\n"; return 0;
+        tetra(); curveAndFallback(); polygon(); writeFixture(fixture(24),"bowed_tetra",true); std::cout << "CUT_ANALYTIC_NATIVE_PASS\n"; return 0;
     } catch (const Standard_Failure& error) { std::cerr << "CUT_ANALYTIC_FAIL " << error.GetMessageString() << '\n'; }
     catch (const std::exception& error) { std::cerr << "CUT_ANALYTIC_FAIL " << error.what() << '\n'; }
     return 1;

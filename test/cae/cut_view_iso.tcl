@@ -100,7 +100,7 @@ proc run_cut_view_iso {} {
         cut_assert {$::CutViewManager::motion eq "Value"} "Iso uses plane motion"
         cut_assert {[dict get [scvcutview iso handleinfo] id] eq ""} "Iso has misleading plane guide"
         .scvcutmanager.controls.translate set 0.5
-        update idletasks
+        update
         cut_near [dict get [scvcutview iso eval threshold] section area] 0.125 "Manager threshold movement"
         set path [file join $output iso_threshold_05.png]
         vdump $path

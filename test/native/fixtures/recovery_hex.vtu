@@ -11,6 +11,8 @@
 </Cells>
 <CellData Vectors="opposing">
 <DataArray type="Float64" Name="pressure" format="ascii">7 9</DataArray>
+<DataArray type="Float64" Name="large" format="ascii">8e307 1.2e308</DataArray>
+<DataArray type="Float64" Name="extreme_jump" format="ascii">-1.7e308 1.7e308</DataArray>
 <DataArray type="Int32" Name="material" format="ascii">10 20</DataArray>
 <DataArray type="Float64" Name="invalid_region" format="ascii">10 20.5</DataArray>
 <DataArray type="Float64" Name="flux" NumberOfComponents="3" format="ascii">7 0 0 9 0 0</DataArray>

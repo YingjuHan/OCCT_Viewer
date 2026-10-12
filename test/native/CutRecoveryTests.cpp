@@ -7,6 +7,11 @@
 #include <limits>
 #include <stdexcept>
 
+// Windows headers define the historical near qualifier as a macro.
+#ifdef near
+#undef near
+#endif
+
 using namespace ViewCaeGeom;
 namespace {
 void require(bool condition, const char* message) { if (!condition) { throw std::runtime_error(message); } }
@@ -174,10 +179,117 @@ void signedWeights()
     require(!mapped.IsNull(),"Signed-weight fixture did not map fields");
     for (int n = 0; n < 3; ++n) { near(mapped->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(0,n)),0,"Signed FE weights clamped or zero weight propagated NaN"); }
 }
+void metadataAndValidation()
+{
+    auto mesh = joined(); auto values = field({{1,-1},{0,0},{0,0}},RWCae::MeshNVecPropertyType::Vector);
+    values->SetDescription("physical flux"); values->SetTime(0.125,3);
+    values->SetTimeStepDescription("load step"); values->SetTimeDisplayUnits("s");
+    for (int c = 0; c < values->NbRawComponents(); ++c) {
+        auto component = values->GetRawComponent(c);
+        component->SetName(c == 0 ? "flux norm" : "flux component");
+        component->SetDescription("supplied component metadata"); component->SetDisplayUnits("W/m2");
+        component->SetEnabled(c != 0);
+    }
+    auto check = [&](const Handle(RWCae::MeshNVecProperty)& output) {
+        require(output->Description() == values->Description() && output->TimeStep() == 3
+            && output->TimeStepDescription() == values->TimeStepDescription()
+            && output->TimeDisplayUnits() == values->TimeDisplayUnits(),"Recovery lost field metadata");
+        near(output->Time(),0.125,"Recovery lost time");
+        for (int c = 0; c < output->NbRawComponents(); ++c) {
+            auto original = values->GetRawComponent(c), recovered = output->GetRawComponent(c);
+            require(original->Name() == recovered->Name() && original->Description() == recovered->Description()
+                && original->DisplayUnits() == recovered->DisplayUnits() && original->IsEnabled() == recovered->IsEnabled(),
+                "Recovery lost raw component metadata");
+        }
+    };
+    MeshCutRecoveryOptions options; check(RecoverCutField(mesh,values,options));
+    options.InvariantsBeforeAveraging = true; check(RecoverCutField(mesh,values,options));
+    MeshCutViewManager manager(mesh); manager.AddPlane("cut",Graphic3d_Vec4d(0,1,0,-0.5)); manager.SetVisibility("cut",2);
+    manager.SetCellMode("cut",MeshCutCellMode::Projected); check(manager.Evaluate("cut",values).SourceField);
+    auto reject = [&](const Handle(RWCae::MeshNVecProperty)& invalid) {
+        for (bool before : {false,true}) {
+            options.InvariantsBeforeAveraging = before; bool rejected = false;
+            try { RecoverCutField(mesh,invalid,options); } catch (const std::invalid_argument&) { rejected = true; }
+            require(rejected,"Malformed recovery component accepted");
+        }
+        for (auto mode : {MeshCutCellMode::Constant,MeshCutCellMode::Projected}) {
+            manager.SetCellMode("cut",mode); bool rejected = false;
+            try { manager.Evaluate("cut",invalid); } catch (const std::invalid_argument&) { rejected = true; }
+            require(rejected,"Malformed field accepted by cut manager");
+        }
+    };
+    auto invalid = field({{1,2},{3,4},{5,6}},RWCae::MeshNVecPropertyType::Vector);
+    auto last = Handle(RWCae::MeshScalarProperty)::DownCast(invalid->GetComponent(2)); last->Unload(); last->Init(1);
+    reject(invalid); bool rejected = false;
+    try { invalid->UpdateComponents(); } catch (const Standard_Failure&) { rejected = true; }
+    require(rejected,"Vector UpdateComponents skipped its last input component");
+    invalid = field({{1,2},{3,4},{5,6}},RWCae::MeshNVecPropertyType::Vector);
+    auto magnitude = Handle(RWCae::MeshScalarProperty)::DownCast(invalid->GetRawComponent(0)); magnitude->Unload(); magnitude->Init(1); reject(invalid);
+    invalid = field({{1,2},{3,4},{5,6}},RWCae::MeshNVecPropertyType::Vector);
+    invalid->ChangeComponents().SetValue(3,Handle(RWCae::MeshScalarPropertyBase)()); reject(invalid);
+    invalid = field({{1,2},{3,4},{5,6}},RWCae::MeshNVecPropertyType::Vector);
+    Handle(RWCae::MeshScalarProperty) nodal = new RWCae::MeshScalarProperty("wrong mapping",RWCae::MeshPropertyBase::MappingType::Nodal);
+    nodal->Init(2); invalid->ChangeComponents().SetValue(3,nodal); reject(invalid);
+    invalid = field({{1,2},{3,4},{5,6}},RWCae::MeshNVecPropertyType::Vector);
+    Handle(RWCae::MeshNodeVecProperty) nodeVec = new RWCae::MeshNodeVecProperty("wrong storage");
+    nodeVec->Init(2,0,false,false); invalid->ChangeComponents().SetValue(3,nodeVec); reject(invalid);
+}
+void extremeValues()
+{
+    auto mesh = joined(); MeshCutRecoveryOptions options;
+    auto nearRelative = [](double actual, double expected, const char* message) {
+        require(std::isfinite(actual) && std::abs(actual/expected-1) < 2e-14,message);
+    };
+    for (double scale : {1e200,1e-200}) {
+        auto vector = field({{3*scale,3*scale},{4*scale,4*scale},{0,0}},RWCae::MeshNVecPropertyType::Vector);
+        nearRelative(vector->GetRawComponent(0)->Value(RWCae::MeshPropertyEntityInfo(0)),5*scale,"Scalar vector norm overflow/underflow");
+        auto recovered = RecoverCutField(mesh,vector,options);
+        nearRelative(recovered->GetRawComponent(0)->Value(RWCae::MeshPropertyEntityInfo(0,4)),5*scale,"Element-node vector norm overflow/underflow");
+        options.InvariantsBeforeAveraging = true;
+        nearRelative(RecoverCutField(mesh,vector,options)->GetRawComponent(0)->Value(RWCae::MeshPropertyEntityInfo(0,4)),
+            5*scale,"Before-average vector norm overflow/underflow");
+        options.InvariantsBeforeAveraging = false;
+    }
+    auto large = field({{8e307,1.2e308}});
+    nearRelative(RecoverCutField(mesh,large,options)->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(0,4)),1e308,"Recovery sum overflow");
+    MeshCutViewManager manager(mesh); manager.AddPlane("cut",Graphic3d_Vec4d(0,1,0,-0.5)); manager.SetVisibility("cut",2);
+    manager.SetCellMode("cut",MeshCutCellMode::Projected);
+    nearRelative(manager.Evaluate("cut",large).SourceField->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(4)),1e308,"Default projection sum overflow");
+    const double limit = std::numeric_limits<double>::max(); auto opposite = field({{-limit,limit}});
+    near(RecoverCutField(mesh,opposite,options)->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(0,4)),0,"Opposite-sign recovery overflow");
+    options.ThresholdPercent = 99;
+    auto discontinuous = RecoverCutField(mesh,opposite,options);
+    nearRelative(discontinuous->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(0,4)),-limit,"Overflowed range ignored recovery threshold");
+    nearRelative(discontinuous->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(1,4)),limit,"Overflowed range lost opposite trace");
+    // Global extrema lie away from the interface; its finite spread is 1/6 of the range.
+    Handle(RWCae::MeshNVecProperty) wideRange = new RWCae::MeshNVecProperty("wide range",1,
+        RWCae::MeshPropertyBase::MappingType::Elemental);
+    wideRange->Init<RWCae::MeshNodeVecProperty>();
+    auto traces = Handle(RWCae::MeshNodeVecProperty)::DownCast(wideRange->GetComponent(0));
+    traces->Init(2,0,false,false);
+    for (RWCae::MeshEntityId e = 0; e < 2; ++e) {
+        std::vector<RWCae::MeshEntityId> nodes; mesh->ElementNodes(e,nodes);
+        for (auto n : nodes) {
+            traces->SetValue(RWCae::MeshPropertyEntityInfo(e,n),e == 1 ? 1.2e308 : (n >= 4 ? 8e307 : -1.2e308));
+        }
+    }
+    wideRange->UpdateComponents(); options.ThresholdPercent = 20;
+    nearRelative(RecoverCutField(mesh,wideRange,options)->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(0,4)),
+        1e308,"Finite interface spread over overflowing global range was rejected");
+    options.ThresholdPercent = 10;
+    nearRelative(RecoverCutField(mesh,wideRange,options)->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(0,4)),
+        8e307,"Finite interface spread over overflowing global range lost threshold");
+    auto infinite = field({{7,INFINITY}}); bool rejected = false;
+    try { manager.Evaluate("cut",infinite); } catch (const std::invalid_argument&) { rejected = true; }
+    require(rejected,"Default projection silently skipped infinity");
+    auto missing = field({{7,std::numeric_limits<double>::quiet_NaN()}});
+    options = MeshCutRecoveryOptions(); auto recovered = RecoverCutField(mesh,missing,options);
+    require(std::isnan(recovered->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(1,4))),"Missing trace was filled by finite neighbor");
+}
 }
 int main()
 {
-    try { recovery(); invariantsAndPhysical(); linesAndOriginalNodeVec(); signedWeights(); std::cout << "CUT_RECOVERY_PASS\n"; }
+    try { recovery(); invariantsAndPhysical(); linesAndOriginalNodeVec(); signedWeights(); metadataAndValidation(); extremeValues(); std::cout << "CUT_RECOVERY_PASS\n"; }
     catch (const std::exception& error) { std::cerr << "CUT_RECOVERY_FAIL: " << error.what() << '\n'; return 1; }
     return 0;
 }

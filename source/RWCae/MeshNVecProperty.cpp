@@ -129,7 +129,7 @@ void MeshNVecProperty::UpdateComponents(bool toUpdateAuxComponents)
 {
     myNbValues = GetComponent(0)->NbValues();
     for (int i = 1; i < myNbComponents; i++) {
-        int aNbValues = myComponents[i]->NbValues();
+        int aNbValues = GetComponent(i)->NbValues();
         Standard_ASSERT_RAISE(aNbValues == myNbValues, "Error! Incorrect number of values in the property component.");
     }
 
@@ -180,10 +180,7 @@ void MeshNVecProperty::fillScalarVector()
                 aVecValue = aValue;
                 break;
             }
-            aVecValue += aValue * aValue;
-        }
-        if (!IsNaN(aVecValue)) {
-            aVecValue = Sqrt(aVecValue);
+            aVecValue = std::hypot(aVecValue, aValue);
         }
         aVecProp->SetValue(aValueIndex, aVecValue);
     }
@@ -216,10 +213,7 @@ void MeshNVecProperty::fillNodeVecVector()
                 aVecValue = aValue;
                 break;
             }
-            aVecValue += aValue * aValue;
-        }
-        if (!IsNaN(aVecValue)) {
-            aVecValue = Sqrt(aVecValue);
+            aVecValue = std::hypot(aVecValue, aValue);
         }
         aVecProp->SetValue(theIndex, aVecValue);
     };

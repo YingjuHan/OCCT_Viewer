@@ -6,6 +6,17 @@ an implementation is complete only after its listed acceptance checks pass.
 Native acceptance uses the existing `VIEWDRAW` plugin and Tcl scripts under `test/`.
 Do not add a separate `CUTVIEW` plugin or modify the existing `AGENTS.md`.
 
+The Windows continuation now has VTK 9.5.2/MinGW SDK support, expanded native/DRAW
+wedge/pyramid independent references, and N03 recovery robustness/metadata repairs.
+G04/N03 is partial. Current environment, test counts and remaining work are recorded
+in [cut-view-native-handoff.md](cut-view-native-handoff.md); older milestone counts
+below describe their original validation runs.
+
+Acceptance: VTK-enabled **32/32**, each case passing three times (232.34 seconds);
+VTK-disabled **8/8**, each case passing three times (4.56 seconds). Images for recovery,
+analytic sections and VTK held motion were inspected. Two historical external fixtures
+are absent from the current official data set; the old 34-case count is not reused.
+
 ## Baseline
 
 - Existing plane manager, pointer dragging, eight portion masks, VTK import,
@@ -30,8 +41,8 @@ The plane-interaction repair gate R00 takes priority over new cut shapes.
 | R00 | Plane held-drag recomputation, every existing control, interactive DRAW/Tk crashes and invalid-input handling | Baseline | Interactive (-i) menus/dialogs, current 32/32 controls; pre-release geometry/field/pixel assertions; all regressions | verified |
 | G01 | Field isosurface: fixed field/component/step binding, below/on/above, surface lines, live threshold, definition migration | Baseline | Native numerical tests, all masks, independent contour changes, DRAW pixels and manager controls | verified |
 | G02 | Cylinder and sphere: position/axis/radius, enclosed intersections, three portions | G01 | Analytic volume/area checks, same-sign vertex cases, DRAW interaction | partial: 48 concrete VTK types, shared BVH/cache and conforming curved-reference adjacency verified; mismatching interfaces stay visible; full-frame performance pending |
-| G03 | Exact second-order cell geometry and FE result interpolation | G02 | Curved-cell reference solutions and convergence tests; explicit unsupported-cell diagnostics | partial: numerical/analytic source increments verified (31 cases three times); remaining curved-family reference evidence next; exact arbitrary-order intersections not claimed |
-| G04 | Cell recovery/averaging thresholds, region boundaries and discontinuity policies | G03 | Constant and recovered results verified across material boundaries; physical fields unchanged | queued |
+| G03 | Exact second-order cell geometry and FE result interpolation | G02 | Curved-cell reference solutions and convergence tests; explicit unsupported-cell diagnostics | partial: supported numerical/analytic boundaries and expanded wedge/pyramid native/DRAW independent references verified; general family/precision limits remain; exact arbitrary-order intersections not claimed |
+| G04 | Cell recovery/averaging thresholds, region boundaries and discontinuity policies | G03 | Constant and recovered results verified across material boundaries; physical fields unchanged | partial: region/threshold and element-node recovery, vector magnitude order and original physical mapping implemented; tensor invariants, explicit interface traces, manager widgets and persistence pending |
 | G05 | Multi-cut OR boundary merging, deduplication and shared opacity | G02 | Overlapping/touching cuts, no duplicate faces or darkened overlap, all masks | queued |
 | M01 | Native model lifecycle, defaults X/Y/Z, selection independent of activation | R00 | Open/replace/close model tests and deterministic defaults | verified |
 | M02 | Datum positioning, reference axes and numeric editing for all shapes | G02, M01 | Local/global transforms, numeric and pointer edits agree | queued |
@@ -243,7 +254,8 @@ remains active in N02. N03-N09 remain scheduled.
   (188.67 seconds), including the new analytic held-pointer images and 32/32 control
   inventory. VTK-disabled native/DRAW Release acceptance passes all six cases three
   times. G03 remains partial pending remaining curved-family reference evidence;
-  N03-N09 remain queued. Images: `build/test/native/draw-analytic/`.
+  N03-N09 were queued at that milestone; current N03 status is partial.
+  Images from that run: `build/test/native/draw-analytic/`.
 
 ## N02 Geometry Controls and Curved Refinement
 

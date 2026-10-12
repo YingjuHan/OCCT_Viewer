@@ -10,6 +10,11 @@
 #include <limits>
 #include <stdexcept>
 
+// Windows headers define the historical near qualifier as a macro.
+#ifdef near
+#undef near
+#endif
+
 using namespace ViewCaeGeom;
 
 static void require(bool condition, const char* message)

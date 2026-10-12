@@ -74,7 +74,7 @@ proc run_cut_view_interaction {} {
     set ::CutViewManager::selected x
     ::CutViewManager::refresh 1
     .scvcutmanager.controls.translate set 0.4
-    update idletasks
+    update
     interaction_near [lindex [dict get [interaction_cut x] plane] 3] -0.4 "Manager translation"
     interaction_check_section
 

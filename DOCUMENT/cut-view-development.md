@@ -17,6 +17,11 @@
 Current execution is native only: Web/Vue/TypeScript and WASM tasks are excluded,
 not completed. Project/session persistence below maps to the native session API.
 
+Current Windows acceptance: VTK-enabled **32/32** and VTK-disabled **8/8**, each case
+passing three consecutive runs. Expanded wedge/pyramid independent references and
+recovery robustness are included. See [the current handoff](cut-view-native-handoff.md)
+for SDK paths, logs, missing historical external fixtures and remaining N03 work.
+
 ## Verified Native Work
 
 - [x] Native tests and DRAW batch/visual Tcl regressions under `test/`.
@@ -56,6 +61,12 @@ not completed. Project/session persistence below maps to the native session API.
   numerical fallback, exact bowed-tetra/warped-hex/curve/polygon references and held-pointer
   clouds; 31/31 native/DRAW cases pass three times.
 - [ ] G03 remaining curved-family independent reference evidence and precision limits.
+- [x] N02 expanded independent references: curved wedges `26/31/32/73/80`, rational
+  Bezier wedge `80`, and pyramids `27/37`, with native and DRAW geometry/FE checks.
+- [x] N03 display recovery foundation: region IDs, averaging thresholds, elemental-per-node
+  discontinuities, vector magnitude before/after averaging and independent original physical fields.
+- [ ] N03 complete tensor invariants, physical interface traces, OR boundary/cap merging,
+  recovery manager widgets and session persistence.
 
 These are native building blocks, not completion of the entire Cut View Manager plan.
 
@@ -74,7 +85,7 @@ interface, not the production Vue manager. See the official [view-cut overview](
 | Translate/rotate with numeric values and sliders | Plane controls and scalar-isovalue slider implemented | Explicit datum coordinate systems, reference axes and curved-shape controls |
 | Mouse positioning | Plane picking, normal arrow, rotation rings, cancellation tested | Result-node/element picking and probe tools |
 | Real mesh and nodal-result sections during motion | Original FE functions; 48-cell matrix and held-pointer volume-family checks | Exact curved geometry/convergence and large-model frame budget |
-| Element-result sections | Constant and projected CellData; pointer-drag interpolation tested | Domain-specific averaging thresholds and discontinuity policies |
+| Element-result sections | Constant/projected CellData, region/threshold and element-node recovery; display/physical mapping separated | Tensor invariants, explicit physical interface traces and manager recovery widgets |
 | Plane/cylinder/sphere/isosurface shapes | Geometric cuts for concrete VTK cells; native first-order field isosurfaces | General internal walls, exact curved geometry and higher-order isosurfaces |
 | Per-portion/per-cut plot options | Native shared `SetStyle()` API only | Per-cut styles, manager controls, legend/contour options |
 | Deformed plots and following deformation | Native intersection, deformed nodal guide/range/fit bounds and held-drag regression | Material-following reference frames and production GUI controls |
@@ -103,7 +114,9 @@ that million-cell rendering meets 15 fps.
 2. Add configurable geometric tolerances, conforming curved-face refinement and reference convergence
    tests. Original high-order FE interpolation and quadratic fields are tested; source geometry is
    still tessellated, not exact arbitrary-order geometry. Tolerance/limit controls and reference
-   convergence are verified in N02; exact supported second-order source boundaries are next.
+   convergence and supported analytic Bezier source boundaries are implemented in N02;
+   wedge/pyramid native and DRAW references are now included. Remaining families and
+   the general support/precision contract still require bounded acceptance.
    Higher-order field isosurfaces remain open.
 3. Complete multi-cut OR boundary merging/deduplication. Current cuts are independently evaluated and
    additively displayed, not chained as AND clips; overlapping side boundaries are not Boolean-unioned.
@@ -114,8 +127,9 @@ that million-cell rendering meets 15 fps.
    Native pointer-driven plane updates now work; browser dragging and material-following reference
    frames are not connected to this manager.
 6. Add mapped shell/beam section forces, thickness/section semantics, units handling, resultant overlays,
-   and separation of physical integration fields from display smoothing. Current integration is for
-   supplied volume-section fields; unsupported surface sections fail explicitly.
+   and explicit physical interface trace selection. Original physical mapping is already separated
+   from display recovery. Current integration is for supplied volume-section fields;
+   unsupported surface sections fail explicitly.
 7. Add automatic crack/optimization cuts from explicitly mapped distance/density fields.
 8. Complete VTK Lines/polyline storage and rendering, remaining legacy sections, changing-topology time
    series validation, malformed/compressed/multi-offset coverage, and bounded-memory appended decoding.
@@ -149,8 +163,10 @@ See [cut-view-execution.md](cut-view-execution.md) for the dependency-ordered ta
 acceptance gates. R00, G01 and native M01 are verified; G02/G03 have a general-cell milestone
 but remain partial. Current coverage includes the supplied VTK real-data cases and
 the 48-concrete-cell native/DRAW matrix. N01 and N02's numerical foundation are verified.
-Next are N02 analytic second-order source boundaries, then N03 region/discontinuity-aware
-recovery, physical trace policies and multi-cut boundary/cap union. N04-N09 remain queued;
+N02 includes supported analytic source boundaries and expanded reference fixtures.
+N03 region/threshold recovery and original physical mapping are implemented; physical
+trace policies, tensor invariants, manager controls and multi-cut boundary/cap union
+remain open. N04-N09 remain queued;
 web/WASM work is excluded.
 First-order isosurfaces currently rebuild scalar-cut geometry when the threshold changes; they
 have not been accepted against the full-frame million-cell target. Second-order meshes are

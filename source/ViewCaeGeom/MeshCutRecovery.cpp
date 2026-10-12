@@ -1,4 +1,5 @@
 #include <ViewCaeGeom/MeshCutRecovery.h>
+#include "MeshCutFieldTools.h"
 #include <RWCae/MeshNodeVecProperty.h>
 #include <algorithm>
 #include <cmath>
@@ -16,7 +17,8 @@ bool MeshCutRecoveryOptions::IsValid(size_t count) const
 Handle(RWCae::MeshNVecProperty) RecoverCutField(const Handle(RWCae::MeshData)& mesh,
     const Handle(RWCae::MeshNVecProperty)& field, const MeshCutRecoveryOptions& options)
 {
-    if (mesh.IsNull() || field.IsNull() || !field->IsInitialized() || !field->IsElemental()
+    CutFieldTools::Validate(mesh,field);
+    if (!field->IsElemental()
         || (!field->HasScalarComponents() && !field->HasNodeVecComponents())
         || !options.IsValid(mesh->NbIndexedElems()) || field->NbValues() != (int)mesh->NbIndexedElems()) {
         throw std::invalid_argument("Recovery requires matching original elemental components and region IDs");
@@ -34,16 +36,12 @@ Handle(RWCae::MeshNVecProperty) RecoverCutField(const Handle(RWCae::MeshData)& m
     }
     for (int c = 0; c < count; ++c) {
         const auto source = before ? field->GetRawComponent(c) : field->GetComponent(c);
-        if (source->NbValues() != (int)mesh->NbIndexedElems()) {
-            throw std::invalid_argument("Recovery component tuple count does not match the source mesh");
-        }
         auto valueAt = [&](RWCae::MeshEntityId e, RWCae::MeshEntityId n) {
             return source->Value(RWCae::MeshPropertyEntityInfo(e,field->HasNodeVecComponents() ? (int)n : -1));
         };
         const auto target = Handle(RWCae::MeshNodeVecProperty)::DownCast(before ? result->GetRawComponent(c) : result->GetComponent(c));
         target->Init(mesh->NbIndexedElems(),0,false,false);
-        target->SetName(source->Name()); target->SetDescription(source->Description());
-        target->SetDisplayUnits(source->DisplayUnits()); target->SetEnabled(source->IsEnabled());
+        CutFieldTools::CopyMetadata(source,target);
         double minimum = INFINITY, maximum = -INFINITY;
         for (RWCae::MeshEntityId e = 0; e < mesh->NbIndexedElems(); ++e) {
             for (auto n : nodes[e]) {
@@ -53,20 +51,22 @@ Handle(RWCae::MeshNVecProperty) RecoverCutField(const Handle(RWCae::MeshData)& m
             }
             target->ReserveValueMap(e,nodes[e].size());
         }
-        const double threshold = minimum <= maximum ? (maximum-minimum)*(options.ThresholdPercent/100) : 0;
         for (RWCae::MeshEntityId n = 0; n < incident.size(); ++n) {
             std::map<int64_t,std::vector<RWCae::MeshEntityId>> regions;
             for (auto e : incident[n]) { regions[options.Regions.empty() ? 0 : options.Regions[e]].push_back(e); }
             for (const auto& region : regions) {
-                double low = INFINITY, high = -INFINITY, sum = 0; size_t finite = 0;
+                double low = INFINITY, high = -INFINITY, mean = 0; size_t finite = 0;
                 for (auto e : region.second) {
                     const double value = valueAt(e,n);
-                    if (std::isfinite(value)) { low = std::min(low,value); high = std::max(high,value); sum += value; ++finite; }
+                    if (std::isfinite(value)) {
+                        low = std::min(low,value); high = std::max(high,value);
+                        mean = CutFieldTools::Mean(mean,value,++finite);
+                    }
                 }
-                const bool average = finite && high-low <= threshold;
+                const bool average = finite && CutFieldTools::AcceptSpread(low,high,minimum,maximum,options.ThresholdPercent);
                 for (auto e : region.second) {
                     const double original = valueAt(e,n);
-                    const double value = average && std::isfinite(original) ? sum/finite : original;
+                    const double value = average && std::isfinite(original) ? mean : original;
                     target->SetValue(RWCae::MeshPropertyEntityInfo(e,n),value);
                 }
             }
@@ -74,7 +74,7 @@ Handle(RWCae::MeshNVecProperty) RecoverCutField(const Handle(RWCae::MeshData)& m
     }
     result->SetDescription(field->Description()); result->SetTime(field->Time(),field->TimeStep());
     result->SetTimeStepDescription(field->TimeStepDescription()); result->SetTimeDisplayUnits(field->TimeDisplayUnits());
-    if (!before && result->IsVector()) { result->GetRawComponent(0)->SetDisplayUnits(field->GetRawComponent(0)->DisplayUnits()); }
+    if (!before && result->IsVector()) { CutFieldTools::CopyMetadata(field->GetRawComponent(0),result->GetRawComponent(0)); }
     result->UpdateComponents(); return result;
 }
 }

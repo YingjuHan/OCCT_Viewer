@@ -67,6 +67,8 @@ if (TARGET ViewDraw)
     add_test (NAME draw_cut_view COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view.tcl")
     set (DRAW_TEST_ENV
       "CSF_OCCTResourcePath=${OpenCASCADE_RESOURCE_DIR}"
+      "CSF_ShadersDirectory=${OpenCASCADE_RESOURCE_DIR}/Shaders"
+      "CSF_DrawPluginDefaults=${OpenCASCADE_RESOURCE_DIR}/DrawResources"
       "DRAWHOME=${OpenCASCADE_RESOURCE_DIR}/DrawResources"
       "DRAWDEFAULT=${OpenCASCADE_RESOURCE_DIR}/DrawResources/DrawDefault"
       "LD_LIBRARY_PATH=$<TARGET_FILE_DIR:ViewDraw>:${OpenCASCADE_LIBRARY_DIR}:$ENV{LD_LIBRARY_PATH}")
@@ -137,6 +139,9 @@ if (TARGET ViewDraw)
       add_test (NAME draw_cut_view_controls COMMAND "${OCCTV_DRAWEXE}" -i -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_controls.tcl")
       set_tests_properties (draw_cut_view_controls PROPERTIES ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-controls"
         PASS_REGULAR_EXPRESSION "CUT_VIEW_CONTROLS_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" RUN_SERIAL TRUE TIMEOUT 120)
+      if (WIN32)
+        set_tests_properties (draw_cut_view_controls PROPERTIES TIMEOUT 300)
+      endif()
       add_test (NAME draw_cut_view_iso_visual COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_iso.tcl")
       set_tests_properties (draw_cut_view_iso_visual PROPERTIES ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_ISO_VISUAL=1;CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-iso-images"
         PASS_REGULAR_EXPRESSION "CUT_VIEW_ISO_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" RUN_SERIAL TRUE TIMEOUT 60)
@@ -148,4 +153,18 @@ if (TARGET ViewDraw)
         PASS_REGULAR_EXPRESSION "CUT_VIEW_INTERACTION_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" RUN_SERIAL TRUE TIMEOUT 60)
     endif()
   endif()
+endif()
+
+# Windows loads shared OCCT/VTK and compiler runtimes from PATH, not LD_LIBRARY_PATH.
+if (WIN32)
+  get_filename_component (OCCTV_COMPILER_BIN "${CMAKE_CXX_COMPILER}" DIRECTORY)
+  get_filename_component (OCCTV_ZLIB_LIB_DIR "${ZLIB_LIBRARY}" DIRECTORY)
+  set (OCCTV_TEST_PATH "$<TARGET_FILE_DIR:ViewCaeGeom>;${OpenCASCADE_BINARY_DIR};${OCCTV_COMPILER_BIN};${OCCTV_ZLIB_LIB_DIR}/../bin")
+  if (OCCTV_USE_VTK)
+    string (APPEND OCCTV_TEST_PATH ";$<TARGET_FILE_DIR:VTK::CommonCore>")
+  endif()
+  string (APPEND OCCTV_TEST_PATH ";$ENV{PATH}")
+  string (REPLACE ";" "\\;" OCCTV_TEST_PATH "${OCCTV_TEST_PATH}")
+  get_property (OCCTV_REGISTERED_TESTS DIRECTORY PROPERTY TESTS)
+  set_property (TEST ${OCCTV_REGISTERED_TESTS} APPEND PROPERTY ENVIRONMENT "PATH=${OCCTV_TEST_PATH}")
 endif()

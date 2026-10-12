@@ -2,15 +2,19 @@
 
 ## 1. 接续范围与当前停点
 
-本说明记录 2026-10-12 工作区的开发停点。用户已暂停自动开发，当前只整理并提交接续文档。恢复功能开发前，应获得新的继续指令。
+用户已在 Windows 工作区发出继续开发指令。当前接续收尾 N02 曲面参考与
+N03 恢复数值/元数据，并重建原生验证环境。后文的 Linux 验证记录保留为历史证据；
+本次 Windows 配置与结果以本节及第 6 节的接续记录为准。
 
-- 仓库：`/home/hyj/Desktop/workspace/OCCT_Viewer`；分支：`develop`；整理前 HEAD：`d2428a5`。
+- 仓库：`D:/workspace/OpenCASCADE/OCCT_Viewer`；分支：`develop`；接续基线 HEAD：`95fb291`。
 - 目标：完成原生 Cut View Manager 的 N02-N09 及对应 TODO，实施、修复并通过 native/DRAW 验收。
 - 排除：Web/Vue/TypeScript、浏览器测试、WASM SDK 与打包。排除项不是 done。
-- 当前停在 N02 扩展曲面参考验收与 N03 恢复策略增量；N03 尚未整体完成，N04-N09 尚未实施。
-- 本次提交仅包含本说明。功能源码、测试、既有规划文档及用户的会话归档仍留在工作区，不随本说明提交。仅 checkout 本说明的提交不能复现功能实现，应保留并单独审查、提交相关工作区文件。
+- 本次已完成 N02 曲楔体/金字塔扩展参考及 Windows 双配置验收；当前阶段为 N03 恢复策略增量，
+  N03 尚未整体完成，N04-N09 尚未实施。
+- 本次功能、测试和文档纳入同一 Git 提交；保留用户既有修改及 `AGENTS.md`。
 
-接续时以本说明的最新证据为准，再同步旧文档中的状态。旧文档仍有“N03 queued”“31 cases”等历史描述，不代表最新源码不存在恢复策略，也不能据此把未完成阶段改为 done。
+接续时以本说明的最新证据为准。主交接、执行队列和设计中的当前 N03 状态已同步为 partial；
+历史 milestone 的 31/34 cases 记录保留，不代表当前 Windows 套件计数，也不能据此把未完成阶段改为 done。
 
 相关规划与说明：
 
@@ -34,24 +38,31 @@
 9. 保留 `AGENTS.md` 和用户既有修改；不要 reset、覆盖、删除或批量暂存不相关文件。
 10. 小模型截图、几何耗时及 48 类型矩阵通过，不等于所有数据均无 bug，也不等于满足百万单元全帧指标。
 
-结构探索使用安装的 `codebase-memory` skill。两个 MCP project 为 `home-hyj-Desktop-workspace-OCCT_Viewer` 与 `home-hyj-Desktop-workspace-OCCT_private`。每个依赖文件检查 index coverage；C++ 模板/Handle 相关解析不完整或关系不可信时，读取对应源码。不要重复此前已证实的结构发现。
+结构探索使用安装的 `codebase-memory` skill。当前 MCP project 为
+`D-workspace-OpenCASCADE-OCCT_Viewer` 与 `D-workspace-OpenCASCADE-OCCT_private`。
+每个依赖文件检查 index coverage；C++ 模板/Handle 相关解析不完整或关系不可信时，
+读取对应源码。恢复相关文件存在 partial/unusable/metadata_changed，已直接核对源码。
 
-## 3. 环境与构建位置
+## 3. 当前 Windows 环境与构建位置
 
 | 项目 | 路径或配置 |
 | --- | --- |
-| OCCT 源码 | `/home/hyj/Desktop/workspace/OCCT_private` |
-| 当前 OCCT SDK | `/home/hyj/Desktop/workspace/OCCT_private/install` |
-| OCCT SDK/DRAW 版本 | 当前使用 7.7 系列，本地 SDK 有交互修复 |
-| 可选原生 VTK SDK | `/home/hyj/Desktop/workspace/OCCT_Viewer/build/deps/vtk/sdk/usr`，9.5.2 |
-| VTK CMake package | `build/deps/vtk/sdk/usr/lib/x86_64-linux-gnu/cmake/vtk-9.5` |
-| VTK 源码/真实数据 | `/home/hyj/Desktop/workspace/vtk`；`build/ExternalData/Testing/Data` |
-| 主构建 | `build`，Debug，VTK ON，DRAW ON，Web OFF，DRAW visual ON |
-| 无 VTK 构建 | `build/cut-release`，Release，VTK OFF，DRAW ON，Web OFF，visual OFF |
-| 主构建产物 | `build/bind/`、`build/libd/` |
-| 无 VTK 产物 | `build/cut-release/bin/`、`build/cut-release/lib/` |
+| OCCT 源码 | `D:/workspace/OpenCASCADE/OCCT_private` |
+| 当前 OCCT SDK | `D:/workspace/OpenCASCADE/OCCT_private/install/mingw` |
+| OCCT SDK/DRAW 版本 | 7.7 系列，MinGW Debug，Tk grid 与 drag reset 修复已重建安装 |
+| 原生 VTK SDK | `D:/workspace/OpenCASCADE/3rdparty/mingw64/vtk-9.5.2-mingw64` |
+| VTK CMake package | 上述 SDK 下 `lib/cmake/vtk-9.5` |
+| VTK 源码/构建 | `D:/workspace/VTK/vtk-9.5.2` / `build-9.5.2-mingw64` |
+| VTK 官方数据 | `D:/workspace/VTK/test-data-9.5.2`，六个 SHA512 校验文件 |
+| 本项目当前构建 | `build/mingw`，MinGW Debug，VTK ON，DRAW/visual ON，Web OFF |
+| 无 VTK 验证 | 同一 cache 先配置 VTK OFF / visual OFF，8/8 各三次通过 |
+| 产物 | `build/mingw/bind/`、`build/mingw/libd/` |
 
-使用自定义 OCCT SDK，不能随意切换到系统 OCCT。已有补丁修复了 DRAW/Tk `grid` 命令冲突及空对象问题、阻塞事件和拖曳同步等；新机器上要核对补丁和实际安装库，而不只是检查源码文件存在。外部 VTK fixtures 不要修改。
+使用自定义 OCCT SDK。Windows 应用现有补丁中的 `AIS_ViewController.cxx` 和
+`Draw_GraphicCommands.cxx`；Linux X11 callback 改动不适用于 Windows。
+核对实际安装库，不能只检查源码。VTK 的 MinGW 导出补丁和可复现配置见
+[vtk-9.5.2-mingw.md](vtk-9.5.2-mingw.md)。已有 VTK 7.1.1 checkout 未改动，
+外部 VTK fixtures 未修改。
 
 ## 4. 已有架构与实现入口
 
@@ -132,7 +143,7 @@ VTK role 注意：三分量数组不会仅凭 component 数自动视为 vector�
 
 仍缺：完整张量不变量契约、显式界面 physical trace、OR 边界/cap 合并、manager 新恢复控件与控件验收、恢复设置的完整 session 持久化。N03/G04/G05 不得整体标为 done。
 
-### 6.2 N02 曲面家族参考扩展：单次通过，尚未重复验收
+### 6.2 N02 曲面家族参考扩展
 
 `test/native/CutAnalyticTests.cpp` 最后补充并重建了以下独立参考：
 
@@ -142,9 +153,40 @@ VTK role 注意：三分量数组不会仅凭 component 数自动视为 vector�
 - 曲金字塔 `27/37`：二次横向 shear，截面面积 `1/4`，负/正体积 `7/24`、`1/24`；截面边界 shift 为 `0.1`，另检查原始二次字段。
 - 新增楔体/金字塔和原有 tetra/hex/curve/polygon 用例一起运行，单次全部通过。
 
-停点还有测试源码编译警告：新 fixture 的 double-to-float 显式转换尚未整理。不要将这批新参考的单次通过冒充三次全量验收。
+Windows 接续已收尾 fixture 的 double-to-float 显式转换。上述八个家族现在生成
+独立 VTU fixture，由 `cut_view_analytic.tcl` 重新导入，检查解析模式、面积/体积、
+原始 FE 场和 constant CellData。最终重复验收结果应使用下节的 Windows 记录，
+不能把原 Linux 单次运行当作扩展后的三次全量证据。
 
-### 6.3 验证时间顺序
+### 6.3 Windows 恢复稳健性增量
+
+- `MeshCutFieldTools.h` 共用字段验证、稳定均值、范围阈值和元数据复制。
+- `Evaluate()` 与 recovery 验证所有 raw components，包含最后物理分量和 cached magnitude；
+  null、错误 storage/mapping/tuple count、未加载组件拒绝。
+- 默认投影和 element-node recovery 避免有限大数求和溢出；阈值比较支持相反符号极值
+  及有限局部 spread/溢出全局 range。NaN trace 保留，infinity recovery 输入拒绝。
+- `MeshNVecProperty::UpdateComponents()` 修复 vector magnitude offset 导致末分量未验证；
+  scalar/nodevec 模长改用 `hypot`，验证 `1e200` 和 `1e-200`。
+- field/time/component/magnitude 的 name、description、units、enabled 元数据保留。
+- MinGW DLL 的 reader/base/slice 构造析构导出与 Windows `near` 宏冲突已修复；
+  CTest 自动设置 DLL PATH、shader 和 DRAW plugin resources。
+- 两个批处理 Tk 滑块测试改为处理完整事件队列，确保 Windows command 回调已执行；
+  平面和等值面交互验证已通过。
+- 无 VTK 配置：全部 8 项各连续三次通过，4.56 秒，日志
+  `build/mingw/cut-native-build.log`、`cut-native-tests.log`。
+- VTK-enabled：全部 32 项各连续三次通过，232.34 秒。包含扩展后的八类曲面
+  native/DRAW 参考、48-cell 矩阵、真实 held-pointer/pixel、缓存、恢复和 32/32 控件。
+  日志 `build/mingw/cut-vtk-build.log`、`cut-vtk-tests.log`；当前 cache 保持 VTK/visual ON。
+  六个官方外部文件已校验；历史套件另外两个 fixture 缺失，不能称为旧 34 项完整复现。
+- Windows Tk 控件单次完整通过，32/32，包括模型替换/关闭中的拖曳取消。
+  测试使用真实 Tk 文件/确认对话框；Windows shell 对话框不在自动验收范围。
+  Debug 功能测试 Windows timeout 为 300 秒，不是交互帧性能指标。
+- `draw_cut_view_recovery_visual` 通过；已查看当前 `draw-recovery/held_3.png`
+  与 `lines.png`，非空截面、材料两侧跳变及截线可见。
+- 同时已查看 `draw-analytic/held_3.png`、`draw-vtk-cells/cell_12_held_2.png`，
+  解析截面和 VTK 拖曳云图非空，场梯度可见。上述目录均位于 `build/mingw/test/native/`。
+
+### 6.4 历史 Linux 验证时间顺序
 
 | 时间顺序 | 已证实的结果 | 不应推导出的结论 |
 | --- | --- | --- |
@@ -155,19 +197,23 @@ VTK role 注意：三分量数组不会仅凭 component 数自动视为 vector�
 
 截图：`build/test/native/draw-recovery/held_3.png` 已人工查看，材料跳变和非空几何可见；`lines.png` 由测试生成。其他历史图像见 `draw-analytic/`、`draw-cache/`、`draw-geometry/`、`draw-vtk-cells/`。
 
-暂停时已启动的构建均已结束，当前没有本轮仍需等待的构建/测试 session。此前 `git diff --check` 通过；新增文档会另做检查。
+上表描述原 Linux 暂停时的验证顺序；Windows 接续结果在上节单独记录。
 
-## 7. 恢复后的首批操作
+## 7. 当前接续与下一步
 
-1. 阅读本说明、当前 `git status` 和源码差异；保留所有既有文件及 staged/unstaged 状态，不从 HEAD 还原“未知新文件”。
-2. 检查 OCCT/VTK SDK、缓存配置及显示授权；用 MCP 检查相关范围，不重新从零重做整个项目调查。
-3. 收尾最新测试源码的编译警告；检查恢复策略元数据、所有分量 tuple 验证及极端数值，补充必要边界测试。
-4. 重建全部 affected targets；对增加曲面家族后的 native/DRAW suite 跑三次全量回归，再运行 VTK-disabled suite。
-5. 扩充 N02 的 DRAW 家族参考证据和明确支持范围，审核 precision/fallback 契约；通过相应 gate 后再关闭 N02，不泛化为“所有阶精确”。
-6. 继续 N03：physical interface traces、presentation OR union/cap ownership、manager controls 与完整验收。
-7. 再按 N04-N09 顺序推进；更新执行清单只引用实际证据，不批量把 queued 改为 done。
+1. 已完成：Windows SDK 准备、MinGW 编译问题、恢复元数据/所有分量/极端数值验证，
+   八类新曲面 DRAW 独立参考，以及 VTK-enabled/disabled 三次完整回归。
+2. 下一步 N03：完整张量不变量契约、physical interface traces、presentation OR union/cap ownership、
+   manager recovery controls 与对应实际交互验收；恢复设置持久化仍待完成。
+3. G03 仍保留一般曲面家族、precision/fallback 支持边界与高阶场等值面限制；
+   本次八类参考通过不能泛化为所有阶精确或百万单元全帧指标达标。
+4. 随后按 N04-N09 顺序推进；保留工作区修改，更新执行清单只引用实际证据。
 
-## 8. 可复用命令
+## 8. 历史 Linux 可复用命令
+
+当前 Windows 命令见 [test/README.md](../test/README.md#windows-mingw-native-configuration)
+及 [VTK SDK 配置](vtk-9.5.2-mingw.md)。以下保留原 Linux 环境命令，路径与 X11
+环境不能直接用于 Windows。
 
 ### 8.1 保留已有配置并重建
 
@@ -309,15 +355,15 @@ scvcutview model eval cut
 
 ## 10. 完整原生 TODO 状态速查
 
-下表是暂停时的状态；“待做”不表示前置模块毫无基础，“partial”也不能当完成。
+下表保留各阶段状态；“待做”不表示前置模块毫无基础，“partial”也不能当完成。
 
 | ID | 原生任务 | 暂停状态/下一步 |
 | --- | --- | --- |
 | R00 | held-drag、所有现有控件、崩溃修复 | verified；后续持续回归 |
 | G01 | 一阶 field isosurface | verified；高阶场等值面仍另行待做，不代替 plane |
 | G02 | sphere/cylinder、一般单元 | partial；全帧性能等仍待验收 |
-| G03 | 高阶几何与 FE、参考精度 | partial；新曲楔体/金字塔重复验收、DRAW 参考与支持边界审核 |
-| G04 | recovery/region/threshold/discontinuity | partial；最新增量已有三次回归，完整 tensor/trace/UI 待做 |
+| G03 | 高阶几何与 FE、参考精度 | partial；八类曲楔体/金字塔 native/DRAW 参考已三次验收，一般支持/精度边界待做 |
+| G04 | recovery/region/threshold/discontinuity | partial；数值、全分量、元数据及显示/物理分离已三次回归，完整 tensor/trace/UI 待做 |
 | G05 | 多 cut OR 边界/cap、opacity | 待做，N03 |
 | M01 | 模型生命周期、defaults、选择/激活分离 | verified |
 | M02 | datum/reference axes、各 shape 编辑 | 待做，N05 |
@@ -357,4 +403,5 @@ scvcutview model eval cut
 5. 视觉变化查看截图；性能变化记录全帧与内存测量，不能只报告非空画面。
 6. 更新执行文档中的具体证据、限制、命令和状态，再推进下一阶段。
 
-推荐接续指令：先收尾 N02 的新参考和 VTK-disabled acceptance，再完成 N03 的 trace、OR union 与原生控件；之后依 N04-N09 实施，保留原有回归与用户修改，Web/WASM 始终排除。
+推荐接续指令：继续 N03 的完整 tensor/trace、OR union 与原生控件；之后依 N04-N09 实施，
+保留原有回归与用户修改，Web/WASM 始终排除。Windows 本次数值/参考与双配置验收已完成。

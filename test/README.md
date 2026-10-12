@@ -255,12 +255,16 @@ times. Analytic second-order source boundaries remain the next N02 increment.
 
 ## Analytic Source Geometry
 
-`cut_analytic_tests` generates `build/test/native/cut-analytic-fixtures/bowed_tetra.vtu`.
+`cut_analytic_tests` generates `bowed_tetra.vtu` and eight curved wedge/pyramid fixtures
+in the native test build's `cut-analytic-fixtures/` directory.
 `cut_analytic` checks exact bowed-tetra volume/section area and quadratic FE fields,
 warped quadratic/triquadratic/Lagrange/rational-Bezier hexahedra, independently integrated
 rational reference volume, enclosed spheres, exact quadratic curves and planar quadratic
 polygons. It also checks source reuse, unsupported analytic order rejection and numerical
 fallback recovery. Original FE values and geometric measures are separate assertions.
+Wedge types `26/31/32/73/80`, rational Bezier wedge `80`, and pyramid types `27/37`
+have independent section/volume references; DRAW reads these generated fixtures and
+checks original affine/quadratic fields and constant CellData as well as geometry.
 
 ```tcl
 scvcutview model geometrymode required
@@ -292,9 +296,70 @@ ctest --test-dir build -R 'cut_analytic|draw_cut_view_analytic' --output-on-fail
 
 The new adapter also restores original Bezier-wedge face-node weights explicitly because some
 VTK versions index those weights with the face number instead of the face-node number. The
-existing six-family rational regression remains mandatory. All 31 native/DRAW cases pass
-three consecutive runs per case; the VTK-disabled native/DRAW build passes all six cases
-three times. G03's remaining reference evidence and N03-N09 are not completed by this increment.
+existing six-family rational regression remains mandatory. The initial analytic milestone
+passed 31 native/DRAW cases three times and six VTK-disabled cases three times.
+Current Windows recovery/reference increments and acceptance are recorded in
+[the native handoff](../DOCUMENT/cut-view-native-handoff.md). G03's general precision/family
+limits and the remaining N03-N09 work are not completed by this increment.
+
+## Display Recovery and Physical Fields
+
+`cut_recovery` and `draw_cut_view_recovery` cover region boundaries, thresholds,
+original element-node data, missing traces, signed FE interpolation and vector
+magnitude before/after averaging. Display recovery preserves metadata and validates
+all components, including the cached magnitude. Extreme finite means/ranges and
+vector norms are tested without relying on overflowed intermediate sums.
+
+```tcl
+scvcutview model recovery 100 0 material
+scvcutview model recovery 0 0 none
+scvcutview model recovery 100 1 none
+```
+
+The optional region field supplies one integer ID per original element. Element-node
+`eval` values are `{element node x y z value}`; nodal values remain `{x y z value}`
+and constant CellData remains a scalar list. The visual recovery test checks material
+jumps, synchronization and changed pixels during held motion, followed by abort.
+
+`MeshCutResult::PhysicalFields` maps the original field separately. Stress/heat-flow
+integration must remain unchanged by display recovery; missing original mapping
+on a recovered result fails explicitly. Tensor invariants, explicit physical
+interface-side selection, recovery widgets, OR union and session settings remain
+open N03 work.
+
+```powershell
+ctest --test-dir build/mingw -R 'cut_recovery|draw_cut_view_recovery' --output-on-failure --repeat until-fail:3
+```
+
+## Windows MinGW Native Configuration
+
+The current OCCT 7.7 SDK is `D:/workspace/OpenCASCADE/OCCT_private/install/mingw`.
+VTK 9.5.2 is installed at
+`D:/workspace/OpenCASCADE/3rdparty/mingw64/vtk-9.5.2-mingw64`; its source,
+minimal module configuration and required DLL export patch are documented in
+[vtk-9.5.2-mingw.md](../DOCUMENT/vtk-9.5.2-mingw.md).
+
+```powershell
+cmake -S . -B build/mingw -DOCCTV_BUILD_TESTS=ON -DOCCTV_BUILD_DRAW=ON `
+  -DOCCTV_BUILD_WEB_VIEWER=OFF -DOCCTV_USE_VTK=ON -DOCCTV_TEST_DRAW_VISUAL=ON `
+  -DVTK_DIR=D:/workspace/OpenCASCADE/3rdparty/mingw64/vtk-9.5.2-mingw64/lib/cmake/vtk-9.5 `
+  -DOCCTV_VTK_TEST_DATA=D:/workspace/VTK/test-data-9.5.2
+cmake --build build/mingw --target ViewDraw occtviewer_tests cut_view_tests quadric_cut_tests `
+  vtk_cell_cut_tests general_cut_cache_tests cut_geometry_tests cut_analytic_tests cut_recovery_tests --parallel 8
+ctest --test-dir build/mingw --output-on-failure --repeat until-fail:3 -j 4 --timeout 300
+```
+
+CTest supplies Windows DLL search paths and DRAW resources automatically. Numerical
+tests do not require a viewer; visual/interactive tests need an active Windows desktop.
+The Windows control test uses actual Tk file/confirmation dialogs so their widgets can
+receive generated events. Windows shell dialogs are excluded from this automated test;
+the manager's ordinary dialog calls are unchanged. Its Windows functional timeout is
+300 seconds; this is not a frame-performance threshold.
+Use `ctest -N` to check actual registration: the six available official external
+files produce 32 cases here, while the historical Linux data set registered 34.
+The absent two external files are documented rather than replaced with synthetic
+fixtures. Current build/test results are recorded in
+[the native handoff](../DOCUMENT/cut-view-native-handoff.md).
 
 ## OCCT SDK Fixes
 
