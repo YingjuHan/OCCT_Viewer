@@ -28,6 +28,15 @@ if {[catch {
         import_assert {[dict get $fallback errors] eq {} && [llength [dict get $fallback attempts]] == 2} "Native DRAW attempts"
         set first [lindex [dict get $fallback attempts] 0]
         import_assert {![dict get $first succeeded] && [llength [dict get $first errors]] > 0} "Rejected DRAW attempt lost"
+        scvcutview lines field point temperature 0
+        foreach field [scvcutview lines fields] {
+            import_assert {[dict get $field step] == -1} "Static fallback default field step changed"
+        }
+        scvcutview timed read [file join $fixtures polyline_time.vtu]
+        scvcutview timed field point temperature 0 0
+        foreach field [scvcutview timed fields] {
+            import_assert {[dict get $field step] == 0} "TimeValue explicit field step changed"
+        }
     } else {
         import_assert {[catch {scvcutview lines read [file join $fixtures polyline.vtp]}]} "OFF DRAW silently accepted Lines"
     }

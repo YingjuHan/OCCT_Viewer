@@ -116,6 +116,10 @@ are finite and strictly increasing; matching field identity, association, role,
 component count/names and tuple counts are required. Stable geometry also exposes
 multi-step fields on the primary mesh. Changing geometry exposes only initial
 fields there, with a warning; later fields belong to their own snapshots.
+Single static datasets without TimeValue preserve the existing field step `-1`
+for default DRAW binding. A valid dataset TimeValue supplies time with step `0`;
+series manifest time and step override either default.
+XML FieldData should declare NumberOfTuples (1 for TimeValue) for SDK import.
 
 VTM reads XML children in order, preserves named block paths, offsets original
 generic node/face indices and promotes merged scalar storage to double. Fields

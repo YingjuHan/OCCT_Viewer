@@ -119,10 +119,12 @@ bool VtkNativeReader::Perform(const TCollection_AsciiString& filename)
         }
         Handle(RWCae::MeshData) mesh = new RWCae::MeshData();
         double time = 0.0;
+        int step = -1; // Static fields retain the portable/DRAW default binding.
         if (const auto array = data->GetFieldData()->GetArray("TimeValue")) {
             if (array->GetNumberOfComponents() != 1 || array->GetNumberOfTuples() != 1
                 || !std::isfinite(array->GetComponent(0,0))) { throw std::runtime_error("TimeValue requires one finite scalar tuple"); }
             time = array->GetComponent(0,0);
+            step = 0;
         }
         for (vtkIdType n = 0; n < data->GetNumberOfPoints(); ++n) {
             double p[3]; data->GetPoint(n,p);
@@ -225,7 +227,7 @@ bool VtkNativeReader::Perform(const TCollection_AsciiString& filename)
                 Handle(RWCae::MeshNVecProperty) field = new RWCae::MeshNVecProperty(array->GetName(),array->GetNumberOfComponents(),
                     nodal ? RWCae::MeshPropertyBase::MappingType::Nodal : RWCae::MeshPropertyBase::MappingType::Elemental,type);
                 field->Init<RWCae::MeshScalarProperty>();
-                field->SetTime(time, 0);
+                field->SetTime(time, step);
                 for (int c = 0; c < array->GetNumberOfComponents(); ++c) {
                     auto component = Handle(RWCae::MeshScalarProperty)::DownCast(field->GetComponent(c));
                     const char* name = array->GetComponentName(c);

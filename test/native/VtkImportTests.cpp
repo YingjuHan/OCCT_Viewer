@@ -63,6 +63,10 @@ void fixtures()
     write("polyline.vtu", "<VTKFile type=\"UnstructuredGrid\" byte_order=\"LittleEndian\"><UnstructuredGrid>"
         "<Piece NumberOfPoints=\"4\" NumberOfCells=\"1\">" + points + "<Cells>" + topology +
         "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">4</DataArray></Cells>" + fields + "</Piece></UnstructuredGrid></VTKFile>");
+    write("polyline_time.vtu", "<VTKFile type=\"UnstructuredGrid\" byte_order=\"LittleEndian\"><UnstructuredGrid>"
+        "<FieldData><DataArray type=\"Float64\" Name=\"TimeValue\" NumberOfTuples=\"1\" format=\"ascii\">2.5</DataArray></FieldData>"
+        "<Piece NumberOfPoints=\"4\" NumberOfCells=\"1\">" + points + "<Cells>" + topology +
+        "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">4</DataArray></Cells>" + fields + "</Piece></UnstructuredGrid></VTKFile>");
     write("polyline.vtp", "<VTKFile type=\"PolyData\" byte_order=\"LittleEndian\"><PolyData>"
         "<Piece NumberOfPoints=\"4\" NumberOfVerts=\"0\" NumberOfLines=\"1\" NumberOfStrips=\"0\" NumberOfPolys=\"0\">"
         + points + "<Lines>" + topology + "</Lines>" + fields + "</Piece></PolyData></VTKFile>");
@@ -141,11 +145,21 @@ void outcomes(const Handle(Capture)& capture)
         require(mesh->GenericCells().size() == 1 && mesh->GenericCells()[0].Type == 4, "Polyline topology lost");
         require(mesh->Properties()[1]->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(0)) == 7,
             "CellData no longer bound to original polyline");
+        for (const auto& field : mesh->Properties()) {
+            require(field->TimeStep() == -1 && field->Time() == 0, "Static fallback lost default field binding");
+        }
 #else
         require(mesh.IsNull() && !report.succeeded && !report.errors.empty(), "OFF silently accepted unsupported cells");
         require(report.attempts.size() == 1 && !capture->Errors.empty(), "OFF diagnostics missing");
 #endif
     }
+#ifdef OCCTV_USE_VTK
+    mesh = load(loader, "polyline_time.vtu");
+    require(!mesh.IsNull(), "Timed fallback failed");
+    for (const auto& field : mesh->Properties()) {
+        require(field->TimeStep() == 0 && field->Time() == 2.5, "Dataset TimeValue lost explicit step binding");
+    }
+#endif
     capture->Errors.clear();
     require(load(loader, "invalid.vtu").IsNull(), "Invalid file accepted");
     report = loader.VtkReport();
