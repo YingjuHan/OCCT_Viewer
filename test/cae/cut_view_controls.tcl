@@ -171,6 +171,9 @@ proc ui_run {} {
     ui_pump
     set expected [ui_controls .scvcutmanager]
     ui_ok
+    ui_click .scvcutmanager.tools
+    ui_assert {[winfo exists .scvcuttools]} "Viewer tools did not open"
+    destroy .scvcuttools
     # Exercise DRAW and Tk grid in the same interactive interpreter, without replacing either.
     ui_assert {[llength [info commands ::tk::grid]]} "OCCT SDK lacks the Tk grid collision fix"
     ttk::frame .grid_probe; ttk::label .grid_probe.label -text Probe
@@ -472,10 +475,13 @@ proc ui_run {} {
     scvcutview $ui_model mouse down $px $py
     scvcutview $ui_model mouse move [expr {$px-10}] $py
     ui_assert {[dict get [scvcutview $ui_model handleinfo] dragging]} "Close-during-drag test did not start dragging"
+    set nativeHeld [scvcutview $ui_model nativeinfo]
+    ui_assert {[dict get $nativeHeld dragging] && [dict get $nativeHeld begin] > 0 && [dict get $nativeHeld update] > 0} "Native mouse drag events missing"
     ui_capture [file join $controls_output manager_controls.png]
     ui_click .scvcutmanager.close
     ui_assert {![winfo exists .scvcutmanager] && $::CutViewManager::timer eq ""} "Close left a window/timer"
     ui_assert {[dict get [scvcutview $ui_model handleinfo] id] eq ""} "Close left a positioning aid"
+    ui_assert {![dict get [scvcutview $ui_model nativeinfo] dragging] && [dict get [scvcutview $ui_model nativeinfo] abort] > 0} "Native mouse abort notification missing"
     foreach actual [dict get [ui_cut $id] plane] expectedValue $plane { ui_near $actual $expectedValue "Close did not cancel active plane drag" }
     scvcutview $ui_model clear
     # New models receive defaults once; replacements rebuild fields, bounds and controls.

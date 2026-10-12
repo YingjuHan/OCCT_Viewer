@@ -94,8 +94,9 @@ Standard_Boolean InteractiveCaeCutPlane::ProcessDragging(const Handle(AIS_Intera
     if (!accepted) { return false; }
     myDragging = theAction == AIS_DragAction_Start || theAction == AIS_DragAction_Update;
     if (theAction == AIS_DragAction_Update || theAction == AIS_DragAction_Abort) {
-        return updateCut(DisplayedPlane()->ToPlane());
+        if (!updateCut(DisplayedPlane()->ToPlane())) { return false; }
     }
+    NotifyDrag(theAction);
     return true;
 }
 
@@ -125,12 +126,14 @@ Standard_Boolean InteractiveCaeCutManipulator::ProcessDragging(const Handle(AIS_
 {
     if (theAction == AIS_DragAction_Stop) {
         StopTransform(true);
-        return myPlane->ApplyTransformation(true);
+        if (!myPlane->ApplyTransformation(true)) { return false; }
+        myPlane->NotifyDrag(theAction); return true;
     }
     const bool accepted = AIS_Manipulator::ProcessDragging(theCtx, theView, theOwner, theFrom, theTo, theAction);
     if (accepted && (theAction == AIS_DragAction_Update || theAction == AIS_DragAction_Abort)) {
-        return myPlane->ApplyTransformation(theAction == AIS_DragAction_Abort);
+        if (!myPlane->ApplyTransformation(theAction == AIS_DragAction_Abort)) { return false; }
     }
+    if (accepted) { myPlane->NotifyDrag(theAction); }
     return accepted;
 }
 
@@ -214,13 +217,15 @@ Standard_Boolean InteractiveCaeCutQuadricManipulator::ProcessDragging(const Hand
 {
     if (action == AIS_DragAction_Stop) {
         StopTransform(true);
-        return myShape->ApplyTransformation(true);
+        if (!myShape->ApplyTransformation(true)) { return false; }
+        myShape->NotifyDrag(action); return true;
     }
     const bool accepted = AIS_Manipulator::ProcessDragging(context,view,owner,from,to,action);
     if (accepted && action == AIS_DragAction_Start) { myShape->BeginDrag(); }
     if (accepted && (action == AIS_DragAction_Update || action == AIS_DragAction_Abort)) {
-        return myShape->ApplyTransformation(action == AIS_DragAction_Abort);
+        if (!myShape->ApplyTransformation(action == AIS_DragAction_Abort)) { return false; }
     }
+    if (accepted) { myShape->NotifyDrag(action); }
     return accepted;
 }
 }

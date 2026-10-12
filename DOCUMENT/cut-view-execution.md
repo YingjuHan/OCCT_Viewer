@@ -42,7 +42,7 @@ N02 closure passed: [queue and evidence](cut-view-n02-plan.md),
 [bounded audit](cut-view-n02-audit.md). The [N03 queue](cut-view-n03-plan.md) is now
 verified at [the closure scope](cut-view-n03-audit.md); all earlier increments
 remain in the regression suite. [N04](cut-view-n04-plan.md) is closed at its
-documented native contract; N05-N09 remain queued.
+documented native contract; N05 is closed at [its native audit](cut-view-n05-audit.md); N06 is active and N07–N09 remain queued.
 
 | ID | Task | Depends On | Acceptance | Status |
 | --- | --- | --- | --- | --- |
@@ -53,12 +53,12 @@ documented native contract; N05-N09 remain queued.
 | G04 | Cell recovery/averaging thresholds, region boundaries and discontinuity policies | G03 | Constant and recovered results verified across material boundaries; physical fields unchanged | verified at N03 contract: recovery/tensor/trace policies, original physical mapping, JSON v7 and 47/47 controls; full sessions remain N09 |
 | G05 | Multi-cut OR boundary merging, deduplication and shared opacity | G02 | Overlapping/touching cuts, no duplicate faces or darkened overlap, all masks | verified at N03.4 contract: actual OR, source/cap provenance, independent numerical cuts and transparent clouds; performance remains N08 |
 | M01 | Native model lifecycle, defaults X/Y/Z, selection independent of activation | R00 | Open/replace/close model tests and deterministic defaults | verified |
-| M02 | Datum positioning, reference axes and numeric editing for all shapes | G02, M01 | Local/global transforms, numeric and pointer edits agree | queued |
-| M03 | Per-cut/per-portion styles and common options with overrides | M01, G05 | Color/opacity/edges/visibility persistence and DRAW images | queued |
-| M04 | Contour options and legends with consistent source/section ranges | M03 | Scalar/vector/tensor ranges, empty/constant results, screenshots | queued |
-| M05 | Result node/element picking and section probes | G03, M04 | Source provenance, interpolated values and pointer selection | queued |
-| M06 | Vector/orientation plots and annotations | M04, M05 | Component/coordinate-system correctness and image checks | queued |
-| M07 | CAD sections and synchronization with global clipping | M02, M03 | CAD/mesh toggles, independent cuts, viewport lifecycle | queued |
+| M02 | Datum positioning, reference axes and numeric editing for all shapes | G02, M01 | Local/global transforms, numeric and pointer edits agree | verified at N05 |
+| M03 | Per-cut/per-portion styles and common options with overrides | M01, G05 | Color/opacity/edges/visibility persistence and DRAW images | verified at N05 |
+| M04 | Contour options and legends with consistent source/section ranges | M03 | Scalar/vector/tensor ranges, empty/constant results, screenshots | verified at N05 |
+| M05 | Result node/element picking and section probes | G03, M04 | Source provenance, interpolated values and pointer selection | verified at N05 |
+| M06 | Vector/orientation plots and annotations | M04, M05 | Component/coordinate-system correctness and image checks | verified at N05 |
+| M07 | CAD sections and synchronization with global clipping | M02, M03 | CAD/mesh toggles, independent cuts, viewport lifecycle | verified at N05 |
 | D01 | Deformed guide/range bounds and material-following reference frames | G03, M02 | Guides and intersections follow deformation consistently | partial: nodal guide/range bounds verified; material-following frames queued |
 | V01 | VTK Lines/polyline storage, import and rendering | G01 | Legacy/XML line fixtures, CellData mapping and DRAW pixels | verified at N04.2 native contract: ordinary scalar Viewer and Cut View; VTK-disabled general cells reject explicitly; browser excluded |
 | V02 | Remaining supported Legacy sections and explicit scope diagnostics | V01 | Format-specific fixtures and unsupported-section reports | verified at N04.3 format contract |
@@ -384,10 +384,12 @@ the 48-concrete-cell matrix and transparent cloud comparisons. Source repair:
 `3a1fd44`; diagnostics/transparent gate: `eba2a37`. Logs and explicit support
 limits are recorded in [the N03 audit](cut-view-n03-audit.md).
 At that N03 milestone, N04 became active. Current N04 status is in
-[its queue](cut-view-n04-plan.md); N05-N09 remain queued. Full-frame
+[its queue](cut-view-n04-plan.md); N05 is closed at [its native audit](cut-view-n05-audit.md); N06 is active and N07–N09 remain queued. Full-frame
 performance, complete native sessions and excluded Web/WASM work remain open.
 
 ## N04 Closure
 
 
-N04.8 closure: Final VTK ON **58/58**, OFF **22/22**, every case three times (174 / 66 executions; 547.47 / 41.50 seconds). DRAW/Viewer-disabled import/reference tests **2/2** each pass three times (0.52 seconds). The final gate preserves 47/47 Tk controls, the 48-cell matrix, independent N02 geometry/FE references, N03 physical/display fields, actual OR, curved caps and transparency. Ordinary Viewer images and all six kernel peak-memory gates were reviewed. Static field-step repair: 76d845b; first failed ON log retained. All current documents reflect the native support contract; N05-N09 remain queued. See cut-view-n04-audit.md.
+N04.8 closure: Final VTK ON **58/58**, OFF **22/22**, every case three times (174 / 66 executions; 547.47 / 41.50 seconds). DRAW/Viewer-disabled import/reference tests **2/2** each pass three times (0.52 seconds). The final gate preserves 47/47 Tk controls, the 48-cell matrix, independent N02 geometry/FE references, N03 physical/display fields, actual OR, curved caps and transparency. Ordinary Viewer images and all six kernel peak-memory gates were reviewed. Static field-step repair: 76d845b; first failed ON log retained. All current documents reflect the native support contract; N05 is closed at [its native audit](cut-view-n05-audit.md); N06 is active and N07–N09 remain queued. See cut-view-n04-audit.md.
+
+N05 closure: ON **61/61**, OFF **24/24**, headless **2/2**, every case three times. Real main/tools inventory **48+36**, original-FE pointer picking, HUD legend/vector/annotation/CAD images verified. See cut-view-n05-audit.md. N06 is active.

@@ -14,6 +14,11 @@
 #include <stdexcept>
 
 namespace ViewCaeGeom {
+const MeshCutPrimitiveTrace& MeshGeometryTraceSection::PhysicalProvenance(size_t primitive,
+    const MeshCutTraceOptions& options, const SignedValue& signedValue, double tolerance, bool lines) const
+{
+    return select((lines ? myLineTraces : myElementTraces).at(primitive),options,signedValue,tolerance);
+}
 bool MeshCutTraceOptions::IsValid(size_t elements) const
 {
     return Policy >= MeshCutTracePolicy::Lowest && Policy <= MeshCutTracePolicy::Region

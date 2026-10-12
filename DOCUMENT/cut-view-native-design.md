@@ -20,7 +20,7 @@ and OFF 14/14, each case three times, with 47/47 real native controls.
 general-cell display, validated format/series contracts, import budgets and local
 reference staging/reports. Its [final audit](cut-view-n04-audit.md) is verified;
 N04 is closed at that documented native scope.
-N05-N09 remain scheduled.
+N05 is closed at [its native audit](cut-view-n05-audit.md); N06 is active and N07–N09 remain scheduled.
 
 ## Existing Boundaries
 

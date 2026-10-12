@@ -18,8 +18,8 @@ Current execution is native only: Web/Vue/TypeScript and WASM tasks are excluded
 not completed. Project/session persistence below maps to the native session API.
 
 Final VTK ON **58/58**, OFF **22/22**, every case three times (174 / 66 executions; 547.47 / 41.50 seconds). DRAW/Viewer-disabled import/reference tests **2/2** each pass three times (0.52 seconds).
-N01–N04 are closed at their documented native scopes. See
-[the N04 audit](cut-view-n04-audit.md); N05–N09 remain queued.
+N01–N05 are closed at their documented native scopes. N05 final ON **61/61**, OFF **24/24**, headless **2/2**, each case three times; actual Tk inventory **48+36** controls. See
+[the N04 audit](cut-view-n04-audit.md); N05 is closed at [its native audit](cut-view-n05-audit.md); N06 is active and N07–N09 remain queued.
 Curved-family geometry/FE
 references, analytic precision fallback, high-order field isosurfaces, tensor/trace
 policies and actual presentation OR are included. N03 is verified at

@@ -11,6 +11,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <functional>
 
 namespace ViewCaeGeom {
 
@@ -52,6 +53,7 @@ struct MeshCutStatistics {
 class MeshVtkCutSource;
 class MeshCutTraceSource;
 struct MeshCutPresentation;
+struct MeshCutPrimitiveTrace;
 
 //! Sampled numerical isosurface controls. Field tolerances have field units;
 //! geometry tolerances remain in model units. This is not a certified root isolation.
@@ -97,6 +99,8 @@ struct MeshCutResult {
     Handle(RWCae::MeshNVecProperty) SourceField;
     Handle(RWCae::MeshNVecProperty) LineField;
     Handle(RWCae::MeshNVecProperty) PhysicalLineField;
+    //! Original FE owner/weights under physical trace selection, independent of display policy.
+    std::function<const MeshCutPrimitiveTrace&(size_t,bool)> PhysicalProvenance;
     //! OCCT measures of the cutting tool and source boundary (tessellated for general cells).
     std::array<double, 3> Volumes = {{0.0, 0.0, 0.0}};
     std::array<double, 3> Areas = {{0.0, 0.0, 0.0}};

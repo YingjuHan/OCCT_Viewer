@@ -7,6 +7,7 @@ set (_SRCFILES
   InteractiveAspectsManager.cpp
   InteractiveAxesManager.cpp
   InteractiveCaeMeshManager.cpp
+  NativeCutView.cpp
   InteractiveClippingManager.cpp
   InteractiveColorScaleManager.cpp
   InteractiveContext.cpp
@@ -40,6 +41,7 @@ set (_INCFILES
   InteractiveAspectsManager.h
   InteractiveAxesManager.h
   InteractiveCaeMeshManager.h
+  NativeCutView.h
   InteractiveClippingManager.h
   InteractiveColorScaleManager.h
   InteractiveContext.h

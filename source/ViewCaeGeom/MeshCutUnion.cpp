@@ -562,7 +562,8 @@ std::shared_ptr<MeshCutPresentation> BuildCutPresentationUnion(
     std::vector<std::array<Handle(UnionGeometry),3>> outputs(count);
     for (size_t c = 0; c < count; ++c) {
         auto& cut = artifact->Branches[c];
-        cut.PhysicalFields = {}; cut.PhysicalLineField.Nullify(); cut.LineField.Nullify(); cut.Fields = {};
+        cut.PhysicalFields = {}; cut.PhysicalLineField.Nullify(); cut.PhysicalProvenance = nullptr;
+        cut.LineField.Nullify(); cut.Fields = {};
         cut.Roots = {}; cut.Portions = {}; cut.BoundaryMesh = true; cut.PresentationOnly = true;
         for (int part = 0; part < 3; ++part) {
             if (!(cut.Definition.Visibility&(1u<<part))) { continue; }

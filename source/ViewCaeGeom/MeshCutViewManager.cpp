@@ -1168,6 +1168,9 @@ MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
                 sideTolerance = std::max(myIsoOptions.AbsoluteTolerance,myIsoOptions.RelativeTolerance*(high-low));
             }
             aResult.TraceTolerance = sideTolerance;
+            aResult.PhysicalProvenance = [section = anEntry->TraceSection,definition,signedValue,sideTolerance](size_t primitive, bool lines) -> const MeshCutPrimitiveTrace& {
+                return section->PhysicalProvenance(primitive,definition.PhysicalTrace,signedValue,sideTolerance,lines);
+            };
             // Resolve physical options even with no field so invalid edits can
             // be preflighted independently of contour binding.
             anEntry->TraceSection->MapPhysical(nullptr,definition.PhysicalTrace,signedValue,sideTolerance);

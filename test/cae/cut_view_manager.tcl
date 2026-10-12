@@ -61,6 +61,7 @@ namespace eval ::CutViewManager {
     variable serial 0
     variable timer ""
 }
+source [file join [file dirname [info script]] cut_view_tools.tcl]
 
 proc ::CutViewManager::invoke {command args} {
     variable status
@@ -532,6 +533,7 @@ proc ::CutViewManager::close {} {
     if {$timer ne ""} { after cancel $timer; set timer "" }
     if {$model ne "" && $selected ne ""} { catch {scvcutview $model handle $selected 0} }
     if {[winfo exists $w]} { destroy $w }
+    if {[winfo exists .scvcuttools]} { destroy .scvcuttools }
     set model ""; set selected ""
 }
 
@@ -718,6 +720,8 @@ proc scvcutmanager {theModel} {
         foreach suffix {Region Regions} { bind $w.traces.$role$suffix <Return> [list ::CutViewManager::invoke ::CutViewManager::trace $role] }
     }
     pack $w.traces -fill x -padx 8
+    ttk::button $w.tools -text "Viewer Tools" -command [list scvcuttools $theModel]
+    pack $w.tools -fill x -padx 8 -pady 3
     ttk::label $w.status -textvariable ::CutViewManager::status -wraplength 530 -foreground #a02020
     pack $w.status -fill x -padx 8
     ttk::button $w.close -text Close -command ::CutViewManager::close

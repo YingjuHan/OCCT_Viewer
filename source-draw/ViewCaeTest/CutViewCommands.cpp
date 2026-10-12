@@ -12,6 +12,8 @@
 #include <gp_Ax1.hxx>
 #include <Draw.hxx>
 #include <Image_AlienPixMap.hxx>
+#include <Viewer/NativeCutView.h>
+#include <DBRep.hxx>
 
 #include <cmath>
 #include <map>
@@ -62,6 +64,7 @@ struct CutModel {
     std::string Source;
     Handle(RWCae::MeshData) Mesh;
     Handle(ViewCae::InteractiveCaeCutView) View;
+    std::shared_ptr<Viewer::NativeCutView> Native;
     Handle(RWCae::MeshNVecProperty) Field;
     int Component = 0;
     Bnd_Box Bounds;
@@ -100,6 +103,7 @@ void removeHandle(CutModel& model)
         model.Quadric->GetContext()->Remove(model.Quadric,false);
     }
     model.Quadric.Nullify();
+    if (model.Native) { model.Native->ClearHandle(); }
     model.EditedCut.clear();
 }
 
@@ -215,7 +219,8 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             if (model.Mesh.IsNull()) {
                 throw std::runtime_error(model.ImportReport.errors.empty() ? "VTK import failed" : model.ImportReport.errors.front());
             }
-            model.View = new ViewCae::InteractiveCaeCutView(model.Mesh);
+            model.Native = std::make_shared<Viewer::NativeCutView>(model.Mesh);
+            model.View = model.Native->Display();
             for (RWCae::MeshEntityId n = 0; n < model.Mesh->NbNodes(); ++n) {
                 const auto& p = model.Mesh->Nodes()[n];
                 model.Bounds.Add(gp_Pnt(p.x(), p.y(), p.z()));
@@ -236,6 +241,7 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             if (displayed) {
                 model.View->Synchronize();
                 ViewerTest::Display(name.c_str(), model.View, true);
+                if (!model.Native->Attach(ViewerTest::GetAISContext(),ViewerTest::CurrentView())) { throw std::runtime_error(model.Native->LastError()); }
             }
             di << "points " << (int)model.Mesh->NbNodes() << " cells " << (int)model.Mesh->NbIndexedElems()
                << " fields " << model.Mesh->Properties().Size();
@@ -246,7 +252,103 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
         auto& model = found->second;
         auto& cuts = model.View->Cuts();
         bool ok = false;
-        if (action == "importreport" && argc == 3) {
+        auto printProbe = [&](const ViewCae::MeshCutProbe& probe) {
+            di << "position {" << probe.Position.x() << " " << probe.Position.y() << " " << probe.Position.z()
+               << "} element " << (int)probe.SourceElement << " values {";
+            for (double v : probe.Values) { di << v << " "; } di << "} nodes {";
+            for (const auto& n : probe.SourceNodes) { di << "{" << (int)n.first << " " << n.second << "} "; } di << "}";
+        };
+        if (action == "datum" && argc == 16) {
+            ViewCaeGeom::MeshCutFrame frame;
+            for (int i = 0; i < 3; ++i) {
+                frame.Origin[i] = cutReal(argv[4+i]); frame.X[i] = cutReal(argv[7+i]);
+                frame.Y[i] = cutReal(argv[10+i]); frame.Z[i] = cutReal(argv[13+i]);
+            }
+            if (!model.Native->SetDatum(argv[3],frame)) { throw std::invalid_argument(model.Native->LastError()); }
+            ok = true;
+        } else if (action == "localmove" && (argc == 9 || argc == 12)) {
+            auto definitions = cuts.Definitions();
+            auto definition = std::find_if(definitions.begin(),definitions.end(),[&](const auto& d) { return d.Id == argv[3]; });
+            if (definition == definitions.end()) { throw std::invalid_argument("Unknown local cut"); }
+            if (definition->Shape == ViewCaeGeom::MeshCutShape::Plane && argc == 9) {
+                definition->Plane = Graphic3d_Vec4d(cutReal(argv[5]),cutReal(argv[6]),cutReal(argv[7]),cutReal(argv[8]));
+            } else if ((definition->Shape == ViewCaeGeom::MeshCutShape::Sphere || definition->Shape == ViewCaeGeom::MeshCutShape::Cylinder) && argc == 12) {
+                definition->Center = Graphic3d_Vec3d(cutReal(argv[5]),cutReal(argv[6]),cutReal(argv[7]));
+                definition->Axis = Graphic3d_Vec3d(cutReal(argv[8]),cutReal(argv[9]),cutReal(argv[10])); definition->Radius = cutReal(argv[11]);
+            } else { throw std::invalid_argument("Local edit arguments do not match the cut shape"); }
+            if (!model.Native->Edit(*definition,argv[4])) { throw std::invalid_argument(model.Native->LastError()); }
+            ok = true;
+        } else if (action == "axes" && argc == 6) {
+            ok = model.Native->SetReferenceAxes(argv[3],cutBoolean(argv[4]),cutReal(argv[5]));
+            if (!ok) { throw std::invalid_argument(model.Native->LastError()); }
+        } else if (action == "cutstyle" && (argc == 5 || argc == 8)) {
+            const int portion = cutInteger(argv[4]);
+            if (portion < 0 || portion > 2) { throw std::invalid_argument("Style portion must be 0, 1 or 2"); }
+            const auto part = (ViewCaeGeom::MeshCutPortion)portion;
+            if (argc == 5) {
+                const auto style = model.View->EffectiveStyle(argv[3],part);
+                di << "transparency " << style.Transparency << " width " << style.LineWidth << " mode " << (int)style.Mode; return 0;
+            }
+            if (std::string(argv[3]) == "defaults") {
+                auto style = model.View->Style(part); style.Transparency = (float)cutReal(argv[5]); style.LineWidth = (float)cutReal(argv[6]);
+                style.Mode = (ViewCae::InteractiveCaeMeshPrsMode)cutInteger(argv[7]); model.View->SetStyle(part,style);
+            } else {
+                auto style = model.View->EffectiveStyle(argv[3],part); style.Transparency = (float)cutReal(argv[5]); style.LineWidth = (float)cutReal(argv[6]);
+                style.Mode = (ViewCae::InteractiveCaeMeshPrsMode)cutInteger(argv[7]); model.View->SetStyle(argv[3],part,style);
+            }
+            ok = true;
+        } else if (action == "clearstyle" && argc == 5) {
+            model.View->ClearStyle(argv[3],(ViewCaeGeom::MeshCutPortion)cutInteger(argv[4])); ok = true;
+        } else if (action == "contour" && (argc == 3 || argc == 8)) {
+            auto options = model.View->ContourOptions();
+            if (argc == 3) {
+                di << "automatic " << (int)options.AutomaticRange << " minimum " << options.Minimum << " maximum " << options.Maximum
+                   << " legend " << (int)options.ShowLegend << " intervals " << options.Intervals << " state " << (int)model.View->ContourState(); return 0;
+            }
+            options.AutomaticRange = cutBoolean(argv[3]); options.Minimum = cutReal(argv[4]); options.Maximum = cutReal(argv[5]);
+            options.ShowLegend = cutBoolean(argv[6]); options.Intervals = cutInteger(argv[7]); model.View->SetContourOptions(options); ok = true;
+        } else if (action == "probe" && argc == 7) {
+            const int index = cutInteger(argv[5]), portion = cutInteger(argv[4]);
+            if (index < 0) { throw std::invalid_argument("Negative probe index"); }
+            const auto probe = model.View->Probe(argv[3],(ViewCaeGeom::MeshCutPortion)portion,index,cutBoolean(argv[6]));
+            printProbe(probe); return 0;
+        } else if (action == "picked" && argc == 3) {
+            const auto context = ViewerTest::GetAISContext();
+            if (context.IsNull()) { throw std::invalid_argument("Picking requires a view"); }
+            const auto owner = Handle(ViewCae::MeshCutPickOwner)::DownCast(context->DetectedOwner());
+            printProbe(model.View->Probe(owner)); return 0;
+        } else if (action == "annotation" && argc == 9) {
+            const int index = cutInteger(argv[5]); if (index < 0) { throw std::invalid_argument("Negative annotation probe"); }
+            const auto probe = model.View->Probe(argv[3],(ViewCaeGeom::MeshCutPortion)cutInteger(argv[4]),index,cutBoolean(argv[6]));
+            ok = model.Native->AddAnnotation(argv[7],probe,argv[8]);
+        } else if (action == "annotationsclear" && argc == 3) {
+            model.Native->ClearAnnotations(); ok = true;
+        } else if (action == "vectors" && (argc == 4 || argc == 10)) {
+            if (argc == 4 && std::string(argv[3]) == "none") { model.View->SetVectorField(nullptr); ok = true; }
+            else if (argc == 10) {
+                const std::string mapping(argv[3]); if (mapping != "point" && mapping != "cell") { throw std::invalid_argument("Invalid vector mapping"); }
+                Handle(RWCae::MeshNVecProperty) vector;
+                for (const auto& candidate : model.Mesh->Properties()) {
+                    if (candidate->Name() == argv[4] && candidate->IsNodal() == (mapping == "point") && candidate->TimeStep() == cutInteger(argv[5])) {
+                        if (!vector.IsNull()) { throw std::invalid_argument("Ambiguous vector field"); } vector = candidate;
+                    }
+                }
+                if (vector.IsNull()) { throw std::invalid_argument("Vector field not found"); }
+                model.View->SetVectorField(vector,cutReal(argv[6]),cutReal(argv[7]),cutBoolean(argv[8]));
+                if (!cutBoolean(argv[9])) { model.View->SetVectorField(nullptr); } ok = true;
+            }
+        } else if (action == "pickmode" && argc == 4) {
+            const int mode = cutInteger(argv[3]); if (mode < 0 || mode > 2 || ViewerTest::GetAISContext().IsNull()) { throw std::invalid_argument("Pick mode requires view and 0/1/2"); }
+            ViewerTest::GetAISContext()->Deactivate(model.View);
+            if (mode) { ViewerTest::GetAISContext()->Activate(model.View,mode); } ok = true;
+        } else if (action == "cadsection" && argc == 6) {
+            ok = model.Native->SetCadSection(DBRep::Get(argv[3]),argv[4],cutBoolean(argv[5]));
+            if (!ok) { throw std::invalid_argument(model.Native->LastError()); }
+        } else if (action == "globalclip" && argc == 8) {
+            ok = model.Native->SetGlobalClip(Graphic3d_Vec4d(cutReal(argv[3]),cutReal(argv[4]),cutReal(argv[5]),cutReal(argv[6])),cutBoolean(argv[7]));
+        } else if (action == "cadclear" && argc == 3) {
+            model.Native->ClearCadSection(); ok = true;
+        } else if (action == "importreport" && argc == 3) {
             const auto& report = model.ImportReport;
             auto messages = [&](const std::vector<std::string>& values) {
                 di << " {";
@@ -267,6 +369,12 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
                 di << " warnings"; messages(attempt.warnings); di << "}";
             }
             di << "}";
+            return 0;
+        } else if (action == "nativeinfo" && argc == 3) {
+            const auto counts = model.Native->EventCounts();
+            di << "generation " << std::to_string(model.Native->Generation()).c_str() << " dragging " << (int)model.Native->IsDragging();
+            const char* names[] = {"begin","update","commit","abort","close"};
+            for (int i = 0; i < 5; ++i) { di << " " << names[i] << " " << std::to_string(counts[i]).c_str(); }
             return 0;
         } else if (action == "info" && argc == 3) {
             di << "generation " << std::to_string(model.Generation).c_str() << " source";
@@ -411,29 +519,10 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             if (!show) { removeHandle(model); }
             else if (model.EditedCut != argv[3] || (model.Plane.IsNull() && model.Quadric.IsNull())
                 || gizmo != !model.Manipulator.IsNull()) {
-                Handle(ViewCae::InteractiveCaeCutPlane) plane;
-                Handle(ViewCae::InteractiveCaeCutQuadric) quadric;
-                for (const auto& cut : cuts.Definitions()) {
-                    if (cut.Id != argv[3]) { continue; }
-                    if (cut.Shape == ViewCaeGeom::MeshCutShape::Plane) {
-                        plane = new ViewCae::InteractiveCaeCutPlane(model.View,argv[3],model.Bounds);
-                    } else if (cut.Shape == ViewCaeGeom::MeshCutShape::Sphere || cut.Shape == ViewCaeGeom::MeshCutShape::Cylinder) {
-                        quadric = new ViewCae::InteractiveCaeCutQuadric(model.View,argv[3],model.Bounds);
-                    }
-                    break;
-                }
-                if (plane.IsNull() && quadric.IsNull()) { throw std::invalid_argument("Cut has no geometric positioning aid"); }
                 removeHandle(model);
-                model.EditedCut = argv[3]; model.Plane = plane; model.Quadric = quadric;
-                Handle(AIS_InteractiveObject) guide = !plane.IsNull() ? Handle(AIS_InteractiveObject)(plane)
-                    : Handle(AIS_InteractiveObject)(quadric);
-                ctx->Display(guide,false);
-                if (gizmo) {
-                    if (!plane.IsNull()) { model.Manipulator = new ViewCae::InteractiveCaeCutManipulator(plane); }
-                    else { model.Manipulator = new ViewCae::InteractiveCaeCutQuadricManipulator(quadric); }
-                    model.Manipulator->Attach(guide,AIS_Manipulator::OptionsForAttach().SetAdjustPosition(false));
-                    model.Manipulator->SetPosition(!plane.IsNull() ? plane->Frame() : quadric->Frame());
-                }
+                if (!model.Native->ShowHandle(argv[3],gizmo)) { throw std::invalid_argument(model.Native->LastError()); }
+                model.EditedCut = argv[3]; model.Plane = model.Native->PlaneHandle(); model.Quadric = model.Native->QuadricHandle();
+                model.Manipulator = model.Native->Manipulator();
                 if (!ViewerTest::CurrentEventManager().IsNull()) { ViewerTest::CurrentEventManager()->SetAllowDragging(true); }
             } else { refreshHandle(model); }
             ctx->UpdateCurrentViewer();
@@ -516,7 +605,8 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
                 break;
             }
         } else if (action == "field" && argc == 4 && std::string(argv[3]) == "none") {
-            model.Field.Nullify(); model.Component = 0; model.View->SetField(nullptr); ok = true;
+            if (!model.Native->BindField({})) { throw std::invalid_argument(model.Native->LastError()); }
+            model.Field.Nullify(); model.Component = 0; ok = true;
         } else if ((action == "add" || action == "move") && argc == 8) {
             Graphic3d_Vec4d plane(cutReal(argv[4]), cutReal(argv[5]), cutReal(argv[6]), cutReal(argv[7]));
             ok = action == "add" ? cuts.AddPlane(argv[3], plane) : cuts.SetPlane(argv[3], plane);
@@ -683,7 +773,7 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             for (const auto& field : model.Mesh->Properties()) {
                 if (field->Name() == argv[4] && field->IsNodal() == (mapping == "point") && field->TimeStep() == step) {
                     const int component = cutInteger(argv[5]);
-                    model.View->SetField(field, component);
+                    if (!model.Native->BindField({argv[4],mapping == "point",component,step})) { throw std::invalid_argument(model.Native->LastError()); }
                     model.Field = field;
                     model.Component = component;
                     ok = true;
@@ -783,9 +873,11 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             if (ViewerTest::GetAISContext().IsNull()) { throw std::runtime_error("Initialize a view with vinit first"); }
             model.View->Synchronize();
             ViewerTest::Display(name.c_str(), model.View, true);
+            if (!model.Native->Attach(ViewerTest::GetAISContext(),ViewerTest::CurrentView())) { throw std::runtime_error(model.Native->LastError()); }
             return 0;
         } else if (action == "clear" && argc == 3) {
             removeHandle(model);
+            model.Native->Close();
             if (!ViewerTest::GetAISContext().IsNull()) { ViewerTest::GetAISContext()->Remove(model.View, true); }
             models.erase(found);
             return 0;
@@ -798,7 +890,7 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
         }
         refreshHandle(model);
         if (!ViewerTest::GetAISContext().IsNull() && ViewerTest::GetAISContext()->IsDisplayed(model.View)) {
-            model.View->Synchronize();
+            if (!model.Native->Refresh(false)) { throw std::runtime_error(model.Native->LastError()); }
             ViewerTest::GetAISContext()->Redisplay(model.View, true);
         }
         return 0;
@@ -833,6 +925,14 @@ void ViewCaeTest::CutViewCommands::Factory(Draw_Interpretor& di)
         "  | isooptions [fieldAbsoluteTolerance fieldRelativeTolerance minimumDepth limit maxPrimitives]\n"
         "  | geometrymode [numerical/preferred/required]\n"
         "  | handle id 0/1 [gizmo0/1] | handleinfo | fit | field none\n"
+        "  | datum name originX originY originZ Xx Xy Xz Yx Yy Yz Zx Zy Zz\n"
+        "  | localmove id datum a b c d (plane) / cx cy cz ax ay az radius (quadric)\n"
+        "  | axes datum/global show length | nativeinfo | pickmode 0/1/2\n"
+        "  | cutstyle id/defaults portion [transparency width mode] | clearstyle id portion\n"
+        "  | contour [automatic min max legend intervals] | probe id portion index node0/1\n"
+        "  | vectors none / mapping field step scale sampling orientation show\n"
+        "  | annotation id portion index node0/1 annotationId text | annotationsclear\n"
+        "  | cadsection shape cut syncClip | cadclear | globalclip a b c d enabled\n"
         "  | project worldX worldY worldZ | mouse move/down/up/abort pixelX pixelY",
         __FILE__, cutView, "SC Viewer CAE Prs");
 }

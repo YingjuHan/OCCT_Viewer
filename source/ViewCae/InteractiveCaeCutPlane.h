@@ -19,6 +19,7 @@ public:
     Standard_EXPORT bool ApplyTransformation(bool theCommit);
     bool IsDragging() const { return myDragging; }
     int DragUpdates() const { return myDragUpdates; }
+    void NotifyDrag(AIS_DragAction action) { myCutView->NotifyDrag(action); }
     Standard_EXPORT Standard_Boolean ProcessDragging(const Handle(AIS_InteractiveContext)& theCtx,
         const Handle(V3d_View)& theView, const Handle(SelectMgr_EntityOwner)& theOwner,
         const Graphic3d_Vec2i& theFrom, const Graphic3d_Vec2i& theTo, AIS_DragAction theAction) override;
@@ -58,6 +59,7 @@ public:
     void BeginDrag() { myDragging = true; }
     bool IsDragging() const { return myDragging; }
     int DragUpdates() const { return myDragUpdates; }
+    void NotifyDrag(AIS_DragAction action) { myCutView->NotifyDrag(action); }
     bool IsCylinder() const { return myBaseline.Shape == ViewCaeGeom::MeshCutShape::Cylinder; }
 private:
     Handle(InteractiveCaeCutView) myCutView;

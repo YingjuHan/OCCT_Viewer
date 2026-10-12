@@ -46,6 +46,8 @@ public:
         SignedValue signedValue, double tolerance);
     Standard_EXPORT Handle(RWCae::MeshNVecProperty) MapPhysical(const Handle(RWCae::MeshNVecProperty)& field,
         const MeshCutTraceOptions& options, const SignedValue& signedValue, double tolerance, bool lines = false) const;
+    Standard_EXPORT const MeshCutPrimitiveTrace& PhysicalProvenance(size_t primitive,
+        const MeshCutTraceOptions& options, const SignedValue& signedValue, double tolerance, bool lines = false) const;
     Standard_EXPORT Handle(RWCae::MeshNVecProperty) CalculateProperty(
         const Handle(RWCae::MeshNVecProperty)& field, const MeshGeomElem* element = nullptr,
         const std::vector<RWCae::MeshEntityId>* nodes = nullptr) const override;

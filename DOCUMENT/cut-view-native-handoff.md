@@ -8,7 +8,7 @@ N03.4 实际 OR 并集/透明显示均已验收。N03.5 完整双配置闭环审
 N03 已按 [原生支持契约](cut-view-n03-audit.md) 闭环。最新证据在第 23 节，
 旧 milestone 记录保留为历史。N04.1–N04.8 已验收，N04 已按原生支持范围闭环，
 见 [N04 队列](cut-view-n04-plan.md) 和 [闭环审计](cut-view-n04-audit.md)。
-N05–N09 尚未启动。第 24 节及后续各项保留分项证据，当前状态以本节为准。
+N05 已按 [闭环审计](cut-view-n05-audit.md) 验收；N06 正在开发，N07–N09 依次推进。第 24 节及后续各项保留分项证据，当前状态以本节为准。
 后文的 Linux 验证记录保留为历史证据；
 本次 Windows 配置与结果以本节和末尾 N04.8 闭环记录为准；第 6 节保留先前增量证据。
 
@@ -19,7 +19,7 @@ N05–N09 尚未启动。第 24 节及后续各项保留分项证据，当前状
   N02.4 `7910a48`、N03.1 `2caeb2f`、N03.2 `17f421c` 已提交；
   N03.3 `f719eeb`、N03.4a `db6268b`、N03.4b `addbb03`、N03.4c `eba2a37` 已提交；
   曲面 cap/内部面修复 `3a1fd44`、N03 闭环文档 `6bacc14` 已提交；
-  N01–N04 已按支持范围闭环；N05–N09 尚未实施。
+  N01–N05 已按支持范围闭环；N06 正在实施，N07–N09 排队。
 - N04.1–N04.7 提交：`68fe366`、`e1a45a4`、`82eaf55`、`65c4352`、`b1ada38`、`5c8c9e3`、`dbfe66b`；每项之后均显式刷新 MCP 索引。
 - 每个验收工作项单独提交；保留用户既有修改及 `AGENTS.md`。
 
@@ -697,3 +697,7 @@ Nested VTM and Legacy/XML leaves now share restricted native fallback; explicit 
 
 
 N04.8 closure: Final VTK ON **58/58**, OFF **22/22**, every case three times (174 / 66 executions; 547.47 / 41.50 seconds). DRAW/Viewer-disabled import/reference tests **2/2** each pass three times (0.52 seconds). The final gate preserves 47/47 Tk controls, the 48-cell matrix, independent N02 geometry/FE references, N03 physical/display fields, actual OR, curved caps and transparency. Ordinary Viewer images and all six kernel peak-memory gates were reviewed. Static field-step repair: 76d845b; first failed ON log retained. All current documents reflect the native support contract; N05-N09 remain queued. See cut-view-n04-audit.md.
+
+## N05 闭环证据
+
+最新编译后 VTK ON 61/61（1196.43 秒）、OFF 24/24（59.78 秒）、headless 2/2（0.37 秒），每项连续三次。实际 Tk 48+36 控件、原始 FE 鼠标拾取和截图已验收。最终日志为各配置 cut-n05-final-gate.log/headless cut-n05-gate.log；旧失败日志保留。后续 N06–N09 的预备文件尚未计作完成。
