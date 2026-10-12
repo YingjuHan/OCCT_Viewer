@@ -23,7 +23,8 @@ static constexpr ViewCae::MeshPartType PARTS_LIST[] = {ViewCae::MeshPartType::Tr
                                                         ViewCae::MeshPartType::Centroids3d,
                                                         ViewCae::MeshPartType::Centroids2d,
                                                         ViewCae::MeshPartType::MinMaxAnnotations,
-                                                        ViewCae::MeshPartType::GroupsInfo};
+                                                        ViewCae::MeshPartType::GroupsInfo,
+                                                        ViewCae::MeshPartType::GeneralCells};
 
 static constexpr const char* NAME_MIN_VALUE = "min";
 static constexpr const char* NAME_MAX_VALUE = "max";
@@ -191,6 +192,7 @@ void MeshPresentationScalar::updateElementsVisibility()
     aParts(MeshPartType::Centroids2d)->SetShow(toShow2d && toShowCentr);
     aParts(MeshPartType::MinMaxAnnotations)->SetShow(aPrsProps->ToShowMinMax());
     aParts(MeshPartType::GroupsInfo)->SetShow(aPrsProps->ToShowGroupsInfo());
+    aParts(MeshPartType::GeneralCells)->SetShow(true);
 }
 
 // ================================================================
@@ -261,6 +263,7 @@ void MeshPresentationScalar::updateUsedProps()
         for (const TCollection_AsciiString& aPropId : aPropsToAdd) {
             addUsedPerPartProp(MeshPartType::Triangles3d, aPropId);
             addUsedPerPartProp(MeshPartType::Triangles2d, aPropId);
+            addUsedPerPartProp(MeshPartType::GeneralCells, aPropId);
             addUsedPerPartProp(MeshPartType::MinMaxAnnotations, aPropId);
             if (aProp.Property->IsNodal()) {
                 addUsedPerPartProp(MeshPartType::Points, aPropId);
@@ -801,6 +804,7 @@ void MeshPresentationScalar::OnPropertiesUpdated(const NCollection_Map<Handle(RW
     std::vector<MeshPartType> aPartsToUpdate;
     aPartsToUpdate.push_back(MeshPartType::Triangles3d);
     aPartsToUpdate.push_back(MeshPartType::Triangles2d);
+    aPartsToUpdate.push_back(MeshPartType::GeneralCells);
     aPartsToUpdate.push_back(MeshPartType::MinMaxAnnotations);
     if (aProp->IsNodal()) {
         aPartsToUpdate.push_back(MeshPartType::Points);

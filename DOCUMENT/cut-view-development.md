@@ -31,6 +31,10 @@ for SDK paths, logs, missing historical external fixtures and remaining work.
 ## Verified Native Work
 
 - [x] Native tests and DRAW batch/visual Tcl regressions under `test/`.
+- [x] N04.2 ordinary scalar Viewer points, Lines/polyline and general VTK boundaries,
+  original CellData/FE mapping and ordinary `scvreadmesh` rendered field switching.
+  Full ON 51/51 and OFF 16/16 pass; scoped import tests pass three times.
+  See [the Viewer contract](cut-view-viewer.md). N04.3-N04.8 remain active/queued.
 - [x] Legacy ASCII/big-endian binary and XML inline/appended/raw/zlib decoding.
 - [x] Connectivity/tuple validation, integer narrowing checks, and reader diagnostics.
 - [x] Multiple Pieces, VTM references, fractional series times, and vector/tensor roles.

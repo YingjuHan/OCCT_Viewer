@@ -639,3 +639,23 @@ Tk inventory 仍 **47/47**。图片 `build/mingw/test/native/draw-import/`
 下一项 N04.2：普通 Viewer 的点、line/polyline、一般 VTK 单元与原始字段
 显示。N04 整体仍 active；变化拓扑 series、格式矩阵、资源限额及相对引用
 staging 未完成，不能因本项诊断/发布基础通过就宣称 N04 闭环。
+
+## 25. N04.2 — 普通 native Viewer 一般单元显示
+
+普通 scalar presentation 接入 `MeshPartGeneralCells`，复用已验证的原始 VTK
+单元求值与可信 internal-face 过滤，产生点、线和表面/体边界图元。
+每个图元保留 original indexed element 与原始 FE vertex weights；CellData
+不经节点投影替换。节点/单元结果切换、类型可见性和显示模式变化均更新图元。
+独立点图元使用普通点颜色/尺寸，修复白背景不可见的问题。
+
+定向 ON 3/3、OFF 2/2 每项三次通过（10.15 / 0.65 秒）；最终全量 ON
+51/51（188.80 秒）、OFF 16/16（12.84 秒）各一次通过。日志为两配置的
+`cut-n04-viewer-focused.log` / `cut-n04-viewer-full.log`。首次 ON 全量的
+pure-point 白色显示失败保留在 `cut-n04-viewer-first-full.log`，修复后全套重跑。
+图片 `draw-import/ordinary-*` 已检查：纯点、Legacy/VTU/VTP polyline、混合
+点线面、二次曲线节点结果、一般 voxel；数值检查含 affine / quadratic FE
+与原始 CellData。N03 47/47 Tk 与全部几何/物理/OR 回归保持通过。
+
+契约见 [普通 Viewer](cut-view-viewer.md)。本项闭环后提交并刷新 MCP 索引。
+N04 已完成 2/8 验收项，整体仍 active；下一项 N04.3 格式范围和诊断，随后
+推进每步几何/拓扑 staging、安全矩阵、资源限额和相对引用闭环。

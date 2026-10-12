@@ -3,6 +3,7 @@
 #include <Viewer/InteractiveCaeMeshManager.h>
 #include <ViewBase/IInteractiveObject.h>
 #include <ViewCae/InteractiveCaeMesh.h>
+#include <ViewCae/MeshPartGeneralCells.h>
 #include <OpenGl_GraphicDriver.hxx>
 #include <Aspect_DisplayConnection.hxx>
 #include <V3d_Viewer.hxx>
@@ -18,6 +19,9 @@
 #include <iostream>
 #include <stdexcept>
 #include <cstdlib>
+#ifdef OCCTV_USE_VTK
+#include <RWVtk/VtkNativeReader.h>
+#endif
 
 namespace {
 void require(bool condition, const char* message)
@@ -76,6 +80,35 @@ void fixtures()
     write("tetra.vtm", "<VTKFile type=\"vtkMultiBlockDataSet\" byte_order=\"LittleEndian\"><vtkMultiBlockDataSet>"
         "<DataSet file=\"tetra.vtu\"/></vtkMultiBlockDataSet></VTKFile>");
     write("tetra.vtm.series", "{\"files\":[{\"name\":\"tetra.vtm\",\"time\":0.25}]}");
+    write("mixed.vtu", "<VTKFile type=\"UnstructuredGrid\" byte_order=\"LittleEndian\"><UnstructuredGrid>"
+        "<Piece NumberOfPoints=\"4\" NumberOfCells=\"3\">" + points + "<Cells>"
+        "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">0 1 0 1 2 3 0 1 2 3</DataArray>"
+        "<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">2 6 10</DataArray>"
+        "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">2 4 9</DataArray></Cells>"
+        "<PointData><DataArray type=\"Float64\" Name=\"temperature\" format=\"ascii\">0 1 3 2</DataArray></PointData>"
+        "<CellData><DataArray type=\"Float64\" Name=\"pressure\" format=\"ascii\">5 7 11</DataArray></CellData>"
+        "</Piece></UnstructuredGrid></VTKFile>");
+    write("curved_line.vtu", "<VTKFile type=\"UnstructuredGrid\" byte_order=\"LittleEndian\"><UnstructuredGrid>"
+        "<Piece NumberOfPoints=\"3\" NumberOfCells=\"1\"><Points><DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">"
+        "0 0 0 1 0 0 0.5 0.3 0</DataArray></Points><Cells>"
+        "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">0 1 2</DataArray>"
+        "<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">3</DataArray>"
+        "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">21</DataArray></Cells>"
+        "<PointData><DataArray type=\"Float64\" Name=\"temperature\" format=\"ascii\">0 1 0.25</DataArray></PointData>"
+        "<CellData><DataArray type=\"Float64\" Name=\"pressure\" format=\"ascii\">7</DataArray></CellData>"
+        "</Piece></UnstructuredGrid></VTKFile>");
+    write("polyvertex.vtu", "<VTKFile type=\"UnstructuredGrid\" byte_order=\"LittleEndian\"><UnstructuredGrid>"
+        "<Piece NumberOfPoints=\"4\" NumberOfCells=\"1\">" + points + "<Cells>" + topology +
+        "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">2</DataArray></Cells>" + fields + "</Piece></UnstructuredGrid></VTKFile>");
+    write("voxel.vtu", "<VTKFile type=\"UnstructuredGrid\" byte_order=\"LittleEndian\"><UnstructuredGrid>"
+        "<Piece NumberOfPoints=\"8\" NumberOfCells=\"1\"><Points><DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">"
+        "0 0 0 1 0 0 0 1 0 1 1 0 0 0 1 1 0 1 0 1 1 1 1 1</DataArray></Points><Cells>"
+        "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">0 1 2 3 4 5 6 7</DataArray>"
+        "<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">8</DataArray>"
+        "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">11</DataArray></Cells>"
+        "<PointData><DataArray type=\"Float64\" Name=\"temperature\" format=\"ascii\">0 1 2 3 3 4 5 6</DataArray></PointData>"
+        "<CellData><DataArray type=\"Float64\" Name=\"pressure\" format=\"ascii\">7</DataArray></CellData>"
+        "</Piece></UnstructuredGrid></VTKFile>");
 }
 
 Handle(RWCae::MeshData) load(RWMeshConv::MeshLoader& loader, const std::string& name, const std::string& mapping = "")
@@ -160,6 +193,61 @@ void viewer()
     for (const auto& object : objects) { require(object != old, "Replacement left old parent registered"); }
     require(objects.Size() <= originalObjects.Size(), "Replacement grew registered object count");
 }
+
+#ifdef OCCTV_USE_VTK
+void ordinaryPrimitives()
+{
+    RWMeshConv::MeshLoader loader;
+    RWVtk::VtkNativeReader native;
+    require(native.Perform(path("tetra.vtu").c_str()), "Ordinary general volume import failed");
+    Handle(ViewCaeGeom::MeshGeometry) volume = new ViewCaeGeom::MeshGeometryBase(new ViewCaeGeom::MeshBvhData(), native.GetMeshData());
+    const auto boundary = ViewCae::MeshPartGeneralCells::BuildPrimitives(volume);
+    require(boundary.size() == 4, "Ordinary Viewer general volume boundary missing");
+    for (const auto& face : boundary) { require(face.Dimension == 3 && face.Size == 3, "General volume primitive type"); }
+    for (const auto& name : {"polyline.vtk", "polyline.vtu", "polyline.vtp", "mixed.vtu", "curved_line.vtu", "polyvertex.vtu", "voxel.vtu"}) {
+        const auto mesh = load(loader, name);
+        require(!mesh.IsNull(), "Ordinary primitive fixture import failed");
+        Handle(ViewCaeGeom::MeshGeometry) geometry = new ViewCaeGeom::MeshGeometryBase(new ViewCaeGeom::MeshBvhData(), mesh);
+        const auto primitives = ViewCae::MeshPartGeneralCells::BuildPrimitives(geometry);
+        require(!primitives.empty(), "Ordinary Viewer generic primitives absent");
+        int counts[4] = {};
+        for (const auto& primitive : primitives) {
+            ++counts[primitive.Dimension];
+            for (int n = 0; n < primitive.Size; ++n) {
+                double sum = 0;
+                Graphic3d_Vec3d position(0);
+                for (const auto& weight : primitive.Vertices[n].Weights.BaseNodes()) {
+                    sum += weight.second;
+                    position += Graphic3d_Vec3d(mesh->Nodes()[weight.first]) * weight.second;
+                }
+                require(std::abs(sum - 1) < 1e-9 && (position - primitive.Vertices[n].Position).Modulus() < 1e-7,
+                    "Ordinary Viewer original FE mapping invalid");
+                const auto field = RWCae::MeshPropertyComponent(mesh->Properties()[1], 0);
+                const double expected = std::string(name) == "mixed.vtu" ? (primitive.Element == 0 ? 5 : primitive.Element == 1 ? 7 : 11) : 7;
+                require(ViewCae::MeshPartGeneralCells::Value(primitive, n, field) == expected,
+                    "Ordinary Viewer original CellData mapping changed");
+                if (std::string(name) == "mixed.vtu") {
+                    const auto& p = primitive.Vertices[n].Position;
+                    require(std::abs(ViewCae::MeshPartGeneralCells::Value(primitive, n,
+                        RWCae::MeshPropertyComponent(mesh->Properties()[0], 0)) - p.x() - 2*p.y()) < 1e-7,
+                        "Ordinary Viewer affine nodal field changed");
+                }
+                if (std::string(name) == "curved_line.vtu") {
+                    const auto& p = primitive.Vertices[n].Position;
+                    require(std::abs(ViewCae::MeshPartGeneralCells::Value(primitive, n,
+                        RWCae::MeshPropertyComponent(mesh->Properties()[0], 0)) - p.x()*p.x()) < 1e-7,
+                        "Ordinary Viewer quadratic original FE field changed");
+                }
+            }
+        }
+        require(std::string(name) == "voxel.vtu" ? counts[3] == 12 && counts[1] == 0
+            : std::string(name) == "polyvertex.vtu" ? counts[0] == 4 && counts[1] == 0
+            : std::string(name) == "curved_line.vtu" ? counts[1] > 3 : counts[1] == 3,
+            "Ordinary Viewer curve/polyline segment count");
+        if (std::string(name) == "mixed.vtu") { require(counts[0] == 2 && counts[2] == 2, "Ordinary Viewer point/surface count"); }
+    }
+}
+#endif
 #endif
 }
 
@@ -173,6 +261,9 @@ int main()
     try {
         fixtures(); outcomes(capture);
 #ifdef OCCTV_TEST_VIEWER
+#ifdef OCCTV_USE_VTK
+        ordinaryPrimitives();
+#endif
 #ifdef _WIN32
         viewer();
 #else

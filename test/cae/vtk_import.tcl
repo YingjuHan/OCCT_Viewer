@@ -51,6 +51,27 @@ if {[catch {
         scvreadmesh live [file join $fixtures tetra.vtu] -display 1
         vrepaint
         vdump [file join $output replaced.png]
+        if {$::env(VTK_IMPORT_HAS_NATIVE)} {
+            verase live
+            foreach file {polyline.vtk polyline.vtu polyline.vtp mixed.vtu curved_line.vtu polyvertex.vtu voxel.vtu} {
+                scvreadmesh ordinary [file join $fixtures $file] -display 1
+                vfit
+                vrepaint
+                vdump [file join $output ordinary-$file.png]
+                set minimum [expr {$file eq "polyvertex.vtu" ? 5 : 100}]
+                import_assert {[dict get [scvcutimagestats [file join $output ordinary-$file.png]] visible] > $minimum} "Ordinary Viewer $file image is blank"
+                scvmeshactiveprop ordinary -nodal 0 -comp 0
+                vrepaint
+                vdump [file join $output ordinary-$file-nodal.png]
+                set difference [scvcutimagecompare [file join $output ordinary-$file.png] [file join $output ordinary-$file-nodal.png]]
+                import_assert {[dict get $difference changed] > $minimum / 2} "Ordinary Viewer nodal contour does not change pixels"
+                scvmeshactiveprop ordinary -elem 0 -comp 0
+                vrepaint
+                vdump [file join $output ordinary-$file-cell.png]
+                set difference [scvcutimagecompare [file join $output ordinary-$file-nodal.png] [file join $output ordinary-$file-cell.png]]
+                import_assert {[dict get $difference changed] > $minimum / 2} "Ordinary Viewer CellData contour does not change pixels"
+            }
+        }
     }
 } reason]} {
     puts "VTK_IMPORT_DRAW_FAIL: $reason"

@@ -1,5 +1,6 @@
 
 #include <ViewCae/MeshPart.h>
+#include <ViewCae/MeshPartGeneralCells.h>
 
 #include <ViewCae/CaeMeshStreamlinesBuilder.h>
 #include <ViewCae/CaeMeshTools.h>
@@ -37,6 +38,7 @@ MeshParts::MeshParts()
     myParts[(int)MeshPartType::MinMaxAnnotations] = new MeshPartAnnotations<MeshPartType::MinMaxAnnotations>();
     myParts[(int)MeshPartType::GroupsInfo]        = new MeshPartAnnotations<MeshPartType::GroupsInfo>();
     myParts[(int)MeshPartType::Streamlines]       = new MeshPartStreamlines();
+    myParts[(int)MeshPartType::GeneralCells]      = new MeshPartGeneralCells();
 }
 
 // ================================================================

@@ -1,7 +1,8 @@
 # Native VTK Import Outcomes
 
-N04.1 establishes the import diagnostic/publication boundary. The remaining
-ordinary Viewer display, format matrix, changing-topology series, resource limits
+N04.1 establishes the import diagnostic/publication boundary. N04.2 verifies
+[ordinary Viewer display](cut-view-viewer.md). The remaining
+format matrix, changing-topology series, resource limits
 and reference staging work is tracked in [the N04 queue](cut-view-n04-plan.md).
 
 `RWMeshConv::MeshLoader::VtkReport()` describes the most recent VTK import:

@@ -33,9 +33,10 @@ enum class MeshPartType {
     Vectors,
     MinMaxAnnotations,
     GroupsInfo,
-    Streamlines
+    Streamlines,
+    GeneralCells
 };
-constexpr int MeshNbPartTypes = (int)MeshPartType::Streamlines + 1;
+constexpr int MeshNbPartTypes = (int)MeshPartType::GeneralCells + 1;
 
 //! Base class for mesh presentation part.
 class MeshPart : public Standard_Transient {
