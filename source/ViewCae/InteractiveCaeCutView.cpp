@@ -1,4 +1,5 @@
 #include <ViewCae/InteractiveCaeCutView.h>
+#include <ViewCaeGeom/MeshCutUnion.h>
 #include <ViewCae/CaeMeshTools.h>
 
 #include <Graphic3d_Group.hxx>
@@ -76,7 +77,8 @@ void InteractiveCaeCutView::Synchronize()
     std::map<std::string, uint64_t> revisions;
     const auto definitions = myCuts.Definitions();
     const bool hasActiveCut = std::any_of(definitions.begin(), definitions.end(), [](const auto& cut) { return cut.Enabled; });
-    auto results = hasActiveCut ? myCuts.EvaluateVisible(myField) : std::vector<ViewCaeGeom::MeshCutResult>();
+    auto cutPresentation = hasActiveCut ? myCuts.EvaluatePresentation(myField) : nullptr;
+    auto results = cutPresentation ? cutPresentation->Branches : std::vector<ViewCaeGeom::MeshCutResult>();
     if (!hasActiveCut) {
         ViewCaeGeom::MeshCutResult result;
         result.Definition.Id = "uncut_source"; result.SourceField = myField;
@@ -173,6 +175,7 @@ void InteractiveCaeCutView::Synchronize()
     myLineArrays = std::move(lineArrays); myLineAspects = std::move(lineAspects);
     myPointArrays = std::move(pointArrays); myPointAspects = std::move(pointAspects);
     mySynchronizedRevisions = std::move(revisions);
+    myCutPresentation = std::move(cutPresentation);
     ++mySynchronizationCount;
     SetToUpdate();
 }

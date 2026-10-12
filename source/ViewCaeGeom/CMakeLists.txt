@@ -6,6 +6,7 @@ set (SRCFILES
   MeshCutRecovery.cpp
   MeshCutTensor.cpp
   MeshCutTrace.cpp
+  MeshCutUnion.cpp
   MeshGeometryQuadric.cpp
   MeshBvhData.cpp
   MeshGeometry.cpp
@@ -24,6 +25,7 @@ set (INCFILES
   MeshCutTensor.h
   MeshCutTrace.h
   MeshCutTraceOptions.h
+  MeshCutUnion.h
   MeshGeometryQuadric.h
   MeshBvhData.h
   MeshGeometry.h

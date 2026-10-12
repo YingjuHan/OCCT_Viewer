@@ -51,6 +51,7 @@ private:
     std::vector<Handle(Graphic3d_AspectMarker3d)> myPointAspects;
     uint64_t mySynchronizationCount = 0;
     std::map<std::string, uint64_t> mySynchronizedRevisions;
+    std::shared_ptr<ViewCaeGeom::MeshCutPresentation> myCutPresentation;
 };
 }
 #endif

@@ -216,6 +216,8 @@ void display()
     require(view->Presentations().size() == 3,"Curved portion presentations missing");
     for (const auto& presentation : view->Presentations()) {
         presentation->GetParts();
+        // Both sides fill the source: the enclosed sphere and its internal cap disappear.
+        if (presentation->GetMeshGeometry()->GetLastChild()->GetMeshData()->NbIndexedElems() == 0) { continue; }
         auto triangles = ViewCae::CaeMeshTools::CreateShadedMesh(presentation->GetMeshGeometry(),
             presentation->GetGeomScalarProps(),false,ViewCae::MeshShadedType::FACES,1.0f);
         require(!triangles.IsNull() && triangles->VertexNumber() > 0 && triangles->HasVertexTexels(),

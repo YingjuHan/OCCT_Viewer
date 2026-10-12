@@ -1,4 +1,5 @@
 #include <ViewCaeGeom/MeshCutViewManager.h>
+#include <ViewCaeGeom/MeshCutUnion.h>
 #include <ViewCaeGeom/MeshCutTrace.h>
 #include "MeshCutFieldTools.h"
 
@@ -1200,6 +1201,24 @@ std::vector<MeshCutResult> MeshCutViewManager::EvaluateVisible(const Handle(RWCa
         }
     }
     return aResults;
+}
+
+std::shared_ptr<MeshCutPresentation> MeshCutViewManager::EvaluatePresentation(const Handle(RWCae::MeshNVecProperty)& field)
+{
+    const auto cuts = EvaluateVisible(field);
+    auto source = makeSourceGeometry(false);
+    if (!myTraceSource) {
+        myTraceSource = std::make_shared<MeshCutTraceSource>(myMesh,source,myGeometryOptions
+#ifdef OCCTV_USE_VTK
+            ,myGeneralSource
+#endif
+        );
+    }
+    return BuildCutPresentationUnion(myMesh,source,myBvh,cuts,myGeometryOptions,myTraceSource
+#ifdef OCCTV_USE_VTK
+        ,myGeneralSource
+#endif
+    );
 }
 
 void MeshCutViewManager::InvalidateFields()

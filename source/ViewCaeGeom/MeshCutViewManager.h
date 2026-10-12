@@ -51,6 +51,7 @@ struct MeshCutStatistics {
 };
 class MeshVtkCutSource;
 class MeshCutTraceSource;
+struct MeshCutPresentation;
 
 //! Sampled numerical isosurface controls. Field tolerances have field units;
 //! geometry tolerances remain in model units. This is not a certified root isolation.
@@ -100,6 +101,7 @@ struct MeshCutResult {
     std::array<double, 3> Volumes = {{0.0, 0.0, 0.0}};
     std::array<double, 3> Areas = {{0.0, 0.0, 0.0}};
     bool BoundaryMesh = false;
+    bool PresentationOnly = false; //!< Union output cannot be used for physical integration.
     bool SourceApproximate = false;
     bool DisplayRecovered = false;
     bool TensorDerived = false; //!< Display component is zero; PhysicalFields still retain original tensors.
@@ -163,6 +165,9 @@ public:
     Standard_EXPORT MeshCutResult EvaluatePhysical(const std::string& theId,
         const Handle(RWCae::MeshNVecProperty)& theField);
     Standard_EXPORT std::vector<MeshCutResult> EvaluateVisible(
+        const Handle(RWCae::MeshNVecProperty)& theField = nullptr);
+    //! Actual OR of visible regions; independent numerical cuts remain cached separately.
+    Standard_EXPORT std::shared_ptr<MeshCutPresentation> EvaluatePresentation(
         const Handle(RWCae::MeshNVecProperty)& theField = nullptr);
     //! Full source geometry, respecting deformation, when no cut is active.
     Standard_EXPORT Handle(MeshGeometry) SourceGeometry();

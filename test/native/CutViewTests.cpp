@@ -213,7 +213,12 @@ static void displayPrimitives()
         auto prs = view->Presentations()[i];
         prs->GetParts();
         auto triangles = ViewCae::CaeMeshTools::CreateShadedMesh(prs->GetMeshGeometry(), prs->GetGeomScalarProps(), false,
-            i == 1 ? ViewCae::MeshShadedType::FACES : ViewCae::MeshShadedType::VOLUME_SURFACE, 1.0f);
+            ViewCae::MeshShadedType::FACES, 1.0f);
+        if (i == 1) {
+            require(prs->GetMeshGeometry()->GetLastChild()->GetMeshData()->NbIndexedElems() == 0,
+                "OR retained an internal section");
+            continue;
+        }
         require(!triangles.IsNull() && triangles->VertexNumber() > 0 && triangles->HasVertexTexels(),
                 "Cut contour triangles not generated");
     }
@@ -461,6 +466,8 @@ static void isosurfaceSurfaceAndCells()
     near(result.LineField->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(0)), 13, "Iso line CellData");
     view->SetField(field("temperature", true, {0,1,2}));
     view->Synchronize();
+    require(view->LineArrays().empty(), "OR retained an internal iso contour");
+    manager.SetVisibility("iso",2); view->Synchronize();
     require(view->LineArrays().size() == 1 && view->LineArrays()[0]->HasVertexTexels(), "Iso line contour primitive missing");
 
     mesh = tetra();

@@ -190,8 +190,9 @@ N02 includes supported analytic source boundaries and expanded reference fixture
 N02 is verified at the [bounded closure scope](cut-view-n02-audit.md).
 The active work is [N03 recovery, traces and union](cut-view-n03-plan.md).
 N03 region/threshold recovery, symmetric tensor measures, manager controls and
-original physical mapping are verified. Explicit physical trace policies and
-multi-cut boundary/cap union remain open. N04-N09 remain queued;
+original physical mapping and independent trace policies are verified.
+Actual presentation OR has passed its foundation gate; field/dimension and
+transparent union acceptance remain open. N04-N09 remain queued;
 web/WASM work is excluded.
 First-order isosurfaces currently rebuild scalar-cut geometry when the threshold changes; they
 have not been accepted against the full-frame million-cell target. Supported high-order
