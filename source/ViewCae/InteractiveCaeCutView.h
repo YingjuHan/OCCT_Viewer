@@ -26,6 +26,7 @@ public:
     ViewCaeGeom::MeshCutViewManager& Cuts() { return myCuts; }
     Standard_EXPORT void SetField(const Handle(RWCae::MeshNVecProperty)& theField, int theRawComponent = 0);
     Standard_EXPORT void SetStyle(ViewCaeGeom::MeshCutPortion thePortion, const MeshCutDisplayStyle& theStyle);
+    const MeshCutDisplayStyle& Style(ViewCaeGeom::MeshCutPortion portion) const { return myStyles.at((size_t)portion); }
     Standard_EXPORT void Synchronize();
 
     const std::vector<Handle(MeshPresentationScalar)>& Presentations() const { return myPresentations; }

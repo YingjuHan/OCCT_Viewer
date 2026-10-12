@@ -2,6 +2,7 @@
 #include <ViewCae/InteractiveCaeCutView.h>
 #include <ViewCae/InteractiveCaeCutPlane.h>
 #include <ViewCaeGeom/MeshCutIntegration.h>
+#include <ViewCaeGeom/MeshCutUnion.h>
 #include <RWCae/MeshAdaptorsIterator.h>
 #include <RWVtk/VtkLegacyReader.h>
 #include <RWVtk/VtkPolyDataReader.h>
@@ -180,6 +181,30 @@ double measure(const Handle(RWCae::MeshData)& mesh, const Handle(ViewCaeGeom::Me
     return result;
 }
 
+Standard_Integer imageCompare(Draw_Interpretor& di, Standard_Integer argc, const char** argv)
+{
+    if (argc != 3) { di << "scvcutimagecompare reference.png actual.png"; return 1; }
+    Image_AlienPixMap reference, actual;
+    if (!reference.Load(argv[1]) || !actual.Load(argv[2]) || reference.SizeX() != actual.SizeX()
+        || reference.SizeY() != actual.SizeY() || reference.IsEmpty()) {
+        di << "Images require matching non-empty dimensions"; return 1;
+    }
+    uint64_t changed = 0, sum = 0; int maximum = 0;
+    for (size_t y = 0; y < reference.SizeY(); ++y) { for (size_t x = 0; x < reference.SizeX(); ++x) {
+        const auto a = reference.PixelColor((int)x,(int)y).GetRGB(), b = actual.PixelColor((int)x,(int)y).GetRGB();
+        const double av[] = {a.Red(),a.Green(),a.Blue()}, bv[] = {b.Red(),b.Green(),b.Blue()};
+        bool different = false;
+        for (int c = 0; c < 3; ++c) {
+            const int delta = std::abs((int)std::lround(av[c]*255)-(int)std::lround(bv[c]*255));
+            sum += delta; maximum = std::max(maximum,delta); different |= delta != 0;
+        }
+        changed += different;
+    } }
+    di << "changed " << std::to_string(changed).c_str() << " mean " << (double)sum/(reference.SizeX()*reference.SizeY()*3)
+       << " maximum " << maximum;
+    return 0;
+}
+
 Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char** argv)
 {
     try {
@@ -278,6 +303,23 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
                    << " selected " << (int)(model.EditedCut == cut.Id) << "} ";
             }
             return 0;
+        } else if (action == "union" && argc == 3) {
+            const auto display = cuts.EvaluatePresentation(model.Field);
+            di << "unified " << (int)display->Unified << " volume " << display->Volume << " area " << display->Area
+               << " primitives " << std::to_string(display->Provenance.size()).c_str() << " provenance {";
+            for (const auto& primitive : display->Provenance) {
+                di << "{cut"; di.AppendElement(primitive.CutId.c_str());
+                di << " portion " << (int)primitive.Portion << " source " << std::to_string(primitive.SourceElement).c_str()
+                   << " cap " << (int)primitive.Cap << " dimension " << primitive.Dimension
+                   << " primitive " << std::to_string(primitive.Primitive).c_str() << "} ";
+            }
+            di << "}"; return 0;
+        } else if (action == "style" && (argc == 4 || argc == 5)) {
+            const std::string portion(argv[3]); const int index = portion == "negative" ? 0 : portion == "on" ? 1 : portion == "positive" ? 2 : -1;
+            if (index < 0) { throw std::invalid_argument("Style portion: negative, on or positive"); }
+            const auto part = (ViewCaeGeom::MeshCutPortion)index; auto style = model.View->Style(part);
+            if (argc == 4) { di << "transparency " << style.Transparency; return 0; }
+            style.Transparency = (float)cutReal(argv[4]); model.View->SetStyle(part,style); ok = true;
         } else if (action == "stats" && argc == 3) {
             const auto work = cuts.Statistics();
             auto value = [&](const char* key, uint64_t number) { di << key << " " << std::to_string(number).c_str() << " "; };
@@ -776,6 +818,8 @@ void ViewCaeTest::CutViewCommands::Factory(Draw_Interpretor& di)
 {
     di.Add("scvcutimagestats", "scvcutimagestats image.png: count non-white and colored pixels", __FILE__,
         imageStats, "SC Viewer CAE Prs");
+    di.Add("scvcutimagecompare", "scvcutimagecompare reference.png actual.png: RGB byte differences", __FILE__,
+        imageCompare, "SC Viewer CAE Prs");
     di.Add("scvcutview", "scvcutview name read/replace file | info | defaults | add/move id A B C D | visibility id mask\n"
         "  | isoadd/isomove id point/cell field rawComponent value [timeStep] | isovalue id value\n"
         "  | sphereadd/spheremove id centerX centerY centerZ radius | radius id radius\n"
@@ -784,6 +828,7 @@ void ViewCaeTest::CutViewCommands::Factory(Draw_Interpretor& di)
         "  | recovery [thresholdPercent beforeInvariant0/1 regionField/none/keep [timeStep]]\n"
         "  | tensor [components/mises/pressure/maxprincipal/midprincipal/minprincipal/tresca layout tensor/engineering]\n"
         "  | trace id display/physical [lowest/negative/positive | region regionId {elementRegionIds}]\n"
+        "  | union (display OR volume, exposed area and primitive provenance) | style negative/on/positive [transparency]\n"
         "    layout: xx-yy-zz-xy-xz-yz, xx-yy-zz-xy-yz-xz, row-major, column-major\n"
         "  | copy id newId | rename id name | enable id 0/1 | remove id | eval id | display | clear\n"
         "  | snapshot | restore json | deform property/none normalizedScale [timeStep]\n"

@@ -567,3 +567,16 @@ polyvertex/空单元。修复共享内部 On sheet、0D BRep 缺点及 OFF 邻�
 （286.04 / 28.31 秒）；日志 `cut-n03-union-fields-tests.log`。
 每次提交后刷新 MCP 索引；解析缺口继续直接核对源码。N03.4c 透明 DRAW
 比较正在实施，N03.5 完整闭环审计尚未运行；N03 整体仍 partial。
+
+## 22. N03.4c 透明 DRAW 验收
+
+N03.4b 已提交 `addbb03`。新增 `scvcutview union` 的真实 OR volume/area 和
+cut/portion/source/cap 来源诊断，portion 共享透明度查询/设置及 RGB 图片比较。
+新增单位 hexa fixture；重复、交叉、mask7 数值与独立 cut 不变均通过。
+变化字段使用 unlit + weighted OIT 消除光照/绘制顺序差异，重复/包含/full masks
+要求 RGB byte mean <0.01；恒定 CellData 在普通透明混合下
+仍比较一致，并要求透明度 0.55 改为 0 后 mean >5，验证门槛确实敏感。
+ON 重点 3/3、OFF 重点 2/2 各三次（27.80 / 22.62 秒）；收紧后的 visual
+另重复三次。日志 `cut-n03-union-visual-tests.log` 和 ON
+`cut-n03-union-opacity-tests.log`；图片 `build/mingw/test/native/draw-union/`
+已核对。N03.4 在现有支持范围内 verified，N03.5 完整双配置闭环审计接着运行。

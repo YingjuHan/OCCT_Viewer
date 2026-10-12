@@ -103,6 +103,9 @@ if (TARGET ViewDraw)
       PASS_REGULAR_EXPRESSION "CUT_VIEW_ISO_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" TIMEOUT 60)
     add_test (NAME draw_cut_view_tensor COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_tensor.tcl")
     add_test (NAME draw_cut_view_trace COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_trace.tcl")
+    add_test (NAME draw_cut_view_union COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_union.tcl")
+    set_tests_properties (draw_cut_view_union PROPERTIES ENVIRONMENT "${DRAW_TEST_ENV}"
+      PASS_REGULAR_EXPRESSION "CUT_VIEW_UNION_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" TIMEOUT 120)
     set_tests_properties (draw_cut_view_trace PROPERTIES ENVIRONMENT "${DRAW_TEST_ENV}"
       PASS_REGULAR_EXPRESSION "CUT_VIEW_TRACE_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" TIMEOUT 60)
     set_tests_properties (draw_cut_view_tensor PROPERTIES ENVIRONMENT "${DRAW_TEST_ENV}"
@@ -189,6 +192,10 @@ if (TARGET ViewDraw)
       add_test (NAME draw_cut_view_controls COMMAND "${OCCTV_DRAWEXE}" -i -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_controls.tcl")
       add_test (NAME draw_cut_view_tensor_visual COMMAND "${OCCTV_DRAWEXE}" -i -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_tensor.tcl")
       add_test (NAME draw_cut_view_trace_visual COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_trace.tcl")
+      add_test (NAME draw_cut_view_union_visual COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_union.tcl")
+      set_tests_properties (draw_cut_view_union_visual PROPERTIES
+        ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_UNION_VISUAL=1;CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-union"
+        RUN_SERIAL TRUE PASS_REGULAR_EXPRESSION "CUT_VIEW_UNION_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" TIMEOUT 180)
       set_tests_properties (draw_cut_view_trace_visual PROPERTIES
         ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_TRACE_VISUAL=1;CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-trace"
         RUN_SERIAL TRUE PASS_REGULAR_EXPRESSION "CUT_VIEW_TRACE_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" TIMEOUT 60)
