@@ -36,7 +36,7 @@ public:
     }
 
     //! Nodal values index slice nodes; elemental values index Lines(), with generated-node subindices for NodeVec.
-    Standard_EXPORT Handle(RWCae::MeshNVecProperty) CalculateLineProperty(
+    Standard_EXPORT virtual Handle(RWCae::MeshNVecProperty) CalculateLineProperty(
         const Handle(RWCae::MeshNVecProperty)& theProp) const;
 
     //! Set active slice planes.

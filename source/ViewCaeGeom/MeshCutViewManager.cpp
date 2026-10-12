@@ -1,4 +1,5 @@
 #include <ViewCaeGeom/MeshCutViewManager.h>
+#include <ViewCaeGeom/MeshCutTrace.h>
 #include "MeshCutFieldTools.h"
 
 #include <RWCae/MeshScalarProperty.h>
@@ -203,6 +204,9 @@ struct MeshCutViewManager::Entry {
     std::vector<double> NodeProjections;
     Handle(RWCae::MeshScalarPropertyBase) IsoValues;
     unsigned CachedMask = 0;
+    Handle(MeshGeometry) TraceRoot;
+    Handle(MeshGeometryTraceSection) TraceSection;
+    uint64_t TraceRevision = 0;
 };
 
 MeshCutViewManager::MeshCutViewManager(const Handle(RWCae::MeshData)& theMesh)
@@ -609,6 +613,8 @@ bool MeshCutViewManager::Duplicate(const std::string& theId, const std::string& 
 
 void MeshCutViewManager::release(Entry& theEntry)
 {
+    if (!theEntry.TraceRoot.IsNull()) { theEntry.TraceRoot->RemoveChildren(); }
+    theEntry.TraceRoot.Nullify(); theEntry.TraceSection.Nullify(); theEntry.TraceRevision = 0;
     theEntry.CachedMask = 0;
     theEntry.NodeProjections.clear();
     for (size_t i = 0; i < theEntry.Roots.size(); ++i) {
@@ -1062,6 +1068,24 @@ MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
         }
 #endif
         anEntry->CachedMask |= 1u << i;
+        if (i == 1) {
+            if (anEntry->TraceSection.IsNull() || anEntry->TraceRevision != anEntry->Revision) {
+                if (!myTraceSource) {
+                    myTraceSource = std::make_shared<MeshCutTraceSource>(myMesh,anEntry->Roots[1],myGeometryOptions
+#ifdef OCCTV_USE_VTK
+                        ,myGeneralSource
+#endif
+                    );
+                }
+                if (anEntry->TraceSection.IsNull()) {
+                    anEntry->TraceSection = new MeshGeometryTraceSection(myBvh,Handle(MeshGeometrySlice)::DownCast(anEntry->Portions[1]),
+                        anEntry->Roots[1],myTraceSource);
+                    anEntry->TraceRoot = new MeshGeometryBase(myBvh,myMesh); anEntry->TraceRoot->Append(anEntry->TraceSection);
+                } else { anEntry->TraceSection->Refresh(Handle(MeshGeometrySlice)::DownCast(anEntry->Portions[1]),myTraceSource); }
+                anEntry->TraceRevision = anEntry->Revision;
+            }
+            aResult.Roots[1] = anEntry->TraceRoot; aResult.Portions[1] = anEntry->TraceSection;
+        }
         if (!aResult.SourceField.IsNull()) {
             aResult.Fields[i] = aResult.Portions[i]->CalculateProperty(aResult.SourceField);
             aResult.PhysicalFields[i] = aResult.DisplayRecovered ? aResult.Portions[i]->CalculateProperty(theField) : aResult.Fields[i];
@@ -1100,6 +1124,7 @@ void MeshCutViewManager::InvalidateFields()
 
 void MeshCutViewManager::InvalidateGeometry()
 {
+    myTraceSource.reset();
 #ifdef OCCTV_USE_VTK
     myGeneralSource.reset();
 #endif
@@ -1115,6 +1140,7 @@ void MeshCutViewManager::InvalidateGeometry()
 
 void MeshCutViewManager::Clear()
 {
+    myTraceSource.reset();
 #ifdef OCCTV_USE_VTK
     myGeneralSource.reset();
 #endif

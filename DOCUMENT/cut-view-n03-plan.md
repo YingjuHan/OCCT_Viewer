@@ -31,8 +31,8 @@ N03.3 is split into reviewable work items; see [the trace contract](cut-view-tra
 
 - N03.3a: reciprocal prepared volume-face sources and separate original-FE
   weights. Verified: full ON 42/42 and OFF 10/10, every case three times.
-- N03.3b: bind both sources/weights to generated primitives before owner
-  filtering, including the native fast slice path. Next.
+- N03.3b: bind both sources/weights to generated primitives, including the native
+  fast slice path. Verified: ON 43/43, OFF 11/11 three times; focused ON 4/4 three times.
 - N03.3c: independent display/physical lowest/negative/positive/region policies
   and original-field integrals. Queued after provenance binding.
 - N03.3d: native controls, exact region binding and atomic definition migration.

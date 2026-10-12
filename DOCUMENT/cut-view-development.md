@@ -83,6 +83,8 @@ for SDK paths, logs, missing historical external fixtures and remaining work.
 - [x] N03.3a VTK prepared-source reciprocal volume-face adjacency and two original-FE
   traces, including curved/deformed source checks and independent element-node jumps.
   See [the trace foundation and remaining selection work](cut-view-traces.md).
+- [x] N03.3b generated face/line/point dual-source FE binding and native fast-slice
+  parity; trusted primitive ownership, disconnected topology and cached movement verified.
 - [ ] N03 physical interface traces and OR boundary/cap merging; complete native
   session persistence remains N09.
 

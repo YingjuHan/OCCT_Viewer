@@ -49,6 +49,7 @@ struct MeshCutStatistics {
     double AnalyticResidual = 0;
 };
 class MeshVtkCutSource;
+class MeshCutTraceSource;
 
 //! Sampled numerical isosurface controls. Field tolerances have field units;
 //! geometry tolerances remain in model units. This is not a certified root isolation.
@@ -201,6 +202,7 @@ private:
     MeshCutGeometryOptions myGeometryOptions;
     MeshCutRecoveryOptions myRecoveryOptions;
     MeshCutIsoOptions myIsoOptions;
+    std::shared_ptr<MeshCutTraceSource> myTraceSource;
 
     Handle(RWCae::MeshData) myMesh;
     Handle(MeshBvhData) myBvh;

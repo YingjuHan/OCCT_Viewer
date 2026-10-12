@@ -49,12 +49,35 @@ Acceptance: full VTK ON **42/42** and OFF **10/10**, each case three times,
 `build/mingw/cut-n03-interface-tests.log` and the corresponding OFF build log.
 The focused `cut_interface` gate also passes three times in 1.89 seconds.
 
+## N03.3b Generated Primitive Binding
+
+`MeshGeometryTraceSection` retains ordered source records on generated faces,
+lines and points. `MeshCutTraceSource` pairs original-node boundary topology
+with opposite support; prepared volume boundaries additionally retain their
+verified reciprocal adjacency. Each side owns original FE weights. Coincident
+disconnected nodes do not pair. Untrusted multiple owners remain marked ambiguous.
+The generated primitive is retained once using the trusted source pair and FE
+weight fingerprints, with no coordinate welding. Lowest ID remains the default.
+
+VTK ON uses original cell inverse mapping for each side, including quadratic
+and Lagrange cells. OFF native conforming faces/edges retain their original
+weights. Source/deformation invalidation clears the topology cache. Fast plane
+translation retains output connectivity where the backend reused it; recovery
+edits retain section geometry. Element/nodal subset mapping remains supported.
+
+Acceptance: ON full **43/43** in 145.75 seconds; OFF **11/11**, each three times,
+in 3.65 seconds; focused ON **4/4**, each three times, in 2.43 seconds.
+Logs: `cut-n03-binding-tests.log` in both build directories and ON
+`cut-n03-binding-focused.log`. The new test covers all masks, connected and
+disconnected volume/surface sections, deformed source weights, FE jumps,
+default flux integrals and VTK line endpoints. The prepared-interface test now
+checks generated source binding for hex/voxel/quadratic/Lagrange/polyhedron.
+Manager and projected-cloud images were inspected. Selection remains N03.3c;
+this binding and duplicate ownership do not constitute an OR union.
+
 ## Remaining N03.3 Work
 
-1. N03.3b: preserve both source records and their own FE weights on generated shared
-   faces/lines/points before presentation ownership removes a duplicate. Native
-   fast slice and general VTK geometry need the same contract. Pair trusted
-   topology, not equal coordinates or equal mapped scalar values.
+1. N03.3b is verified above. Nonmatching topology does not acquire a trusted pair.
 2. N03.3c: introduce explicit lowest/negative/positive/region policies. Determine the
    geometric side from the cut definition and deformed source interiors; reject
    an ambiguous choice. A region request must resolve exactly one available

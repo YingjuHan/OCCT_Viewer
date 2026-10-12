@@ -513,3 +513,15 @@ N03.5 闭环审计。不要把展示 scalar reconstruction 或 trace/cap 去重�
   line/surface/volume、deformation、mask、跳变及积分矩阵。各项验收后单独提交。
 
 N03.4 OR union/cap ownership 和 N03.5 闭环继续排队；N03 整体仍 partial。
+
+## 17. N03.3b 图元来源绑定
+
+`MeshGeometryTraceSection` 保存生成面/线/点的双侧原始 FE 来源，native fast
+Slice 与 VTK general 路径均接入；可信来源对与权重指纹去重，不用坐标焊接。
+默认 lowest ID、物理字段元数据、子范围查询和 fast 平移连接缓存保持兼容。
+ON 完整 **43/43**（145.75 秒），OFF **11/11 各三次**（3.65 秒），ON
+重点 **4/4 各三次**（2.43 秒）。日志为 `cut-n03-binding-tests.log` 和
+ON `cut-n03-binding-focused.log`。已查看管理器与投影云图。
+下项 N03.3c：display/physical 独立选侧和原始积分；N03 整体仍未闭环。
+大量源码修改后主动执行 `index_repository(repo_path="D:/workspace/OpenCASCADE/OCCT_Viewer")`，
+coverage partial/unusable 的文件继续直接核对源码；不把索引自动刷新当作完整解析保证。

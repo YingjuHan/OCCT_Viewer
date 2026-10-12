@@ -1,5 +1,6 @@
 #include <ViewCaeGeom/MeshVtkCutSource.h>
 #include <ViewCaeGeom/MeshCutIntegration.h>
+#include <ViewCaeGeom/MeshCutTrace.h>
 #include <RWCae/MeshScalarProperty.h>
 #include <RWCae/MeshNodeVecProperty.h>
 #include <vtkCellData.h>
@@ -167,6 +168,24 @@ void adjacent(int type, double bend = 0, bool deformed = false, bool numerical =
             }
             if (mask & 2) {
                 near(result.Areas[1],1,"Shared section is no longer counted once");
+                auto traced = Handle(MeshGeometryTraceSection)::DownCast(result.Portions[1]);
+                require(!traced.IsNull() && !traced->ElementTraces().empty(),"General section has no bound traces");
+                for (const auto& primitive : traced->ElementTraces()) {
+                    require(primitive.size() == 2 && primitive[0].Element == 0 && primitive[1].Element == 1,
+                        "General shared section lost a source");
+                    for (const auto& trace : primitive) {
+                        for (const auto& sample : trace.Weights) {
+                            double value = 0;
+                            for (const auto& weight : sample.second.BaseNodes()) {
+                                if (weight.second != 0) { value += weight.second*field->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(trace.Element,weight.first)); }
+                            }
+                            const auto p = traced->GetMeshData()->Nodes()[sample.first];
+                            const double y = type == 25 || type == 72 ? p.y()*p.y() : p.y();
+                            const double z = type == 25 || type == 72 ? p.z()*p.z() : p.z();
+                            near(value,trace.Element == 0 ? y+2*z : 100+3*y-z,"Bound original FE trace changed");
+                        }
+                    }
+                }
                 const auto section = result.Portions[1]->GetMeshData();
                 for (const auto& indexed : section->IndexedElements()) {
                     RWCae::MeshEntityId origin = 99;

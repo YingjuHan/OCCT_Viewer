@@ -266,6 +266,30 @@ Graphic3d_Vec3d MeshVtkCell::InteriorPoint() const
     return Graphic3d_Vec3d(p[0],p[1],p[2]);
 }
 
+std::vector<std::vector<RWCae::MeshEntityId>> MeshVtkCell::BoundaryNodes() const
+{
+    std::vector<std::vector<RWCae::MeshEntityId>> result;
+    const int dimension = Dimension();
+    if (dimension == 1) {
+        result = {{myNodes.front()},{myNodes.at(myCell->GetCellType() == 4 ? myNodes.size()-1 : 1)}};
+    } else if (dimension == 2 || dimension == 3) {
+        if (dimension == 3 && !Faces.empty()) {
+            for (const auto& face : Faces) { result.push_back(face.Nodes); }
+        } else {
+            const int count = dimension == 3 ? myCell->GetNumberOfFaces() : myCell->GetNumberOfEdges();
+            for (int i = 0; i < count; ++i) {
+                auto boundary = dimension == 3 ? myCell->GetFace(i) : myCell->GetEdge(i);
+                std::vector<RWCae::MeshEntityId> nodes;
+                for (vtkIdType n = 0; n < boundary->GetNumberOfPoints(); ++n) {
+                    nodes.push_back(myNodes.at((size_t)boundary->GetPointId(n)));
+                }
+                result.push_back(std::move(nodes));
+            }
+        }
+    }
+    return result;
+}
+
 std::vector<std::array<Graphic3d_Vec3d,4>> MeshVtkCell::ParameterSimplices() const
 {
     const int type = myCell->GetCellType();
