@@ -8,7 +8,7 @@ retained and remains in the regression suite.
 | --- | --- | --- | --- |
 | N02.1 | Remaining curved-family independent references | Curves, triangular/quadrilateral surfaces, Lagrange/Bezier tetrahedra and mixed-order hex: independent measures, original FE values, provenance, moving-cut source reuse; native and DRAW checks | Verified for the listed references; each case passed three times |
 | N02.2 | Analytic support and precision boundary | Degree-six and anisotropic charts, positive rational weight scaling, unsupported degree/precision fallback, required-mode atomic rejection; document sampled geometry and float storage separately | Verified for the listed bounds and repair; each case passed three times |
-| N02.3 | Higher-order/generic field isosurfaces | Original cell FE evaluation; below/on/above and all masks; enclosed/nonmonotone field crossings; numerical convergence and explicit limits; DRAW field binding and held-threshold synchronization | Queued, next implementation |
+| N02.3 | Higher-order/generic field isosurfaces | Original cell FE evaluation; below/on/above and all masks; enclosed/nonmonotone field crossings; numerical convergence and explicit limits; DRAW field binding and held-threshold synchronization | Verified: 37 generic charts, six native second-order families, polynomial/rational references, held Tk threshold and abort |
 | N02.4 | N02 closure audit | Recheck remaining family/interface/precision gaps, deformed geometry and FE mapping, both VTK configurations, repeated native/DRAW/visual suite; identify remaining G02/G03 limits individually | Queued |
 | N03 | Recovery, physical traces and presentation OR union | Resume the N03 queue only after the N02 gates pass; N03's existing numerical/metadata foundation is partial | Deferred |
 
@@ -90,4 +90,15 @@ had already passed the full repeated suite.
 Logs: `build/mingw/cut-n02-build.log`, `cut-n02-vtk-tests.log`,
 `cut-n02-reference-visual-tests.log`; and `build/mingw-no-vtk/cut-n02-build.log`,
 `cut-n02-tests.log`. Missing historical external fixtures are not substituted.
-N02.3 and N02.4 are still open; this is not completion of N02/G03.
+N02.3 now passes its focused acceptance; N02.4 is still open, so N02 remains partial.
+
+## N02.3 acceptance
+
+See [the numerical FE contract](cut-view-isosurfaces.md). All affected native and
+DRAW targets rebuilt. The final focused run passed 5/5 in 67.02 seconds, including
+`cut_iso`, first-order compatibility and the new batch/held-widget visual cases.
+The initial and held images were inspected. VTK-disabled full suite passed 8/8,
+each three times, in 6.24 seconds. Logs: `build/mingw/cut-n02-iso-build.log`,
+`cut-n02-iso-tests.log`, `cut-n02-iso-visual.log`, and
+`build/mingw-no-vtk/cut-n02-closure-tests.log`. Closure still requires the repeated
+full VTK-enabled suite and bounded gap audit.

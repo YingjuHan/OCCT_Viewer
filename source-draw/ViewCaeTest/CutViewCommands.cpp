@@ -281,6 +281,17 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             di << "analyticResidual " << work.AnalyticResidual << " ";
             di << "geometryTolerance " << work.GeometryTolerance << " storageResolution " << work.StorageResolution;
             return 0;
+        } else if (action == "isooptions" && argc == 3) {
+            const auto& options = cuts.IsoOptions();
+            di << "absolute " << options.AbsoluteTolerance << " relative " << options.RelativeTolerance
+               << " minimumDepth " << options.MinimumDepth << " limit " << options.SubdivisionLimit
+               << " primitives " << std::to_string(options.MaxPrimitives).c_str(); return 0;
+        } else if (action == "isooptions" && argc == 8) {
+            auto options = cuts.IsoOptions();
+            options.AbsoluteTolerance = cutReal(argv[3]); options.RelativeTolerance = cutReal(argv[4]);
+            options.MinimumDepth = cutInteger(argv[5]); options.SubdivisionLimit = cutInteger(argv[6]);
+            const auto limit = cutInteger(argv[7]); if (limit < 1) { throw std::invalid_argument("Isosurface budget must be positive"); }
+            options.MaxPrimitives = (uint64_t)limit; ok = cuts.SetIsoOptions(options);
         } else if (action == "geometry" && argc == 3) {
             const auto& options = cuts.GeometryOptions();
             di << "absolute " << options.AbsoluteTolerance << " relative " << options.RelativeTolerance
@@ -614,7 +625,10 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             auto result = cuts.Evaluate(argv[3], model.Field);
             di << "visible " << (int)(result.Definition.Enabled ? result.Definition.Visibility : 0)
                << " revision " << (int)result.Revision
-               << " sourceGeometry " << (result.SourceApproximate ? "numerical" : "analytic");
+               << " sourceGeometry " << (result.SourceApproximate ? "numerical" : "analytic")
+               << " isoFieldTolerance " << result.IsoFieldTolerance << " isoFieldResidual " << result.IsoFieldResidual
+               << " isoGeometryResidual " << result.IsoGeometryResidual << " isoDepth " << result.IsoSubdivisionDepth
+               << " isoPrimitives " << std::to_string(result.IsoPrimitives).c_str();
             const char* keys[] = {"negative", "section", "positive"};
             for (size_t i = 0; i < result.Portions.size(); ++i) {
                 di << " " << keys[i] << " {";
@@ -712,6 +726,7 @@ void ViewCaeTest::CutViewCommands::Factory(Draw_Interpretor& di)
         "  | heatflow id field componentX componentY componentZ [timeStep]\n"
         "  | list | fields | bounds | range id | stats | presentation id | rotate id axisIndex degrees [originX originY originZ]\n"
         "  | geometry [absoluteTolerance relativeTolerance faceLimit lineLimit maxSourcePrimitives]\n"
+        "  | isooptions [fieldAbsoluteTolerance fieldRelativeTolerance minimumDepth limit maxPrimitives]\n"
         "  | geometrymode [numerical/preferred/required]\n"
         "  | handle id 0/1 [gizmo0/1] | handleinfo | fit | field none\n"
         "  | project worldX worldY worldZ | mouse move/down/up/abort pixelX pixelY",

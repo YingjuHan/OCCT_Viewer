@@ -45,7 +45,7 @@ target_link_libraries (${PROJECT_NAME} PUBLIC RWBase RWCae)
 # OCCT dependencies
 target_link_libraries (${PROJECT_NAME} PUBLIC TKernel TKMath TKService TKPrim TKBO TKMesh)
 if (OCCTV_USE_VTK)
-  target_sources (${PROJECT_NAME} PRIVATE MeshVtkCell.cpp MeshVtkAnalytic.cpp MeshVtkCutSource.cpp MeshGeometryVtkCut.cpp)
+  target_sources (${PROJECT_NAME} PRIVATE MeshVtkCell.cpp MeshVtkAnalytic.cpp MeshVtkCutSource.cpp MeshGeometryVtkCut.cpp MeshGeometryVtkIso.cpp)
   target_link_libraries (${PROJECT_NAME} PUBLIC VTK::CommonCore VTK::CommonDataModel)
   target_compile_definitions (${PROJECT_NAME} PUBLIC OCCTV_USE_VTK)
 endif()

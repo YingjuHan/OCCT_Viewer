@@ -37,7 +37,12 @@ if (OCCTV_USE_VTK)
   target_compile_definitions (cut_reference_tests PRIVATE CUT_REFERENCE_FIXTURE_DIR="${CMAKE_CURRENT_BINARY_DIR}/cut-reference-fixtures")
   add_test (NAME cut_reference COMMAND cut_reference_tests)
   set_tests_properties (cut_reference PROPERTIES TIMEOUT 180 FIXTURES_SETUP cut_reference_fixtures)
-  set (VTK_NATIVE_TESTS vtk_cell_cut general_cut_cache cut_geometry cut_analytic cut_reference)
+  add_executable (cut_iso_tests CutIsoTests.cpp)
+  target_link_libraries (cut_iso_tests PRIVATE RWVtk ViewCaeGeom ViewCae)
+  target_compile_definitions (cut_iso_tests PRIVATE CUT_ISO_FIXTURE_DIR="${CMAKE_CURRENT_BINARY_DIR}/cut-iso-fixtures")
+  add_test (NAME cut_iso COMMAND cut_iso_tests)
+  set_tests_properties (cut_iso PROPERTIES TIMEOUT 240 FIXTURES_SETUP cut_iso_fixtures)
+  set (VTK_NATIVE_TESTS vtk_cell_cut general_cut_cache cut_geometry cut_analytic cut_reference cut_iso)
   set_tests_properties (vtk_cell_cut PROPERTIES TIMEOUT 300 FIXTURES_SETUP vtk_cell_fixtures)
   set (OCCTV_VTK_TEST_DATA "" CACHE PATH "Optional VTK ExternalData/Testing/Data directory")
   foreach (fixture quadraticTetra01.vtu onePolyhedron.vtu concavePolyhedron.vtu nonplanar_quad.vtk Disc_BiQuadraticQuads_0_0.vtu cube.vtu)
@@ -86,6 +91,11 @@ if (TARGET ViewDraw)
     set_tests_properties (draw_cut_view_quadric PROPERTIES ENVIRONMENT "${DRAW_TEST_ENV}"
       PASS_REGULAR_EXPRESSION "CUT_VIEW_QUADRIC_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" TIMEOUT 60)
     if (OCCTV_USE_VTK)
+      add_test (NAME draw_cut_view_high_order_iso COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_high_order_iso.tcl")
+      set_tests_properties (draw_cut_view_high_order_iso PROPERTIES
+        ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_ISO_FIXTURES=${CMAKE_CURRENT_BINARY_DIR}/cut-iso-fixtures"
+        FIXTURES_REQUIRED cut_iso_fixtures TIMEOUT 120
+        PASS_REGULAR_EXPRESSION "CUT_VIEW_HIGH_ORDER_ISO_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL")
       add_test (NAME draw_cut_view_references COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_references.tcl")
       set_tests_properties (draw_cut_view_references PROPERTIES
         ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_REFERENCE_FIXTURES=${CMAKE_CURRENT_BINARY_DIR}/cut-reference-fixtures"
@@ -122,6 +132,11 @@ if (TARGET ViewDraw)
         ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_RECOVERY_VISUAL=1;CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-recovery"
         PASS_REGULAR_EXPRESSION "CUT_VIEW_RECOVERY_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" RUN_SERIAL TRUE TIMEOUT 90)
       if (OCCTV_USE_VTK)
+        add_test (NAME draw_cut_view_high_order_iso_visual COMMAND "${OCCTV_DRAWEXE}" -i -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_high_order_iso.tcl")
+        set_tests_properties (draw_cut_view_high_order_iso_visual PROPERTIES
+          ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_ISO_FIXTURES=${CMAKE_CURRENT_BINARY_DIR}/cut-iso-fixtures;CUTVIEW_HIGH_ISO_VISUAL=1;CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-high-iso"
+          FIXTURES_REQUIRED cut_iso_fixtures RUN_SERIAL TRUE TIMEOUT 180
+          PASS_REGULAR_EXPRESSION "CUT_VIEW_HIGH_ORDER_ISO_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL")
         add_test (NAME draw_cut_view_references_visual COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_references.tcl")
         set_tests_properties (draw_cut_view_references_visual PROPERTIES
           ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_REFERENCE_FIXTURES=${CMAKE_CURRENT_BINARY_DIR}/cut-reference-fixtures;CUTVIEW_REFERENCE_VISUAL=1;CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-references"

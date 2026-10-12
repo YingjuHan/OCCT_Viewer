@@ -61,7 +61,11 @@ for SDK paths, logs, missing historical external fixtures and remaining work.
 - [x] N02 analytic source increment: OCCT polynomial/rational Bezier boundaries, explicit
   numerical fallback, exact bowed-tetra/warped-hex/curve/polygon references and held-pointer
   clouds; 31/31 native/DRAW cases pass three times.
-- [ ] G03 general family/interface support and precision closure audit; higher-order field isosurfaces.
+- [x] N02.3 original-FE numerical field isosurfaces: 37 generic chart types, six native
+  second-order families, enclosed/nonmonotone crossings, independent field tolerances,
+  provenance, deformation, held-threshold pixels/versions, abort and definition migration.
+  See [the supported scope and limits](cut-view-isosurfaces.md).
+- [ ] N02.4 bounded family/interface/precision closure audit and repeated full validation.
 - [x] N02 expanded independent references: curved wedges `26/31/32/73/80`, rational
   Bezier wedge `80`, and pyramids `27/37`, with native and DRAW geometry/FE checks.
 - [x] N02.1/N02.2 remaining curve/surface/tetra and mixed-order hex references,

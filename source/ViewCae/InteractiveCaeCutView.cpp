@@ -68,10 +68,11 @@ void InteractiveCaeCutView::SetStyle(ViewCaeGeom::MeshCutPortion thePortion, con
 
 void InteractiveCaeCutView::Synchronize()
 {
-    myPresentations.clear();
-    myLineArrays.clear();
-    myLineAspects.clear();
-    myPointArrays.clear(); myPointAspects.clear();
+    decltype(myPresentations) presentations;
+    decltype(myLineArrays) lineArrays;
+    decltype(myLineAspects) lineAspects;
+    decltype(myPointArrays) pointArrays;
+    decltype(myPointAspects) pointAspects;
     std::map<std::string, uint64_t> revisions;
     const auto definitions = myCuts.Definitions();
     const bool hasActiveCut = std::any_of(definitions.begin(), definitions.end(), [](const auto& cut) { return cut.Enabled; });
@@ -127,10 +128,10 @@ void InteractiveCaeCutView::Synchronize()
                         array->SetVertexColor(vertex,colors->PixelColor(column,0).GetRGB());
                     }
                 }
-                myPointArrays.push_back(array);
-                myPointAspects.push_back(new Graphic3d_AspectMarker3d(Aspect_TOM_O_POINT,aStyle.Color,2.0));
+                pointArrays.push_back(array);
+                pointAspects.push_back(new Graphic3d_AspectMarker3d(Aspect_TOM_O_POINT,aStyle.Color,2.0));
             }
-            myPresentations.push_back(aPrs);
+            presentations.push_back(aPrs);
             auto aSlice = Handle(ViewCaeGeom::MeshGeometrySlice)::DownCast(aResult.Portions[i]);
             if (aSlice.IsNull()) { continue; }
             const auto& aLines = aSlice->Lines();
@@ -160,10 +161,13 @@ void InteractiveCaeCutView::Synchronize()
                     }
                 }
             }
-            myLineArrays.push_back(anArray);
-            myLineAspects.push_back(anAspect);
+            lineArrays.push_back(anArray);
+            lineAspects.push_back(anAspect);
         }
     }
+    myPresentations = std::move(presentations);
+    myLineArrays = std::move(lineArrays); myLineAspects = std::move(lineAspects);
+    myPointArrays = std::move(pointArrays); myPointAspects = std::move(pointAspects);
     mySynchronizedRevisions = std::move(revisions);
     ++mySynchronizationCount;
     SetToUpdate();

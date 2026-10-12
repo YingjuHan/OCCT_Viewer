@@ -429,3 +429,15 @@ scvcutview model eval cut
 
 推荐接续指令：先完成 N02 清单中的高阶场等值面及闭环审计，再继续 N03 的完整 tensor/trace、OR union 与原生控件；之后依 N04-N09 实施，
 保留原有回归与用户修改，Web/WASM 始终排除。Windows 本次数值/参考与双配置验收已完成。
+
+## 12. 最新 N02.3 接续记录
+
+N02.1/N02.2 已提交 `7c925f2`。新增原始 FE 参数场等值面、独立场容差和预算。
+37 种参数单元、六类原生二阶单元、非单调双交叉/封闭圆球、独立有理函数、变形、
+来源、失效、CellData 和失败显示原子性有 native 验收；DRAW 真实 Tk held-threshold
+的 FE/版本/像素/Escape 回滚通过，初始与 held 图像已查看。最终定向 5/5 通过
+（67.02 秒）；VTK OFF 全套 8/8 各三次通过（6.24 秒）。
+
+[实现契约与限制](cut-view-isosurfaces.md)；日志位于 `build/mingw/cut-n02-iso-*`
+与 `build/mingw-no-vtk/cut-n02-closure-tests.log`。N02.3 已验收；下一步 N02.4
+双配置完整重复回归和范围审计，通过后推进 N03。前文旧停点保留为历史。

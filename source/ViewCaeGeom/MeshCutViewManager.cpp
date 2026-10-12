@@ -8,6 +8,7 @@
 #include <ViewCaeGeom/MeshGeometryQuadric.h>
 #ifdef OCCTV_USE_VTK
 #include <ViewCaeGeom/MeshGeometryVtkCut.h>
+#include <ViewCaeGeom/MeshGeometryVtkIso.h>
 #include <ViewCaeGeom/MeshVtkCutSource.h>
 #include <ViewCaeGeom/MeshVtkCell.h>
 #endif
@@ -285,15 +286,29 @@ bool MeshCutViewManager::EnsureDefaultPlanes()
 
 bool MeshCutViewManager::validIsoField(const Handle(RWCae::MeshNVecProperty)& field, int component) const
 {
+#ifndef OCCTV_USE_VTK
     if (myMesh->NbElems(RWCae::MeshElemType::Generic) != 0) { return false; }
+#else
+    // These cells have world-coordinate interpolation or disconnected strips,
+    // rather than the single FE parameter chart used by this numerical backend.
+    for (const auto& cell : myMesh->GenericCells()) {
+        if (cell.Type < 3 || cell.Type == 4 || cell.Type == 6 || cell.Type == 7
+            || cell.Type == 36 || cell.Type == 41 || cell.Type == 42
+            || !vtkSmartPointer<vtkCell>::Take(vtkGenericCell::InstantiateCell(cell.Type))) { return false; }
+    }
+    if (needsGeneralIso() && (myMesh->NbElems(RWCae::MeshElemType::Polyhedron)
+        || myMesh->NbElems(RWCae::MeshElemType::Polygon) || myMesh->NbElems(RWCae::MeshElemType::Elem0d))) { return false; }
+#endif
     if (field.IsNull() || !field->IsInitialized() || !field->HasScalarComponents()
         || (!field->IsNodal() && !field->IsElemental()) || field->Name().IsEmpty()
         || component < 0 || component >= field->NbRawComponents()) { return false; }
+#ifndef OCCTV_USE_VTK
     for (auto type : {RWCae::MeshElemType::Triangle2nd, RWCae::MeshElemType::Quad2nd,
                      RWCae::MeshElemType::Tetrahedron2nd, RWCae::MeshElemType::Pyramid2nd,
                      RWCae::MeshElemType::Prism2nd, RWCae::MeshElemType::Hexahedron2nd}) {
         if (myMesh->NbElems(type) > 0) { return false; }
     }
+#endif
     const auto values = field->GetRawComponent(component);
     const size_t count = field->IsNodal() ? myMesh->NbNodes() : myMesh->NbIndexedElems();
     if (count == 0 || count > (size_t)std::numeric_limits<int>::max()
@@ -322,15 +337,25 @@ Handle(RWCae::MeshScalarPropertyBase) MeshCutViewManager::isoValues(Entry& entry
     if (!entry.IsoValues.IsNull()) { return entry.IsoValues; }
     const auto field = resolveIsoField(entry.Definition);
     if (!validIsoField(field, entry.Definition.IsoComponent)) {
-        throw std::invalid_argument("Isosurface requires a unique, finite field on a first-order mesh");
+        throw std::invalid_argument("Isosurface requires a unique finite scalar on a supported mesh (high-order charts require VTK)");
     }
     entry.IsoValues = field->GetRawComponent(entry.Definition.IsoComponent);
     if (field->IsElemental()) {
-        // Project the selected scalar, including a magnitude/invariant, not its vector/tensor components.
-        Handle(RWCae::MeshNVecProperty) scalar = new RWCae::MeshNVecProperty(field->Name(), 1, field->MapType());
-        scalar->Init<RWCae::MeshScalarProperty>();
-        scalar->ChangeComponents().SetValue(0, entry.IsoValues);
-        entry.IsoValues = project(scalar)->GetComponent(0);
+        // The cut binding uses a fixed equal-weight projection of the selected
+        // scalar. Display recovery policies must not change the cutting tool.
+        std::vector<double> means(myMesh->NbNodes(),0); std::vector<unsigned> counts(myMesh->NbNodes(),0);
+        for (RWCae::MeshEntityId e = 0; e < myMesh->NbIndexedElems(); ++e) {
+            const double value = entry.IsoValues->Value(RWCae::MeshPropertyEntityInfo(e));
+            std::vector<RWCae::MeshEntityId> nodes; myMesh->ElementNodes(e,nodes);
+            std::sort(nodes.begin(),nodes.end()); nodes.erase(std::unique(nodes.begin(),nodes.end()),nodes.end());
+            for (auto n : nodes) { means[n] = CutFieldTools::Mean(means[n],value,++counts[n]); }
+        }
+        Handle(RWCae::MeshScalarProperty) projected = new RWCae::MeshScalarProperty(field->Name(),RWCae::MeshPropertyBase::MappingType::Nodal);
+        projected->Init(myMesh->NbNodes());
+        for (RWCae::MeshEntityId n = 0; n < myMesh->NbNodes(); ++n) {
+            projected->SetValue(RWCae::MeshPropertyEntityInfo(n),counts[n] ? means[n] : 0);
+        }
+        entry.IsoValues = projected;
     }
     return entry.IsoValues;
 }
@@ -432,6 +457,14 @@ bool MeshCutViewManager::needsGeneralPlane() const
         RWCae::MeshElemType::Pyramid2nd}) {
         if (myMesh->NbElems(type) > 0) { return true; }
     }
+    return false;
+}
+
+bool MeshCutViewManager::needsGeneralIso() const
+{
+    for (auto type : {RWCae::MeshElemType::Generic,RWCae::MeshElemType::Triangle2nd,RWCae::MeshElemType::Quad2nd,
+        RWCae::MeshElemType::Tetrahedron2nd,RWCae::MeshElemType::Hexahedron2nd,RWCae::MeshElemType::Prism2nd,
+        RWCae::MeshElemType::Pyramid2nd}) { if (myMesh->NbElems(type) > 0) { return true; } }
     return false;
 }
 
@@ -640,7 +673,14 @@ std::string MeshCutViewManager::DumpDefinitionsJson() const
     rapidjson::OStreamWrapper wrapper(stream);
     RWBase::JsonHelper::Writer writer(wrapper);
     writer.StartObject();
-    writer.Key("version"); writer.Int(3);
+    writer.Key("version"); writer.Int(4);
+    writer.Key("isoOptions"); writer.StartObject();
+    writer.Key("absolute"); writer.Double(myIsoOptions.AbsoluteTolerance);
+    writer.Key("relative"); writer.Double(myIsoOptions.RelativeTolerance);
+    writer.Key("minimumDepth"); writer.Int(myIsoOptions.MinimumDepth);
+    writer.Key("limit"); writer.Int(myIsoOptions.SubdivisionLimit);
+    writer.Key("primitives"); writer.Uint64(myIsoOptions.MaxPrimitives);
+    writer.EndObject();
     writer.Key("cuts"); writer.StartArray();
     for (const auto& entry : myEntries) {
         const auto& definition = entry.second->Definition;
@@ -683,9 +723,22 @@ bool MeshCutViewManager::RestoreDefinitionsJson(const std::string& theJson)
     rapidjson::Document document;
     document.Parse<rapidjson::kParseFullPrecisionFlag>(theJson.data(), theJson.size());
     if (document.HasParseError() || !document.IsObject() || !document.HasMember("version")
-        || !document["version"].IsInt() || document["version"].GetInt() < 1 || document["version"].GetInt() > 3
+        || !document["version"].IsInt() || document["version"].GetInt() < 1 || document["version"].GetInt() > 4
         || !document.HasMember("cuts") || !document["cuts"].IsArray()) { return false; }
     std::map<std::string, std::unique_ptr<Entry>> entries;
+    MeshCutIsoOptions isoOptions;
+    if (document["version"].GetInt() >= 4) {
+        if (!document.HasMember("isoOptions") || !document["isoOptions"].IsObject()) { return false; }
+        const auto& options = document["isoOptions"];
+        if (!options.HasMember("absolute") || !options["absolute"].IsNumber()
+            || !options.HasMember("relative") || !options["relative"].IsNumber()
+            || !options.HasMember("minimumDepth") || !options["minimumDepth"].IsInt()
+            || !options.HasMember("limit") || !options["limit"].IsInt()
+            || !options.HasMember("primitives") || !options["primitives"].IsUint64()) { return false; }
+        isoOptions.AbsoluteTolerance = options["absolute"].GetDouble(); isoOptions.RelativeTolerance = options["relative"].GetDouble();
+        isoOptions.MinimumDepth = options["minimumDepth"].GetInt(); isoOptions.SubdivisionLimit = options["limit"].GetInt();
+        isoOptions.MaxPrimitives = options["primitives"].GetUint64(); if (!isoOptions.IsValid()) { return false; }
+    }
     for (const auto& cut : document["cuts"].GetArray()) {
         if (!cut.IsObject() || !cut.HasMember("id") || !cut["id"].IsString() || !cut.HasMember("name")
             || !cut["name"].IsString() || !cut.HasMember("visibility") || !cut["visibility"].IsUint()
@@ -714,7 +767,7 @@ bool MeshCutViewManager::RestoreDefinitionsJson(const std::string& theJson)
             }
             if (!normalizePlane(definition.Plane, definition.Plane)) { return false; }
         } else if (shape == "sphere" || shape == "cylinder") {
-            if (document["version"].GetInt() != 3 || !cut.HasMember("center") || !cut["center"].IsArray()
+            if (document["version"].GetInt() < 3 || !cut.HasMember("center") || !cut["center"].IsArray()
                 || cut["center"].Size() != 3 || !cut.HasMember("axis") || !cut["axis"].IsArray()
                 || cut["axis"].Size() != 3 || !cut.HasMember("radius") || !cut["radius"].IsNumber()) { return false; }
             Graphic3d_Vec3d center, axis;
@@ -742,6 +795,7 @@ bool MeshCutViewManager::RestoreDefinitionsJson(const std::string& theJson)
         entries.emplace(id, std::move(entry));
     }
     Clear();
+    myIsoOptions = isoOptions;
     myEntries = std::move(entries);
     return true;
 }
@@ -776,7 +830,7 @@ double MeshCutViewManager::EffectiveDeformationScale() const
         : myDeformationScale * RWCae::MeshTools::ComputeVectorTrsfRatio(myMesh, myDeformationField);
 }
 
-Handle(MeshGeometry) MeshCutViewManager::makeSourceGeometry()
+Handle(MeshGeometry) MeshCutViewManager::makeSourceGeometry(bool boundary)
 {
     Handle(MeshGeometry) root = new MeshGeometryBase(myBvh, myMesh);
     if (!myDeformationField.IsNull()) {
@@ -786,7 +840,7 @@ Handle(MeshGeometry) MeshCutViewManager::makeSourceGeometry()
         deformed->SetDeformedScaleCoeff(myDeformationScale);
     }
 #ifdef OCCTV_USE_VTK
-    if (needsGeneralPlane()) {
+    if (boundary && needsGeneralPlane()) {
         root->Append(new MeshGeometryVtkCut(myBvh,MeshCutDefinition(),MeshCutPortion::Negative,generalSource(),true));
     }
 #endif
@@ -823,7 +877,7 @@ void MeshCutViewManager::initialize(Entry& theEntry)
         isoValues = this->isoValues(theEntry);
     }
     for (size_t i = 0; i < theEntry.Roots.size(); ++i) {
-        theEntry.Roots[i] = makeSourceGeometry();
+        theEntry.Roots[i] = makeSourceGeometry(isoValues.IsNull());
 #ifdef OCCTV_USE_VTK
         bool nonSimplex = false;
         for (int t = 0; t < RWCae::MeshElemNbTypes; ++t) {
@@ -833,6 +887,8 @@ void MeshCutViewManager::initialize(Entry& theEntry)
         if ((theEntry.Definition.Shape == MeshCutShape::Plane && needsGeneralPlane())
             || ((theEntry.Definition.Shape == MeshCutShape::Sphere || theEntry.Definition.Shape == MeshCutShape::Cylinder) && nonSimplex)) {
             theEntry.Portions[i] = new MeshGeometryVtkCut(myBvh,theEntry.Definition,(MeshCutPortion)i,generalSource());
+        } else if (!isoValues.IsNull() && needsGeneralIso()) {
+            theEntry.Portions[i] = new MeshGeometryVtkIso(myBvh,theEntry.Definition,(MeshCutPortion)i,isoValues,myGeometryOptions,myIsoOptions);
         } else
 #else
         if (myMesh->NbElems(RWCae::MeshElemType::Generic) > 0) { throw std::invalid_argument("Generic VTK cells require OCCTV_USE_VTK"); }
@@ -934,6 +990,14 @@ MeshCutResult MeshCutViewManager::Evaluate(const std::string& theId,
             aResult.BoundaryMesh = true;
         }
 #ifdef OCCTV_USE_VTK
+        if (auto iso = dynamic_cast<MeshGeometryVtkIso*>(aResult.Portions[i].get())) {
+            aResult.Volumes[i] = iso->Volume; aResult.Areas[i] = iso->Area; aResult.SourceApproximate = true;
+            aResult.IsoFieldTolerance = std::max(aResult.IsoFieldTolerance,iso->FieldTolerance);
+            aResult.IsoFieldResidual = std::max(aResult.IsoFieldResidual,iso->FieldResidual);
+            aResult.IsoGeometryResidual = std::max(aResult.IsoGeometryResidual,iso->GeometryResidual);
+            aResult.IsoSubdivisionDepth = std::max(aResult.IsoSubdivisionDepth,iso->Depth);
+            aResult.IsoPrimitives = std::max(aResult.IsoPrimitives,iso->Primitives);
+        }
         if (auto general = dynamic_cast<MeshGeometryVtkCut*>(aResult.Portions[i].get())) {
             aResult.Volumes[i] = general->Volume(); aResult.Areas[i] = general->Area(); aResult.BoundaryMesh = true;
             aResult.SourceApproximate = generalSource()->Work.NumericalCells > 0;
@@ -1063,5 +1127,25 @@ bool MeshCutViewManager::SetRecoveryOptions(const MeshCutRecoveryOptions& option
         && options.InvariantsBeforeAveraging == myRecoveryOptions.InvariantsBeforeAveraging
         && options.Regions == myRecoveryOptions.Regions) { return true; }
     myRecoveryOptions = options; InvalidateFields(); return true;
+}
+
+bool MeshCutIsoOptions::IsValid() const
+{
+    return std::isfinite(AbsoluteTolerance) && AbsoluteTolerance > 0 && std::isfinite(RelativeTolerance) && RelativeTolerance >= 0
+        && MinimumDepth >= 1 && MinimumDepth <= SubdivisionLimit && SubdivisionLimit <= 8
+        && MaxPrimitives > 0 && MaxPrimitives <= 10000000;
+}
+
+bool MeshCutViewManager::SetIsoOptions(const MeshCutIsoOptions& options)
+{
+    if (!options.IsValid()) { return false; }
+    if (options.AbsoluteTolerance == myIsoOptions.AbsoluteTolerance && options.RelativeTolerance == myIsoOptions.RelativeTolerance
+        && options.MinimumDepth == myIsoOptions.MinimumDepth && options.SubdivisionLimit == myIsoOptions.SubdivisionLimit
+        && options.MaxPrimitives == myIsoOptions.MaxPrimitives) { return true; }
+    myIsoOptions = options;
+    for (auto& entry : myEntries) {
+        if (entry.second->Definition.Shape == MeshCutShape::Isosurface) { release(*entry.second); ++entry.second->Revision; }
+    }
+    return true;
 }
 }

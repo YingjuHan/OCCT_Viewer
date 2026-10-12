@@ -474,6 +474,12 @@ static void isosurfaceSurfaceAndCells()
     require(cut.Portions[1]->GetMeshData()->NbNodes() == 3, "Projected elemental iso not generated");
     for (const auto& p : cut.Portions[1]->GetMeshData()->Nodes()) { near(p.z(), 0.5, "Equal-weight iso projection"); }
     near(volume(cut.Portions[0]->GetMeshData()), std::pow(0.5,3)/6, "Projected iso below volume");
+    MeshCutRecoveryOptions recovery; recovery.Regions = {1,2}; recovery.ThresholdPercent = 0;
+    require(cells.SetRecoveryOptions(recovery),"Recovery options rejected for iso");
+    for (const auto& p : cells.Evaluate("cell").Portions[1]->GetMeshData()->Nodes()) {
+        near(p.z(),0.5,"Display recovery moved fixed elemental iso projection");
+    }
+    cells.SetRecoveryOptions(MeshCutRecoveryOptions());
 
     Handle(RWCae::MeshNVecProperty) vector = new RWCae::MeshNVecProperty("cell_vector", 3,
         RWCae::MeshPropertyBase::MappingType::Elemental, RWCae::MeshNVecPropertyType::Vector);
@@ -559,8 +565,15 @@ static void isosurfaceBoundaryAndQuadratic()
     const RWCae::MeshEntityId nodes[] = {0,1,2,3,4,5};
     quadratic->AddElement(RWCae::MeshElementTriangle2nd(nodes));
     MeshCutViewManager highOrder(quadratic);
+#ifdef OCCTV_USE_VTK
+    require(highOrder.AddIsosurface("quadratic", field("x", true, {0,1,0,0.5,0.5,0}), 0, 0.25), "Quadratic iso rejected");
+    auto section = Handle(MeshGeometrySlice)::DownCast(highOrder.Evaluate("quadratic").Portions[1]);
+    require(!section->Lines().empty(), "Quadratic iso line missing");
+    for (const auto& p : section->GetMeshData()->Nodes()) { near(p.x(),0.25,"Quadratic iso wrong parameter"); }
+#else
     require(!highOrder.AddIsosurface("unsupported", field("x", true, {0,1,0,0.5,0.5,0}), 0, 0.25)
         && highOrder.Definitions().empty(), "Quadratic iso silently used linear interpolation");
+#endif
 }
 
 static void defaultPlanes()

@@ -14,6 +14,7 @@ namespace eval ::CutViewManager {
     variable lastAngle 0
     variable position 0
     variable positionText 0
+    variable sliderSnapshot ""
     variable normal {1 0 0}
     variable shape plane
     variable createShape Plane
@@ -254,6 +255,23 @@ proc ::CutViewManager::translate {value} {
     refresh
 }
 
+proc ::CutViewManager::sliderBegin {} {
+    variable sliderSnapshot; variable model; variable w
+    set sliderSnapshot [scvcutview $model snapshot]
+    focus -force $w.controls.translate
+}
+proc ::CutViewManager::sliderEnd {} {
+    variable sliderSnapshot; set sliderSnapshot ""
+}
+proc ::CutViewManager::sliderAbort {} {
+    variable sliderSnapshot; variable model
+    if {$sliderSnapshot ne ""} {
+        scvcutview $model restore $sliderSnapshot
+        set sliderSnapshot ""
+        refresh 1
+    }
+}
+
 proc ::CutViewManager::rotate {value} {
     variable busy; variable model; variable selected; variable axis; variable lastAngle
     if {$busy || $selected eq "" || [dict get [scvcutview $model handleinfo] dragging]} { return }
@@ -415,6 +433,7 @@ proc ::CutViewManager::load {} {
 
 proc ::CutViewManager::close {} {
     variable w; variable model; variable selected; variable timer
+    variable sliderSnapshot; set sliderSnapshot ""
     if {$timer ne ""} { after cancel $timer; set timer "" }
     if {$model ne "" && $selected ne ""} { catch {scvcutview $model handle $selected 0} }
     if {[winfo exists $w]} { destroy $w }
@@ -503,6 +522,9 @@ proc scvcutmanager {theModel} {
     bind $w.controls.motion <<ComboboxSelected>> {::CutViewManager::invoke ::CutViewManager::motion}
     bind $w.controls.axis <<ComboboxSelected>> {::CutViewManager::invoke ::CutViewManager::motion}
     ::tk::scale $w.controls.translate -orient horizontal -showvalue 0 -resolution -1 -digits 17 -variable ::CutViewManager::position -command {::CutViewManager::invoke ::CutViewManager::translate}
+    bind $w.controls.translate <ButtonPress-1> +{::CutViewManager::sliderBegin}
+    bind $w.controls.translate <ButtonRelease-1> +{::CutViewManager::sliderEnd}
+    bind $w.controls.translate <Escape> {::CutViewManager::invoke ::CutViewManager::sliderAbort}
     ::tk::scale $w.controls.rotate -orient horizontal -from -180 -to 180 -resolution 0.5 -showvalue 1 -variable ::CutViewManager::angle -command {::CutViewManager::invoke ::CutViewManager::rotate}
     ::CutViewManager::motion
     foreach widget {below on above} label {Below On Above} column {1 2 3} {

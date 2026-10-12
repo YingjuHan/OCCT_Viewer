@@ -50,6 +50,17 @@ struct MeshCutStatistics {
 };
 class MeshVtkCutSource;
 
+//! Sampled numerical isosurface controls. Field tolerances have field units;
+//! geometry tolerances remain in model units. This is not a certified root isolation.
+struct MeshCutIsoOptions {
+    double AbsoluteTolerance = 1e-6;
+    double RelativeTolerance = 1e-3;
+    int MinimumDepth = 2;
+    int SubdivisionLimit = 6;
+    uint64_t MaxPrimitives = 2000000;
+    Standard_EXPORT bool IsValid() const;
+};
+
 struct MeshCutDefinition {
     std::string Id;
     std::string Name;
@@ -86,6 +97,11 @@ struct MeshCutResult {
     bool BoundaryMesh = false;
     bool SourceApproximate = false;
     bool DisplayRecovered = false;
+    double IsoFieldTolerance = 0;
+    double IsoFieldResidual = 0;
+    double IsoGeometryResidual = 0;
+    int IsoSubdivisionDepth = 0;
+    uint64_t IsoPrimitives = 0;
 };
 
 //! Native cut management. Cuts are independent additive branches, not chained clips.
@@ -101,7 +117,8 @@ public:
     Standard_EXPORT bool SetPlane(const std::string& theId, const Graphic3d_Vec4d& thePlane);
     //! Creates inactive central X/Y/Z planes only when no definitions exist.
     Standard_EXPORT bool EnsureDefaultPlanes();
-    //! First-order scalar cutting; elemental cut fields use equal-weight nodal projection.
+    //! Scalar cutting; VTK chart cells use bounded original-FE numerical refinement.
+    //! Elemental cut fields use equal-weight nodal projection.
     //! The field is registered with the source mesh for durable JSON binding.
     Standard_EXPORT bool AddIsosurface(const std::string& theId,
         const Handle(RWCae::MeshNVecProperty)& theField, int theComponent, double theValue);
@@ -150,13 +167,15 @@ public:
     const MeshCutGeometryOptions& GeometryOptions() const { return myGeometryOptions; }
     Standard_EXPORT bool SetRecoveryOptions(const MeshCutRecoveryOptions& theOptions);
     const MeshCutRecoveryOptions& RecoveryOptions() const { return myRecoveryOptions; }
+    Standard_EXPORT bool SetIsoOptions(const MeshCutIsoOptions& theOptions);
+    const MeshCutIsoOptions& IsoOptions() const { return myIsoOptions; }
 
 private:
     struct Entry;
     Entry* find(const std::string& theId);
     void release(Entry& theEntry);
     void initialize(Entry& theEntry);
-    Handle(MeshGeometry) makeSourceGeometry();
+    Handle(MeshGeometry) makeSourceGeometry(bool theBoundary = true);
     bool moveCachedPlane(Entry& theEntry, const Graphic3d_Vec4d& thePlane);
     bool validIsoField(const Handle(RWCae::MeshNVecProperty)& theField, int theComponent) const;
     bool bindIsoField(Entry& theEntry, const Handle(RWCae::MeshNVecProperty)& theField,
@@ -166,6 +185,7 @@ private:
     Handle(RWCae::MeshNVecProperty) project(const Handle(RWCae::MeshNVecProperty)& theField);
     bool validQuadricMesh() const;
     bool needsGeneralPlane() const;
+    bool needsGeneralIso() const;
     bool setQuadric(Entry& theEntry, MeshCutShape theShape, const Graphic3d_Vec3d& theCenter,
         const Graphic3d_Vec3d& theAxis, double theRadius);
 #ifdef OCCTV_USE_VTK
@@ -175,6 +195,7 @@ private:
     uint64_t mySourceEpoch = 1;
     MeshCutGeometryOptions myGeometryOptions;
     MeshCutRecoveryOptions myRecoveryOptions;
+    MeshCutIsoOptions myIsoOptions;
 
     Handle(RWCae::MeshData) myMesh;
     Handle(MeshBvhData) myBvh;

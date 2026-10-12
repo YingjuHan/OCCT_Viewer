@@ -25,7 +25,12 @@ public:
     };
     MeshVtkCell(const Handle(RWCae::MeshData)& theMesh, RWCae::MeshEntityId theIndex,
         MeshGeometry* theSource, double theTolerance,
-        const MeshCutGeometryOptions& theOptions = MeshCutGeometryOptions(), int theMinimumDepth = 0);
+        const MeshCutGeometryOptions& theOptions = MeshCutGeometryOptions(), int theMinimumDepth = 0,
+        bool thePrepareBoundary = true);
+    //! Parameter-space simplices and original FE evaluation, without inverse mapping.
+    std::vector<std::array<Graphic3d_Vec3d,4>> ParameterSimplices() const;
+    MeshInterpolatedNode EvaluateParameter(const Graphic3d_Vec3d& theParameter,
+        Graphic3d_Vec3d& thePosition) const;
     MeshInterpolatedNode Origin(const Graphic3d_Vec3d& thePosition) const;
     int Dimension() const { return myCell->GetCellDimension(); }
     std::vector<std::array<Graphic3d_Vec3d,3>> Triangles;

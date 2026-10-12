@@ -465,3 +465,13 @@ build/cut-release/bin/cut_view_benchmark 100 2 20 20
 Arguments are grid size, visibility mask, frame count, and movement span. Size 100 creates one million
 hexahedra. The default span stays in one topology interval; span 20 crosses cell layers. Output explicitly
 excludes rendering. See `DOCUMENT/cut-view-development.md` for measured results and outstanding acceptance.
+
+## Higher-order field-isosurface acceptance
+
+VTK-enabled `cut_iso` generates `cut-iso-fixtures` for the batch and interactive
+`draw_cut_view_high_order_iso` tests. The visual variant uses real held Tk scale
+events and Escape rollback, checking original FE roots/areas, display revisions
+and changing cloud pixels. See [the contract](../DOCUMENT/cut-view-isosurfaces.md).
+
+Final focused acceptance: 5/5 in 67.02 seconds. VTK OFF: 8/8, each three times,
+6.24 seconds. Logs: `cut-n02-iso-*`, `cut-n02-closure-tests.log`.

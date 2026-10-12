@@ -26,7 +26,7 @@
 
 namespace ViewCaeGeom {
 MeshVtkCell::MeshVtkCell(const Handle(RWCae::MeshData)& mesh, RWCae::MeshEntityId index,
-    MeshGeometry* source, double tolerance, const MeshCutGeometryOptions& options, int minimumDepth)
+    MeshGeometry* source, double tolerance, const MeshCutGeometryOptions& options, int minimumDepth, bool prepareBoundary)
     : myCell(vtkSmartPointer<vtkGenericCell>::New()), myTolerance(tolerance), myOptions(options), myMinimumDepth(minimumDepth)
 {
     const auto& indexed = mesh->IndexedElements()[index];
@@ -131,6 +131,7 @@ MeshVtkCell::MeshVtkCell(const Handle(RWCae::MeshData)& mesh, RWCae::MeshEntityI
         }
     }
     if (auto polygon = vtkPolygon::SafeDownCast(myCell->GetRepresentativeCell())) { polygon->SetUseMVCInterpolation(true); }
+    if (!prepareBoundary) { return; }
     if (Dimension() == 3) {
         if (topology.Type == 41) {
             // ConvexPointSet exposes tetrahedralization, but no GetFace() boundary.
@@ -263,6 +264,53 @@ Graphic3d_Vec3d MeshVtkCell::InteriorPoint() const
     std::vector<double> weights(myNodes.size());
     myCell->EvaluateLocation(sub,q,p,weights.data());
     return Graphic3d_Vec3d(p[0],p[1],p[2]);
+}
+
+std::vector<std::array<Graphic3d_Vec3d,4>> MeshVtkCell::ParameterSimplices() const
+{
+    const int type = myCell->GetCellType();
+    if (type == 14 || type == 27 || type == 37 || type == 33) {
+        // VTK pyramid FE maps use a cube chart collapsed at z=1. Its nodal
+        // triangulation is a physical pyramid and does not cover this chart.
+        // Type 33 also inherits a triangulation containing virtual local IDs.
+        const Graphic3d_Vec3d p[] = {Graphic3d_Vec3d(0,0,0),Graphic3d_Vec3d(1,0,0),Graphic3d_Vec3d(1,1,0),Graphic3d_Vec3d(0,1,0),
+            Graphic3d_Vec3d(0,0,1),Graphic3d_Vec3d(1,0,1),Graphic3d_Vec3d(1,1,1),Graphic3d_Vec3d(0,1,1)};
+        return {{{p[0],p[1],p[2],p[6]}},{{p[0],p[2],p[3],p[6]}},{{p[0],p[3],p[7],p[6]}},
+                {{p[0],p[7],p[4],p[6]}},{{p[0],p[4],p[5],p[6]}},{{p[0],p[5],p[1],p[6]}}};
+    }
+    const auto coordinates = myCell->GetParametricCoords();
+    const int count = Dimension()+1;
+    vtkNew<vtkIdList> ids;
+    if (!coordinates || !myCell->TriangulateLocalIds(0,ids) || ids->GetNumberOfIds()%count) {
+        throw std::invalid_argument("Isosurface cell has no simplex parameter chart");
+    }
+    std::vector<std::array<Graphic3d_Vec3d,4>> result;
+    for (vtkIdType n = 0; n < ids->GetNumberOfIds(); n += count) {
+        std::array<Graphic3d_Vec3d,4> simplex;
+        for (int a = 0; a < count; ++a) {
+            const auto id = ids->GetId(n+a);
+            if (id < 0 || id >= (vtkIdType)myNodes.size()) { throw std::invalid_argument("Invalid isosurface chart triangulation"); }
+            simplex[a] = Graphic3d_Vec3d(coordinates[3*id],coordinates[3*id+1],coordinates[3*id+2]);
+        }
+        result.push_back(simplex);
+    }
+    return result;
+}
+
+MeshInterpolatedNode MeshVtkCell::EvaluateParameter(const Graphic3d_Vec3d& parameter, Graphic3d_Vec3d& position) const
+{
+    double q[] = {parameter.x(),parameter.y(),parameter.z()}, p[3]; int sub = 0;
+    std::vector<double> weights(myNodes.size());
+    myCell->EvaluateLocation(sub,q,p,weights.data()); position = Graphic3d_Vec3d(p[0],p[1],p[2]);
+    MeshInterpolatedNode result((int)myNodes.size()); double sum = 0;
+    for (size_t n = 0; n < weights.size(); ++n) {
+        if (!std::isfinite(weights[n])) { throw std::runtime_error("Nonfinite isosurface FE weight"); }
+        sum += weights[n]; result.AddBaseNode(myNodes[n],weights[n]);
+    }
+    if (!std::isfinite(p[0]) || !std::isfinite(p[1]) || !std::isfinite(p[2]) || std::abs(sum-1) > 1e-8) {
+        throw std::runtime_error("Invalid isosurface FE map");
+    }
+    return result;
 }
 
 MeshInterpolatedNode MeshVtkCell::Origin(const Graphic3d_Vec3d& position) const
