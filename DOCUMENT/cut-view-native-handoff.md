@@ -6,10 +6,11 @@
 N03.1 恢复控件/定义持久化、N03.2 张量、N03.3 双侧来源/独立选侧及
 N03.4 实际 OR 并集/透明显示均已验收。N03.5 完整双配置闭环审计通过，
 N03 已按 [原生支持契约](cut-view-n03-audit.md) 闭环。最新证据在第 23 节，
-旧 milestone 记录保留为历史。N04 导入与普通 Viewer 已启动，见 [N04 队列](cut-view-n04-plan.md)；
-N05–N09 尚未启动。最新 N04 证据在第 24 节。
+旧 milestone 记录保留为历史。N04.1–N04.8 已验收，N04 已按原生支持范围闭环，
+见 [N04 队列](cut-view-n04-plan.md) 和 [闭环审计](cut-view-n04-audit.md)。
+N05–N09 尚未启动。第 24 节及后续各项保留分项证据，当前状态以本节为准。
 后文的 Linux 验证记录保留为历史证据；
-本次 Windows 配置与结果以本节及第 6 节的接续记录为准。
+本次 Windows 配置与结果以本节和末尾 N04.8 闭环记录为准；第 6 节保留先前增量证据。
 
 - 仓库：`D:/workspace/OpenCASCADE/OCCT_Viewer`；分支：`develop`；初始接续基线：`95fb291`。
 - 目标：完成原生 Cut View Manager 的 N02-N09 及对应 TODO，实施、修复并通过 native/DRAW 验收。
@@ -18,10 +19,11 @@ N05–N09 尚未启动。最新 N04 证据在第 24 节。
   N02.4 `7910a48`、N03.1 `2caeb2f`、N03.2 `17f421c` 已提交；
   N03.3 `f719eeb`、N03.4a `db6268b`、N03.4b `addbb03`、N03.4c `eba2a37` 已提交；
   曲面 cap/内部面修复 `3a1fd44`、N03 闭环文档 `6bacc14` 已提交；
-  N01–N03 已按支持范围闭环，N04.1 诊断/导入发布基础已验收；N05–N09 尚未实施。
+  N01–N04 已按支持范围闭环；N05–N09 尚未实施。
+- N04.1–N04.7 提交：`68fe366`、`e1a45a4`、`82eaf55`、`65c4352`、`b1ada38`、`5c8c9e3`、`dbfe66b`；每项之后均显式刷新 MCP 索引。
 - 每个验收工作项单独提交；保留用户既有修改及 `AGENTS.md`。
 
-接续时以本说明的最新证据为准。主交接、执行队列和设计中的当前 N03 状态为 verified；
+接续时以本说明的最新证据为准。主交接、执行队列和设计中的当前 N01–N04 状态为 verified；
 历史 milestone 的 31/34 cases 记录保留，不代表当前 Windows 套件计数，也不能据此把未完成阶段改为 done。
 
 相关规划与说明：
@@ -63,7 +65,7 @@ N05–N09 尚未启动。最新 N04 证据在第 24 节。
 | VTK 源码/构建 | `D:/workspace/VTK/vtk-9.5.2` / `build-9.5.2-mingw64` |
 | VTK 官方数据 | `D:/workspace/VTK/test-data-9.5.2`，六个 SHA512 校验文件 |
 | 本项目当前构建 | `build/mingw`，MinGW Debug，VTK ON，DRAW/visual ON，Web OFF |
-| 无 VTK 验证 | `build/mingw-no-vtk`，MinGW Debug，VTK OFF / visual OFF；8/8 各三次通过 |
+| 无 VTK 验证 | `build/mingw-no-vtk`，MinGW Debug，VTK OFF / visual OFF；N04.8 全量 22/22 各三次通过 |
 | 产物 | `build/mingw/bind/`、`build/mingw/libd/` |
 
 使用自定义 OCCT SDK。Windows 应用现有补丁中的 `AIS_ViewController.cxx` 和
@@ -78,7 +80,7 @@ N05–N09 尚未启动。最新 N04 证据在第 24 节。
 | --- | --- |
 | `source/RWCae/MeshData.{h,cpp}` | 原始拓扑、GenericCell、原始节点/单元 ID、字段与高阶元数据 |
 | `source/RWVtk/` | Legacy/XML/composite/series 读取，原生 VTK fallback、导入报告 |
-| `source/RWMeshConv/MeshLoader.cpp` | 上层导入入口，后续结构化诊断和相对引用 staging |
+| `source/RWMeshConv/MeshLoader.cpp` | 上层导入入口、结构化报告、可选本地引用 staging 和逻辑资源限额 |
 | `source/ViewCaeGeom/MeshCutViewManager.{h,cpp}` | cut 定义、生命周期、源 epoch、几何和字段失效、独立 Evaluate |
 | `MeshVtkCutSource.{h,cpp}` | 原始单元 evaluator、保守 BVH、lazy OCCT shape、共享面邻接 |
 | `MeshVtkCell.{h,cpp}` | 原始 VTK 形函数、逆映射、曲面/曲线离散、来源权重 |
@@ -235,8 +237,8 @@ Windows 接续已收尾 fixture 的 double-to-float 显式转换。上述八个�
 1. 已完成：Windows SDK 准备、MinGW 编译问题、恢复元数据/所有分量/极端数值验证，
    八类新曲面 DRAW 独立参考，以及 VTK-enabled/disabled 三次完整回归。
 2. N02 已在 [闭环支持范围](cut-view-n02-audit.md) verified，N03.1–N03.4 已验收。
-3. N03.5 已闭环：完整 VTK ON 48/48、OFF 14/14 每项三次；截图、支持边界和文档已核对。
-   完整 session 持久化仍 N09；下一阶段为 N04，当前尚未启动。
+3. N03.5 已闭环：当时完整 VTK ON 48/48、OFF 14/14 每项三次。N04.1–N04.7
+   导入与普通 Viewer、N04.8 最终全量审计均已验收。下一阶段为 N05；完整 session 仍 N09。
 4. 保留一般支持/精度限制；新增参考不能泛化为所有阶精确或百万单元全帧指标达标。
 
 ## 8. 历史 Linux 可复用命令
@@ -324,7 +326,7 @@ scvcutview model eval cut
 
 `help scvcutview` 为当前完整命令入口。`test/cae/cut_view_vtk_demo.tcl`、`cut_view_quadric_demo.tcl` 为交互演示；自动回归脚本通常以 `exit` 结束，不能当常驻 demo source 后继续交互。
 
-## 9. 后续阶段设计与执行顺序
+## 9. 阶段设计与执行顺序（当前状态见第 1、10 节）
 
 ### N03：恢复、物理界面 trace、多 cut 合并
 
@@ -387,7 +389,7 @@ scvcutview model eval cut
 
 下表保留各阶段状态；“待做”不表示前置模块毫无基础，“partial”也不能当完成。
 
-| ID | 原生任务 | 暂停状态/下一步 |
+| ID | 原生任务 | 当前状态/下一步 |
 | --- | --- | --- |
 | R00 | held-drag、所有现有控件、崩溃修复 | verified；后续持续回归 |
 | G01 | 一阶 field isosurface | verified；支持的高阶数值 FE 等值面另由 N02 验收，不代替 plane |
@@ -403,11 +405,11 @@ scvcutview model eval cut
 | M06 | vector/orientation/annotations | 待做，N05 |
 | M07 | CAD section/global clipping 同步 | 待做，N05 |
 | D01 | deformation guides/material-following frame | partial；guide 已验收，material frame N06 |
-| V01 | point/line/polyline 普通 Viewer | partial；CutView 路径已有，普通 Viewer N04 |
-| V02 | Legacy 剩余范围及明确诊断 | 待做，N04 |
-| V03 | 变化几何/拓扑 series 与时间校验 | 待做，N04 |
-| V04 | 坏数据、binary/compression/offset 全面回归 | 已有基础，剩余 N04 |
-| V05 | bounded decoding 与资源限额 | 待做，N04 |
+| V01 | point/line/polyline 普通 Viewer | verified at N04.2；普通 scalar Viewer、原始 FE/CellData；general cells 需要 VTK ON |
+| V02 | Legacy 剩余范围及明确诊断 | verified at N04.3 支持契约；Legacy polyhedron 42 需要 VTU |
+| V03 | 变化几何/拓扑 series 与时间校验 | verified at N04.4/.7；每步完整独立数据、不同节点/单元数、时间/schema/tuple 校验；播放 N06 |
+| V04 | 坏数据、binary/compression/offset 全面回归 | verified at N04.5；大小端/十数值类型/headers/base64/raw/zlib 安全矩阵 |
+| V05 | bounded decoding 与资源限额 | verified at N04.6/.7；逻辑预算和 kernel peak 测量，不代表完整 Viewer 硬内存上限 |
 | D02 | coordinated steps/animation | 待做，N06 |
 | D03 | regular/range/rotation/path slicing | 待做，N06 |
 | P01 | cache policy、硬预算和 eviction | partial；epoch/BVH/lazy 基础 verified，预算 N08 |
@@ -416,8 +418,8 @@ scvcutview model eval cut
 | I03 | overlays/distributed results/reports | 待做，N07 |
 | A01 | mapped crack-distance automatic cuts | 待做，N07 |
 | A02 | mapped optimization-density cuts | 待做，N07 |
-| B01 | structured import reports 到 native caller | 剩余 N04 |
-| B02 | relative-file staging | 待做，N04 |
+| B01 | structured import reports 到 native caller | verified at N04.1/.3/.7；上下文、原始/staged 路径、失败旧对象保留 |
+| B02 | relative-file staging | verified at N04.7 本地文件范围；嵌套引用、同 basename、循环/深度/文件预算和失败清理 |
 | B03 | native Viewer Cut API | 待做，N05；TypeScript 排除 |
 | S01 | native session migration/persistence | 待做，N09 |
 | P02 | 百万单元全帧仪表与优化 | 待做，N08；当前未满足 |
@@ -433,10 +435,13 @@ scvcutview model eval cut
 5. 视觉变化查看截图；性能变化记录全帧与内存测量，不能只报告非空画面。
 6. 更新执行文档中的具体证据、限制、命令和状态，再推进下一阶段。
 
-推荐接续指令：N03 已闭环，下一阶段按 N04-N09 顺序推进，先完成导入与普通
-Viewer 的剩余范围。保留原有回归与用户修改，Web/WASM 始终排除。
+接续顺序：N04 已闭环，下一阶段推进 N05 的 datum、独立样式、legend/probe
+与 native Viewer 协调。保留原有回归与用户修改，Web/WASM 始终排除。
 
 ## 12. 最新 N02.3 接续记录
+
+第 12 节起按时间保留各历史增量及当时的 next-step 记录。旧测试计数和未启动
+状态不是当前进度；当前状态以第 1、10 节及最后的阶段闭环证据为准。
 
 N02.1/N02.2 已提交 `7c925f2`。新增原始 FE 参数场等值面、独立场容差和预算。
 37 种参数单元、六类原生二阶单元、非单调双交叉/封闭圆球、独立有理函数、变形、
@@ -603,7 +608,7 @@ BRep 退化，并补出 full mask 下 compsolid 共享内部球面的暴露面�
 OR 云图均已查看。完整支持范围及限制见 [N03 审计](cut-view-n03-audit.md)。
 
 源码修复提交后已刷新 MCP 索引：34,418 nodes / 127,831 edges；部分解析
-缺口继续直接读源码。N03.1–N03.5 均 verified，N03 已收敛。N04–N09 尚未
+缺口继续直接读源码。N03.1–N03.5 均 verified，N03 已收敛。该 N03 闭环时 N04–N09 尚未
 启动；完整 native sessions、per-cut styles/legend/probes、shell/beam 与非平面
 物理映射、百万单元全帧/硬缓存预算仍是后续工作，Web/WASM 继续排除。
 
@@ -687,3 +692,8 @@ Configurable stream/array/component/node/cell/decoded budgets propagate across c
 ## N04.7 — 相对引用隔离与上下文报告
 
 Nested VTM and Legacy/XML leaves now share restricted native fallback; explicit local staging rewrites relative references into collision-free attempt directories. Tests move the original source tree away, preserve Float64 values across Float32 blocks and NaN field gaps, reject cycles/depth/file limits and incompatible schemas, retain generic/empty cell IDs and complete 4-node/1-cell to 5-node/2-cell series snapshots. Ordinary Viewer receives original/staged sources; staging failures preserve old AIS objects and zero changed DRAW pixels. Focused ON 12/12 and OFF 9/9 each pass three times (45.93 / 1.47 seconds). Logs: cut-n04-reference-focused.log. Reviewed nested/general-cell/series images: draw-vtk-references. N04.8 full closure audit remains.
+
+## N04.8 — 最终闭环审计
+
+
+N04.8 closure: Final VTK ON **58/58**, OFF **22/22**, every case three times (174 / 66 executions; 547.47 / 41.50 seconds). DRAW/Viewer-disabled import/reference tests **2/2** each pass three times (0.52 seconds). The final gate preserves 47/47 Tk controls, the 48-cell matrix, independent N02 geometry/FE references, N03 physical/display fields, actual OR, curved caps and transparency. Ordinary Viewer images and all six kernel peak-memory gates were reviewed. Static field-step repair: 76d845b; first failed ON log retained. All current documents reflect the native support contract; N05-N09 remain queued. See cut-view-n04-audit.md.

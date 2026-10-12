@@ -16,9 +16,11 @@ expanded 28-case suite three times; its analytic second-order geometry work
 is verified at its [bounded closure scope](cut-view-n02-audit.md).
 N03 is verified at [its bounded closure scope](cut-view-n03-audit.md): ON 48/48
 and OFF 14/14, each case three times, with 47/47 real native controls.
-[N04](cut-view-n04-plan.md) is active: N04.1 import report/publication foundation
-is verified (ON 51/51, OFF 16/16, each case three times); ordinary general-cell
-presentation and the rest of N04 remain open. N05-N09 remain scheduled.
+[N04](cut-view-n04-plan.md) implementation gates are verified: ordinary scalar
+general-cell display, validated format/series contracts, import budgets and local
+reference staging/reports. Its [final audit](cut-view-n04-audit.md) is verified;
+N04 is closed at that documented native scope.
+N05-N09 remain scheduled.
 
 ## Existing Boundaries
 

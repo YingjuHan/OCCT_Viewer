@@ -14,11 +14,9 @@ Current environment, test counts and remaining work are recorded
 in [cut-view-native-handoff.md](cut-view-native-handoff.md); older milestone counts
 below describe their original validation runs.
 
-Current acceptance after N04.1: VTK-enabled **51/51**, VTK-disabled **16/16**,
-each case passing three times (604.78 / 50.79 seconds; 153 / 48 executions).
-The DRAW/Viewer-disabled import test also passes three times.
-Logs: `cut-n04-diagnostics-tests.log`
-in both build directories. Two historical external fixtures are absent from the
+N04.1–N04.8 are verified at [the closure contract](cut-view-n04-audit.md).
+Final VTK ON **58/58**, OFF **22/22**, every case three times (174 / 66 executions; 547.47 / 41.50 seconds). DRAW/Viewer-disabled import/reference tests **2/2** each pass three times (0.52 seconds).
+Current evidence replaces older milestone counts below. Two historical external fixtures remain absent from the
 current official data set; their old counts are not reused.
 
 ## Baseline
@@ -43,8 +41,8 @@ The plane-interaction repair gate R00 takes priority over new cut shapes.
 N02 closure passed: [queue and evidence](cut-view-n02-plan.md),
 [bounded audit](cut-view-n02-audit.md). The [N03 queue](cut-view-n03-plan.md) is now
 verified at [the closure scope](cut-view-n03-audit.md); all earlier increments
-remain in the regression suite. [N04](cut-view-n04-plan.md) is active with the import
-diagnostic/publication foundation first; N05-N09 remain queued.
+remain in the regression suite. [N04](cut-view-n04-plan.md) is closed at its
+documented native contract; N05-N09 remain queued.
 
 | ID | Task | Depends On | Acceptance | Status |
 | --- | --- | --- | --- | --- |
@@ -64,9 +62,9 @@ diagnostic/publication foundation first; N05-N09 remain queued.
 | D01 | Deformed guide/range bounds and material-following reference frames | G03, M02 | Guides and intersections follow deformation consistently | partial: nodal guide/range bounds verified; material-following frames queued |
 | V01 | VTK Lines/polyline storage, import and rendering | G01 | Legacy/XML line fixtures, CellData mapping and DRAW pixels | verified at N04.2 native contract: ordinary scalar Viewer and Cut View; VTK-disabled general cells reject explicitly; browser excluded |
 | V02 | Remaining supported Legacy sections and explicit scope diagnostics | V01 | Format-specific fixtures and unsupported-section reports | verified at N04.3 format contract |
-| V03 | Changing geometry/topology series and time validation | V02 | Moving and remeshed fixtures, mismatched fields rejected | queued |
-| V04 | Malformed/binary/compressed/multi-offset import regression coverage | V03 | Truncation, endian/offset/type errors, safe rejection | queued |
-| V05 | Bounded-memory appended decoding and configurable resource limits | V04 | Oversized payload rejection and measured peak memory | queued |
+| V03 | Changing geometry/topology series and time validation | V02 | Moving and remeshed fixtures, mismatched fields rejected | verified at N04.4/.7: complete independent snapshots, strict time/schema/tuple validation; playback remains N06 |
+| V04 | Malformed/binary/compressed/multi-offset import regression coverage | V03 | Truncation, endian/offset/type errors, safe rejection | verified at N04.5 safety contract |
+| V05 | Bounded-memory appended decoding and configurable resource limits | V04 | Oversized payload rejection and measured peak memory | verified at N04.6/.7 logical import-budget contract; full-frame/session budgets remain N08 |
 | D02 | Coordinated geometry/result/deformation time steps and animation | D01, V03 | Step switching, remeshing, pause/restart and no stale contours | queued |
 | D03 | Regular/range/rotational/path slicing | G02, M02, D02 | Slice placement/count, path frames and interval results | queued |
 | P01 | Cache policies, memory budgets and eviction | D02, D03 | Cache correctness after edits; memory bounded across repeated motion | partial: N01 source epochs/lazy shapes/BVH reuse verified; hard budgets and eviction queued |
@@ -75,8 +73,8 @@ diagnostic/publication foundation first; N05-N09 remain queued.
 | I03 | Resultant overlays, distributed resultants and exportable reports | I02, M06, D03 | Arrow directions, group sums and interval report checks | queued |
 | A01 | Automatic crack-distance cuts from explicitly mapped fields | G01, G03 | Sign/threshold semantics, provenance and special display states | queued |
 | A02 | Automatic optimization-density cuts | G01, G04 | Mapping/range validation and reproducible thresholds | queued |
-| B01 | Import diagnostics through MeshLoader and Viewer | V04 | Structured warnings/errors reach caller without data loss | partial: N04.1 report/publication foundation; full format/staging closure remains N04.3-N04.7 |
-| B02 | Relative-file staging for composite manifests and series | V03, B01 | Nested relative paths, missing files and duplicate names | queued |
+| B01 | Import diagnostics through MeshLoader and Viewer | V04 | Structured warnings/errors reach caller without data loss | verified at N04.1/.3/.7: contextual reports, original/staged sources and old live-model preservation |
+| B02 | Relative-file staging for composite manifests and series | V03, B01 | Nested relative paths, missing files and duplicate names | verified at N04.7 local-filesystem contract |
 | B03 | Native Viewer cut API; TypeScript excluded | M07, D02, B02 | Lifecycle, field bindings, drag events and error contracts | queued |
 | B04 | Production Vue Cut View Manager and all shape controls | B03, M03, M04, M05 | Full user workflows, desktop/mobile layout and real pointer tests | excluded: web |
 | S01 | Native session persistence and schema migration | B03, M03, D02 | Source/fields/styles/deformation round trip; atomic invalid-load rejection | queued |
@@ -94,6 +92,10 @@ diagnostic/publication foundation first; N05-N09 remain queued.
 5. Update this queue with evidence and remaining limitations before advancing.
 
 ## Completed G01
+
+The milestone sections below preserve historical validation counts and the next
+steps at that time. Current stage status is in the ordered queue above and the
+latest closure audits.
 
 - Added native plane/isosurface definitions and independent cut-field bindings.
 - Reused `MeshElementCutter` for both volume portions and surface intersection lines.
@@ -226,7 +228,7 @@ open; portable/WASM parity is excluded from the current native track.
 N01 is verified at its planned foundation scope. G02 and P01 remain partial;
 no million-cell full-frame/FPS claim follows from this acceptance.
 
-## Next Task
+## Historical Next Task after N01
 
 Finish the N02 queue in [cut-view-n02-plan.md](cut-view-n02-plan.md), including
 generic/high-order field isosurfaces and the final geometry/FE/precision audit.
@@ -381,5 +383,11 @@ Final ON 48/48 and OFF 14/14 each pass three times (144 / 42 executions,
 the 48-concrete-cell matrix and transparent cloud comparisons. Source repair:
 `3a1fd44`; diagnostics/transparent gate: `eba2a37`. Logs and explicit support
 limits are recorded in [the N03 audit](cut-view-n03-audit.md).
-N04 is now active in [its queue](cut-view-n04-plan.md); N05-N09 remain queued. Full-frame
+At that N03 milestone, N04 became active. Current N04 status is in
+[its queue](cut-view-n04-plan.md); N05-N09 remain queued. Full-frame
 performance, complete native sessions and excluded Web/WASM work remain open.
+
+## N04 Closure
+
+
+N04.8 closure: Final VTK ON **58/58**, OFF **22/22**, every case three times (174 / 66 executions; 547.47 / 41.50 seconds). DRAW/Viewer-disabled import/reference tests **2/2** each pass three times (0.52 seconds). The final gate preserves 47/47 Tk controls, the 48-cell matrix, independent N02 geometry/FE references, N03 physical/display fields, actual OR, curved caps and transparency. Ordinary Viewer images and all six kernel peak-memory gates were reviewed. Static field-step repair: 76d845b; first failed ON log retained. All current documents reflect the native support contract; N05-N09 remain queued. See cut-view-n04-audit.md.

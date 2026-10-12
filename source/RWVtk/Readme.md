@@ -23,3 +23,6 @@ the application validates and reports its own contract.
 Series snapshots retain complete per-step geometry/fields; changing geometry does
 not bind later fields to the first mesh. Animation and Viewer step coordination are
 separate work. Legacy polyhedron 42 requires VTU; general cells need VTK ON.
+
+N04.8 final native closure: Final VTK ON **58/58**, OFF **22/22**, every case three times (174 / 66 executions; 547.47 / 41.50 seconds). DRAW/Viewer-disabled import/reference tests **2/2** each pass three times (0.52 seconds).
+See [the audit](../../DOCUMENT/cut-view-n04-audit.md) for current support boundaries and reproduction.

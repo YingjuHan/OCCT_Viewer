@@ -1,7 +1,8 @@
 # N04 — Native VTK Import and Ordinary Viewer
 
-N01–N03 are verified within their documented native support contracts. N04 is
-active. This stage covers V01–V05 and B01–B02; Web, Vue, TypeScript and WASM remain
+N01–N04 are verified within their documented native support contracts.
+N04 is closed; see [the final audit](cut-view-n04-audit.md).
+This stage covers V01–V05 and B01–B02; Web, Vue, TypeScript and WASM remain
 excluded. Use the existing VIEWDRAW plugin. Complete and commit each acceptance
 item separately, then explicitly refresh the codebase-memory index.
 
@@ -14,7 +15,7 @@ item separately, then explicitly refresh the codebase-memory index.
 | N04.5 | V04: malformed/endian/binary/compressed/appended regression matrix | Truncation, bad types/lengths/connections/offsets and compression blocks; all readers reject safely | verified |
 | N04.6 | V05: configurable limits checked before allocation and bounded appended decoding | Arrays/nodes/cells/decompressed-byte limits and measured peak memory | verified |
 | N04.7 | B02 and B01 closure: relative reference staging and contextual reports | Nested references, duplicate basenames, missing files, staging failures and ordinary Viewer report delivery | verified |
-| N04.8 | Stage closure audit | Full repeated VTK ON/OFF regression, ordinary Viewer images, support boundaries and updated handoff | queued |
+| N04.8 | Stage closure audit | Full repeated VTK ON/OFF regression, ordinary Viewer images, support boundaries and updated handoff | verified |
 
 N04.1 is pulled forward because current fallback diagnostics obscure the existing
 general-cell acceptance. It does not establish general-cell rendering, changing
@@ -30,7 +31,10 @@ Logs are `cut-n04-diagnostics-tests.log` in both build directories and
 Preserve the N03 independent numerical/physical evaluations, original FE/source
 provenance, actual retained-region OR, curved cap ownership and transparency
 regressions. Single-model publication after reader success is only the first
-transaction boundary; series still need immutable per-step staging in N04.4.
+transaction boundary; series received complete independent per-step staging in N04.4.
+
+The milestone paragraphs below preserve each item's original test counts and
+next-step notes. Current acceptance is the N04.8 closure at the end.
 
 N04.2 starting points are `MeshGeometryFactory::Create()` in
 `source/ViewCaeGeom/MeshGeometry.cpp`, the ordinary `InteractiveCaeMesh` owner
@@ -67,3 +71,6 @@ N04.5 closure: Strict typed ASCII values and base64 padding, inline trailing-byt
 N04.6 closure: Configurable stream/array/component/node/cell/decoded budgets propagate across composite/series children and native preflight. Legacy normalization, dense merged fields and PolyData expansion/conversion are bounded before allocation. Appended decoding now reads only the requested header/payload. Final focused ON 9/9, OFF 7/7 each pass three times (52.19 / 1.87 seconds). Six kernel peak-memory measurements for 8/32/64 MiB payloads stay below 256 MiB; largest ON/OFF peaks are 154632192 / 150278144 bytes. Evidence and API limits: cut-view-resource-limits.md; logs cut-n04-limits-focused.log and cut-n04-memory-*.log. Recursive reference depth/cycle/staging closure is N04.7.
 
 N04.7 closure: Nested VTM and Legacy/XML leaves now share restricted native fallback; explicit local staging rewrites relative references into collision-free attempt directories. Tests move the original source tree away, preserve Float64 values across Float32 blocks and NaN field gaps, reject cycles/depth/file limits and incompatible schemas, retain generic/empty cell IDs and complete 4-node/1-cell to 5-node/2-cell series snapshots. Ordinary Viewer receives original/staged sources; staging failures preserve old AIS objects and zero changed DRAW pixels. Focused ON 12/12 and OFF 9/9 each pass three times (45.93 / 1.47 seconds). Logs: cut-n04-reference-focused.log. Reviewed nested/general-cell/series images: draw-vtk-references. N04.8 full closure audit remains.
+
+
+N04.8 closure: Final VTK ON **58/58**, OFF **22/22**, every case three times (174 / 66 executions; 547.47 / 41.50 seconds). DRAW/Viewer-disabled import/reference tests **2/2** each pass three times (0.52 seconds). The final gate preserves 47/47 Tk controls, the 48-cell matrix, independent N02 geometry/FE references, N03 physical/display fields, actual OR, curved caps and transparency. Ordinary Viewer images and all six kernel peak-memory gates were reviewed. Static field-step repair: 76d845b; first failed ON log retained. All current documents reflect the native support contract; N05-N09 remain queued. See cut-view-n04-audit.md.

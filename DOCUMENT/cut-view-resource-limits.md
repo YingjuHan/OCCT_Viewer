@@ -55,11 +55,15 @@ Measured peak bytes on this MinGW Debug environment:
 
 | Payload | VTK ON | VTK OFF |
 | --- | ---: | ---: |
-| 8 MiB | 37,642,240 | 32,358,400 |
-| 32 MiB | 87,502,848 | 83,144,704 |
-| 64 MiB | 154,632,192 | 150,278,144 |
+| 8 MiB | 37,638,144 | 32,915,456 |
+| 32 MiB | 87,990,272 | 82,681,856 |
+| 64 MiB | 154,669,056 | 150,351,872 |
 
 All six processes stay below 256 MiB. This measures decoder temporary storage
 with discarded array outputs; it is not a million-cell Viewer memory/performance
 claim. Logs are `cut-n04-limits-focused.log`, `cut-n04-memory-*.log` in each build
 and `build/cut-n04-memory.json`.
+
+N04.8 repeats all six peak-memory processes after the final repair; each remains
+below 256 MiB. Original N04.6 values are preserved in the milestone queue.
+Final full native/DRAW acceptance is in [the closure audit](cut-view-n04-audit.md).

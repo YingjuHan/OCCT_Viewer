@@ -35,3 +35,6 @@ requires pixel changes on nodal/CellData switching. Reviewed images are under
 `build/mingw/test/native/draw-import/ordinary-*`. The initial full run's pure-point
 white-on-white failure is preserved in `cut-n04-viewer-first-full.log`; the repaired
 run and focused repeated checks are recorded in the N04 plan and handoff.
+
+N04.8 final native closure: Final VTK ON **58/58**, OFF **22/22**, every case three times (174 / 66 executions; 547.47 / 41.50 seconds). DRAW/Viewer-disabled import/reference tests **2/2** each pass three times (0.52 seconds).
+See [the audit](cut-view-n04-audit.md) for current support boundaries and reproduction.

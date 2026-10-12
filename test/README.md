@@ -91,9 +91,10 @@ Choose Plane or Isosurface next to Create. Isosurfaces have a separate Cut Field
 binding and a live Threshold slider; changing Result does not change that binding. They do not
 use the plane's translation arrow or rotation rings. Elemental cut fields project the selected
 scalar component with equal-weight averaging, including a selected magnitude/invariant.
-Isosurface cutting currently uses first-order linear edge interpolation; second-order meshes
-are rejected explicitly. Definition snapshots are version 3 and still restore version-1 planes
-and version-2 plane/isosurface definitions.
+First-order isosurfaces use linear edge interpolation. Supported higher-order original-FE
+isosurfaces follow [the N02 contract](../DOCUMENT/cut-view-isosurfaces.md), including explicit
+unsupported/refinement-limit rejection. Current definition snapshots are version 7 and migrate
+the earlier plane/isosurface definitions; full native sessions remain N09.
 
 For analytic sphere/cylinder cuts, run in DRAW:
 
@@ -135,7 +136,7 @@ It writes scene frames and (when ImageMagick is installed) a native manager scre
 `build/test/native/draw-interaction/` under CTest, or `build/cut-view-interaction/` directly.
 
 `cut_view_controls.tcl` runs in interactive `-i` mode because batch initialization does not expose
-the Tk/DRAW `grid` collision. It inventories all 32 controls and tests actual popdowns/file dialogs,
+the Tk/DRAW `grid` collision. It inventories the current 47/47 controls and tests actual popdowns/file dialogs,
 button/checkbutton events, held slider motion, numeric validation, all rotation axes, field components/
 steps, cancellation, empty states, model replacement and close during dragging. It writes
 `build/test/native/draw-controls/manager_controls.png` when ImageMagick is installed.
@@ -253,10 +254,10 @@ After generating fixtures, direct DRAW batch acceptance is
 `source /home/hyj/Desktop/workspace/OCCT_Viewer/test/cae/cut_view_geometry.tcl`; it exits DRAW. Supply the
 active desktop's X environment for visual acceptance. Numerical convergence and
 conforming reference fixtures do not prove exact arbitrary-order geometry or an
-interactive million-cell frame budget. N03-N09 remain scheduled.
-N02 numerical acceptance is 28/28 native/DRAW cases, each passing three times;
+interactive million-cell frame budget. At that historical N02 foundation milestone,
+N03-N09 were scheduled. N02 numerical acceptance was 28/28 cases, each passing three times;
 the VTK-disabled Release build's full six-case native/DRAW suite also passes three
-times. Analytic second-order source boundaries remain the next N02 increment.
+times. Later analytic/reference and N02/N03 closure evidence follows below.
 
 ## Analytic Source Geometry
 
@@ -305,7 +306,7 @@ existing six-family rational regression remains mandatory. The initial analytic 
 passed 31 native/DRAW cases three times and six VTK-disabled cases three times.
 Current Windows recovery/reference increments and acceptance are recorded in
 [the native handoff](../DOCUMENT/cut-view-native-handoff.md). G03's general precision/family
-limits and the remaining N03-N09 work are not completed by this increment.
+limits are recorded in its bounded audit; later stage status is in the current handoff.
 
 ## Display Recovery and Physical Fields
 
@@ -350,8 +351,7 @@ cmake -S . -B build/mingw -DOCCTV_BUILD_TESTS=ON -DOCCTV_BUILD_DRAW=ON `
   -DOCCTV_BUILD_WEB_VIEWER=OFF -DOCCTV_USE_VTK=ON -DOCCTV_TEST_DRAW_VISUAL=ON `
   -DVTK_DIR=D:/workspace/OpenCASCADE/3rdparty/mingw64/vtk-9.5.2-mingw64/lib/cmake/vtk-9.5 `
   -DOCCTV_VTK_TEST_DATA=D:/workspace/VTK/test-data-9.5.2
-cmake --build build/mingw --target ViewDraw occtviewer_tests cut_view_tests quadric_cut_tests `
-  vtk_cell_cut_tests general_cut_cache_tests cut_geometry_tests cut_analytic_tests cut_recovery_tests --parallel 8
+cmake --build build/mingw --parallel 6
 ctest --test-dir build/mingw --output-on-failure --repeat until-fail:3 -j 4 --timeout 300
 ```
 
@@ -392,7 +392,7 @@ Generated sources and images are under `test/native/cut-reference-fixtures` and
 `CUTVIEW_REFERENCE_FIXTURES`; enable images with `CUTVIEW_REFERENCE_VISUAL=1` and
 set `CUTVIEW_OUTPUT_DIR`. The extreme-weight fixture deliberately uses a coarse
 numerical tolerance to test fallback publication, not geometric accuracy.
-N02 is still partial; its remaining queue is
+N02 is verified at its bounded closure scope; its completed queue is
 [cut-view-n02-plan.md](../DOCUMENT/cut-view-n02-plan.md).
 
 ## OCCT SDK Fixes
@@ -592,3 +592,6 @@ N04.7 focused import acceptance: ON 12/12 and OFF 9/9, every case three times;
 logs `cut-n04-reference-focused.log`. VTK OFF explicitly rejects unsupported
 general-cell leaves. The local staging API and format boundaries are documented
 in [the import contract](../DOCUMENT/cut-view-import.md).
+
+N04.8 final native closure: Final VTK ON **58/58**, OFF **22/22**, every case three times (174 / 66 executions; 547.47 / 41.50 seconds). DRAW/Viewer-disabled import/reference tests **2/2** each pass three times (0.52 seconds).
+See [the audit](../DOCUMENT/cut-view-n04-audit.md) for current support boundaries and reproduction.

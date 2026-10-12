@@ -17,9 +17,9 @@
 Current execution is native only: Web/Vue/TypeScript and WASM tasks are excluded,
 not completed. Project/session persistence below maps to the native session API.
 
-Current Windows acceptance after N04.1: VTK-enabled **51/51** and VTK-disabled **16/16**,
-each case passing three consecutive runs (153 / 48 successful executions).
-The DRAW/Viewer-disabled reader/report test also passes three times.
+Final VTK ON **58/58**, OFF **22/22**, every case three times (174 / 66 executions; 547.47 / 41.50 seconds). DRAW/Viewer-disabled import/reference tests **2/2** each pass three times (0.52 seconds).
+N01–N04 are closed at their documented native scopes. See
+[the N04 audit](cut-view-n04-audit.md); N05–N09 remain queued.
 Curved-family geometry/FE
 references, analytic precision fallback, high-order field isosurfaces, tensor/trace
 policies and actual presentation OR are included. N03 is verified at
@@ -34,7 +34,8 @@ for SDK paths, logs, missing historical external fixtures and remaining work.
 - [x] N04.2 ordinary scalar Viewer points, Lines/polyline and general VTK boundaries,
   original CellData/FE mapping and ordinary `scvreadmesh` rendered field switching.
   Full ON 51/51 and OFF 16/16 pass; scoped import tests pass three times.
-  See [the Viewer contract](cut-view-viewer.md). N04.3 format/diagnostic contract also passes full ON 52/52 and OFF 17/17; N04.4-N04.8 remain active/queued.
+  See [the Viewer contract](cut-view-viewer.md) and [the N04 queue](cut-view-n04-plan.md)
+  for each acceptance gate and its original test counts.
 - [x] Legacy ASCII/big-endian binary and XML inline/appended/raw/zlib decoding.
 - [x] Connectivity/tuple validation, integer narrowing checks, and reader diagnostics.
 - [x] Multiple Pieces, VTM references, fractional series times, and vector/tensor roles.
@@ -102,7 +103,14 @@ for SDK paths, logs, missing historical external fixtures and remaining work.
   internal compsolid faces, inspected UI/cloud images and documented support limits.
 - [x] N04.1 overall VTK import reports and backend attempts, successful fallback diagnostics,
   composite/series warnings, rejected pipeline outputs and failed native Viewer/DRAW replacement preservation.
-  See [the import contract](cut-view-import.md). Ordinary general-cell rendering remains N04.2.
+  See [the import contract](cut-view-import.md).
+- [x] N04.3–N04.7 format/diagnostic contract, complete independent moving/remeshed
+  series snapshots, malformed/binary/compressed matrix, pre-allocation resource
+  budgets and collision-free local reference staging with contextual reports.
+  Ordinary Viewer/DRAW failed staging preserves old objects and pixels.
+- [x] N04.8 final full repeated ON/OFF audit, static fallback step compatibility
+  repair, ordinary Viewer images and kernel peak-memory gate; current support
+  boundaries and handoff synchronized.
 
 These are native building blocks, not completion of the entire Cut View Manager plan.
 
@@ -144,7 +152,8 @@ that million-cell rendering meets 15 fps.
 ## Remaining TODOs
 
 N01/N02's bounded source/geometry/FE and high-order isosurface gates are verified.
-N03 recovery/tensor/trace/actual OR gates and full closure are verified. Mismatching
+N03 recovery/tensor/trace/actual OR gates and full closure are verified. N04 import
+items and final audit are verified in [the closure report](cut-view-n04-audit.md). Mismatching
 interfaces remain distinct, arbitrary-order exact geometry is not promised, and
 none of these stages establishes the full-frame performance target.
 
@@ -159,17 +168,11 @@ none of these stages establishes the full-frame performance target.
    from display recovery. Current integration is for supplied volume-section fields;
    unsupported surface sections fail explicitly.
 4. Add automatic crack/optimization cuts from explicitly mapped distance/density fields.
-5. Complete VTK Lines/polyline storage and rendering, remaining legacy sections, changing-topology time
-   series validation, malformed/compressed/multi-offset coverage, and bounded-memory appended decoding.
-   Optional native VTK import now handles lines for the cut viewer; portable/browser and ordinary
-   viewer coverage remain pending. Series geometry is reused and requires a stable mesh.
-6. Propagate import diagnostics through native MeshLoader/Viewer and stage referenced relative files.
-   Production Vue/TypeScript integration is excluded from this native track.
-7. Integrate definitions, styles, source/field/deformation bindings and migration into native sessions.
+5. Integrate definitions, styles, source/field/deformation bindings and migration into native sessions.
    Definition JSON v7 does not serialize mesh sources, active fields, deformation or styles.
-8. Meet the million-cell 15 fps target for crossing-cell/rotating cuts, deformation, fields, primitive
+6. Meet the million-cell 15 fps target for crossing-cell/rotating cuts, deformation, fields, primitive
     construction, and actual rendering together. Current geometry-only timings do not establish this.
-9. Web/WASM rebuild and browser acceptance remain excluded work for a later scope.
+7. Web/WASM rebuild and browser acceptance remain excluded work for a later scope.
 
 Structured VTK, parallel XML, VTKHDF, and Abaqus ODB remain outside the first format scope.
 
@@ -180,8 +183,8 @@ Structured VTK, parallel XML, VTKHDF, and Abaqus ODB remain outside the first fo
 | Geometry | RWCae topology, BVH, original VTK FE charts, bounded curved/analytic geometry and numerical convergence | Unmatched general interfaces and arbitrary-order exact geometry |
 | Fields | Scalar/vector/tensor properties, node provenance, deformation | Shell/beam physical mappings and full time lifecycle |
 | Rendering | Native OCCT AIS, contours, actual OR boundaries/caps, plane guides/manipulators | Result picking, per-cut overrides, full-frame performance |
-| Import | RWVtk readers, optional original VTK topology and diagnostics | Portable general cells, complete time-topology validation, UI reports |
-| Integration | DRAW commands, Tk plane manager, numerical/pixel/pointer scripts | Vue controls, staging, project persistence, WASM rebuild |
+| Import | Validated Legacy/XML, original general topology with native VTK, per-step geometry/fields, resource limits and local staging/reports | Structured/parallel formats, portable general cells, coordinated playback |
+| Integration | DRAW commands, Tk manager, ordinary native Viewer, contextual diagnostics and numerical/pixel/pointer scripts | Native full sessions/CAD coordination; Vue/WASM excluded |
 
 MCP exploration was verified against source where the C++/Tcl index reported partial coverage.
 
@@ -198,7 +201,8 @@ N03 region/threshold recovery, symmetric tensor measures, manager controls and
 original physical mapping and independent trace policies are verified.
 Actual presentation OR has passed numerical, field/dimension and transparent
 acceptance and the full [N03 closure audit](cut-view-n03-audit.md).
-N04 import/ordinary Viewer work is active in [its acceptance queue](cut-view-n04-plan.md).
+N04.1–N04.8 import/ordinary Viewer work is verified in
+[its acceptance queue](cut-view-n04-plan.md) and [closure audit](cut-view-n04-audit.md).
 N05-N09 remain queued; web/WASM work is excluded.
 First-order isosurfaces currently rebuild scalar-cut geometry when the threshold changes; they
 have not been accepted against the full-frame million-cell target. Supported high-order
