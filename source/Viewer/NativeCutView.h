@@ -5,8 +5,10 @@
 #include <RWMeshConv/MeshLoader.h>
 #include <AIS_TextLabel.hxx>
 #include <functional>
+#include <memory>
 
 namespace Viewer {
+class NativeCutAnalysis;
 enum class CutEditEvent { Begin, Update, Commit, Abort, Close };
 struct CutFieldBinding {
     std::string Name;
@@ -57,8 +59,11 @@ public:
     bool SetGlobalClip(const Graphic3d_Vec4d& plane, bool enabled);
     const Handle(AIS_Shape)& CadSection() const { return myCadSection; }
     const Handle(Graphic3d_ClipPlane)& GlobalClip() const { return myGlobalClip; }
+    NativeCutAnalysis& Analysis();
 private:
     friend class NativeCutTimeline;
+    friend class NativeCutAnalysis;
+    friend class NativeCutSession;
     bool attempt(const std::function<void()>& action);
     Handle(RWCae::MeshNVecProperty) resolveField(const CutFieldBinding& binding) const;
     void event(CutEditEvent value);
@@ -85,6 +90,7 @@ private:
     std::string myError;
     uint64_t myGeneration = 1;
     std::function<void(CutEditEvent,uint64_t)> myOnEdit;
+    std::unique_ptr<NativeCutAnalysis> myAnalysis;
 };
 }
 #endif

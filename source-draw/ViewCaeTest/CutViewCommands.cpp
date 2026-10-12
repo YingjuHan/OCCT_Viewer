@@ -14,6 +14,7 @@
 #include <Image_AlienPixMap.hxx>
 #include <Viewer/NativeCutView.h>
 #include <Viewer/NativeCutTimeline.h>
+#include <Viewer/NativeCutAnalysis.h>
 #include <ViewCaeGeom/MeshCutSlicing.h>
 #include <DBRep.hxx>
 
@@ -273,7 +274,27 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
                 context->UpdateCurrentViewer();
             }
         };
-        if (action == "timeinfo" && argc == 3) {
+        if (action == "physics" && argc == 5) {
+            if(!model.Native->Analysis().SetJson(argv[3],argv[4])) { throw std::invalid_argument(model.Native->LastError()); } ok=true;
+        } else if(action == "physicsremove" && argc == 4) {
+            if(!model.Native->Analysis().Remove(argv[3])) { throw std::invalid_argument(model.Native->LastError()); } ok=true;
+        } else if(action == "physicsreport" && argc == 4) {
+            const auto& reports=model.Native->Analysis().Reports(); const auto r=reports.find(argv[3]);
+            if(r==reports.end()) { throw std::invalid_argument("Unknown physical report"); }
+            const auto& t=r->second.Total;
+            di<<"area "<<t.Area<<" force {"<<t.Force.x()<<" "<<t.Force.y()<<" "<<t.Force.z()<<"} moment {"<<t.Moment.x()<<" "<<t.Moment.y()<<" "<<t.Moment.z()<<"} heatFlow "<<t.HeatFlow<<" samples "<<(int)r->second.Distributed.size()<<" overlays "<<(int)model.Native->Analysis().Overlays().at(argv[3]).size(); return 0;
+        } else if(action == "physicscsv" && argc == 4) {
+            const auto& reports=model.Native->Analysis().Reports(); const auto r=reports.find(argv[3]); if(r==reports.end()) { throw std::invalid_argument("Unknown physical report"); }
+            di<<r->second.Csv().c_str(); return 0;
+        } else if(action == "automatic" && argc == 12) {
+            ViewCaeGeom::MeshCutAutomaticMapping mapping;
+            if(std::string(argv[4])=="crack") { mapping.Kind=ViewCaeGeom::MeshCutAutomaticKind::CrackDistance; }
+            else if(std::string(argv[4])=="density") { mapping.Kind=ViewCaeGeom::MeshCutAutomaticKind::OptimizationDensity; }
+            else { throw std::invalid_argument("Automatic kind must be crack/density"); }
+            mapping.Threshold=cutReal(argv[7]); mapping.Sign=cutInteger(argv[8]); mapping.Minimum=cutReal(argv[9]); mapping.Maximum=cutReal(argv[10]);
+            const int visibility=cutInteger(argv[11]); if(visibility<0||visibility>7) { throw std::invalid_argument("Invalid automatic visibility"); } mapping.Visibility=visibility;
+            if(!model.Native->Analysis().Automatic(argv[3],{argv[5],true,cutInteger(argv[6]),model.Timeline->Step()},mapping)) { throw std::invalid_argument(model.Native->LastError()); } ok=true;
+        } else if (action == "timeinfo" && argc == 3) {
             di << "step " << model.Timeline->Step() << " count " << (int)model.Timeline->StepCount() << " playing " << (int)model.Timeline->IsPlaying() << " times {";
             for (const auto& step : model.Timeline->Source()->SeriesSteps()) { di << step.Time << " "; } di << "}"; return 0;
         } else if (action == "step" && argc == 4) {
@@ -998,6 +1019,8 @@ void ViewCaeTest::CutViewCommands::Factory(Draw_Interpretor& di)
         "  | handle id 0/1 [gizmo0/1] | handleinfo | fit | field none\n"
         "  | datum name originX originY originZ Xx Xy Xz Yx Yy Yz Zx Zy Zz\n"
         "  | timeinfo | step index | timeddeform name/none scale | play period/speed loop restart timestamps | pause | tick seconds\n"
+        "  | physics requestId explicitMappingJson | physicsremove/physicsreport/physicscsv requestId\n"
+        "  | automatic id crack/density nodalField component threshold sign minimum maximum visibility\n"
         "  | materialframe name reference/updated {step n0 n1 n2}... | follow cut datum\n"
         "  | slicing plane regular/range start spacing/end count | rotational ax ay az ox oy oz start end count | path ux uy uz {x y z}...\n"
         "  | localmove id datum a b c d (plane) / cx cy cz ax ay az radius (quadric)\n"

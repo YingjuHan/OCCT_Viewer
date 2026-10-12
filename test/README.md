@@ -600,3 +600,8 @@ N06: `cut_slicing`, `native_timeline` and `draw_cut_view_time` cover coordinated
 steps, remesh rejection, material frames, animation failure/abort and four slice
 distributions. The actual time panel has 20 controls; tools now has 37. See
 [the N06 audit](../DOCUMENT/cut-view-n06-audit.md).
+
+N07: `cut_physics`, `native_analysis` and `draw_cut_view_physics` cover independent
+physical references, explicit sections/units/frames, automatic cut validation and
+actual resultant overlays. Physics/tools inventories are 31/38.
+See [the N07 audit](../DOCUMENT/cut-view-n07-audit.md).

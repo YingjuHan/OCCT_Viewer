@@ -131,6 +131,8 @@ proc tools_run {} {
     tool_click .scvcuttools.annotation.clear
     tool_click .scvcuttools.time
     CutViewTime::close
+    tool_click .scvcuttools.physics
+    destroy .scvcutphysics
     tool_click .scvcuttools.close
     foreach widget $expected { tool_assert {$widget in $covered} "Untested tool $widget" }
     puts "CUT_VIEW_TOOLS_COVERAGE [llength $expected]/[llength $expected]"

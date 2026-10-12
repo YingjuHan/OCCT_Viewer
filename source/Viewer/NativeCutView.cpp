@@ -1,4 +1,5 @@
 #include <Viewer/NativeCutView.h>
+#include <Viewer/NativeCutAnalysis.h>
 #include <AIS_InteractiveContext.hxx>
 #include <BRepAlgoAPI_Section.hxx>
 #include <Geom_SphericalSurface.hxx>
@@ -21,6 +22,12 @@ NativeCutView::NativeCutView(const Handle(RWCae::MeshData)& mesh) : myDisplay(ne
     });
 }
 NativeCutView::~NativeCutView() { Close(); }
+NativeCutAnalysis& NativeCutView::Analysis()
+{
+    if (myDisplay.IsNull()) { throw std::invalid_argument("Cut model is closed"); }
+    if (!myAnalysis) { myAnalysis.reset(new NativeCutAnalysis(*this)); }
+    return *myAnalysis;
+}
 bool NativeCutView::attempt(const std::function<void()>& action)
 {
     try {
@@ -131,6 +138,7 @@ bool NativeCutView::Attach(const Handle(AIS_InteractiveContext)& context, const 
 void NativeCutView::Detach()
 {
     ClearHandle();
+    if (myAnalysis) { myAnalysis->Detach(); }
     if (!myViewport.IsNull() && !myViewport->View()->IsRemoved() && !myGlobalClip.IsNull()) { myViewport->RemoveClipPlane(myGlobalClip); }
     myViewport.Nullify();
     if (myContext.IsNull()) { return; }
@@ -186,6 +194,7 @@ bool NativeCutView::ShowHandle(const std::string& id, bool gizmo)
 void NativeCutView::Close()
 {
     if (myDisplay.IsNull()) { return; }
+    if (myAnalysis) { myAnalysis->Close(); myAnalysis.reset(); }
     Detach(); myDisplay->SetOnDrag(nullptr); myDisplay->SetOnSynchronize(nullptr);
     myDragSnapshot.clear(); myAnnotations.clear(); myCadSection.Nullify(); myCadSource.Nullify();
     myGlobalClip.Nullify(); myDisplay->Cuts().Clear(); myDisplay.Nullify(); event(CutEditEvent::Close);
@@ -207,6 +216,7 @@ bool NativeCutView::Refresh(bool redraw)
 }
 void NativeCutView::synchronized()
 {
+    if (myAnalysis && !myAnalysis->Refresh()) { throw std::runtime_error(myError); }
     // Mouse aids use the same publication path as numeric edits.
     if (!myCadSource.IsNull()) {
         const auto definitions = myDisplay->Cuts().Definitions();

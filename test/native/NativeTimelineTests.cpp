@@ -1,4 +1,5 @@
 #include <Viewer/NativeCutTimeline.h>
+#include <Viewer/NativeCutAnalysis.h>
 #include <RWCae/MeshScalarProperty.h>
 #include <Draw.hxx>
 #include <Draw_Interpretor.hxx>
@@ -56,7 +57,11 @@ void tests()
     Viewer::CutMaterialFrame reference; reference.Anchors = {{-1,{0,1,2}}};
     require(timeline.SetMaterialFrame("fixed",reference),native.LastError());
     require(timeline.BindCutFrame("p","moving"),native.LastError());
+    Viewer::NativeCutAnalysisRequest heat; heat.Cut="p"; heat.Heat=true; heat.Field={"displacement",true,0,0}; heat.Components={{0,1,2,0,0,0,0,0,0}};
+    require(native.Analysis().Set("heat",heat),native.LastError());
     require(timeline.SwitchStep(1),native.LastError());
+    require(native.Analysis().Requests().at("heat").Field.Step==1,"Stale physical step binding");
+    closeTo(native.Analysis().Reports().at("heat").Total.HeatFlow,.28125);
     require(native.Display() != initial && initial->Cuts().Definitions().empty(),"Old display/handles remain live");
     closeTo(native.Datums().at("moving").Origin.x(),0.2); closeTo(native.Datums().at("fixed").Origin.x(),0);
     closeTo(native.Display()->Cuts().Definitions()[0].Plane.w(),-0.45);

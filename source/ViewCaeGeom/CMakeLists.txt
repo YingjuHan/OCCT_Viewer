@@ -4,6 +4,8 @@ set (SRCFILES
   MeshCutViewManager.cpp
   MeshCutFrame.cpp
   MeshCutSlicing.cpp
+  MeshCutPhysics.cpp
+  MeshCutAutomatic.cpp
   MeshCutIntegration.cpp
   MeshCutRecovery.cpp
   MeshCutTensor.cpp
@@ -24,6 +26,8 @@ set (INCFILES
   MeshCutViewManager.h
   MeshCutFrame.h
   MeshCutSlicing.h
+  MeshCutPhysics.h
+  MeshCutAutomatic.h
   MeshCutIntegration.h
   MeshCutRecovery.h
   MeshCutTensor.h

@@ -1,4 +1,5 @@
 #include <Viewer/NativeCutTimeline.h>
+#include <Viewer/NativeCutAnalysis.h>
 #include <AIS_InteractiveContext.hxx>
 #include <V3d_View.hxx>
 #include <TColStd_ListOfInteger.hxx>
@@ -183,6 +184,7 @@ bool NativeCutTimeline::prepare(int step, const CutFieldBinding& deformation, do
         }
         candidate->SetReferenceFrame(myOwner.ReferenceDatum() == "global" ? ViewCaeGeom::MeshCutFrame() : datums.at(myOwner.ReferenceDatum()),myOwner.ReferenceAxesVisible(),myOwner.ReferenceAxesLength());
         candidate->Synchronize();
+        if (myOwner.myAnalysis && !staged.Analysis().PrepareStep(*myOwner.myAnalysis,step,remesh)) { throw std::runtime_error(staged.LastError()); }
         if (!myOwner.myCadSource.IsNull() && !staged.SetCadSection(myOwner.myCadSource,myOwner.myCadCut,myOwner.mySyncClip)) { throw std::runtime_error(staged.LastError()); }
         if (!myOwner.myGlobalClip.IsNull() && !myOwner.mySyncClip && !staged.SetGlobalClip(myOwner.myGlobalClip->GetEquation(),myOwner.myGlobalClip->IsOn())) { throw std::runtime_error(staged.LastError()); }
         const auto context = myOwner.myContext; const auto viewport = myOwner.myViewport;
@@ -204,6 +206,8 @@ bool NativeCutTimeline::prepare(int step, const CutFieldBinding& deformation, do
             else { owner->myDragSnapshot.clear(); owner->event(action == AIS_DragAction_Stop ? CutEditEvent::Commit : CutEditEvent::Abort); }
         });
         myOwner.myDisplay = candidate; staged.myDisplay.Nullify();
+        myOwner.myAnalysis = std::move(staged.myAnalysis);
+        if (myOwner.myAnalysis) { myOwner.myAnalysis->myOwner = &myOwner; }
         myOwner.myDatums = std::move(datums); myOwner.myFieldBinding = contour;
         myOwner.myCadSection = staged.myCadSection; myOwner.myGlobalClip = staged.myGlobalClip;
         myOwner.myCadSource = staged.myCadSource; myOwner.myCadCut = staged.myCadCut; myOwner.mySyncClip = staged.mySyncClip;

@@ -162,6 +162,7 @@ proc scvcuttools {model} {
     pack $w.cad.shape $w.cad.sync $w.cad.clip $w.cad.apply $w.cad.clear -side left -padx 3
     ttk::label $w.status -textvariable ::CutViewTools::status -wraplength 540
     ttk::button $w.time -text "Time and slicing" -command [list scvcuttime $model]
+    ttk::button $w.physics -text "Physical resultants and automatic cuts" -command [list scvcutphysics $model]
     ttk::button $w.close -text Close -command [list destroy $w]
-    pack $w.status $w.time $w.close -fill x -padx 6 -pady 4
+    pack $w.status $w.time $w.physics $w.close -fill x -padx 6 -pady 4
 }

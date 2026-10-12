@@ -9,6 +9,8 @@ set (_SRCFILES
   InteractiveCaeMeshManager.cpp
   NativeCutView.cpp
   NativeCutTimeline.cpp
+  NativeCutAnalysis.cpp
+  NativeCutAnalysisJson.cpp
   InteractiveClippingManager.cpp
   InteractiveColorScaleManager.cpp
   InteractiveContext.cpp
@@ -44,6 +46,7 @@ set (_INCFILES
   InteractiveCaeMeshManager.h
   NativeCutView.h
   NativeCutTimeline.h
+  NativeCutAnalysis.h
   InteractiveClippingManager.h
   InteractiveColorScaleManager.h
   InteractiveContext.h
