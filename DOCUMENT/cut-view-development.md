@@ -17,9 +17,12 @@
 Current execution is native only: Web/Vue/TypeScript and WASM tasks are excluded,
 not completed. Project/session persistence below maps to the native session API.
 
-Final VTK ON **58/58**, OFF **22/22**, every case three times (174 / 66 executions; 547.47 / 41.50 seconds). DRAW/Viewer-disabled import/reference tests **2/2** each pass three times (0.52 seconds).
-N01–N05 are closed at their documented native scopes. N05 final ON **61/61**, OFF **24/24**, headless **2/2**, each case three times; actual Tk inventory **48+36** controls. See
-[the N04 audit](cut-view-n04-audit.md); N05 is closed at [its native audit](cut-view-n05-audit.md); N06 is closed at [its native audit](cut-view-n06-audit.md); N07 is closed at [its native audit](cut-view-n07-audit.md); N08 is active and N09 remains queued.
+N01–N08 are closed at their documented native scopes; N09 session closure is in
+final validation. N05, N06, N07 and N08 evidence is recorded in the
+[Viewer audit](cut-view-n05-audit.md), [time/slicing audit](cut-view-n06-audit.md),
+[physical analysis audit](cut-view-n07-audit.md) and [performance audit](cut-view-n08-audit.md).
+The current stage table is [N05–N09](cut-view-n05-n09.md); earlier test counts
+below describe their original milestones.
 Curved-family geometry/FE
 references, analytic precision fallback, high-order field isosurfaces, tensor/trace
 policies and actual presentation OR are included. N03 is verified at
@@ -98,7 +101,7 @@ for SDK paths, logs, missing historical external fixtures and remaining work.
   ON 45/45 and OFF 12/12 each repeated three times, within the documented support contract.
 - [x] N03.4 actual presentation OR boundary/cap union, source/FE provenance,
   64 mask pairs, touching/overlapping/contained regions and transparent clouds.
-  See [the union contract](cut-view-union.md). Complete native session persistence remains N09.
+  See [the union contract](cut-view-union.md). Full session persistence is validated separately in N09.
 - [x] N03.5 full repeated ON/OFF closure audit, repaired curved On-only caps and
   internal compsolid faces, inspected UI/cloud images and documented support limits.
 - [x] N04.1 overall VTK import reports and backend attempts, successful fallback diagnostics,
@@ -112,7 +115,19 @@ for SDK paths, logs, missing historical external fixtures and remaining work.
   repair, ordinary Viewer images and kernel peak-memory gate; current support
   boundaries and handoff synchronized.
 
-These are native building blocks, not completion of the entire Cut View Manager plan.
+- [x] N05 datum/local editing and axes, per-cut/portion styles, contour/legend,
+  original-FE picking/probes, vector/orientation plots, annotations, CAD sections,
+  global clipping and ordinary native Viewer lifecycle/event/error APIs.
+- [x] N06 coordinated geometry/field/deformation steps, explicit material frames,
+  remesh mappings, playback and regular/range/rotational/path slicing.
+- [x] N07 explicit physical groups/units/frames, shell/composite/beam section
+  adapters, local-normal volume analysis, resultant overlays, interval reports,
+  CSV export and mapped crack-distance/optimization-density cuts.
+- [x] N08 shared source/result reservation accounting, local policies, LRU,
+  externally retained leases, cancellation/generations and full-frame timing.
+- [x] N08 million-cell crossing/rotating/fixed-deformation plane workload:
+  three complete measured runs pass >=15 FPS and p95 <=67 ms; repeated actual
+  display open/edit/close stays below the documented private-memory growth gate.
 
 ## Abaqus Feature Comparison
 
@@ -124,24 +139,24 @@ interface, not the production Vue manager. See the official [view-cut overview](
 | Capability | Current Native Status | Remaining Difference |
 | --- | --- | --- |
 | Manager list, select/show independently, create/edit/copy/rename/delete | DRAW/Tk implemented and tested | Production Viewer/TypeScript/Vue integration |
-| Default X/Y/Z planes | Native `EnsureDefaultPlanes()` and DRAW/Tk lifecycle defaults; new model remains uncut | Production Viewer lifecycle integration |
-| Below/on/above combinations, multiple cuts | Actual retained-region OR, stable exposed caps, all masks and transparent cloud comparisons | Per-cut style overrides and full-frame performance |
-| Translate/rotate with numeric values and sliders | Plane controls and scalar-isovalue slider implemented | Explicit datum coordinate systems, reference axes and curved-shape controls |
-| Mouse positioning | Plane picking, normal arrow, rotation rings, cancellation tested | Result-node/element picking and probe tools |
-| Real mesh and nodal-result sections during motion | Original FE functions; 48-cell matrix and held-pointer volume-family checks | Exact curved geometry/convergence and large-model frame budget |
-| Element-result sections | Constant/projected CellData, region/threshold recovery, tensor measures and independent display/physical interface traces | Shell/beam physical mappings and production Viewer options |
-| Plane/cylinder/sphere/isosurface shapes | Concrete VTK cells and supported high-order numerical FE isosurfaces; trusted internal boundaries | General unmatched interfaces, arbitrary-order exact geometry and full-frame performance |
-| Per-portion/per-cut plot options | Native shared `SetStyle()` API only | Per-cut styles, manager controls, legend/contour options |
-| Deformed plots and following deformation | Native intersection, deformed nodal guide/range/fit bounds and held-drag regression | Material-following reference frames and production GUI controls |
-| Field time steps and animation | Individual field steps selectable | Coordinated geometry/deformation animation and topology checks |
-| Result caching | Conservative translation and field caches | User policy, memory limits, eviction, full-frame acceptance |
-| Free-body forces/moments and heat flow | Volume-field numerical integration only | Vector overlays, summation/group options, shell/beam mappings |
-| Regular/rotational/path slicing | Not implemented | Slice distribution, path definitions, interval resultants |
-| Common options and cut-specific options | Basic manager controls only | Complete options dialogs and per-cut overrides |
-| Session/project persistence | Definition-only JSON save/load | Mesh/field/style/deformation bindings and project migration |
-| XFEM and optimization automatic cuts | Not implemented | Explicit distance/density mapping and special display semantics |
-| CAD/global clipping synchronization | Existing CAD clipping remains separate | Cross-module synchronization and CAD sections |
-| VTK-based source data | Optional VTK topology and line/point cuts; real fixtures tested | Ordinary viewer/browser integration, changing topology, bounded memory and UI diagnostics |
+| Default X/Y/Z planes | Native lifecycle defaults; new model remains uncut | Browser lifecycle excluded |
+| Below/on/above combinations, multiple cuts | Actual OR, exposed caps, all masks, transparent clouds and per-cut styles | Million-cell performance acceptance covers one On-only plane |
+| Translate/rotate with numeric values and sliders | Local/global datums, reference axes, plane/curved/iso controls | Production browser controls excluded |
+| Mouse positioning | Plane guides/manipulators, cancellation, AIS result picking and FE probes | Browser pointer integration excluded |
+| Real mesh and nodal-result sections during motion | Original FE, bounded curved references, 48-cell matrix and measured native plane frames | No arbitrary-order exact or general high-order frame-time promise |
+| Element-result sections | Original constants/recovery/tensors, independent traces and explicit section adapters | Unsupported physical sections reject explicitly |
+| Plane/cylinder/sphere/isosurface shapes | Native and VTK concrete cells; bounded high-order numerical FE isosurfaces | Unmatched interfaces remain distinct; no arbitrary-order exact geometry |
+| Per-portion/per-cut plot options | Shared options, overrides, opacity/edges, contour range and legend | Production browser dialogs excluded |
+| Deformed plots and following deformation | Intersections and explicitly anchored reference/updated material frames | Remeshed anchors require explicit mappings |
+| Field time steps and animation | Atomic geometry/field/deformation steps, topology validation and playback | Missing remesh bindings reject; correspondence is not inferred |
+| Result caching | Local logical budgets, shared accounting, leases, LRU, cancellation and generations | Logical reservations do not bound exact process/GPU memory |
+| Free-body forces/moments and heat flow | Explicit groups/units/frames, shell/composite/beam mappings, overlays and CSV | Nonplanar shells, composite heat and beam heat excluded |
+| Regular/rotational/path slicing | Regular/range/rotation/piecewise-linear path frames and interval reports | Bounded at 10000 slices |
+| Common options and cut-specific options | Native manager/tools/time/physics/cache panels and overrides | Browser manager excluded |
+| Session/project persistence | Native v3 source-bundle session in final validation | N09 closure pending |
+| XFEM and optimization automatic cuts | Explicit distance/density field, sign, threshold, range and empty/full states | No ODB parser or inferred field semantics |
+| CAD/global clipping synchronization | Native independent or synchronized CAD section/global clip, lifecycle ownership | CAD session sources must be explicit BREP files |
+| VTK-based source data | Ordinary native Viewer points/lines/general cells, remeshed snapshots, import limits and diagnostics | Structured/parallel XML/VTKHDF/ODB and browser integration excluded |
 | Browser/WASM manager | Not implemented | SDK rebuild, typed API, UI, pointer and performance acceptance |
 
 Pointer tests are in `test/cae/cut_view_interaction.tcl`: they pass events through
@@ -149,30 +164,16 @@ Pointer tests are in `test/cae/cut_view_interaction.tcl`: they pass events throu
 values before release, and check rendered pixels. Small-fixture interactivity is not evidence
 that million-cell rendering meets 15 fps.
 
-## Remaining TODOs
+## Remaining Scope
 
 N01/N02's bounded source/geometry/FE and high-order isosurface gates are verified.
 N03 recovery/tensor/trace/actual OR gates and full closure are verified. N04 import
 items and final audit are verified in [the closure report](cut-view-n04-audit.md). Mismatching
 interfaces remain distinct, arbitrary-order exact geometry is not promised, and
-none of these stages establishes the full-frame performance target.
-
-1. Complete per-cut styles, datum positioning/reference axes, result picking/probes, contour legends,
-   and synchronization with CAD/global clipping state. Native plane guides/manipulators now work;
-   result selection remains separate and incomplete.
-2. Add regular/range/path slicing, coordinated time/deformation animation, cache policies, and eviction.
-   Native pointer-driven plane updates now work; browser dragging and material-following reference
-   frames are not connected to this manager.
-3. Add mapped shell/beam section forces, thickness/section semantics, units handling and resultant overlays.
-   Explicit physical interface traces are implemented; original physical mapping is separated
-   from display recovery. Current integration is for supplied volume-section fields;
-   unsupported surface sections fail explicitly.
-4. Add automatic crack/optimization cuts from explicitly mapped distance/density fields.
-5. Integrate definitions, styles, source/field/deformation bindings and migration into native sessions.
-   Definition JSON v7 does not serialize mesh sources, active fields, deformation or styles.
-6. Meet the million-cell 15 fps target for crossing-cell/rotating cuts, deformation, fields, primitive
-    construction, and actual rendering together. Current geometry-only timings do not establish this.
-7. Web/WASM rebuild and browser acceptance remain excluded work for a later scope.
+N08 establishes the full-frame target for the measured native plane workload below.
+N09 full-session validation, documentation and commit remain in progress.
+Web/Vue/TypeScript/WASM rebuild and browser acceptance remain excluded for a later scope.
+Unsupported physical mappings and broader performance workloads are listed in the audits.
 
 Structured VTK, parallel XML, VTKHDF, and Abaqus ODB remain outside the first format scope.
 
@@ -181,18 +182,18 @@ Structured VTK, parallel XML, VTKHDF, and Abaqus ODB remain outside the first fo
 | Area | Available | Still Missing |
 | --- | --- | --- |
 | Geometry | RWCae topology, BVH, original VTK FE charts, bounded curved/analytic geometry and numerical convergence | Unmatched general interfaces and arbitrary-order exact geometry |
-| Fields | Scalar/vector/tensor properties, node provenance, deformation | Shell/beam physical mappings and full time lifecycle |
-| Rendering | Native OCCT AIS, contours, actual OR boundaries/caps, plane guides/manipulators | Result picking, per-cut overrides, full-frame performance |
-| Import | Validated Legacy/XML, original general topology with native VTK, per-step geometry/fields, resource limits and local staging/reports | Structured/parallel formats, portable general cells, coordinated playback |
-| Integration | DRAW commands, Tk manager, ordinary native Viewer, contextual diagnostics and numerical/pixel/pointer scripts | Native full sessions/CAD coordination; Vue/WASM excluded |
+| Fields | Scalar/vector/tensor provenance, recovery/physical separation, explicit section mappings and coordinated time/deformation | Unsupported section semantics and inferred remesh correspondence |
+| Rendering | Native AIS, OR/contours, styles/legend, result picking, vectors/overlays, guides and measured plane frames | General high-order/OR/isosurface million-cell performance |
+| Import | Legacy/XML/general topology, independent snapshots, limits, staging/reports and playback | Structured/parallel formats and portable general-cell backend |
+| Integration | Native Viewer lifecycle/CAD coordination, DRAW/Tk and numerical/pixel/pointer scripts | N09 session closure in progress; Vue/WASM excluded |
 
 MCP exploration was verified against source where the C++/Tcl index reported partial coverage.
 
 ## Execution Queue
 
 See [cut-view-execution.md](cut-view-execution.md) for the dependency-ordered tasks and their
-acceptance gates. R00, G01, native M01 and bounded G03 are verified; G02's full-frame
-performance remains partial. Current coverage includes the supplied VTK real-data cases and
+acceptance gates. R00, G01–G05 and native M01–M07 are verified at their documented
+contracts. Current coverage includes the supplied VTK real-data cases and
 the 48-concrete-cell native/DRAW matrix. N01 and N02's numerical foundation are verified.
 N02 includes supported analytic source boundaries and expanded reference fixtures.
 N02 is verified at the [bounded closure scope](cut-view-n02-audit.md).
@@ -203,26 +204,32 @@ Actual presentation OR has passed numerical, field/dimension and transparent
 acceptance and the full [N03 closure audit](cut-view-n03-audit.md).
 N04.1–N04.8 import/ordinary Viewer work is verified in
 [its acceptance queue](cut-view-n04-plan.md) and [closure audit](cut-view-n04-audit.md).
-N05–N06 are verified; N07 is active and N08–N09 remain queued; web/WASM work is excluded.
+N05–N08 are verified; N09 is in final validation; web/WASM work is excluded.
 First-order isosurfaces currently rebuild scalar-cut geometry when the threshold changes; they
 have not been accepted against the full-frame million-cell target. Supported high-order
 VTK chart cells use the bounded numerical isosurface contract recorded in N02.
-Non-planar physical integration needs local-normal mapping and is rejected.
+Volume sphere/cylinder integration uses analytic local normals. Isosurfaces require
+explicit element normals. Nonplanar shell adapters and beam/composite heat are rejected.
 
 ## Performance Evidence
 
-Release, one million regular hexahedra, nodal field, 20 updates:
+Release, one million native first-order regular hexahedra, one On-only plane,
+nodal field, 60 frames per scenario in each of three complete measured processes:
 
-| Scenario | p50 | p95 |
+| Scenario | FPS range across three runs | p95 range |
 | --- | --- | --- |
-| Same topology interval, section only | 0.86 ms | 1.17 ms |
-| Same topology interval, all three portions | 5.27 ms | 6.39 ms |
-| Across cell layers, section only | 211.98 ms | 214.64 ms |
+| Crossing cell layers | 54.65–56.54 | 38.60–39.25 ms |
+| Rotating plane | 25.33–25.64 | 43.46–45.44 ms |
+| Fixed-deformation translation | 26.14–27.33 | 45.77–54.09 ms |
 
-These measure geometry and fields only, excluding primitive construction/rendering. The cache is
-limited to first-order fixed cell types, unchanged plane normals and node-side classifications,
-without active deformation or near-node merge changes. Other cases rebuild. Cold section generation
-was about 321 ms; the full-frame p95 <=67 ms acceptance remains open.
+Each measured frame includes geometry, original-FE field mapping, contour primitives,
+V3d redraw and OpenGL completion. All runs pass >=15 FPS and p95 <=67 ms.
+Cold setup is reported separately. Intel Iris Xe OpenGL 4.6; this repository is
+Release while its OCCT SDK remains Debug. Background C++ language-service indexing
+was paused for the final measurements and restored afterward; unisolated failed
+runs are retained. This result is specific to the measured workload and machine.
+Sixty actual open/edit/close cycles (300 frames) grew peak private bytes by 4.41 MiB,
+below the 32 MiB gate. See [N08](cut-view-n08-audit.md) for logs and limits.
 
 See `test/README.md` for commands, Tcl coverage, screenshots, and native API usage.
 

@@ -596,12 +596,49 @@ in [the import contract](../DOCUMENT/cut-view-import.md).
 N04.8 final native closure: Final VTK ON **58/58**, OFF **22/22**, every case three times (174 / 66 executions; 547.47 / 41.50 seconds). DRAW/Viewer-disabled import/reference tests **2/2** each pass three times (0.52 seconds).
 See [the audit](../DOCUMENT/cut-view-n04-audit.md) for current support boundaries and reproduction.
 
-N06: `cut_slicing`, `native_timeline` and `draw_cut_view_time` cover coordinated
+N06 milestone: `cut_slicing`, `native_timeline` and `draw_cut_view_time` cover coordinated
 steps, remesh rejection, material frames, animation failure/abort and four slice
 distributions. The actual time panel has 20 controls; tools now has 37. See
 [the N06 audit](../DOCUMENT/cut-view-n06-audit.md).
 
-N07: `cut_physics`, `native_analysis` and `draw_cut_view_physics` cover independent
+N07 milestone: `cut_physics`, `native_analysis` and `draw_cut_view_physics` cover independent
 physical references, explicit sections/units/frames, automatic cut validation and
 actual resultant overlays. Physics/tools inventories are 31/38.
 See [the N07 audit](../DOCUMENT/cut-view-n07-audit.md).
+
+## Native cache and full-frame performance
+
+N08 adds `cut_cache` for source/result limits, LRU, externally held leases,
+shared candidate accounting with local policy isolation, cancellation/generations,
+200 edits, close and interpolation hash consistency. Definition validators share
+the live ledger; a rejected tight-budget restoration preserves definitions and
+releases temporary reservations. General VTK geometry caching stays in
+`general_cut_cache` and the original `draw_cut_view_cache` regression.
+The cache panel has seven actual controls; the N08 tools baseline has 39.
+
+```tcl
+scvcutview model cachepolicy 4096 16384
+scvcutview model cacheinfo
+scvcutview model request
+scvcutview model cancelrequest
+scvcutcache model
+```
+
+DRAW policy arguments are MiB. `MeshCutViewManager::SetCachePolicy()` takes
+byte limits, `CacheStatistics()` reports shared reservations and peaks, and
+`ShareCacheFrom()` shares accounting while preserving local policy changes.
+These logical envelopes do not cap exact process private bytes or GPU memory.
+
+```powershell
+cmake --build build/mingw-release --parallel 4
+powershell -NoProfile -ExecutionPolicy Bypass -File test/run-cut-benchmark.ps1 -BuildDirectory build/mingw-release -Grid 100 -Frames 60
+```
+
+The performance script measures real contour/primitive creation, redraw and GPU
+completion on one million native first-order hex cells and one On-only plane.
+Crossing, rotating and fixed-deformation scenarios each require >=15 FPS and
+p95 <=67 ms. Cold setup, numerical checks and screenshots are outside the frame
+interval. `draw_cut_view_benchmark_smoke` is only a small functional CTest case.
+Three accepted million-cell runs and 60 real display open/edit/close cycles are
+recorded in [N08](../DOCUMENT/cut-view-n08-audit.md), including renderer, retained
+failed runs, temporary background language-service pause and workload limits.

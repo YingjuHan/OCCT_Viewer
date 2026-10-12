@@ -138,10 +138,9 @@ bool NativeCutAnalysis::Automatic(const std::string& id,const CutFieldBinding& f
 {
     return myOwner->attempt([&] {
         mapping.Field = myOwner->resolveField(field); mapping.Component = field.Component;
-        const auto old = myOwner->Display()->Cuts().DumpDefinitionsJson();
         ViewCaeGeom::MeshCutAutomatic::Add(myOwner->Display()->Cuts(),id,mapping);
         try { myOwner->Display()->Synchronize(); }
-        catch (...) { myOwner->Display()->Cuts().RestoreDefinitionsJson(old); throw; }
+        catch (...) { myOwner->Display()->Cuts().Remove(id); throw; }
         myAutomatic[id] = {field,mapping};
     });
 }

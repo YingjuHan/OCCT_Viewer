@@ -43,6 +43,18 @@ Handle(RWCae::MeshData) series(bool missing = false, bool remesh = false)
 }
 void tests()
 {
+    {
+        Viewer::NativeCutView bounded(series()); Viewer::NativeCutTimeline time(bounded);
+        auto& cuts=bounded.Display()->Cuts();
+        require(cuts.AddPlane("p",Graphic3d_Vec4d(1,0,0,-.25))&&bounded.BindField({"contour",true,0,0}),"Bounded drag fixture");
+        ViewCaeGeom::MeshCutTraceOptions negative; negative.Policy=ViewCaeGeom::MeshCutTracePolicy::Negative;
+        require(cuts.SetTraceOptions("p",false,negative)&&bounded.Refresh(false)&&bounded.BeginDrag(),bounded.LastError());
+        const auto used=cuts.CacheStatistics(); const auto snapshot=cuts.DumpDefinitionsJson(); const auto generation=bounded.Generation();
+        require(cuts.SetCachePolicy({used.SourceReserved,used.ResultReserved*4}),"Bounded drag policy");
+        require(!time.SwitchStep(1)&&bounded.LastError().find("drag baseline")!=std::string::npos,"Drag validator escaped the live source budget");
+        require(time.Step()==0&&bounded.IsDragging()&&bounded.Generation()==generation&&cuts.DumpDefinitionsJson()==snapshot
+            &&cuts.CacheStatistics().SourceReserved==used.SourceReserved,"Rejected drag baseline changed live state/accounting");
+    }
     Viewer::NativeCutView native(series()); Viewer::NativeCutTimeline timeline(native);
     require(native.Display()->Cuts().AddPlane("p",Graphic3d_Vec4d(1,0,0,-0.25)),"Timeline plane");
     require(native.BindField({"contour",true,0,0}),native.LastError());

@@ -7,6 +7,7 @@
 #include <array>
 
 namespace ViewCaeGeom {
+struct MeshCutCancellation;
 //! Endpoints index the slice mesh nodes; source element indexes the original mesh.
 struct MeshSliceLine {
     std::array<RWCae::MeshEntityId, 2> Nodes;
@@ -21,6 +22,7 @@ public:
     Standard_EXPORT explicit MeshGeometrySlice(const Handle(MeshBvhData)& theBvhData);
 
     Standard_EXPORT ~MeshGeometrySlice() override;
+    void SetCancellation(const std::shared_ptr<MeshCutCancellation>& token) { myCancellation=token; }
 
     //! Return geometry type.
     virtual MeshGeometryType Type() const override { return MeshGeometryType::Slice; }
@@ -68,6 +70,7 @@ protected:
 protected:
     Graphic3d_SequenceOfHClipPlane mySlicePlanes;
     std::vector<MeshSliceLine> myLines;
+    std::shared_ptr<MeshCutCancellation> myCancellation;
 };
 
 } // namespace

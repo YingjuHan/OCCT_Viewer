@@ -323,6 +323,7 @@ MeshCutProbe InteractiveCaeCutView::Probe(const Handle(MeshCutPickOwner)& owner)
 
 void InteractiveCaeCutView::Synchronize()
 {
+    const auto request=myCuts.RequestGeneration();
     decltype(myPresentations) presentations;
     decltype(myVectorPresentations) vectorPresentations;
     decltype(myLineArrays) lineArrays;
@@ -470,6 +471,7 @@ void InteractiveCaeCutView::Synchronize()
             lineAspects.push_back(anAspect);
         }
     }
+    if(!myCuts.IsCurrentRequest(request)) { throw std::runtime_error("Cut frame cancelled or superseded before presentation publication"); }
     myPresentations = std::move(presentations);
     myVectorPresentations = std::move(vectorPresentations);
     myLineArrays = std::move(lineArrays); myLineAspects = std::move(lineAspects);

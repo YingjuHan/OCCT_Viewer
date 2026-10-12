@@ -6,6 +6,7 @@ set (SRCFILES
   MeshCutSlicing.cpp
   MeshCutPhysics.cpp
   MeshCutAutomatic.cpp
+  MeshCutCache.cpp
   MeshCutIntegration.cpp
   MeshCutRecovery.cpp
   MeshCutTensor.cpp
@@ -28,6 +29,7 @@ set (INCFILES
   MeshCutSlicing.h
   MeshCutPhysics.h
   MeshCutAutomatic.h
+  MeshCutCache.h
   MeshCutIntegration.h
   MeshCutRecovery.h
   MeshCutTensor.h

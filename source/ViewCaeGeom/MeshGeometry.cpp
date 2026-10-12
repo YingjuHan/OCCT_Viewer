@@ -25,13 +25,18 @@ namespace ViewCaeGeom {
 // =======================================================================
 int MeshInterpolatedNode::HashCode(const MeshInterpolatedNode& theElem, const int theUpper)
 {
-    unsigned int aHashCode = 0;
+    // Avalanche each original ID before combining. Plain XOR collapses regular
+    // grid edges (e.g. every even/odd consecutive pair) into the same bucket.
+    uint64_t aHashCode = 0;
     for (const std::pair<RWCae::MeshEntityId, double>& aNode : theElem.BaseNodes()) {
         if (aNode.second >= myRatioConfusion) {
-            aHashCode = aHashCode ^ ::HashCode(aNode.first, theUpper);
+            uint64_t value=(uint64_t)aNode.first+0x9e3779b97f4a7c15ULL;
+            value=(value^(value>>30))*0xbf58476d1ce4e5b9ULL;
+            value=(value^(value>>27))*0x94d049bb133111ebULL;
+            aHashCode ^= value^(value>>31);
         }
     }
-    return int(static_cast<unsigned int>(aHashCode & 0x7fffffff)) % theUpper + 1;
+    return (int)(aHashCode%(uint64_t)theUpper)+1;
 }
 
 // =======================================================================
@@ -61,6 +66,9 @@ bool MeshInterpolatedNode::IsEqual(const MeshInterpolatedNode& theElem1, const M
     }
 
     if (theElem1.BaseNodes().size() == aTwo && theElem2.BaseNodes().size() == aTwo) {
+        const bool near1=theElem1.BaseNodes()[0].second<myRatioConfusion || theElem1.BaseNodes()[1].second<myRatioConfusion;
+        const bool near2=theElem2.BaseNodes()[0].second<myRatioConfusion || theElem2.BaseNodes()[1].second<myRatioConfusion;
+        if (near1 || near2) { return IsEqualGeneral(theElem1,theElem2); }
         if (theElem1.BaseNodes()[0].first == theElem2.BaseNodes()[0].first
             && theElem1.BaseNodes()[1].first == theElem2.BaseNodes()[1].first) {
             return true;

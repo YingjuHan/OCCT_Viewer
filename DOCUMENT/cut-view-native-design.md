@@ -2,7 +2,7 @@
 
 ## Scope and Status
 
-This is the implementation design for the remaining native work. Web, Vue,
+This is the implementation design for the native manager. Web, Vue,
 TypeScript, browser acceptance and WASM SDK/packaging are excluded from this
 execution track. B03 means the native Viewer/C++ interface only. S01 means a
 native session JSON format, not edits to the TypeScript ProjectStore/SavedViewStore.
@@ -20,7 +20,12 @@ and OFF 14/14, each case three times, with 47/47 real native controls.
 general-cell display, validated format/series contracts, import budgets and local
 reference staging/reports. Its [final audit](cut-view-n04-audit.md) is verified;
 N04 is closed at that documented native scope.
-N05 is closed at [its native audit](cut-view-n05-audit.md); N06 is closed at [its native audit](cut-view-n06-audit.md); N07 is closed at [its native audit](cut-view-n07-audit.md); N08 is active and N09 remains scheduled.
+N05 is closed at [its native audit](cut-view-n05-audit.md); N06 is closed at
+[its native audit](cut-view-n06-audit.md); N07 is closed at
+[its native audit](cut-view-n07-audit.md); N08 is closed at
+[its native audit](cut-view-n08-audit.md); N09 is in final session validation.
+Earlier baseline counts describe their historical milestones; current evidence
+and bounded support are recorded in [the stage table](cut-view-n05-n09.md).
 
 ## Existing Boundaries
 
@@ -76,12 +81,13 @@ branch root when publishing a result.
 | Close/replace | Detach aids, cancel drag/jobs, release all source and result caches |
 
 Existing callers mutating data in place must still call InvalidateGeometry or
-InvalidateFields. Later time-step APIs will own this notification automatically.
+InvalidateFields. The N06 coordinated time-step API owns source replacement.
 No cache key may use a pointer alone to infer data freshness.
 
-The first cache is single-threaded and scoped to one source epoch. OCCT BVH reuse
-is supported; calling mutable VTK evaluators concurrently is not. Hard memory
-budgets/LRU eviction follow in N08 and must precede a million-cell claim.
+The cache is scoped to a source epoch. OCCT BVH reuse is supported; mutable
+general VTK evaluators stay on the owner thread. N08 adds shared logical
+source/result accounting, local policies, retained leases and LRU. Proven
+independent original-FE trace evaluation can use OCCT pool threads.
 
 ### Adjacency and Face Ownership
 

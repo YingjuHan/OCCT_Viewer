@@ -8,9 +8,9 @@ N03.4 实际 OR 并集/透明显示均已验收。N03.5 完整双配置闭环审
 N03 已按 [原生支持契约](cut-view-n03-audit.md) 闭环。最新证据在第 23 节，
 旧 milestone 记录保留为历史。N04.1–N04.8 已验收，N04 已按原生支持范围闭环，
 见 [N04 队列](cut-view-n04-plan.md) 和 [闭环审计](cut-view-n04-audit.md)。
-N05 已按 [闭环审计](cut-view-n05-audit.md) 验收；N06 已按 [闭环审计](cut-view-n06-audit.md) 验收；N07 已按 [闭环审计](cut-view-n07-audit.md) 验收；N08 正在实施，N09 依次推进。第 24 节及后续各项保留分项证据，当前状态以本节为准。
+N05 已按 [闭环审计](cut-view-n05-audit.md) 验收；N06 已按 [闭环审计](cut-view-n06-audit.md) 验收；N07 已按 [闭环审计](cut-view-n07-audit.md) 验收；N08 已按 [性能与缓存审计](cut-view-n08-audit.md) 验收；N09 正在最终复验。第 24 节及后续各项保留分项证据，当前状态以本节为准。
 后文的 Linux 验证记录保留为历史证据；
-本次 Windows 配置与结果以本节和末尾 N04.8 闭环记录为准；第 6 节保留先前增量证据。
+本次 Windows 配置与结果以本节和末尾最新阶段审计为准；第 6 节保留先前增量证据。
 
 - 仓库：`D:/workspace/OpenCASCADE/OCCT_Viewer`；分支：`develop`；初始接续基线：`95fb291`。
 - 目标：完成原生 Cut View Manager 的 N02-N09 及对应 TODO，实施、修复并通过 native/DRAW 验收。
@@ -19,11 +19,11 @@ N05 已按 [闭环审计](cut-view-n05-audit.md) 验收；N06 已按 [闭环审�
   N02.4 `7910a48`、N03.1 `2caeb2f`、N03.2 `17f421c` 已提交；
   N03.3 `f719eeb`、N03.4a `db6268b`、N03.4b `addbb03`、N03.4c `eba2a37` 已提交；
   曲面 cap/内部面修复 `3a1fd44`、N03 闭环文档 `6bacc14` 已提交；
-  N01–N07 已按支持范围闭环；N08 正在实施，N09 排队。
+  N01–N08 已按支持范围闭环；N09 正在最终复验。
 - N04.1–N04.7 提交：`68fe366`、`e1a45a4`、`82eaf55`、`65c4352`、`b1ada38`、`5c8c9e3`、`dbfe66b`；每项之后均显式刷新 MCP 索引。
 - 每个验收工作项单独提交；保留用户既有修改及 `AGENTS.md`。
 
-接续时以本说明的最新证据为准。主交接、执行队列和设计中的当前 N01–N04 状态为 verified；
+接续时以本说明的最新证据为准。主交接与执行队列的当前 N01–N08 状态为 verified；
 历史 milestone 的 31/34 cases 记录保留，不代表当前 Windows 套件计数，也不能据此把未完成阶段改为 done。
 
 相关规划与说明：
@@ -375,7 +375,7 @@ scvcutview model eval cut
 - 若引入后台作业，使用 immutable snapshot + generation；只有最新成功结果可在 Viewer 线程发布，关闭/替换必须取消。
 - 对 source preparation、intersection、FE mapping、primitive generation、redraw 分别计时，区分 cold/warm。
 - 百万体单元穿层、旋转、变形工况必须包括实际云图构建和 redraw：至少 15 FPS、p95 不超过 67 ms。
-- 已有百万模型几何/字段穿层 p95 约 214 ms；不能用同拓扑缓存的约 1 ms 或加大测试 timeout 替代全帧优化。
+- 历史百万模型几何/字段穿层 p95 约 214 ms；N08 已完成实际全帧优化，见末尾最新证据与性能审计。
 - 长时间 open/close/edit/drag 检查资源增长、旧 handle、过时结果、abort 和 cancellation。
 
 ### N09：原生 session
@@ -387,43 +387,43 @@ scvcutview model eval cut
 
 ## 10. 完整原生 TODO 状态速查
 
-下表保留各阶段状态；“待做”不表示前置模块毫无基础，“partial”也不能当完成。
+下表为当前状态；后文 milestone 保留历史证据，具体支持范围见各阶段审计。
 
 | ID | 原生任务 | 当前状态/下一步 |
 | --- | --- | --- |
 | R00 | held-drag、所有现有控件、崩溃修复 | verified；后续持续回归 |
 | G01 | 一阶 field isosurface | verified；支持的高阶数值 FE 等值面另由 N02 验收，不代替 plane |
-| G02 | sphere/cylinder、一般单元 | partial；全帧性能等仍待验收 |
+| G02 | sphere/cylinder、一般单元 | verified at bounded native geometry scope; N08 performance applies only to its measured plane workload |
 | G03 | 高阶几何与 FE、参考精度 | verified at N02 bounded scope；族参考/精度回退/高阶 FE 等值面/闭环审计，不泛化为任意阶精确几何 |
 | G04 | recovery/region/threshold/discontinuity | verified；完整 tensor/独立 trace/JSON v7/47 个控件及物理字段隔离已验收 |
-| G05 | 多 cut OR 边界/cap、opacity | verified at N03.4 contract；实际 OR、来源/FE/透明云图；全帧性能仍 N08 |
+| G05 | 多 cut OR 边界/cap、opacity | verified at N03.4 OR contract; no general million-cell OR performance claim |
 | M01 | 模型生命周期、defaults、选择/激活分离 | verified |
-| M02 | datum/reference axes、各 shape 编辑 | 待做，N05 |
-| M03 | cut/portion styles 与 overrides | 仅共享样式基础，N05 |
-| M04 | contour options、legend | 待做，N05 |
-| M05 | result picking/probes | 待做，N05 |
-| M06 | vector/orientation/annotations | 待做，N05 |
-| M07 | CAD section/global clipping 同步 | 待做，N05 |
-| D01 | deformation guides/material-following frame | partial；guide 已验收，material frame N06 |
+| M02 | datum/reference axes、各 shape 编辑 | verified at N05；datum/global/local transforms and numeric edits |
+| M03 | cut/portion styles 与 overrides | verified at N05；common/per-cut/portion styles and overrides |
+| M04 | contour options、legend | verified at N05；range/legend/constant/empty contour states |
+| M05 | result picking/probes | verified at N05；actual AIS node/element selection and original-FE probes |
+| M06 | vector/orientation/annotations | verified at N05；vector/orientation display and annotations |
+| M07 | CAD section/global clipping 同步 | verified at N05；independent/synchronized CAD sections and global clip |
+| D01 | deformation guides/material-following frame | verified at N06: explicit reference/updated material anchors |
 | V01 | point/line/polyline 普通 Viewer | verified at N04.2；普通 scalar Viewer、原始 FE/CellData；general cells 需要 VTK ON |
 | V02 | Legacy 剩余范围及明确诊断 | verified at N04.3 支持契约；Legacy polyhedron 42 需要 VTU |
 | V03 | 变化几何/拓扑 series 与时间校验 | verified at N04.4/.7；每步完整独立数据、不同节点/单元数、时间/schema/tuple 校验；播放 N06 |
 | V04 | 坏数据、binary/compression/offset 全面回归 | verified at N04.5；大小端/十数值类型/headers/base64/raw/zlib 安全矩阵 |
 | V05 | bounded decoding 与资源限额 | verified at N04.6/.7；逻辑预算和 kernel peak 测量，不代表完整 Viewer 硬内存上限 |
-| D02 | coordinated steps/animation | 待做，N06 |
-| D03 | regular/range/rotation/path slicing | 待做，N06 |
-| P01 | cache policy、硬预算和 eviction | partial；epoch/BVH/lazy 基础 verified，预算 N08 |
-| I01 | groups/units/frames/summation | 已有体截面积分基础，剩余 N07 |
-| I02 | shell/beam/composite mapping | 待做，N07 |
-| I03 | overlays/distributed results/reports | 待做，N07 |
-| A01 | mapped crack-distance automatic cuts | 待做，N07 |
-| A02 | mapped optimization-density cuts | 待做，N07 |
+| D02 | coordinated steps/animation | verified at N06: coordinated snapshots, explicit remesh bindings and playback |
+| D03 | regular/range/rotation/path slicing | verified at N06: regular/range/rotation/piecewise-linear path and interval bounds |
+| P01 | cache policy、硬预算和 eviction | verified at N08: logical reservations, local policies, shared leases and LRU |
+| I01 | groups/units/frames/summation | verified at N07: explicit groups, SI factors, frames and sums |
+| I02 | shell/beam/composite mapping | verified at N07 supported section contract; unsupported mappings reject |
+| I03 | overlays/distributed results/reports | verified at N07: distributed totals, overlays, interval reports and CSV |
+| A01 | mapped crack-distance automatic cuts | verified at N07: explicit distance/sign/threshold mapping |
+| A02 | mapped optimization-density cuts | verified at N07: explicit density/range/threshold mapping |
 | B01 | structured import reports 到 native caller | verified at N04.1/.3/.7；上下文、原始/staged 路径、失败旧对象保留 |
 | B02 | relative-file staging | verified at N04.7 本地文件范围；嵌套引用、同 basename、循环/深度/文件预算和失败清理 |
-| B03 | native Viewer Cut API | 待做，N05；TypeScript 排除 |
-| S01 | native session migration/persistence | 待做，N09 |
-| P02 | 百万单元全帧仪表与优化 | 待做，N08；当前未满足 |
-| P03 | 长会话、memory/cancellation/lifecycle | 待做，N08 |
+| B03 | native Viewer Cut API | verified at N05/N06 native Viewer facade; TypeScript excluded |
+| S01 | native session migration/persistence | active: N09 final validation/documentation |
+| P02 | 百万单元全帧仪表与优化 | verified at N08 measured million native-hex On-only plane workload, three full-frame runs |
+| P03 | 长会话、memory/cancellation/lifecycle | verified at N08: cancellation/leases/200 edits and 60 actual display cycles, 4.41 MiB growth |
 | B04/W01/W02 | Vue/WASM/browser | 排除，不标 done |
 
 ## 11. 每阶段完成门槛
@@ -435,8 +435,7 @@ scvcutview model eval cut
 5. 视觉变化查看截图；性能变化记录全帧与内存测量，不能只报告非空画面。
 6. 更新执行文档中的具体证据、限制、命令和状态，再推进下一阶段。
 
-接续顺序：N04 已闭环，下一阶段推进 N05 的 datum、独立样式、legend/probe
-与 native Viewer 协调。保留原有回归与用户修改，Web/WASM 始终排除。
+接续顺序：N01–N08 已闭环，N09 完成最终复验、文档和提交。保留原有回归与用户修改，Web/WASM 始终排除。
 
 ## 12. 最新 N02.3 接续记录
 

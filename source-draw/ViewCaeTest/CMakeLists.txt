@@ -4,6 +4,7 @@ project (ViewCaeTest)
 
 set (SRCFILES
   CutViewCommands.cpp
+  CutBenchmarkCommands.cpp
   MeshPrsCommand.cpp
   PrsCaeCommands.cpp
   ScvColorScale.cpp
@@ -61,6 +62,12 @@ target_link_libraries (${PROJECT_NAME} PUBLIC DrawBase Viewer ViewCae ViewBase V
 
 # OCCT libraries
 target_link_libraries (${PROJECT_NAME} PUBLIC TKDraw TKernel TKViewerTest)
+if (WIN32)
+  target_link_libraries (${PROJECT_NAME} PRIVATE opengl32 psapi)
+else()
+  find_package (OpenGL REQUIRED)
+  target_link_libraries (${PROJECT_NAME} PRIVATE OpenGL::GL)
+endif()
 
 if (UNIX)
   target_link_libraries (${PROJECT_NAME} PRIVATE dl)

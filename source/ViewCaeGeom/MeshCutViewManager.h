@@ -5,6 +5,7 @@
 #include <ViewCaeGeom/MeshGeometrySlice.h>
 #include <ViewCaeGeom/MeshCutRecovery.h>
 #include <ViewCaeGeom/MeshCutTraceOptions.h>
+#include <ViewCaeGeom/MeshCutCache.h>
 #include <Bnd_Box.hxx>
 
 #include <array>
@@ -192,6 +193,20 @@ public:
     const MeshCutRecoveryOptions& RecoveryOptions() const { return myRecoveryOptions; }
     Standard_EXPORT bool SetIsoOptions(const MeshCutIsoOptions& theOptions);
     const MeshCutIsoOptions& IsoOptions() const { return myIsoOptions; }
+    //! Share accounting across atomic model/step candidates, before allocating caches.
+    Standard_EXPORT bool ShareCacheFrom(const MeshCutViewManager& other);
+    bool SetCachePolicy(const MeshCutCachePolicy& policy) { return myCache.SetPolicy(policy); }
+    MeshCutCachePolicy CachePolicy() const { return myCache.Policy(); }
+    MeshCutCacheStatistics CacheStatistics() const { return myCache.Statistics(); }
+    Standard_EXPORT uint64_t EstimatedSourceBytes() const;
+    Standard_EXPORT uint64_t EstimatedResultBytes(const Handle(RWCae::MeshNVecProperty)& field=nullptr) const;
+    //! New request invalidates every earlier request. Cancellation is thread safe;
+    //! geometry/OCCT work and publication remain on the Viewer thread.
+    Standard_EXPORT uint64_t BeginRequest(const std::shared_ptr<MeshCutCancellation>& token);
+    Standard_EXPORT void CancelRequest();
+    uint64_t RequestGeneration() const { return myRequestGeneration; }
+    bool IsCurrentRequest(uint64_t generation) const { return generation==myRequestGeneration && (!myCancellation || !myCancellation->Cancelled.load()); }
+    const MeshCutFrameTimings& LastTimings() const { return myTimings; }
 
 private:
     MeshCutResult evaluate(const std::string& theId, const Handle(RWCae::MeshNVecProperty)& theField, bool theDisplay);
@@ -230,6 +245,14 @@ private:
     Handle(RWCae::MeshNVecProperty) myProjectedField;
     Handle(RWCae::MeshNVecProperty) myDeformationField;
     double myDeformationScale = 0.0;
+    MeshCutCache myCache;
+    std::shared_ptr<void> mySourceLease;
+    std::shared_ptr<MeshCutCancellation> myCancellation;
+    uint64_t myRequestGeneration=1,myAccess=0,mySourceReserved=0;
+    void reserveSource();
+    MeshCutFrameTimings myTimings;
+    void checkRequest(uint64_t generation) const;
+    void prepareCache(Entry& entry,const Handle(RWCae::MeshNVecProperty)& field);
 };
 
 }

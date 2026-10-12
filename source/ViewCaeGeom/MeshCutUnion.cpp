@@ -479,6 +479,22 @@ std::shared_ptr<MeshCutPresentation> BuildCutPresentationUnion(
     std::sort(artifact->Branches.begin(),artifact->Branches.end(),[](const auto& a,const auto& b) { return a.Definition.Id < b.Definition.Id; });
     artifact->OwnedRoots.push_back(source);
     if (cuts.empty()) { return artifact; }
+    // A single section has no retained-region boundary or cross-cut cap union.
+    // Its trace section already deduplicates a coincident trusted source face.
+    if(cuts.size()==1 && cuts.front().Definition.Visibility==2 && cuts.front().Definition.Shape==MeshCutShape::Plane) {
+        const auto& cut=cuts.front(); const auto data=cut.Portions[1]->GetMeshData();
+        for(RWCae::MeshEntityId e=0;e<data->NbIndexedElems();++e) {
+            std::vector<RWCae::MeshEntityId> nodes; data->ElementNodes(e,nodes);
+            if(data->IndexedElements()[e].Type!=RWCae::MeshElemType::Elem0d) {
+                for(size_t n=1;n+1<nodes.size();++n) { artifact->Area+=Vec::Cross(Vec(data->Nodes()[nodes[n]])-Vec(data->Nodes()[nodes[0]]),Vec(data->Nodes()[nodes[n+1]])-Vec(data->Nodes()[nodes[0]])).Modulus()/2; }
+            }
+            const auto owner=cut.PhysicalProvenance ? cut.PhysicalProvenance(e,false).Element : 0;
+            artifact->Provenance.push_back({cut.Definition.Id,MeshCutPortion::On,owner,true,data->IndexedElements()[e].Type==RWCae::MeshElemType::Elem0d?0:2,e});
+        }
+        const auto slice=Handle(MeshGeometrySlice)::DownCast(cut.Portions[1]);
+        if(!slice.IsNull()) { for(size_t l=0;l<slice->Lines().size();++l) { artifact->Provenance.push_back({cut.Definition.Id,MeshCutPortion::On,slice->Lines()[l].SourceElement,true,1,(RWCae::MeshEntityId)l}); } }
+        artifact->Unified=true; return artifact;
+    }
     artifact->Unified = true;
     std::vector<CellEvaluator> cells(mesh->NbIndexedElems()); Bnd_Box bounds;
     for (RWCae::MeshEntityId e = 0; e < mesh->NbIndexedElems(); ++e) {

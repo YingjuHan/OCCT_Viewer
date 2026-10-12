@@ -133,6 +133,23 @@ proc tools_run {} {
     CutViewTime::close
     tool_click .scvcuttools.physics
     destroy .scvcutphysics
+    tool_click .scvcuttools.cache
+    set cacheExpected [tool_inventory .scvcutcache]
+    tool_assert {[llength $cacheExpected]==7} "Cache inventory"
+    tool_entry .scvcutcache.source 1
+    tool_entry .scvcutcache.result 1
+    tool_click .scvcutcache.apply
+    tool_assert {[dict get $::CutViewCache::status sourceLimit]==1048576} "Cache policy controls"
+    tool_click .scvcutcache.info
+    set request [dict get $::CutViewCache::status request]
+    tool_click .scvcutcache.request
+    tool_assert {[dict get $::CutViewCache::status request]>$request} "Request generation control"
+    tool_click .scvcutcache.cancel
+    tool_entry .scvcutcache.source 0; tool_click .scvcutcache.apply
+    tool_assert {$::CutViewCache::status ne "" && [dict get [scvcutview tools cacheinfo] sourceLimit]==1048576} "Invalid cache limit changed live policy"
+    tool_click .scvcutcache.close
+    foreach widget $cacheExpected { tool_assert {$widget in $covered} "Untested cache control $widget" }
+    puts "CUT_VIEW_CACHE_COVERAGE 7/7"
     tool_click .scvcuttools.close
     foreach widget $expected { tool_assert {$widget in $covered} "Untested tool $widget" }
     puts "CUT_VIEW_TOOLS_COVERAGE [llength $expected]/[llength $expected]"

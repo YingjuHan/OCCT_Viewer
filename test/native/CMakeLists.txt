@@ -54,6 +54,9 @@ add_test (NAME cut_display COMMAND cut_display_tests)
 add_executable (cut_slicing_tests CutSlicingTests.cpp)
 target_link_libraries (cut_slicing_tests PRIVATE ViewCaeGeom)
 add_test (NAME cut_slicing COMMAND cut_slicing_tests)
+add_executable (cut_cache_tests CutCacheTests.cpp)
+target_link_libraries (cut_cache_tests PRIVATE ViewCaeGeom)
+add_test (NAME cut_cache COMMAND cut_cache_tests)
 add_executable (cut_physics_tests CutPhysicsTests.cpp)
 target_link_libraries (cut_physics_tests PRIVATE ViewCaeGeom)
 add_test (NAME cut_physics COMMAND cut_physics_tests)
@@ -225,6 +228,10 @@ if (TARGET ViewDraw)
     set_tests_properties (draw_cut_view_recovery PROPERTIES ENVIRONMENT "${DRAW_TEST_ENV}"
       PASS_REGULAR_EXPRESSION "CUT_VIEW_RECOVERY_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" TIMEOUT 90)
     if (OCCTV_TEST_DRAW_VISUAL)
+      add_test (NAME draw_cut_view_benchmark_smoke COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_benchmark.tcl")
+      set_tests_properties (draw_cut_view_benchmark_smoke PROPERTIES
+        ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_BENCHMARK_GRID=6;CUTVIEW_BENCHMARK_FRAMES=3;CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-benchmark-smoke"
+        RUN_SERIAL TRUE TIMEOUT 90 PASS_REGULAR_EXPRESSION "CUT_BENCHMARK_PASS" FAIL_REGULAR_EXPRESSION "CUT_BENCHMARK_FAIL")
       add_test (NAME draw_cut_view_physics COMMAND "${OCCTV_DRAWEXE}" -i -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_physics_test.tcl")
       set_tests_properties (draw_cut_view_physics PROPERTIES
         ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-physics"

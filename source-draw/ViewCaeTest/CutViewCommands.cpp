@@ -24,6 +24,7 @@
 #include <set>
 #include <limits>
 #include <sstream>
+namespace ViewCaeTest { void RegisterCutBenchmarkCommands(Draw_Interpretor&); }
 
 namespace {
 int64_t cutInt64(const std::string& argument)
@@ -274,7 +275,15 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
                 context->UpdateCurrentViewer();
             }
         };
-        if (action == "physics" && argc == 5) {
+        if(action=="cacheinfo" && argc==3) {
+            const auto policy=cuts.CachePolicy(); const auto stats=cuts.CacheStatistics();
+            di<<"sourceLimit "<<std::to_string(policy.SourceBytes).c_str()<<" resultLimit "<<std::to_string(policy.ResultBytes).c_str()<<" sourceReserved "<<std::to_string(stats.SourceReserved).c_str()<<" resultReserved "<<std::to_string(stats.ResultReserved).c_str()<<" sourceEstimate "<<std::to_string(cuts.EstimatedSourceBytes()).c_str()<<" resultEstimate "<<std::to_string(cuts.EstimatedResultBytes(model.Field)).c_str()<<" evictions "<<std::to_string(stats.Evictions).c_str()<<" request "<<std::to_string(cuts.RequestGeneration()).c_str(); return 0;
+        } else if(action=="cachepolicy" && argc==5) {
+            const int s=cutInteger(argv[3]),r=cutInteger(argv[4]); if(s<=0||r<=0) { throw std::invalid_argument("Cache MiB limits must be positive"); }
+            if(!cuts.SetCachePolicy({(uint64_t)s*1024*1024,(uint64_t)r*1024*1024})) { throw std::invalid_argument("Cache limit is below currently retained geometry reservations"); } return 0;
+        } else if(action=="request" && argc==3) { cuts.BeginRequest(std::make_shared<ViewCaeGeom::MeshCutCancellation>()); return 0;
+        } else if(action=="cancelrequest" && argc==3) { cuts.CancelRequest(); return 0;
+        } else if (action == "physics" && argc == 5) {
             if(!model.Native->Analysis().SetJson(argv[3],argv[4])) { throw std::invalid_argument(model.Native->LastError()); } ok=true;
         } else if(action == "physicsremove" && argc == 4) {
             if(!model.Native->Analysis().Remove(argv[3])) { throw std::invalid_argument(model.Native->LastError()); } ok=true;
@@ -994,6 +1003,7 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
 
 void ViewCaeTest::CutViewCommands::Factory(Draw_Interpretor& di)
 {
+    ViewCaeTest::RegisterCutBenchmarkCommands(di);
     di.Add("scvcutimagestats", "scvcutimagestats image.png: count non-white and colored pixels", __FILE__,
         imageStats, "SC Viewer CAE Prs");
     di.Add("scvcutimagecompare", "scvcutimagecompare reference.png actual.png: RGB byte differences", __FILE__,

@@ -23,6 +23,7 @@
 #include <sstream>
 #include <set>
 #include <type_traits>
+#include <chrono>
 
 namespace {
 bool normalizePlane(const Graphic3d_Vec4d& thePlane, Graphic3d_Vec4d& theResult)
@@ -208,6 +209,9 @@ struct MeshCutViewManager::Entry {
     Handle(MeshGeometry) TraceRoot;
     Handle(MeshGeometryTraceSection) TraceSection;
     uint64_t TraceRevision = 0;
+    std::shared_ptr<void> Lease;
+    uint64_t Access=0;
+    uint64_t Reserved=0;
 };
 
 MeshCutViewManager::MeshCutViewManager(const Handle(RWCae::MeshData)& theMesh)
@@ -527,7 +531,7 @@ bool MeshCutViewManager::SetCylinder(const std::string& id, const Graphic3d_Vec3
 bool MeshCutViewManager::moveCachedPlane(Entry& theEntry, const Graphic3d_Vec4d& thePlane)
 {
     const auto& oldPlane = theEntry.Definition.Plane;
-    if (!myDeformationField.IsNull() || theEntry.CachedMask == 0 || oldPlane.x() != thePlane.x() || oldPlane.y() != thePlane.y()
+    if ((!myDeformationField.IsNull() && theEntry.CachedMask!=2) || theEntry.CachedMask == 0 || oldPlane.x() != thePlane.x() || oldPlane.y() != thePlane.y()
         || oldPlane.z() != thePlane.z()) { return false; }
     // Only convex first-order cells have a plane topology determined by vertex signs alone.
     for (auto type : {RWCae::MeshElemType::Triangle2nd, RWCae::MeshElemType::Quad2nd,
@@ -539,9 +543,10 @@ bool MeshCutViewManager::moveCachedPlane(Entry& theEntry, const Graphic3d_Vec4d&
     auto projection = [&thePlane](const Graphic3d_Vec3& p) {
         return thePlane.x()*p.x() + thePlane.y()*p.y() + thePlane.z()*p.z();
     };
+    auto position=[&](RWCae::MeshEntityId n) { auto p=myMesh->Nodes()[n]; if(!myDeformationField.IsNull()) { theEntry.Roots[1]->ModifyNode(n,p); } return p; };
     if (theEntry.NodeProjections.empty()) {
         theEntry.NodeProjections.reserve(myMesh->NbNodes());
-        for (const auto& node : myMesh->Nodes()) { theEntry.NodeProjections.push_back(projection(node)); }
+        for (RWCae::MeshEntityId n=0;n<myMesh->NbNodes();++n) { theEntry.NodeProjections.push_back(projection(position(n))); }
         std::sort(theEntry.NodeProjections.begin(), theEntry.NodeProjections.end());
     }
     const auto upper = std::upper_bound(theEntry.NodeProjections.begin(), theEntry.NodeProjections.end(), -oldPlane.w());
@@ -558,8 +563,8 @@ bool MeshCutViewManager::moveCachedPlane(Entry& theEntry, const Graphic3d_Vec4d&
             const auto& bases = it.Value().second.BaseNodes();
             if (bases.size() == 1) { continue; }
             if (bases.size() != 2 || bases[0].first == bases[1].first) { return false; }
-            const double a = projection(myMesh->Nodes()[bases[0].first]);
-            const double b = projection(myMesh->Nodes()[bases[1].first]);
+            const double a = projection(position(bases[0].first));
+            const double b = projection(position(bases[1].first));
             if (std::abs(b-a) <= confusion) { return false; }
             const double weight = (-thePlane.w()-a)/(b-a);
             if (weight <= 1e-3 || weight >= 1.0-1e-3 || bases[1].second <= 1e-3
@@ -579,8 +584,8 @@ bool MeshCutViewManager::moveCachedPlane(Entry& theEntry, const Graphic3d_Vec4d&
         for (MeshGeometry::NodesMap::Iterator it(theEntry.Portions[i]->ChangeNodesMap()); it.More(); it.Next()) {
             auto& bases = it.ChangeValue().second.BaseNodes();
             if (bases.size() == 1) { continue; }
-            const auto& a = myMesh->Nodes()[bases[0].first];
-            const auto& b = myMesh->Nodes()[bases[1].first];
+            const auto a = position(bases[0].first);
+            const auto b = position(bases[1].first);
             const double weight = (-thePlane.w()-projection(a))/(projection(b)-projection(a));
             bases[0].second = 1.0-weight;
             bases[1].second = weight;
@@ -627,6 +632,8 @@ void MeshCutViewManager::release(Entry& theEntry)
         theEntry.Portions[i].Nullify();
         theEntry.Roots[i].Nullify();
     }
+    theEntry.Lease.reset();
+    theEntry.Reserved=0;
 }
 
 bool MeshCutViewManager::Remove(const std::string& theId)
@@ -880,6 +887,7 @@ bool MeshCutViewManager::RestoreDefinitionsJson(const std::string& theJson)
     // Older documents migrate to lowest and need no extra geometry preparation.
     try {
         MeshCutViewManager staged(myMesh);
+        if(!staged.ShareCacheFrom(*this)||!staged.SetCachePolicy(CachePolicy())) { return false; }
         staged.myGeometryOptions = myGeometryOptions; staged.myIsoOptions = isoOptions;
         staged.myDeformationField = myDeformationField; staged.myDeformationScale = myDeformationScale;
         for (const auto& item : entries) {
@@ -933,7 +941,9 @@ double MeshCutViewManager::EffectiveDeformationScale() const
 
 Handle(MeshGeometry) MeshCutViewManager::makeSourceGeometry(bool boundary)
 {
+    reserveSource();
     Handle(MeshGeometry) root = new MeshGeometryBase(myBvh, myMesh);
+    root->RetainCacheLease(mySourceLease);
     if (!myDeformationField.IsNull()) {
         Handle(MeshGeometryDeformed) deformed = new MeshGeometryDeformed(myBvh);
         root->Append(deformed);
@@ -979,6 +989,7 @@ void MeshCutViewManager::initialize(Entry& theEntry)
     }
     for (size_t i = 0; i < theEntry.Roots.size(); ++i) {
         theEntry.Roots[i] = makeSourceGeometry(isoValues.IsNull());
+        theEntry.Roots[i]->RetainCacheLease(theEntry.Lease);
 #ifdef OCCTV_USE_VTK
         bool nonSimplex = false;
         for (int t = 0; t < RWCae::MeshElemNbTypes; ++t) {
@@ -1012,6 +1023,8 @@ void MeshCutViewManager::initialize(Entry& theEntry)
             theEntry.Portions[i] = aClip;
         }
         theEntry.Roots[i]->Append(theEntry.Portions[i]);
+        theEntry.Portions[i]->RetainCacheLease(theEntry.Lease);
+        theEntry.Portions[i]->RetainCacheLease(mySourceLease);
     }
 }
 
@@ -1086,12 +1099,16 @@ MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
 {
     Entry* anEntry = find(theId);
     if (anEntry == nullptr) { throw std::invalid_argument("Unknown cut id: " + theId); }
+    const auto request=myRequestGeneration; checkRequest(request); myTimings={};
     MeshCutResult aResult;
     aResult.Definition = anEntry->Definition;
     aResult.Revision = anEntry->Revision;
     if (!anEntry->Definition.Enabled || anEntry->Definition.Visibility == 0) { return aResult; }
+    prepareCache(*anEntry,theField);
     if (!theField.IsNull()) { CutFieldTools::Validate(myMesh,theField); }
-    initialize(*anEntry);
+    using Clock=std::chrono::steady_clock;
+    auto phase=Clock::now(); auto elapsed=[&] { const auto end=Clock::now(); const double value=std::chrono::duration<double,std::milli>(end-phase).count(); phase=end; return value; };
+    initialize(*anEntry); myTimings.SourceMs+=elapsed(); checkRequest(request);
     const bool projected = display && !theField.IsNull() && theField->IsElemental()
         && anEntry->Definition.CellMode == MeshCutCellMode::Projected;
     aResult.TensorDerived = display && !theField.IsNull() && theField->Type() == RWCae::MeshNVecPropertyType::Tensor
@@ -1103,11 +1120,15 @@ MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
         if (aResult.TensorDerived) { aResult.SourceField = DeriveCutTensorField(aResult.SourceField,myRecoveryOptions.Tensor); }
     }
     aResult.DisplayRecovered = aResult.SourceField != theField;
+    myTimings.FieldsMs+=elapsed();
     for (size_t i = 0; i < anEntry->Portions.size(); ++i) {
         if ((anEntry->Definition.Visibility & (1u << i)) == 0) { continue; }
         aResult.Roots[i] = anEntry->Roots[i];
         aResult.Portions[i] = anEntry->Portions[i];
+        const auto cancellable=Handle(MeshGeometrySlice)::DownCast(aResult.Portions[i]);
+        if(!cancellable.IsNull()) { cancellable->SetCancellation(myCancellation); }
         aResult.Portions[i]->GetMeshData();
+        { const double time=elapsed(); myTimings.IntersectionMs+=time; myTimings.SliceMs+=time; } checkRequest(request);
         if (auto quadric = dynamic_cast<MeshGeometryQuadric*>(aResult.Portions[i].get())) {
             aResult.Volumes[i] = quadric->Volume(); aResult.Areas[i] = quadric->Area();
             aResult.BoundaryMesh = true;
@@ -1130,18 +1151,22 @@ MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
         if (i == 1) {
             if (anEntry->TraceSection.IsNull() || anEntry->TraceRevision != anEntry->Revision) {
                 if (!myTraceSource) {
-                    myTraceSource = std::make_shared<MeshCutTraceSource>(myMesh,anEntry->Roots[1],myGeometryOptions
+                    myTraceSource = std::make_shared<MeshCutTraceSource>(myMesh,makeSourceGeometry(false),myGeometryOptions
 #ifdef OCCTV_USE_VTK
                         ,myGeneralSource
 #endif
                     );
+                    myTimings.SourceMs+=elapsed(); checkRequest(request);
                 }
                 if (anEntry->TraceSection.IsNull()) {
                     anEntry->TraceSection = new MeshGeometryTraceSection(myBvh,Handle(MeshGeometrySlice)::DownCast(anEntry->Portions[1]),
                         anEntry->Roots[1],myTraceSource);
                     anEntry->TraceRoot = new MeshGeometryBase(myBvh,myMesh); anEntry->TraceRoot->Append(anEntry->TraceSection);
+                    anEntry->TraceRoot->RetainCacheLease(anEntry->Lease); anEntry->TraceSection->RetainCacheLease(anEntry->Lease);
+                    anEntry->TraceRoot->RetainCacheLease(mySourceLease); anEntry->TraceSection->RetainCacheLease(mySourceLease);
                 } else { anEntry->TraceSection->Refresh(Handle(MeshGeometrySlice)::DownCast(anEntry->Portions[1]),myTraceSource); }
                 anEntry->TraceRevision = anEntry->Revision;
+                { const double time=elapsed(); myTimings.IntersectionMs+=time; myTimings.TraceMs+=time; } checkRequest(request);
             }
             aResult.Roots[1] = anEntry->TraceRoot; aResult.Portions[1] = anEntry->TraceSection;
             const auto definition = anEntry->Definition;
@@ -1179,9 +1204,12 @@ MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
             if (!theField.IsNull()) {
                 aResult.PhysicalFields[1] = anEntry->TraceSection->MapPhysical(theField,definition.PhysicalTrace,signedValue,sideTolerance);
                 aResult.PhysicalLineField = anEntry->TraceSection->MapPhysical(theField,definition.PhysicalTrace,signedValue,sideTolerance,true);
-                aResult.Fields[1] = display ? anEntry->TraceSection->CalculateProperty(aResult.SourceField) : aResult.PhysicalFields[1];
-                aResult.LineField = display ? anEntry->TraceSection->CalculateLineProperty(aResult.SourceField) : aResult.PhysicalLineField;
+                const bool same=!display || (aResult.SourceField==theField && definition.DisplayTrace.Policy==definition.PhysicalTrace.Policy
+                    && definition.DisplayTrace.Region==definition.PhysicalTrace.Region && definition.DisplayTrace.Regions==definition.PhysicalTrace.Regions);
+                aResult.Fields[1] = same ? aResult.PhysicalFields[1] : anEntry->TraceSection->CalculateProperty(aResult.SourceField);
+                aResult.LineField = same ? aResult.PhysicalLineField : anEntry->TraceSection->CalculateLineProperty(aResult.SourceField);
             }
+            myTimings.FieldsMs+=elapsed(); checkRequest(request);
             continue;
         }
         if (!aResult.SourceField.IsNull()) {
@@ -1193,6 +1221,7 @@ MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
             }
         }
     }
+    myTimings.FieldsMs+=elapsed(); checkRequest(request);
     return aResult;
 }
 
@@ -1252,11 +1281,13 @@ void MeshCutViewManager::InvalidateGeometry()
         ++anEntry.second->Revision;
     }
     myBvh->Clear();
+    mySourceLease.reset(); mySourceReserved=0;
     InvalidateFields();
 }
 
 void MeshCutViewManager::Clear()
 {
+    CancelRequest();
     myTraceSource.reset();
 #ifdef OCCTV_USE_VTK
     myGeneralSource.reset();
@@ -1266,7 +1297,100 @@ void MeshCutViewManager::Clear()
     for (auto& anEntry : myEntries) { release(*anEntry.second); }
     myEntries.clear();
     myBvh->Clear();
+    mySourceLease.reset(); mySourceReserved=0;
     InvalidateFields();
+}
+
+bool MeshCutViewManager::ShareCacheFrom(const MeshCutViewManager& other)
+{
+    if(mySourceLease || std::any_of(myEntries.begin(),myEntries.end(),[](const auto& e) { return bool(e.second->Lease); })) { return false; }
+    myCache=other.myCache; return true;
+}
+void MeshCutViewManager::reserveSource()
+{
+    const auto bytes=EstimatedSourceBytes(); if(bytes<=mySourceReserved) { return; }
+    auto extra=myCache.Reserve(bytes-mySourceReserved,true);
+    if(!mySourceLease) { mySourceLease=std::move(extra); }
+    else { mySourceLease=std::shared_ptr<void>(new std::pair<std::shared_ptr<void>,std::shared_ptr<void>>(mySourceLease,extra),[](void* p) { delete static_cast<std::pair<std::shared_ptr<void>,std::shared_ptr<void>>*>(p); }); }
+    mySourceReserved=bytes;
+    if(!mySourceGeometry.IsNull()) { mySourceGeometry->RetainCacheLease(mySourceLease); }
+    for(const auto& entry:myEntries) { for(const auto& root:entry.second->Roots) { if(!root.IsNull()) { root->RetainCacheLease(mySourceLease); } } for(const auto& portion:entry.second->Portions) { if(!portion.IsNull()) { portion->RetainCacheLease(mySourceLease); } } if(!entry.second->TraceRoot.IsNull()) { entry.second->TraceRoot->RetainCacheLease(mySourceLease); entry.second->TraceSection->RetainCacheLease(mySourceLease); } }
+}
+uint64_t MeshCutViewManager::EstimatedSourceBytes() const
+{
+    bool compact=true;
+    for(int t=0;t<RWCae::MeshElemNbTypes;++t) { const auto type=(RWCae::MeshElemType)t; using T=RWCae::MeshElemType;
+        if(myMesh->NbElems(type)>0 && type!=T::Elem0d&&type!=T::Triangle&&type!=T::Quad&&type!=T::Tetrahedron&&type!=T::Pyramid&&type!=T::Prism&&type!=T::Hexahedron) { compact=false; }
+    }
+    #ifdef OCCTV_USE_VTK
+    bool nonSimplex=false;
+    for(int t=0;t<RWCae::MeshElemNbTypes;++t) { const auto type=(RWCae::MeshElemType)t; nonSimplex|=myMesh->NbElems(type)>0 && type!=RWCae::MeshElemType::Triangle && type!=RWCae::MeshElemType::Tetrahedron; }
+    if(nonSimplex) { for(const auto& entry:myEntries) { if(entry.second->Definition.Shape==MeshCutShape::Sphere || entry.second->Definition.Shape==MeshCutShape::Cylinder) { compact=false; } } }
+#endif
+    return 65536 + (uint64_t)myMesh->NbNodes()*128 + (uint64_t)myMesh->NbIndexedElems()*(compact?128:65536)
+        + (compact?std::min<uint64_t>((uint64_t)myMesh->NbIndexedElems()+2,8194)*65536+std::min<uint64_t>(myMesh->NbIndexedElems(),100000)*512:myGeometryOptions.MaxSourcePrimitives*512);
+}
+uint64_t MeshCutViewManager::EstimatedResultBytes(const Handle(RWCae::MeshNVecProperty)& field) const
+{
+    const uint64_t components=field.IsNull()?0:(uint64_t)field->NbRawComponents();
+    const uint64_t cells=myMesh->NbIndexedElems(),nodes=myMesh->NbNodes();
+    if(components>1024 || cells>100000000 || nodes>100000000) { throw std::length_error("Cache estimate exceeds supported resource schema"); }
+    const bool complex=needsGeneralPlane() || needsGeneralIso() || myMesh->NbElems(RWCae::MeshElemType::Polygon)>0 || myMesh->NbElems(RWCae::MeshElemType::Polyhedron)>0;
+    // Bound small general sources by their actual connectivity as well as the
+    // global refinement limit. Reserving the entire global limit for every cut
+    // otherwise rejects a few cuts on a two-cell fixture with pinned results.
+    uint64_t primitives=0;
+    if(complex) {
+        uint64_t support=0,linearSupport=0;
+        for(const auto& cell:myMesh->GenericCells()) {
+            const bool linear=(cell.Type>=1&&cell.Type<=16)||cell.Type==41||cell.Type==42;
+            auto& count=linear?linearSupport:support;
+            count+=cell.Nodes.size(); for(const auto& face:cell.Faces) { count+=face.size(); }
+        }
+        if(myMesh->NbElems(RWCae::MeshElemType::Polygon)>0||myMesh->NbElems(RWCae::MeshElemType::Polyhedron)>0) { linearSupport+=nodes*cells; }
+        if(needsGeneralIso()&&myMesh->GenericCells().empty()) { support+=nodes*cells; }
+        const uint64_t refinement=std::max<uint64_t>(1ULL<<(2*myGeometryOptions.FaceSubdivisionLimit),1ULL<<myGeometryOptions.LineSubdivisionLimit);
+        const auto limit=myGeometryOptions.MaxSourcePrimitives;
+        const auto curved=support>limit/refinement?limit:support*refinement;
+        const auto linear=linearSupport>limit/8?limit:linearSupport*8;
+        primitives=curved>=limit-linear?limit:curved+linear;
+    }
+    return 65536+cells*(4096+components*512)+nodes*(256+components*64)+primitives*4096;
+}
+void MeshCutViewManager::prepareCache(Entry& entry,const Handle(RWCae::MeshNVecProperty)& field)
+{
+    if(EstimatedSourceBytes()>mySourceReserved && !myCache.CanReserve(EstimatedSourceBytes()-mySourceReserved,true)) { throw std::length_error("Cut source cache budget exceeded before preparation"); }
+    if(!entry.Lease) {
+        const auto bytes=EstimatedResultBytes(field);
+        if(!myCache.CanReserve(bytes,false)) {
+            std::vector<Entry*> old;
+            for(auto& e:myEntries) { if(e.second.get()!=&entry && e.second->Lease) { old.push_back(e.second.get()); } }
+            std::sort(old.begin(),old.end(),[](const auto* a,const auto* b) { return a->Access<b->Access; });
+            for(auto* victim:old) { release(*victim); myCache.Evicted(); if(myCache.CanReserve(bytes,false)) { break; } }
+        }
+        entry.Lease=myCache.Reserve(bytes,false);
+        entry.Reserved=bytes;
+    } else {
+        const auto bytes=EstimatedResultBytes(field);
+        if(bytes>entry.Reserved) {
+            auto extra=myCache.Reserve(bytes-entry.Reserved,false);
+            entry.Lease=std::shared_ptr<void>(new std::pair<std::shared_ptr<void>,std::shared_ptr<void>>(entry.Lease,extra),[](void* p) { delete static_cast<std::pair<std::shared_ptr<void>,std::shared_ptr<void>>*>(p); });
+            entry.Reserved=bytes;
+            for(const auto& root:entry.Roots) { if(!root.IsNull()) { root->RetainCacheLease(entry.Lease); } }
+            for(const auto& portion:entry.Portions) { if(!portion.IsNull()) { portion->RetainCacheLease(entry.Lease); } }
+            if(!entry.TraceRoot.IsNull()) { entry.TraceRoot->RetainCacheLease(entry.Lease); entry.TraceSection->RetainCacheLease(entry.Lease); }
+        }
+    }
+    entry.Access=++myAccess;
+}
+uint64_t MeshCutViewManager::BeginRequest(const std::shared_ptr<MeshCutCancellation>& token)
+{
+    CancelRequest(); myCancellation=token; return myRequestGeneration;
+}
+void MeshCutViewManager::CancelRequest() { if(myCancellation) { myCancellation->Cancel(); } myCancellation.reset(); ++myRequestGeneration; }
+void MeshCutViewManager::checkRequest(uint64_t generation) const
+{
+    if(generation!=myRequestGeneration || (myCancellation&&myCancellation->Cancelled.load())) { throw std::runtime_error("Cut frame cancelled or superseded before publication"); }
 }
 
 #ifdef OCCTV_USE_VTK

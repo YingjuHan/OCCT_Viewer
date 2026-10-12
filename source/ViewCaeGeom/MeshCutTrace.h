@@ -5,17 +5,34 @@
 #include <functional>
 #include <memory>
 #include <map>
+#include <algorithm>
+#include <stdexcept>
 
 namespace ViewCaeGeom {
 class MeshVtkCutSource;
 struct MeshCutGeometryOptions;
+//! A primitive usually has 2–6 samples. Contiguous storage avoids a tree node
+//! allocation per sample; generated node IDs remain the lookup keys.
+class MeshCutTraceWeights {
+    using Values=std::vector<std::pair<RWCae::MeshEntityId,MeshInterpolatedNode>>;
+    Values myValues;
+public:
+    auto begin() { return myValues.begin(); } auto end() { return myValues.end(); }
+    auto begin() const { return myValues.begin(); } auto end() const { return myValues.end(); }
+    auto find(RWCae::MeshEntityId id) { return std::find_if(begin(),end(),[&](const auto& v) { return v.first==id; }); }
+    auto find(RWCae::MeshEntityId id) const { return std::find_if(begin(),end(),[&](const auto& v) { return v.first==id; }); }
+    const MeshInterpolatedNode& at(RWCae::MeshEntityId id) const { auto i=find(id); if(i==end()) { throw std::out_of_range("Missing primitive FE sample"); } return i->second; }
+    void reserve(size_t count) { myValues.reserve(count); }
+    void emplace(RWCae::MeshEntityId id,MeshInterpolatedNode value) { if(find(id)==end()) { myValues.emplace_back(id,std::move(value)); } }
+    void Assign(const std::vector<RWCae::MeshEntityId>& nodes,const MeshGeometry::NodesMap& origins) { myValues.resize(nodes.size()); for(size_t i=0;i<nodes.size();++i) { myValues[i].first=nodes[i]; myValues[i].second=origins.Find(nodes[i]).second; } }
+};
 //! One original element's FE trace, using generated section node IDs as keys.
 struct MeshCutPrimitiveTrace {
     RWCae::MeshEntityId Element = 0;
     bool Ambiguous = false;
     Graphic3d_Vec3d Interior = Graphic3d_Vec3d(0);
     MeshInterpolatedNode InteriorWeights;
-    std::map<RWCae::MeshEntityId,MeshInterpolatedNode> Weights;
+    MeshCutTraceWeights Weights;
 };
 //! Cached topology and original-FE lookup for one source/deformation epoch.
 class MeshCutTraceSource {
@@ -24,8 +41,13 @@ public:
         const Handle(MeshGeometry)& source, const MeshCutGeometryOptions& options,
         const std::shared_ptr<MeshVtkCutSource>& prepared = nullptr);
     Standard_EXPORT ~MeshCutTraceSource();
+    Standard_EXPORT bool IsCompact() const;
+    Standard_EXPORT void PrepareInteriors(const std::vector<RWCae::MeshEntityId>& elements);
+    Standard_EXPORT void UpdateInteriorTrace(MeshCutPrimitiveTrace& trace,RWCae::MeshEntityId element,
+        const std::vector<RWCae::MeshEntityId>& nodes,const MeshGeometry::NodesMap& origins) const;
     Standard_EXPORT std::vector<MeshCutPrimitiveTrace> Traces(RWCae::MeshEntityId element,
-        const std::vector<MeshInterpolatedNode>& weights, const std::vector<Graphic3d_Vec3d>& positions) const;
+        const std::vector<MeshInterpolatedNode>& weights, const std::vector<Graphic3d_Vec3d>& positions,
+        const std::vector<RWCae::MeshEntityId>* sampleNodes = nullptr) const;
 private:
     struct Data;
     std::unique_ptr<Data> myData;

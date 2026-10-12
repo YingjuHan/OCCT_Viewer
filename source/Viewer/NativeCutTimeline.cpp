@@ -118,9 +118,13 @@ bool NativeCutTimeline::prepare(int step, const CutFieldBinding& deformation, do
         if (mesh.IsNull()) { throw std::invalid_argument("Coordinated step has no geometry snapshot"); }
         NativeCutView staged(mesh); const auto candidate = staged.Display();
         auto& oldCuts = myOwner.Display()->Cuts();
+        if(!candidate->Cuts().ShareCacheFrom(oldCuts)) { throw std::runtime_error("Cannot share coordinated cache accounting"); }
         auto definitions = oldCuts.Definitions();
         if (myOwner.IsDragging()) {
             ViewCaeGeom::MeshCutViewManager baseline(myOwner.Display()->SourceMesh());
+            if(!baseline.ShareCacheFrom(oldCuts)||!baseline.SetCachePolicy(oldCuts.CachePolicy())
+                ||!baseline.SetGeometryOptions(oldCuts.GeometryOptions())
+                ||!baseline.SetDeformation(oldCuts.DeformationField(),oldCuts.DeformationScale())) { throw std::runtime_error("Cannot stage drag baseline options/accounting"); }
             if (!baseline.RestoreDefinitionsJson(myOwner.myDragSnapshot)) { throw std::runtime_error("Cannot stage the drag baseline"); }
             definitions = baseline.Definitions();
         }
@@ -129,7 +133,7 @@ bool NativeCutTimeline::prepare(int step, const CutFieldBinding& deformation, do
         if (myRecoverySteps.count(step)) { recovery = myRecoverySteps.at(step); }
         else if (remesh && !recovery.Regions.empty()) { throw std::invalid_argument("Remesh requires explicit recovery-region mapping for the target step"); }
         if (!candidate->Cuts().SetGeometryOptions(oldCuts.GeometryOptions()) || !candidate->Cuts().SetRecoveryOptions(recovery)
-            || !candidate->Cuts().SetIsoOptions(oldCuts.IsoOptions())) { throw std::invalid_argument("Invalid target step options"); }
+            || !candidate->Cuts().SetIsoOptions(oldCuts.IsoOptions()) || !candidate->Cuts().SetCachePolicy(oldCuts.CachePolicy())) { throw std::invalid_argument("Invalid target step options"); }
         auto contour = myOwner.FieldBinding(); if (!contour.Name.empty()) { contour.Step = step; }
         const auto field = resolve(mesh,contour);
         const auto oldField = myOwner.Display()->Field();

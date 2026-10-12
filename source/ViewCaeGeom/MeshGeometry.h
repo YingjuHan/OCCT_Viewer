@@ -10,6 +10,7 @@
 #include <RWBase/JsonHelper.h>
 
 #include <vector>
+#include <memory>
 
 namespace ViewCaeGeom {
 typedef NCollection_DataMap<TCollection_AsciiString, RWCae::MeshPropertyComponent>    MapOfMeshGeomScalarProps;
@@ -142,6 +143,10 @@ struct MeshGeomElem {
 //! Each MeshGeometry in chain can generate a new MeshData based on parent geometries
 //! or can store some modifiers for parent geometries (or both).
 class MeshGeometry : public Standard_Transient {
+public:
+    void RetainCacheLease(const std::shared_ptr<void>& lease) { myCacheLeases.push_back(lease); }
+private:
+    std::vector<std::shared_ptr<void>> myCacheLeases;
 public:
     typedef NCollection_DataMap<RWCae::MeshEntityId, std::pair<MeshGeometry*, MeshInterpolatedNode>> NodesMap;
     typedef NCollection_DataMap<MeshGeomElem, std::pair<MeshGeometry*, MeshGeomElem>, MeshGeomElem>    ElementsMap;
