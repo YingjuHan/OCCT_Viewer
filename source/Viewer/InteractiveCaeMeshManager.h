@@ -13,6 +13,7 @@
 #include <ViewCae/MeshColorMapper.h>
 #include <RWCae/MeshImportExport.h>
 #include <RWVtk/VtkImportReport.h>
+#include <RWVtk/VtkResourceLimits.h>
 
 #include <AIS_DataMapOfIOStatus.hxx>
 #include <AIS_InteractiveContext.hxx>
@@ -38,7 +39,9 @@ public:
                                          const std::string&                    theMappingFilePath,
                                          const std::string&                    theArtifactFilePath,
                                          const int theOptions = (int)RWCae::MeshDataImportExportOptions::DEFAULTS,
-                                         RWVtk::VtkImportReport* theReport = nullptr);
+                                         RWVtk::VtkImportReport* theReport = nullptr,
+                                         const std::string& theVtkStagingDirectory = "",
+                                         const RWVtk::VtkResourceLimits& theVtkLimits = RWVtk::VtkResourceLimits());
 
 public:
     //! Main constructor

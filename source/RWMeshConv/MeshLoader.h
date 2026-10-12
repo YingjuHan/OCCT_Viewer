@@ -90,6 +90,7 @@ public:
     //! Keep VTK diagnostics available to callers without printing reader attempts.
     void SetToReportMessages(bool theEnabled) { myToReportMessages = theEnabled; }
     void SetVtkResourceLimits(const RWVtk::VtkResourceLimits& limits) { myVtkLimits = limits; }
+    void SetVtkStagingDirectory(const TCollection_AsciiString& directory) { myVtkStagingDirectory=directory; }
 
     //! Define properties that should be loaded.
     void SetPropsToProcess(const Handle(RWCae::MeshBinIOBase::SharedMapOfAsciiString)& theProps)
@@ -111,6 +112,7 @@ private:
 
     RWVtk::VtkImportReport myVtkReport;
     RWVtk::VtkResourceLimits myVtkLimits;
+    TCollection_AsciiString myVtkStagingDirectory;
     bool myToReportMessages = true;
     bool         myHasMissingFields = false;
     unsigned int myOptions          = (unsigned int)RWCae::MeshDataImportExportOptions::DEFAULTS;

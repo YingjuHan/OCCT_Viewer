@@ -6,6 +6,7 @@
 #include <map>
 #include <limits>
 #include <sstream>
+#include <cstring>
 
 namespace {
 using Mesh = Handle(RWCae::MeshData);
@@ -56,6 +57,7 @@ bool VtkSeriesReader::PerformStream(std::istream& stream, const TCollection_Asci
     myReader.reset(new rapidjson::Document());
     std::string document;
     try { document=myBudget->Read(stream); } catch (const std::exception& error) { return fail(error.what()); }
+    if(document.find('\0')!=std::string::npos) {return fail("NUL in VTK series JSON");}
     std::istringstream bounded(document);
     rapidjson::IStreamWrapper wrapper(bounded);
     rapidjson::ParseResult result = myReader->ParseStream<rapidjson::kParseFullPrecisionFlag>(wrapper);
@@ -76,7 +78,8 @@ bool VtkSeriesReader::readFiles(const JsonValue* files)
     for (const auto& entry : files->GetArray()) {
         const int step = (int)staged.size();
         if (!entry.IsObject() || !entry.HasMember("name") || !entry["name"].IsString()
-            || entry["name"].GetStringLength() == 0 || !entry.HasMember("time") || !entry["time"].IsNumber()
+            || entry["name"].GetStringLength() == 0 || std::strlen(entry["name"].GetString())!=entry["name"].GetStringLength()
+            || !entry.HasMember("time") || !entry["time"].IsNumber()
             || !std::isfinite(entry["time"].GetDouble()) || entry["time"].GetDouble() <= previous) {
             return fail("VTK series requires filenames and finite strictly increasing times at step " + std::to_string(step));
         }

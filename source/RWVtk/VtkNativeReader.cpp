@@ -78,9 +78,11 @@ bool VtkNativeReader::Perform(const TCollection_AsciiString& filename)
         std::transform(lowerPath.begin(), lowerPath.end(), lowerPath.begin(), [](unsigned char c) { return (char)std::tolower(c); });
         const auto budget = myBudget ? myBudget : std::make_shared<VtkResourceBudget>(myLimits);
         if (lowerPath.size() >= 4 && lowerPath.substr(lowerPath.size()-4) == ".vtk") {
-            VtkLegacyReader preflight;
-            preflight.SetValidationOnly(true); preflight.SetResourceBudget(budget); preflight.SetToReportMessages(false);
-            if (!preflight.Perform(filename)) { myReport = preflight.Report(); return false; }
+            {
+                VtkLegacyReader preflight;
+                preflight.SetValidationOnly(true); preflight.SetResourceBudget(budget); preflight.SetToReportMessages(false);
+                if (!preflight.Perform(filename)) { myReport = preflight.Report(); return false; }
+            }
             vtkNew<vtkGenericDataObjectReader> reader;
             reader->AddObserver(vtkCommand::ErrorEvent,errors);
             reader->AddObserver(vtkCommand::WarningEvent,warnings);
@@ -91,12 +93,14 @@ bool VtkNativeReader::Perform(const TCollection_AsciiString& filename)
             if (!reader->GetExecutive()->Update()) { throw std::runtime_error("Native VTK legacy pipeline failed"); }
             data = vtkDataSet::SafeDownCast(reader->GetOutput());
         } else {
-            VtkValidationReader preflight(lowerPath.size() >= 4 && lowerPath.substr(lowerPath.size()-4) == ".vtp");
-            preflight.SetResourceBudget(budget);
-            preflight.SetToReportMessages(false);
-            if (!preflight.Perform(filename)) {
-                myReport = preflight.Report();
-                return false;
+            {
+                VtkValidationReader preflight(lowerPath.size() >= 4 && lowerPath.substr(lowerPath.size()-4) == ".vtp");
+                preflight.SetResourceBudget(budget);
+                preflight.SetToReportMessages(false);
+                if (!preflight.Perform(filename)) {
+                    myReport = preflight.Report();
+                    return false;
+                }
             }
             vtkNew<vtkXMLGenericDataObjectReader> reader;
             reader->AddObserver(vtkCommand::ErrorEvent,errors);

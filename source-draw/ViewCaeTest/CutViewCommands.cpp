@@ -254,6 +254,7 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
                 di << "}";
             };
             di << "succeeded " << (int)report.succeeded << " source"; di.AppendElement(report.source.c_str());
+            di << " stagedSource"; di.AppendElement(report.stagedSource.c_str());
             di << " format"; di.AppendElement(report.format.c_str());
             di << " backend"; di.AppendElement(report.backend.c_str());
             di << " points " << (int)report.points << " cells " << (int)report.cells << " fields " << (int)report.fields;

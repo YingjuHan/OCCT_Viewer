@@ -4,6 +4,7 @@
 #include <map>
 #include <set>
 #include <stdexcept>
+#include <algorithm>
 
 namespace RWVtk {
 VtkValidationReader::VtkValidationReader(bool polyData) : myPolyData(polyData) {}
@@ -79,6 +80,11 @@ bool VtkValidationReader::perform()
             const auto fields = arrays(element);
             for (const auto& field : fields) {
                 if (field.first.empty() || field.second.Data->NbElements() != (std::string(association) == "PointData" ? nodes : cells)) { return fail("Invalid VTK field name/tuple count"); }
+                if(field.second.Type=="Int64" || field.second.Type=="UInt64") {
+                    for(int n=0;n<field.second.Data->NbElements();++n) {for(int c=0;c<(int)field.second.Components.size();++c) {
+                        if(std::abs(field.second.Data->GetDouble(n,c))>9007199254740991.0) {return fail("VTK integer field exceeds exact double range");}
+                    }}
+                }
             }
             for (const char* role : {"Vectors", "Normals", "Tensors"}) {
                 const TCollection_AsciiString name = element.isNull() ? TCollection_AsciiString() : TCollection_AsciiString(element.getAttribute(role));

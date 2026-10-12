@@ -24,8 +24,11 @@ scvreadmesh prsName {model.msh|model.pos|model.rmed}
                     [+propById id [-timeStepRange firstTimeStep lastTimeStep]]
                     [-dumpTime] [-parallel] [-nodeVecAsScalar]
                     [-testCacheGeom {0|1}]=0
+                    [-vtkStaging directory]
 Load a mesh model with one or more optional data fields from mesh file.
 Supported MSH v2 or MED v3+ (optional) file formats.
+VTK Legacy/VTU/VTP/VTM and .vtm.series are supported within the native import contract.
+[-vtkStaging]       freeze local VTK references into a fresh directory before import;
 [-skipdata|-header]  works for MDB format only; if specified, only JSON header is parsed
                      and the binary mesh/field data is not loaded;
 {-geom|+geom}        turn on/off the reading of geometry;
@@ -57,6 +60,7 @@ public:
 private:
     TCollection_AsciiString m_mappingFilePath;
     TCollection_AsciiString m_artifactFilePath;
+    TCollection_AsciiString m_vtkStagingDirectory;
 
     int  m_toDisplay        = -1;
     bool m_toDumpTime       = false;

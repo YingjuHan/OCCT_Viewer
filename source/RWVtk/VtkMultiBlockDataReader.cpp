@@ -12,6 +12,10 @@
 
 #include <functional>
 #include <set>
+#include <map>
+#include <filesystem>
+#include <algorithm>
+#include <RWVtk/VtkDatasetReader.h>
 
 namespace RWVtk {
 
@@ -40,154 +44,115 @@ bool VtkMultiBlockDataReader::perform()
     OSD_Path::FolderAndFileFromPath(myFileName, myPath, aFileName);
     myMergedMeshData.Nullify();
 
-    if (!myIsMeshDataLoaded) {
-        myMeshDataTreeRoot = new MeshDataTreeNode();
-    }
-    if (!processBlock(myDataElement, myMeshDataTreeRoot)) { return false; }
+    myMeshDataTreeRoot.Nullify();
+    if (myIsMeshDataLoaded) { return fail("Loaded-tree mutation is unsupported; stage a complete time step instead"); }
+    if (!myReferenceChain) { myReferenceChain=std::make_shared<std::vector<std::string>>(); }
+    const std::string canonical=std::filesystem::weakly_canonical(std::filesystem::u8path(myFileName.ToCString())).generic_u8string();
+    if (myReferenceChain->size()>=myLimits.MaxDepth) { return fail("VTK resource limit: reference depth"); }
+    if (std::find(myReferenceChain->begin(),myReferenceChain->end(),canonical)!=myReferenceChain->end()) { return fail("Cyclic VTK reference: "+canonical); }
+    myReferenceChain->push_back(canonical);
+    struct Pop { std::vector<std::string>& Chain; ~Pop() {Chain.pop_back();} } pop{*myReferenceChain};
+    Handle(MeshDataTreeNode) staged=new MeshDataTreeNode();
+    if (!processBlock(myDataElement,staged)) {return false;}
     // Dense union fields can greatly exceed sparse input arrays. Budget their
     // complete merged sizes before MeshTools::CopyRaw allocates them.
     std::set<std::string> fields;
+    std::map<std::string,Handle(RWCae::MeshNVecProperty)> schemas;
+    std::map<std::string,size_t> presence;
+    size_t leaves=0;
     std::function<void(const Handle(MeshDataTreeNode)&)> check = [&](const Handle(MeshDataTreeNode)& node) {
         if (!node->NodeMeshData.IsNull()) {
+            ++leaves;
             for (const auto& p : node->NodeMeshData->Properties()) {
                 const std::string key = std::string(p->Name().ToCString()) + ":" + p->Description().ToCString()
                     + ":" + std::to_string((int)p->MapType()) + ":" + std::to_string((int)p->Type())
                     + ":" + std::to_string(p->NbComponents()) + ":" + std::to_string(p->TimeStep());
+                const std::string identity=std::string(p->Name().ToCString())+":"+p->Description().ToCString()+":"+std::to_string((int)p->MapType());
+                ++presence[identity];
+                auto inserted=schemas.emplace(identity,p);
+                if (!inserted.second && (inserted.first->second->Type()!=p->Type() || inserted.first->second->NbComponents()!=p->NbComponents())) {throw std::runtime_error("Composite field schema mismatch: "+identity);}
+                if (!inserted.second) {
+                    for (int c=0;c<p->NbComponents();++c) {
+                        if (inserted.first->second->GetComponent(c)->Name()!=p->GetComponent(c)->Name()) {
+                            throw std::runtime_error("Composite field component name mismatch: "+identity);
+                        }
+                    }
+                }
                 if (fields.insert(key).second) {
                     const uint64_t count = p->IsNodal() ? myReport.points : myReport.cells;
                     for (int c = 0; c < p->NbRawComponents(); ++c) {
-                        myBudget->Array(count*(p->GetRawComponent(c)->ElemType() == RWCae::MeshPropertyElemType::Float ? sizeof(float) : sizeof(double)));
+                        myBudget->Array(count*sizeof(double));
                     }
                 }
             }
         }
         for (const auto& child : node->SubNodes) { check(child); }
     };
-    check(myMeshDataTreeRoot);
-    return true;
+    check(staged);
+    for (const auto& field:presence) {if(field.second<leaves) {warn("Composite field '"+field.first+"' is absent in some blocks; missing values remain NaN");}}
+    Handle(RWCae::MeshData) merged;MergeMeshData(staged,merged);
+    if(merged.IsNull()) {return fail("VTK composite contains no mesh");}
+    myMeshDataTreeRoot=staged;myMergedMeshData=merged;return true;
 }
 
 // ================================================================
 // function : processBlock
 // ================================================================
-bool VtkMultiBlockDataReader::processBlock(const LDOM_Element& theElem, const Handle(MeshDataTreeNode)& theTreeNode)
+bool VtkMultiBlockDataReader::processBlock(const LDOM_Element& element,const Handle(MeshDataTreeNode)& tree,uint64_t depth)
 {
-    std::vector<LDOM_Element> aSubBlocks = getChildrenElementsByTagName(theElem, "Block");
-    for (const LDOM_Element& aSubBlock : aSubBlocks) {
-        Handle(MeshDataTreeNode)      aSubNode;
-        TCollection_AsciiString aChildName = getXmlAttribute(aSubBlock, "name", "Name");
-        if (aChildName.IsEmpty()) {
-            aChildName = TCollection_AsciiString("block_") + TCollection_AsciiString(getXmlAttribute(aSubBlock, "index", "Index"));
+    if(depth+myReferenceChain->size()>myLimits.MaxDepth) {return fail("VTK resource limit: block depth");}
+    std::set<std::string> names;
+    int ordinal=0;
+    for(LDOM_Node item=element.getFirstChild();!item.isNull();item=item.getNextSibling()) {
+        if(item.getNodeType()!=LDOM_Node::ELEMENT_NODE) {continue;}
+        LDOM_Element child=(const LDOM_Element&)item;
+        const TCollection_AsciiString tag=child.getTagName();
+        if(tag!="Block" && tag!="DataSet") {return fail(std::string("Unsupported VTK composite section: ")+tag.ToCString());}
+        TCollection_AsciiString name=getXmlAttribute(child,"name","Name");
+        if(name.IsEmpty()) {
+            TCollection_AsciiString index=getXmlAttribute(child,"index","Index");if(index.IsEmpty()) {index=TCollection_AsciiString(ordinal);}
+            name=TCollection_AsciiString(tag=="Block"?"block_":"dataset_")+index;
         }
-        if (!myIsMeshDataLoaded) {
-            aSubNode = new MeshDataTreeNode(aChildName);
+        ++ordinal;
+        if(!names.insert(name.ToCString()).second) {return fail(std::string("Duplicate VTK block name: ")+name.ToCString());}
+        Handle(MeshDataTreeNode) node=new MeshDataTreeNode(name);
+        if(tag=="Block") {
+            if(!processBlock(child,node,depth+1)) {return false;}
         } else {
-            aSubNode = theTreeNode->GetChild(aChildName);
-            if (aSubNode.IsNull()) {
-                return fail(std::string("Loaded MeshData has no subblock '") + aChildName.ToCString() + "'");
+            const TCollection_AsciiString reference=getXmlAttribute(child,"file","File");
+            if(reference.IsEmpty()) {return fail("VTK DataSet has no file reference");}
+            const auto resolved=(std::filesystem::u8path(myPath.ToCString())/std::filesystem::u8path(reference.ToCString())).lexically_normal().generic_u8string();
+            if(!processDataSet(resolved.c_str(),node)) {
+                return fail(std::string("Composite '")+myFileName.ToCString()+"', block '"+name.ToCString()+"', reference '"+reference.ToCString()+"', resolved '"+resolved+"'");
             }
         }
-
-        if (!processBlock(aSubBlock, aSubNode)) {
-            return fail(std::string("Cannot read VTK block: ") + aChildName.ToCString());
-        }
-
-        if (!myIsMeshDataLoaded) {
-            theTreeNode->SubNodes.push_back(aSubNode);
-        }
+        tree->SubNodes.push_back(node);
     }
-
-    std::vector<LDOM_Element> aSubDataSets = getChildrenElementsByTagName(theElem, "DataSet");
-    for (const LDOM_Element& aSubDataSet : aSubDataSets) {
-        Handle(MeshDataTreeNode)      aSubNode;
-        TCollection_AsciiString aChildName = getXmlAttribute(aSubDataSet, "name", "Name");
-        if (aChildName.IsEmpty()) {
-            aChildName = TCollection_AsciiString("dataset_") + TCollection_AsciiString(getXmlAttribute(aSubDataSet, "index", "Index"));
-        }
-        if (!myIsMeshDataLoaded) {
-            aSubNode = new MeshDataTreeNode(aChildName);
-        } else {
-            aSubNode = theTreeNode->GetChild(aChildName);
-            if (aSubNode.IsNull()) {
-                return fail(std::string("Loaded MeshData has no subblock '") + aChildName.ToCString() + "'");
-            }
-        }
-
-        TCollection_AsciiString aFileName = getXmlAttribute(aSubDataSet, "file", "File");
-        if (aFileName.IsEmpty()) { return fail("VTK DataSet has no file reference"); }
-        if (!processDataSet(myPath + aFileName, aSubNode)) {
-            return fail(std::string("Cannot read VTK dataset: ") + aFileName.ToCString());
-        }
-
-        if (!myIsMeshDataLoaded) {
-            theTreeNode->SubNodes.push_back(aSubNode);
-        }
-    }
-
-    return !theTreeNode->SubNodes.empty();
+    return !tree->SubNodes.empty() || fail("VTK composite block contains no datasets");
 }
 
-// ================================================================
-// function : processDataSet
-// ================================================================
-bool VtkMultiBlockDataReader::processDataSet(const TCollection_AsciiString&  theFileName,
-                                             const Handle(MeshDataTreeNode)& theTreeNode)
+bool VtkMultiBlockDataReader::processDataSet(const TCollection_AsciiString& filename,const Handle(MeshDataTreeNode)& tree)
 {
-    TCollection_AsciiString aProbeFileName = theFileName;
-    aProbeFileName.LowerCase();
-    if (aProbeFileName.EndsWith(".vtu")) {
-        VtkUnstructuredGridReader aVtuReader;
-        aVtuReader.SetToReportMessages(myToReportMessages);
-        aVtuReader.SetResourceBudget(myBudget);
-        aVtuReader.SetMappingInfo(myMappingInfo);
-        aVtuReader.SetTimeStep(myTimeStep);
-        if (myHasExplicitTimeStamp) { aVtuReader.SetTimeStamp(myTimeStamp); }
-        if (myIsMeshDataLoaded) {
-            aVtuReader.SetLoadedMeshData(theTreeNode->NodeMeshData, theTreeNode->StoredElements);
-        }
-        if (!aVtuReader.Perform(theFileName)) {
-            for (const auto& anError : aVtuReader.Report().errors) { myReport.errors.push_back(anError); }
-            myReport.warnings.insert(myReport.warnings.end(), aVtuReader.Report().warnings.begin(), aVtuReader.Report().warnings.end());
-            return false;
-        }
-
-        myReport.warnings.insert(myReport.warnings.end(), aVtuReader.Report().warnings.begin(), aVtuReader.Report().warnings.end());
-        if (!myIsMeshDataLoaded) {
-            theTreeNode->NodeMeshData   = aVtuReader.GetMeshData();
-            theTreeNode->StoredElements = aVtuReader.GetStoredElements();
-        }
-        myReport.points += aVtuReader.Report().points;
-        myReport.cells += aVtuReader.Report().cells;
-        myReport.fields += aVtuReader.Report().fields;
-    } else if (aProbeFileName.EndsWith(".vtp")) {
-        VtkPolyDataReader aVtpReader;
-        aVtpReader.SetToReportMessages(myToReportMessages);
-        aVtpReader.SetResourceBudget(myBudget);
-        aVtpReader.SetMappingInfo(myMappingInfo);
-        aVtpReader.SetTimeStep(myTimeStep);
-        if (myHasExplicitTimeStamp) { aVtpReader.SetTimeStamp(myTimeStamp); }
-        if (myIsMeshDataLoaded) {
-            aVtpReader.SetLoadedMeshData(theTreeNode->NodeMeshData, theTreeNode->StoredElements);
-        }
-        if (!aVtpReader.Perform(theFileName)) {
-            for (const auto& anError : aVtpReader.Report().errors) { myReport.errors.push_back(anError); }
-            myReport.warnings.insert(myReport.warnings.end(), aVtpReader.Report().warnings.begin(), aVtpReader.Report().warnings.end());
-            return false;
-        }
-
-        myReport.warnings.insert(myReport.warnings.end(), aVtpReader.Report().warnings.begin(), aVtpReader.Report().warnings.end());
-        if (!myIsMeshDataLoaded) {
-            theTreeNode->NodeMeshData   = aVtpReader.GetMeshData();
-            theTreeNode->StoredElements = aVtpReader.GetStoredElements();
-        }
-        myReport.points += aVtpReader.Report().points;
-        myReport.cells += aVtpReader.Report().cells;
-        myReport.fields += aVtpReader.Report().fields;
+    TCollection_AsciiString lower=filename;lower.LowerCase();
+    VtkImportReport report;
+    if(lower.EndsWith(".vtm")) {
+        VtkMultiBlockDataReader reader;reader.SetResourceBudget(myBudget);reader.SetReferenceChain(myReferenceChain);
+        reader.SetToReportMessages(false);reader.SetMappingInfo(myMappingInfo);reader.SetTimeStep(myTimeStep);
+        if(myHasExplicitTimeStamp) {reader.SetTimeStamp(myTimeStamp);}
+        const bool ok=reader.Perform(filename);report=reader.Report();
+        if(ok) {tree->SubNodes=reader.GetMeshDataTree()->SubNodes;}
     } else {
-        return fail(std::string("Unsupported VTK composite child: ") + theFileName.ToCString());
+        if(myReferenceChain->size()>=myLimits.MaxDepth) {return fail("VTK resource limit: reference depth");}
+        VtkDatasetReader reader;reader.SetResourceBudget(myBudget);reader.SetToReportMessages(false);reader.SetMappingInfo(myMappingInfo);
+        reader.SetTimeStep(myTimeStep);if(myHasExplicitTimeStamp) {reader.SetTimeStamp(myTimeStamp);}
+        const bool ok=reader.Perform(filename);report=reader.Report();if(ok) {tree->NodeMeshData=reader.GetMeshData();}
     }
-
-    return !theTreeNode->NodeMeshData.IsNull() && theTreeNode->NodeMeshData->NbNodes() > 0;
+    for(const auto& error:report.errors) {myReport.errors.push_back(std::string("Child '")+filename.ToCString()+"': "+error);}
+    for(const auto& warning:report.warnings) {warn(std::string("Child '")+filename.ToCString()+"': "+warning);}
+    if(!report.errors.empty() || (tree->NodeMeshData.IsNull() && tree->SubNodes.empty())) {return false;}
+    if(report.backend=="native-vtk") {warn(std::string("Child '")+filename.ToCString()+"' imported using native-vtk");}
+    myReport.points+=report.points;myReport.cells+=report.cells;myReport.fields+=report.fields;
+    return true;
 }
 
 // ================================================================
@@ -196,7 +161,7 @@ bool VtkMultiBlockDataReader::processDataSet(const TCollection_AsciiString&  the
 void VtkMultiBlockDataReader::MergeMeshData(const Handle(MeshDataTreeNode)& theMeshDataTree,
                                             Handle(RWCae::MeshData)&      theMeshData)
 {
-    if (!theMeshData.IsNull()) {
+    if (theMeshDataTree.IsNull() || !theMeshData.IsNull()) {
         return;
     }
 

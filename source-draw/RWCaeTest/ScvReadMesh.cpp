@@ -26,6 +26,9 @@ ScvReadMesh::ScvReadMesh() : MeshIOCommand()
         theCmd->m_artifactFilePath = theVal;
         return true;
     };
+    AddKey(this, "", "-vtkstaging") = [](ScvReadMesh* theCmd, const char* theVal) -> bool {
+        theCmd->m_vtkStagingDirectory=theVal; return true;
+    };
     AddKey(this, bool(), "-header", "-skipdata") = [](ScvReadMesh* theCmd, bool theVal) -> bool {
         if (theVal) {
             theCmd->m_options |= (int)RWCae::MeshDataImportExportOptions::SKIP_BINARY_DATA;
@@ -104,6 +107,7 @@ bool ScvReadMesh::Perform()
         }
 
         RWMeshConv::MeshLoader aLoader(m_options);
+        aLoader.SetVtkStagingDirectory(m_vtkStagingDirectory);
         aLoader.SetPropsToProcess(m_props);
         aLoader.SetReadNodeVecAsScalar(m_nodeVecAsScalar);
         OSD_Timer aTimer;

@@ -1315,7 +1315,9 @@ bool InteractiveCaeMeshManager::OpenMesh(const Handle(AIS_InteractiveContext)& t
                                          const std::string&                    theMappingFilePath,
                                          const std::string&                    theArtifactFilePath,
                                          const int                             theOptions,
-                                         RWVtk::VtkImportReport*                theReport)
+                                         RWVtk::VtkImportReport*                theReport,
+                                         const std::string& theVtkStagingDirectory,
+                                         const RWVtk::VtkResourceLimits& theVtkLimits)
 {
     if (theReport != nullptr) { *theReport = RWVtk::VtkImportReport(); theReport->source = theFilePath; }
 
@@ -1328,6 +1330,8 @@ bool InteractiveCaeMeshManager::OpenMesh(const Handle(AIS_InteractiveContext)& t
     }
 
     RWMeshConv::MeshLoader  aLoader(theOptions);
+    aLoader.SetVtkStagingDirectory(theVtkStagingDirectory.c_str());
+    aLoader.SetVtkResourceLimits(theVtkLimits);
     Handle(RWCae::MeshData) aMeshData =
         aLoader.OpenMesh(aFileSystem, aFileName, theMappingFilePath.c_str(), theArtifactFilePath.c_str());
     if (theReport != nullptr) { *theReport = aLoader.VtkReport(); }

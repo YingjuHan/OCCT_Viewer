@@ -311,6 +311,13 @@ bool VtkUnstructuredDataReader::parseProperties(const LDOM_Element& theElem, boo
             return fail(std::string("Tuple count mismatch in ") + (theIsNodal ? "PointData '" : "CellData '")
                         + aDataArray.Name.ToCString() + "'");
         }
+        if (aDataArray.Type == "Int64" || aDataArray.Type == "UInt64") {
+            for (int n=0;n<aDataArray.Data->NbElements();++n) {
+                for (int c=0;c<(int)aDataArray.Components.size();++c) {
+                    if (std::abs(aDataArray.Data->GetDouble(n,c))>9007199254740991.0) {return fail("VTK integer field exceeds exact double range");}
+                }
+            }
+        }
 
         if (aDataArray.Components.size() == aVectorNbComponents) {
             if (aDataArray.Components[aCompIdx0].IsEmpty()) { aDataArray.Components[aCompIdx0] = "X"; }

@@ -86,6 +86,7 @@ bool VtkBaseXMLReader::PerformStream(std::istream& theStream, const TCollection_
         document.erase(tagEnd + 1, end - tagEnd - 1);
         document.shrink_to_fit();
     }
+    if(document.find('\0')!=std::string::npos) {return fail("NUL in VTK XML envelope");}
     std::istringstream xml(document);
     LDOMParser aParser;
 

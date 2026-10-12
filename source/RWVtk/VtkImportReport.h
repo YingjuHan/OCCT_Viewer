@@ -23,6 +23,7 @@ struct VtkImportReport {
 
     //! Populated by MeshLoader for the overall import, including successful fallback.
     std::string source;
+    std::string stagedSource;
     std::string format;
     std::string backend;
     bool succeeded = false;

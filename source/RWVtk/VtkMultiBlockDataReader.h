@@ -48,14 +48,20 @@ public:
     //! Return merged mesh data.
     const Handle(RWCae::MeshData)& GetMergedMeshData()
     {
+        if (!myReport.errors.empty()) { myMergedMeshData.Nullify(); return myMergedMeshData; }
         MergeMeshData(myMeshDataTreeRoot, myMergedMeshData);
         return myMergedMeshData;
     }
 
     //! Return mesh data tree.
-    const Handle(MeshDataTreeNode)& GetMeshDataTree() { return myMeshDataTreeRoot; }
+    const Handle(MeshDataTreeNode)& GetMeshDataTree()
+    {
+        if (!myReport.errors.empty()) { myMeshDataTreeRoot.Nullify(); }
+        return myMeshDataTreeRoot;
+    }
 
-    //! Set mesh data tree.
+    //! Legacy setter: subsequent reading rejects in-place mutation. Use a new
+    //! reader per complete step and retrieve the staged tree after success.
     void SetMeshDataTree(const Handle(MeshDataTreeNode)& theMeshData)
     {
         myMeshDataTreeRoot = theMeshData;
@@ -66,6 +72,7 @@ public:
     void SetTimeStep(int theTimeStep) { myTimeStep = theTimeStep; }
 
     void SetTimeStamp(double theTime) { myTimeStamp = theTime; myHasExplicitTimeStamp = true; }
+    void SetReferenceChain(const std::shared_ptr<std::vector<std::string>>& chain) { myReferenceChain=chain; }
 
     //! Merge all mesh data.
     Standard_EXPORT static void MergeMeshData(const Handle(MeshDataTreeNode)& theMeshDataTree,
@@ -79,7 +86,7 @@ protected:
     Standard_EXPORT virtual bool perform() override;
 
     //! Read 'Block' element of XML file.
-    Standard_EXPORT bool processBlock(const LDOM_Element& theElem, const Handle(MeshDataTreeNode)& theTreeNode);
+    Standard_EXPORT bool processBlock(const LDOM_Element& theElem, const Handle(MeshDataTreeNode)& theTreeNode, uint64_t depth=0);
 
     //! Read 'DataSet' element of XML file.
     Standard_EXPORT bool processDataSet(const TCollection_AsciiString&  theFileName,
@@ -93,6 +100,7 @@ protected:
     int                       myTimeStep         = -1;
     double myTimeStamp = 0.0;
     bool myHasExplicitTimeStamp = false;
+    std::shared_ptr<std::vector<std::string>> myReferenceChain;
 };
 
 }

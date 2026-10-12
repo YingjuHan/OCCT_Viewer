@@ -1,5 +1,10 @@
 # Cut View Tests
 
+Current Windows configuration and SDK paths are recorded in
+[the native handoff](../DOCUMENT/cut-view-native-handoff.md). Linux examples and
+earlier milestone sections below retain their historical validation scope.
+Current N04 acceptance is tracked in [the N04 queue](../DOCUMENT/cut-view-n04-plan.md).
+
 ## Build
 
 The configured native build uses `/home/hyj/Desktop/workspace/OCCT_private/install`.
@@ -566,3 +571,24 @@ PASS marker, so SDK process finalization cannot turn a failed check into a pass.
 Viewer lifecycle checks run on Windows and on Linux with an X display; without
 `DISPLAY`, the executable explicitly reports that part as skipped. The reduced
 DRAW/Viewer-disabled build still runs reader/report checks without linking Viewer.
+
+## Recursive VTK reference acceptance
+
+`vtk_reference` generates `vtk-reference-fixtures/` for the CTest fixture dependency
+`vtk_reference_fixtures`. `draw_vtk_reference` and its optional visual variant use
+ordinary `scvreadmesh -vtkstaging`, including nested VTM/Legacy/XML references and
+series initial display. This is separate from `cut_reference`, the N02 independent
+geometry/FE reference test.
+
+The native case moves the original tree away before rereading the staged entry,
+checks duplicate basenames, Float32/Float64 promotion, NaN gaps, original generic
+node/CellData offsets, zero-node empty cells and independent remeshed snapshots
+with different node/cell counts. Missing children, cycles, depth/file budgets,
+incompatible components and staging-destination failures preserve previous data.
+Ordinary Viewer reports retain original and staged sources. Visual failures must
+leave zero changed pixels. Images are in `draw-vtk-references/`.
+
+N04.7 focused import acceptance: ON 12/12 and OFF 9/9, every case three times;
+logs `cut-n04-reference-focused.log`. VTK OFF explicitly rejects unsupported
+general-cell leaves. The local staging API and format boundaries are documented
+in [the import contract](../DOCUMENT/cut-view-import.md).

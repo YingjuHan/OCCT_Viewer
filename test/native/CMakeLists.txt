@@ -25,6 +25,16 @@ endif()
 target_compile_definitions (vtk_limits_tests PRIVATE VTK_LIMIT_FIXTURE_DIR="${CMAKE_CURRENT_BINARY_DIR}/vtk-limit-fixtures" VTK_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/fixtures")
 add_test (NAME vtk_limits COMMAND vtk_limits_tests)
 set_tests_properties (vtk_limits PROPERTIES TIMEOUT 60)
+add_executable (vtk_reference_tests VtkReferenceTests.cpp)
+target_link_libraries (vtk_reference_tests PRIVATE RWMeshConv)
+if (TARGET Viewer)
+  target_link_libraries (vtk_reference_tests PRIVATE Viewer)
+  target_compile_definitions (vtk_reference_tests PRIVATE OCCTV_TEST_VIEWER)
+endif()
+target_compile_definitions (vtk_reference_tests PRIVATE VTK_REFERENCE_FIXTURE_DIR="${CMAKE_CURRENT_BINARY_DIR}/vtk-reference-fixtures")
+add_test (NAME vtk_reference COMMAND vtk_reference_tests)
+set_tests_properties (vtk_reference PROPERTIES FIXTURES_SETUP vtk_reference_fixtures TIMEOUT 60
+  PASS_REGULAR_EXPRESSION "VTK_REFERENCE_PASS" FAIL_REGULAR_EXPRESSION "VTK_REFERENCE_FAIL")
 add_executable (vtk_import_tests VtkImportTests.cpp)
 target_link_libraries (vtk_import_tests PRIVATE RWMeshConv)
 if (TARGET Viewer)
@@ -114,7 +124,7 @@ endif()
 add_executable (cut_view_benchmark CutViewBenchmark.cpp)
 target_link_libraries (cut_view_benchmark PRIVATE ViewCaeGeom)
 if (UNIX)
-  set_tests_properties (vtk_reader vtk_format vtk_series vtk_safety vtk_limits vtk_import cut_view quadric_cut cut_recovery cut_tensor cut_trace_binding PROPERTIES ENVIRONMENT "LD_LIBRARY_PATH=$<TARGET_FILE_DIR:ViewCaeGeom>:${OpenCASCADE_LIBRARY_DIR}:$ENV{LD_LIBRARY_PATH}")
+  set_tests_properties (vtk_reader vtk_format vtk_series vtk_safety vtk_limits vtk_reference vtk_import cut_view quadric_cut cut_recovery cut_tensor cut_trace_binding PROPERTIES ENVIRONMENT "LD_LIBRARY_PATH=$<TARGET_FILE_DIR:ViewCaeGeom>:${OpenCASCADE_LIBRARY_DIR}:$ENV{LD_LIBRARY_PATH}")
 endif()
 
 if (TARGET ViewDraw)
@@ -133,6 +143,11 @@ if (TARGET ViewDraw)
       ENVIRONMENT "${DRAW_TEST_ENV};VTK_IMPORT_FIXTURES=${CMAKE_CURRENT_BINARY_DIR}/vtk-import-fixtures;VTK_IMPORT_HAS_NATIVE=$<BOOL:${OCCTV_USE_VTK}>"
       FIXTURES_REQUIRED vtk_import_fixtures TIMEOUT 60
       PASS_REGULAR_EXPRESSION "VTK_IMPORT_DRAW_PASS" FAIL_REGULAR_EXPRESSION "VTK_IMPORT_DRAW_FAIL")
+    add_test (NAME draw_vtk_reference COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/vtk_references.tcl")
+    set_tests_properties (draw_vtk_reference PROPERTIES
+      ENVIRONMENT "${DRAW_TEST_ENV};VTK_REFERENCE_FIXTURES=${CMAKE_CURRENT_BINARY_DIR}/vtk-reference-fixtures;VTK_REFERENCE_HAS_NATIVE=$<BOOL:${OCCTV_USE_VTK}>"
+      FIXTURES_REQUIRED vtk_reference_fixtures TIMEOUT 90
+      PASS_REGULAR_EXPRESSION "VTK_REFERENCE_DRAW_PASS" FAIL_REGULAR_EXPRESSION "VTK_REFERENCE_DRAW_FAIL")
     set_tests_properties (draw_cut_view PROPERTIES ENVIRONMENT "${DRAW_TEST_ENV}"
       PASS_REGULAR_EXPRESSION "CUT_VIEW_DRAW_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_DRAW_FAIL")
     add_test (NAME draw_cut_view_iso COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_iso.tcl")
@@ -187,6 +202,11 @@ if (TARGET ViewDraw)
     set_tests_properties (draw_cut_view_recovery PROPERTIES ENVIRONMENT "${DRAW_TEST_ENV}"
       PASS_REGULAR_EXPRESSION "CUT_VIEW_RECOVERY_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" TIMEOUT 90)
     if (OCCTV_TEST_DRAW_VISUAL)
+      add_test (NAME draw_vtk_reference_visual COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/vtk_references.tcl")
+      set_tests_properties (draw_vtk_reference_visual PROPERTIES
+        ENVIRONMENT "${DRAW_TEST_ENV};VTK_REFERENCE_FIXTURES=${CMAKE_CURRENT_BINARY_DIR}/vtk-reference-fixtures;VTK_REFERENCE_HAS_NATIVE=$<BOOL:${OCCTV_USE_VTK}>;VTK_REFERENCE_VISUAL=1;VTK_REFERENCE_OUTPUT=${CMAKE_CURRENT_BINARY_DIR}/draw-vtk-references"
+        FIXTURES_REQUIRED vtk_reference_fixtures RUN_SERIAL TRUE TIMEOUT 120
+        PASS_REGULAR_EXPRESSION "VTK_REFERENCE_DRAW_PASS" FAIL_REGULAR_EXPRESSION "VTK_REFERENCE_DRAW_FAIL")
       add_test (NAME draw_vtk_import_visual COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/vtk_import.tcl")
       set_tests_properties (draw_vtk_import_visual PROPERTIES
         ENVIRONMENT "${DRAW_TEST_ENV};VTK_IMPORT_FIXTURES=${CMAKE_CURRENT_BINARY_DIR}/vtk-import-fixtures;VTK_IMPORT_HAS_NATIVE=$<BOOL:${OCCTV_USE_VTK}>;VTK_IMPORT_VISUAL=1;VTK_IMPORT_OUTPUT=${CMAKE_CURRENT_BINARY_DIR}/draw-import"

@@ -14,7 +14,7 @@ the live Viewer model. Zero is not an unlimited setting.
 | MaxArrays | 4096 | Array header/component allocation |
 | MaxComponents | 1024 | Component-name vector allocation |
 | MaxNodes / MaxCells | 10,000,000 each | Mesh/stored-element allocation; PolyData expansions also consume cells |
-| MaxFiles / MaxDepth | 4096 / 64 | Reference traversal; depth/cycle handling completes in N04.7 |
+| MaxFiles / MaxDepth | 4096 / 64 | Reader/stager file traversal and reference/block depth; cyclic VTM references reject |
 
 Portable and native imports validate the declared dimensions; the native SDK runs
 only after original numeric arrays, topology and budgets pass preflight. Legacy
@@ -33,6 +33,10 @@ The XML envelope and appended source are still read into bounded file buffers;
 this is not on-demand file streaming. The limits are logical import budgets,
 not an exact OS working-set cap: DOM/SDK overhead and published-series copies
 also occupy memory. Full session cache/eviction and rendering budgets remain N08.
+Explicit local staging checks copied source bytes/files/depth before dataset
+decoding, using a separate budget with the same configured limits. Generated
+manifest output is bounded by MaxFileBytes. Successful attempt directories remain
+caller-owned; staging failure removes only that attempt's directory.
 
 `vtk_limits` checks configurable limits, an oversized Legacy declaration, a
 decompression-size bomb, dense merged fields and aggregate series node limits.

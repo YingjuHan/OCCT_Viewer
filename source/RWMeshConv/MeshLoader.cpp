@@ -9,6 +9,8 @@
 #include <RWVtk/VtkSeriesReader.h>
 #include <RWVtk/VtkUnstructuredGridReader.h>
 #include <RWVtk/VtkLegacyReader.h>
+#include <RWVtk/VtkDatasetReader.h>
+#include <RWVtk/VtkReferenceStager.h>
 #ifdef OCCTV_USE_VTK
 #include <RWVtk/VtkNativeReader.h>
 #endif
@@ -338,6 +340,16 @@ Handle(RWCae::MeshData) MeshLoader::openVtkMesh(const TCollection_AsciiString& t
     myVtkReport.format = theFormat;
     Handle(RWCae::MeshData) aMesh;
     bool canUseNativeCells = false;
+    TCollection_AsciiString inputPath=theFilePath;
+    if(!myVtkStagingDirectory.IsEmpty()) {
+        RWVtk::VtkReferenceStager stager;
+        if(!stager.Perform(theFilePath,myVtkStagingDirectory,myVtkLimits)) {
+            myVtkReport.errors=stager.Report().errors;
+            if(myToReportMessages) {for(const auto& error:myVtkReport.errors) {Message::SendFail()<<"[ERR_VTK_IMPORT] "<<error;}}
+            return nullptr;
+        }
+        inputPath=stager.StagedSource();myVtkReport.stagedSource=inputPath.ToCString();
+    }
 
     auto record = [&](const RWVtk::VtkImportReport& theReport, const char* theBackend, bool theSucceeded) {
         myVtkReport.attempts.push_back({theBackend, theSucceeded, theReport.errors, theReport.warnings});
@@ -363,7 +375,7 @@ Handle(RWCae::MeshData) MeshLoader::openVtkMesh(const TCollection_AsciiString& t
         bool isRead = false;
         RWVtk::VtkImportReport aReport;
         try {
-            isRead = theReader.Perform(theFilePath);
+            isRead = theReader.Perform(inputPath);
             if (isRead) { aMesh = theGetMesh(); }
             aReport = theReader.Report();
         } catch (const Standard_Failure& anError) {
@@ -376,13 +388,7 @@ Handle(RWCae::MeshData) MeshLoader::openVtkMesh(const TCollection_AsciiString& t
         record(aReport, "portable", isRead && !aMesh.IsNull() && aReport.errors.empty());
         // A concrete-cell implementation gap permits fallback. Syntax, arrays,
         // unsupported sections and validation failures must not be bypassed.
-        canUseNativeCells = !aReport.errors.empty() && std::all_of(aReport.errors.begin(), aReport.errors.end(),
-            [](const std::string& error) {
-                return error.find("Unsupported VTK cell type ") == 0
-                    || error == "VTK PolyData Lines require line-element support"
-                    || error == "VTK XML 2.3 polyhedron face encoding requires native cells"
-                    || error == "Invalid number of nodes '0'";
-            });
+        canUseNativeCells = RWVtk::CanUseNativeTopology(aReport);
         if (!myVtkReport.attempts.back().succeeded) { aMesh.Nullify(); }
     };
     if (theFormat == "VTK") {
@@ -407,7 +413,7 @@ Handle(RWCae::MeshData) MeshLoader::openVtkMesh(const TCollection_AsciiString& t
         && (theFormat == "VTK" || theFormat == "VTU" || theFormat == "VTP")) {
         RWVtk::VtkNativeReader aReader;
         aReader.SetResourceLimits(myVtkLimits);
-        const bool isRead = aReader.Perform(theFilePath);
+        const bool isRead = aReader.Perform(inputPath);
         record(aReader.Report(), "native-vtk", isRead);
         if (isRead) { aMesh = aReader.GetMeshData(); }
     }

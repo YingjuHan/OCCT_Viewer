@@ -32,7 +32,9 @@ struct MeshPropertyHasher {
         return theProp1->Name() == theProp2->Name() && theProp1->Description() == theProp2->Description()
             && theProp1->MapType() == theProp2->MapType() && theProp1->Type() == theProp2->Type()
             && theProp1->NbComponents() == theProp2->NbComponents()
-            && theProp1->ComponentsType() == theProp2->ComponentsType() && theProp1->TimeStep() == theProp2->TimeStep();
+            && ((theProp1->HasScalarComponents() && theProp2->HasScalarComponents())
+                || theProp1->ComponentsType() == theProp2->ComponentsType())
+            && theProp1->TimeStep() == theProp2->TimeStep();
     }
 };
 
@@ -73,7 +75,13 @@ void ComputeCommonProperties(const RWCae::MeshTools::MeshDataList& theMeshDataLi
                 continue;
             }
 
-            Handle(RWCae::MeshNVecProperty) aPropToStore = aProp->CopyRaw(aProp->IsNodal() ? theNbNodes : theNbElems);
+            const int count = aProp->IsNodal() ? theNbNodes : theNbElems;
+            Handle(RWCae::MeshNVecProperty) aPropToStore = aProp->CopyRaw(aProp->HasScalarComponents() ? 0 : count);
+            if (aProp->HasScalarComponents()) {
+                for (int c = 0; c < aPropToStore->NbRawComponents(); ++c) {
+                    Handle(RWCae::MeshScalarProperty)::DownCast(aPropToStore->GetRawComponent(c))->Init(count,RWCae::MeshPropertyElemType::Double);
+                }
+            }
             if (!aPropToStore.IsNull()) {
                 aPropToStore->SetId(aProp->Id());
                 theMeshData->ChangeProperties().Append(aPropToStore);
@@ -183,7 +191,8 @@ void AddMeshProperties(const Handle(RWCae::MeshData)& theMeshData,
                                                                   + (theProp->IsNodal() ? theNodesOffset
                                                                                         : theElemsOffset),
                                                               aNodeIndex != -1 ? aNodeIndex + theNodesOffset : -1);
-                theCompToFill->SetRawValue(anInfoToStore, theComp->RawValue(anInfoToRead), false);
+                if (theCompToFill->ElemType() == theComp->ElemType()) { theCompToFill->SetRawValue(anInfoToStore, theComp->RawValue(anInfoToRead), false); }
+                else { theCompToFill->SetValue(anInfoToStore,theComp->Value(anInfoToRead),false); }
             }
         }
     };
