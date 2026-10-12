@@ -11,6 +11,8 @@ set (_SRCFILES
   NativeCutTimeline.cpp
   NativeCutAnalysis.cpp
   NativeCutAnalysisJson.cpp
+  NativeCutDigest.cpp
+  NativeCutSession.cpp
   InteractiveClippingManager.cpp
   InteractiveColorScaleManager.cpp
   InteractiveContext.cpp
@@ -47,6 +49,8 @@ set (_INCFILES
   NativeCutView.h
   NativeCutTimeline.h
   NativeCutAnalysis.h
+  NativeCutDigest.h
+  NativeCutSession.h
   InteractiveClippingManager.h
   InteractiveColorScaleManager.h
   InteractiveContext.h

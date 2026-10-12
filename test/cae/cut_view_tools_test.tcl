@@ -150,6 +150,9 @@ proc tools_run {} {
     tool_click .scvcutcache.close
     foreach widget $cacheExpected { tool_assert {$widget in $covered} "Untested cache control $widget" }
     puts "CUT_VIEW_CACHE_COVERAGE 7/7"
+    tool_click .scvcuttools.session
+    tool_assert {[winfo exists .scvcutsession]} "Session panel did not open"
+    destroy .scvcutsession
     tool_click .scvcuttools.close
     foreach widget $expected { tool_assert {$widget in $covered} "Untested tool $widget" }
     puts "CUT_VIEW_TOOLS_COVERAGE [llength $expected]/[llength $expected]"

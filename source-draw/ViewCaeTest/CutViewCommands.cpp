@@ -15,6 +15,7 @@
 #include <Viewer/NativeCutView.h>
 #include <Viewer/NativeCutTimeline.h>
 #include <Viewer/NativeCutAnalysis.h>
+#include <Viewer/NativeCutSession.h>
 #include <ViewCaeGeom/MeshCutSlicing.h>
 #include <DBRep.hxx>
 
@@ -70,6 +71,7 @@ struct CutModel {
     Handle(ViewCae::InteractiveCaeCutView) View;
     std::shared_ptr<Viewer::NativeCutView> Native;
     std::shared_ptr<Viewer::NativeCutTimeline> Timeline;
+    std::shared_ptr<Viewer::NativeCutSession> Session;
     Handle(RWCae::MeshNVecProperty) Field;
     int Component = 0;
     Bnd_Box Bounds;
@@ -226,6 +228,7 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             }
             model.Native = std::make_shared<Viewer::NativeCutView>(model.Mesh);
             model.Timeline = std::make_shared<Viewer::NativeCutTimeline>(*model.Native);
+            model.Session = std::make_shared<Viewer::NativeCutSession>(*model.Native,*model.Timeline);
             model.View = model.Native->Display();
             for (RWCae::MeshEntityId n = 0; n < model.Mesh->NbNodes(); ++n) {
                 const auto& p = model.Mesh->Nodes()[n];
@@ -275,7 +278,16 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
                 context->UpdateCurrentViewer();
             }
         };
-        if(action=="cacheinfo" && argc==3) {
+        if(action=="sessionsave" && (argc==4||argc==5)) {
+            const auto cad=argc==5?std::string(argv[4]):model.Session->CadSource();
+            if(!model.Session->Save(argv[3],model.Source,cad)) { throw std::invalid_argument(model.Native->LastError()); }
+            model.Source=model.Session->Source(); return 0;
+        } else if(action=="sessionload" && argc==4) {
+            if(!model.Session->Load(argv[3])) { throw std::invalid_argument(model.Native->LastError()); }
+            model.Source=model.Session->Source(); model.Generation=++nextGeneration; refreshStep(); return 0;
+        } else if(action=="sessioninfo" && argc==3) {
+            di<<"version 3 source"; di.AppendElement(model.Source.c_str()); di<<" cad"; di.AppendElement(model.Session->CadSource().c_str()); return 0;
+        } else if(action=="cacheinfo" && argc==3) {
             const auto policy=cuts.CachePolicy(); const auto stats=cuts.CacheStatistics();
             di<<"sourceLimit "<<std::to_string(policy.SourceBytes).c_str()<<" resultLimit "<<std::to_string(policy.ResultBytes).c_str()<<" sourceReserved "<<std::to_string(stats.SourceReserved).c_str()<<" resultReserved "<<std::to_string(stats.ResultReserved).c_str()<<" sourceEstimate "<<std::to_string(cuts.EstimatedSourceBytes()).c_str()<<" resultEstimate "<<std::to_string(cuts.EstimatedResultBytes(model.Field)).c_str()<<" evictions "<<std::to_string(stats.Evictions).c_str()<<" request "<<std::to_string(cuts.RequestGeneration()).c_str(); return 0;
         } else if(action=="cachepolicy" && argc==5) {
@@ -1035,6 +1047,7 @@ void ViewCaeTest::CutViewCommands::Factory(Draw_Interpretor& di)
         "  | slicing plane regular/range start spacing/end count | rotational ax ay az ox oy oz start end count | path ux uy uz {x y z}...\n"
         "  | localmove id datum a b c d (plane) / cx cy cz ax ay az radius (quadric)\n"
         "  | axes datum/global show length | nativeinfo | pickmode 0/1/2\n"
+        "  | sessionsave file ?CAD-brep-source? | sessionload file | sessioninfo\n"
         "  | cutstyle id/defaults portion [transparency width mode] | clearstyle id portion\n"
         "  | contour [automatic min max legend intervals] | probe id portion index node0/1\n"
         "  | vectors none / mapping field step scale sampling orientation show\n"

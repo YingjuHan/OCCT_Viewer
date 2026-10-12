@@ -1,5 +1,6 @@
 #include <Viewer/NativeCutView.h>
 #include <Viewer/NativeCutAnalysis.h>
+#include <BRepBuilderAPI_Copy.hxx>
 #include <AIS_InteractiveContext.hxx>
 #include <BRepAlgoAPI_Section.hxx>
 #include <Geom_SphericalSurface.hxx>
@@ -100,10 +101,16 @@ bool NativeCutView::Edit(const ViewCaeGeom::MeshCutDefinition& definition, const
             if (found == myDatums.end()) { throw std::invalid_argument("Unknown local datum"); }
             frame = found->second;
         }
-        auto& cuts = myDisplay->Cuts(); const auto previous = cuts.DumpDefinitionsJson();
+        auto& cuts = myDisplay->Cuts(); const auto definitions=cuts.Definitions();
+        const auto previous=std::find_if(definitions.begin(),definitions.end(),[&](const auto& d) { return d.Id==definition.Id; });
+        if(previous==definitions.end()) { throw std::invalid_argument("Unknown native cut edit"); }
         if (!frame.Edit(cuts,definition)) { throw std::invalid_argument("Invalid native cut edit"); }
         if (!Refresh(false)) {
-            cuts.RestoreDefinitionsJson(previous); myDisplay->Synchronize();
+            // The previous numeric definition is already validated against this
+            // unchanged source. Restore it without allocating a second validator
+            // when failure was caused by a tight cache budget. Old AIS arrays stay
+            // published until another complete frame can be prepared.
+            if(!ViewCaeGeom::MeshCutFrame().Edit(cuts,*previous)) { throw std::runtime_error("Native cut edit rollback failed"); }
             throw std::runtime_error(myError);
         }
         event(CutEditEvent::Update);
@@ -199,6 +206,28 @@ void NativeCutView::Close()
     myDragSnapshot.clear(); myAnnotations.clear(); myCadSection.Nullify(); myCadSource.Nullify();
     myGlobalClip.Nullify(); myDisplay->Cuts().Clear(); myDisplay.Nullify(); event(CutEditEvent::Close);
 }
+void NativeCutView::adopt(NativeCutView& staged)
+{
+    // Prepare allocating callbacks before detaching anything from the live view.
+    staged.myDisplay->SetOnSynchronize([this] { synchronized(); });
+    staged.myDisplay->SetOnDrag([this](AIS_DragAction action) {
+        if(action==AIS_DragAction_Start) { myDragSnapshot=myDisplay->Cuts().DumpDefinitionsJson(); event(CutEditEvent::Begin); }
+        else if(action==AIS_DragAction_Update) { event(CutEditEvent::Update); }
+        else { myDragSnapshot.clear(); event(action==AIS_DragAction_Stop?CutEditEvent::Commit:CutEditEvent::Abort); }
+    });
+    myDisplay->SetOnDrag(nullptr); myDisplay->SetOnSynchronize(nullptr);
+    myDragSnapshot.clear(); Detach();
+    myDisplay->Cuts().Clear();
+    myDisplay=staged.myDisplay; staged.myDisplay.Nullify();
+    myContext=staged.myContext; staged.myContext.Nullify();
+    myViewport=staged.myViewport; staged.myViewport.Nullify();
+    myDatums=std::move(staged.myDatums); myReferenceDatum=std::move(staged.myReferenceDatum);
+    myReferenceAxesVisible=staged.myReferenceAxesVisible; myReferenceAxesLength=staged.myReferenceAxesLength;
+    myAnnotations=std::move(staged.myAnnotations); myFieldBinding=std::move(staged.myFieldBinding);
+    myCadSection=staged.myCadSection; myCadSource=staged.myCadSource; myCadCut=std::move(staged.myCadCut); mySyncClip=staged.mySyncClip; myGlobalClip=staged.myGlobalClip;
+    staged.myCadSection.Nullify(); staged.myCadSource.Nullify(); staged.myGlobalClip.Nullify();
+    myAnalysis=std::move(staged.myAnalysis); if(myAnalysis) { myAnalysis->myOwner=this; }
+}
 bool NativeCutView::Refresh(bool redraw)
 {
     return attempt([&] {
@@ -222,7 +251,11 @@ void NativeCutView::synchronized()
         const auto definitions = myDisplay->Cuts().Definitions();
         if (std::none_of(definitions.begin(),definitions.end(),[&](const auto& d) { return d.Id == myCadCut; })) {
             ClearCadSection();
-        } else if (!SetCadSection(myCadSource,myCadCut,mySyncClip)) { throw std::runtime_error(myError); }
+        } else {
+            const bool clipOn=myGlobalClip.IsNull()||myGlobalClip->IsOn();
+            if (!SetCadSection(myCadSource,myCadCut,mySyncClip)) { throw std::runtime_error(myError); }
+            if(mySyncClip&&!myGlobalClip.IsNull()) { myGlobalClip->SetOn(clipOn); }
+        }
     }
     if (!myContext.IsNull()) {
         if (myDisplay->ContourOptions().ShowLegend) {
@@ -280,6 +313,9 @@ bool NativeCutView::SetCadSection(const TopoDS_Shape& shape, const std::string& 
 {
     return attempt([&] {
         if (shape.IsNull()) { throw std::invalid_argument("CAD section needs a shape"); }
+        // Section algorithms may update shared BREP flags/pcurves. Preserve an
+        // independent source snapshot for repeatable sections and persistence.
+        const auto preserved=BRepBuilderAPI_Copy(shape,true,false).Shape();
         const auto definitions = myDisplay->Cuts().Definitions();
         auto definition = std::find_if(definitions.begin(),definitions.end(),[&](const auto& d) { return d.Id == id; });
         if (definition == definitions.end()) { throw std::invalid_argument("Unknown CAD section cut"); }
@@ -304,7 +340,7 @@ bool NativeCutView::SetCadSection(const TopoDS_Shape& shape, const std::string& 
         Handle(AIS_Shape) display = new AIS_Shape(section); display->SetColor(Quantity_Color(Quantity_NOC_BLACK)); display->SetWidth(3);
         if (syncClip && !SetGlobalClip(definition->Plane,true)) { throw std::runtime_error(myError); }
         if (!myContext.IsNull()) { if (!myCadSection.IsNull()) { myContext->Remove(myCadSection,false); } myContext->Display(display,false); }
-        myCadSection = display; myCadSource = shape; myCadCut = id; mySyncClip = syncClip;
+        myCadSection = display; myCadSource = preserved; myCadCut = id; mySyncClip = syncClip;
     });
 }
 }

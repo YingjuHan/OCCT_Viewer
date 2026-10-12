@@ -23,7 +23,7 @@ N04 is closed at that documented native scope.
 N05 is closed at [its native audit](cut-view-n05-audit.md); N06 is closed at
 [its native audit](cut-view-n06-audit.md); N07 is closed at
 [its native audit](cut-view-n07-audit.md); N08 is closed at
-[its native audit](cut-view-n08-audit.md); N09 is in final session validation.
+[its native audit](cut-view-n08-audit.md); N09 is closed at [its native audit](cut-view-n09-audit.md).
 Earlier baseline counts describe their historical milestones; current evidence
 and bounded support are recorded in [the stage table](cut-view-n05-n09.md).
 

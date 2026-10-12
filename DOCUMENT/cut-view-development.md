@@ -17,10 +17,13 @@
 Current execution is native only: Web/Vue/TypeScript and WASM tasks are excluded,
 not completed. Project/session persistence below maps to the native session API.
 
-N01–N08 are closed at their documented native scopes; N09 session closure is in
-final validation. N05, N06, N07 and N08 evidence is recorded in the
+N01–N09 are closed at their documented native scopes. N05–N09 evidence is recorded in the
 [Viewer audit](cut-view-n05-audit.md), [time/slicing audit](cut-view-n06-audit.md),
-[physical analysis audit](cut-view-n07-audit.md) and [performance audit](cut-view-n08-audit.md).
+[physical analysis audit](cut-view-n07-audit.md), [performance audit](cut-view-n08-audit.md)
+and [full-session audit](cut-view-n09-audit.md).
+Final VTK ON 71/71, OFF 30/30, headless 17/17 and Release affected 6/6
+each pass three consecutive runs. Actual controls: main 48, tools 40, time 20,
+physics 31, cache 7 and session 6. See [N09](cut-view-n09-audit.md) for the final logs.
 The current stage table is [N05–N09](cut-view-n05-n09.md); earlier test counts
 below describe their original milestones.
 Curved-family geometry/FE
@@ -123,6 +126,9 @@ for SDK paths, logs, missing historical external fixtures and remaining work.
 - [x] N07 explicit physical groups/units/frames, shell/composite/beam section
   adapters, local-normal volume analysis, resultant overlays, interval reports,
   CSV export and mapped crack-distance/optimization-density cuts.
+- [x] N09 native v3 complete sessions with immutable source bundles/digests,
+  CAD/camera and all Viewer/timeline/analysis settings, legacy migration,
+  relocation, shared-budget validation and failed restore/save preservation.
 - [x] N08 shared source/result reservation accounting, local policies, LRU,
   externally retained leases, cancellation/generations and full-frame timing.
 - [x] N08 million-cell crossing/rotating/fixed-deformation plane workload:
@@ -153,7 +159,7 @@ interface, not the production Vue manager. See the official [view-cut overview](
 | Free-body forces/moments and heat flow | Explicit groups/units/frames, shell/composite/beam mappings, overlays and CSV | Nonplanar shells, composite heat and beam heat excluded |
 | Regular/rotational/path slicing | Regular/range/rotation/piecewise-linear path frames and interval reports | Bounded at 10000 slices |
 | Common options and cut-specific options | Native manager/tools/time/physics/cache panels and overrides | Browser manager excluded |
-| Session/project persistence | Native v3 source-bundle session in final validation | N09 closure pending |
+| Session/project persistence | Native v3 complete source-bundle sessions, migration and staged restoration | Native local-filesystem contract; JSON and assets move together |
 | XFEM and optimization automatic cuts | Explicit distance/density field, sign, threshold, range and empty/full states | No ODB parser or inferred field semantics |
 | CAD/global clipping synchronization | Native independent or synchronized CAD section/global clip, lifecycle ownership | CAD session sources must be explicit BREP files |
 | VTK-based source data | Ordinary native Viewer points/lines/general cells, remeshed snapshots, import limits and diagnostics | Structured/parallel XML/VTKHDF/ODB and browser integration excluded |
@@ -171,7 +177,8 @@ N03 recovery/tensor/trace/actual OR gates and full closure are verified. N04 imp
 items and final audit are verified in [the closure report](cut-view-n04-audit.md). Mismatching
 interfaces remain distinct, arbitrary-order exact geometry is not promised, and
 N08 establishes the full-frame target for the measured native plane workload below.
-N09 full-session validation, documentation and commit remain in progress.
+Native N01–N09 implementation and acceptance are complete at the documented support contracts.
+The full-session contract is [N09](cut-view-n09-audit.md).
 Web/Vue/TypeScript/WASM rebuild and browser acceptance remain excluded for a later scope.
 Unsupported physical mappings and broader performance workloads are listed in the audits.
 
@@ -185,7 +192,7 @@ Structured VTK, parallel XML, VTKHDF, and Abaqus ODB remain outside the first fo
 | Fields | Scalar/vector/tensor provenance, recovery/physical separation, explicit section mappings and coordinated time/deformation | Unsupported section semantics and inferred remesh correspondence |
 | Rendering | Native AIS, OR/contours, styles/legend, result picking, vectors/overlays, guides and measured plane frames | General high-order/OR/isosurface million-cell performance |
 | Import | Legacy/XML/general topology, independent snapshots, limits, staging/reports and playback | Structured/parallel formats and portable general-cell backend |
-| Integration | Native Viewer lifecycle/CAD coordination, DRAW/Tk and numerical/pixel/pointer scripts | N09 session closure in progress; Vue/WASM excluded |
+| Integration | Native Viewer lifecycle/CAD coordination, DRAW/Tk and numerical/pixel/pointer scripts | Native v3 full sessions with source identities; Vue/WASM excluded |
 
 MCP exploration was verified against source where the C++/Tcl index reported partial coverage.
 
@@ -204,7 +211,7 @@ Actual presentation OR has passed numerical, field/dimension and transparent
 acceptance and the full [N03 closure audit](cut-view-n03-audit.md).
 N04.1–N04.8 import/ordinary Viewer work is verified in
 [its acceptance queue](cut-view-n04-plan.md) and [closure audit](cut-view-n04-audit.md).
-N05–N08 are verified; N09 is in final validation; web/WASM work is excluded.
+N05–N09 are verified at their documented native scopes; web/WASM work is excluded.
 First-order isosurfaces currently rebuild scalar-cut geometry when the threshold changes; they
 have not been accepted against the full-frame million-cell target. Supported high-order
 VTK chart cells use the bounded numerical isosurface contract recorded in N02.

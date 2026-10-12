@@ -8,7 +8,7 @@ N03.4 实际 OR 并集/透明显示均已验收。N03.5 完整双配置闭环审
 N03 已按 [原生支持契约](cut-view-n03-audit.md) 闭环。最新证据在第 23 节，
 旧 milestone 记录保留为历史。N04.1–N04.8 已验收，N04 已按原生支持范围闭环，
 见 [N04 队列](cut-view-n04-plan.md) 和 [闭环审计](cut-view-n04-audit.md)。
-N05 已按 [闭环审计](cut-view-n05-audit.md) 验收；N06 已按 [闭环审计](cut-view-n06-audit.md) 验收；N07 已按 [闭环审计](cut-view-n07-audit.md) 验收；N08 已按 [性能与缓存审计](cut-view-n08-audit.md) 验收；N09 正在最终复验。第 24 节及后续各项保留分项证据，当前状态以本节为准。
+N05 已按 [闭环审计](cut-view-n05-audit.md) 验收；N06 已按 [闭环审计](cut-view-n06-audit.md) 验收；N07 已按 [闭环审计](cut-view-n07-audit.md) 验收；N08 已按 [性能与缓存审计](cut-view-n08-audit.md) 验收；N09 已按 [session 审计](cut-view-n09-audit.md) 验收。第 24 节及后续各项保留分项证据，当前状态以本节为准。
 后文的 Linux 验证记录保留为历史证据；
 本次 Windows 配置与结果以本节和末尾最新阶段审计为准；第 6 节保留先前增量证据。
 
@@ -19,11 +19,11 @@ N05 已按 [闭环审计](cut-view-n05-audit.md) 验收；N06 已按 [闭环审�
   N02.4 `7910a48`、N03.1 `2caeb2f`、N03.2 `17f421c` 已提交；
   N03.3 `f719eeb`、N03.4a `db6268b`、N03.4b `addbb03`、N03.4c `eba2a37` 已提交；
   曲面 cap/内部面修复 `3a1fd44`、N03 闭环文档 `6bacc14` 已提交；
-  N01–N08 已按支持范围闭环；N09 正在最终复验。
+  N01–N09 已按支持范围闭环；N09 已按 [session 审计](cut-view-n09-audit.md) 验收。
 - N04.1–N04.7 提交：`68fe366`、`e1a45a4`、`82eaf55`、`65c4352`、`b1ada38`、`5c8c9e3`、`dbfe66b`；每项之后均显式刷新 MCP 索引。
 - 每个验收工作项单独提交；保留用户既有修改及 `AGENTS.md`。
 
-接续时以本说明的最新证据为准。主交接与执行队列的当前 N01–N08 状态为 verified；
+接续时以本说明的最新证据为准。主交接与执行队列的当前 N01–N09 状态为 verified；
 历史 milestone 的 31/34 cases 记录保留，不代表当前 Windows 套件计数，也不能据此把未完成阶段改为 done。
 
 相关规划与说明：
@@ -421,7 +421,7 @@ scvcutview model eval cut
 | B01 | structured import reports 到 native caller | verified at N04.1/.3/.7；上下文、原始/staged 路径、失败旧对象保留 |
 | B02 | relative-file staging | verified at N04.7 本地文件范围；嵌套引用、同 basename、循环/深度/文件预算和失败清理 |
 | B03 | native Viewer Cut API | verified at N05/N06 native Viewer facade; TypeScript excluded |
-| S01 | native session migration/persistence | active: N09 final validation/documentation |
+| S01 | native session migration/persistence | verified at N09: native v3 complete sessions, digests, migration and staged atomic publication |
 | P02 | 百万单元全帧仪表与优化 | verified at N08 measured million native-hex On-only plane workload, three full-frame runs |
 | P03 | 长会话、memory/cancellation/lifecycle | verified at N08: cancellation/leases/200 edits and 60 actual display cycles, 4.41 MiB growth |
 | B04/W01/W02 | Vue/WASM/browser | 排除，不标 done |
@@ -435,7 +435,7 @@ scvcutview model eval cut
 5. 视觉变化查看截图；性能变化记录全帧与内存测量，不能只报告非空画面。
 6. 更新执行文档中的具体证据、限制、命令和状态，再推进下一阶段。
 
-接续顺序：N01–N08 已闭环，N09 完成最终复验、文档和提交。保留原有回归与用户修改，Web/WASM 始终排除。
+接续顺序：N01–N09 已闭环，本轮 N05–N09 已全部闭环，后续扩展须另立范围。保留原有回归与用户修改，Web/WASM 始终排除。
 
 ## 12. 最新 N02.3 接续记录
 
@@ -695,8 +695,46 @@ Nested VTM and Legacy/XML leaves now share restricted native fallback; explicit 
 ## N04.8 — 最终闭环审计
 
 
-N04.8 closure: Final VTK ON **58/58**, OFF **22/22**, every case three times (174 / 66 executions; 547.47 / 41.50 seconds). DRAW/Viewer-disabled import/reference tests **2/2** each pass three times (0.52 seconds). The final gate preserves 47/47 Tk controls, the 48-cell matrix, independent N02 geometry/FE references, N03 physical/display fields, actual OR, curved caps and transparency. Ordinary Viewer images and all six kernel peak-memory gates were reviewed. Static field-step repair: 76d845b; first failed ON log retained. All current documents reflect the native support contract; N05-N09 remain queued. See cut-view-n04-audit.md.
+N04.8 closure: Final VTK ON **58/58**, OFF **22/22**, every case three times (174 / 66 executions; 547.47 / 41.50 seconds). DRAW/Viewer-disabled import/reference tests **2/2** each pass three times (0.52 seconds). The final gate preserves 47/47 Tk controls, the 48-cell matrix, independent N02 geometry/FE references, N03 physical/display fields, actual OR, curved caps and transparency. Ordinary Viewer images and all six kernel peak-memory gates were reviewed. Static field-step repair: 76d845b; first failed ON log retained. At that N04 milestone N05–N09 were queued; their current completed state is in section 1 and the closure audits. See cut-view-n04-audit.md.
 
 ## N05 闭环证据
 
 最新编译后 VTK ON 61/61（1196.43 秒）、OFF 24/24（59.78 秒）、headless 2/2（0.37 秒），每项连续三次。实际 Tk 48+36 控件、原始 FE 鼠标拾取和截图已验收。最终日志为各配置 cut-n05-final-gate.log/headless cut-n05-gate.log；旧失败日志保留。后续 N06–N09 的预备文件尚未计作完成。
+
+## N08–N09 最终原生闭环
+
+N05–N09 are verified at the native support contracts. See the
+[N08 cache/performance audit](cut-view-n08-audit.md) and
+[N09 full-session audit](cut-view-n09-audit.md). All final configurations below
+ran each registered case three consecutive times. Real widget inventories are
+main 48, tools 40, time 20, physics 31, cache 7 and session 6. The three measured
+million-native-hex plane processes passed >=15 FPS and p95 <=67 ms; this does
+not broaden acceptance to arbitrary high-order/general cells, isosurfaces or OR.
+Web/Vue/TypeScript/WASM remain excluded.
+
+## Final rebuilt validation
+
+| Configuration | Result | Elapsed | Log |
+| --- | --- | --- | --- |
+| VTK ON | 71/71, each three consecutive runs | 1421.50 s | `build/mingw/cut-n05-n09-final-gate.log` |
+| VTK OFF | 30/30, each three consecutive runs | 129.16 s | `build/mingw-no-vtk/cut-n05-n09-final-save-gate.log` |
+| headless | 17/17, each three consecutive runs | 91.21 s | `build/mingw-import-headless/cut-n08-n09-budget-gate.log` |
+| Release affected | 6/6, each three consecutive runs | 92.66 s | `build/mingw-release/cut-n05-n09-final-gate.log` |
+
+The full suites above use binaries rebuilt after the shared-budget definition-validator,
+per-step physical-validator and save-preview fixes. Two later Viewer-only fixes
+share drag-baseline accounting/options and directly remove an automatic cut after
+failed preparation. Those changes and their refusal/preservation regressions were
+rebuilt and verified separately on the final source:
+
+| Configuration | Result | Elapsed | Log |
+| --- | --- | --- | --- |
+| VTK ON affected | 11/11, each three consecutive runs | 48.58 s | `build/mingw/cut-n08-n09-rollback-final.log` |
+| VTK OFF affected | 6/6, each three consecutive runs | 7.00 s | `build/mingw-no-vtk/cut-n08-n09-rollback-final.log` |
+| Release Viewer affected | 4/4, each three consecutive runs | 6.80 s | `build/mingw-release/cut-n08-n09-rollback-final.log` |
+
+The first numeric-edit fixture
+was rejected as evidence because it reused an existing reservation and did not
+exercise budget refusal; its corrected source-epoch fixture passes. Initial failed
+and interrupted logs remain separate. These regressions do not replace the N08
+million-cell performance evidence or broaden its workload.

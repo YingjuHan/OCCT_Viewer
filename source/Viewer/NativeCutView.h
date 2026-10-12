@@ -68,6 +68,7 @@ private:
     Handle(RWCae::MeshNVecProperty) resolveField(const CutFieldBinding& binding) const;
     void event(CutEditEvent value);
     void synchronized();
+    void adopt(NativeCutView& staged);
     Handle(ViewCae::InteractiveCaeCutView) myDisplay;
     Handle(AIS_InteractiveContext) myContext;
     Handle(V3d_View) myViewport;

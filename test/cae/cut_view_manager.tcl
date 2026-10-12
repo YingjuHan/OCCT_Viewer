@@ -65,6 +65,7 @@ source [file join [file dirname [info script]] cut_view_tools.tcl]
 source [file join [file dirname [info script]] cut_view_time.tcl]
 source [file join [file dirname [info script]] cut_view_physics.tcl]
 source [file join [file dirname [info script]] cut_view_cache_panel.tcl]
+source [file join [file dirname [info script]] cut_view_session.tcl]
 
 proc ::CutViewManager::invoke {command args} {
     variable status
@@ -552,6 +553,7 @@ proc ::CutViewManager::load {} {
 }
 
 proc ::CutViewManager::close {} {
+    if {[winfo exists .scvcutsession]} { destroy .scvcutsession }
     if {[winfo exists .scvcutcache]} { destroy .scvcutcache }
     if {[winfo exists .scvcutphysics]} { destroy .scvcutphysics }
     if {[winfo exists .scvcuttime]} { ::CutViewTime::close }

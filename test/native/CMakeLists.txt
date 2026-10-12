@@ -73,6 +73,11 @@ if (TARGET Viewer)
   target_link_libraries (native_analysis_tests PRIVATE Viewer)
   target_compile_definitions (native_analysis_tests PRIVATE NATIVE_CUT_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/fixtures")
   add_test (NAME native_analysis COMMAND native_analysis_tests)
+  add_executable (native_session_tests NativeSessionTests.cpp)
+  target_link_libraries (native_session_tests PRIVATE Viewer)
+  target_compile_definitions (native_session_tests PRIVATE NATIVE_CUT_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/fixtures" NATIVE_SESSION_OUTPUT_DIR="${CMAKE_CURRENT_BINARY_DIR}/native-session")
+  add_test (NAME native_session COMMAND native_session_tests)
+  set_tests_properties (native_session PROPERTIES TIMEOUT 90)
 endif()
 add_executable (quadric_cut_tests QuadricCutTests.cpp)
 target_link_libraries (quadric_cut_tests PRIVATE ViewCaeGeom ViewCae)
@@ -228,6 +233,10 @@ if (TARGET ViewDraw)
     set_tests_properties (draw_cut_view_recovery PROPERTIES ENVIRONMENT "${DRAW_TEST_ENV}"
       PASS_REGULAR_EXPRESSION "CUT_VIEW_RECOVERY_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" TIMEOUT 90)
     if (OCCTV_TEST_DRAW_VISUAL)
+      add_test (NAME draw_cut_view_session COMMAND "${OCCTV_DRAWEXE}" -i -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_session_test.tcl")
+      set_tests_properties (draw_cut_view_session PROPERTIES
+        ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-session"
+        RUN_SERIAL TRUE TIMEOUT 120 PASS_REGULAR_EXPRESSION "CUT_VIEW_SESSION_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL")
       add_test (NAME draw_cut_view_benchmark_smoke COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_benchmark.tcl")
       set_tests_properties (draw_cut_view_benchmark_smoke PROPERTIES
         ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_BENCHMARK_GRID=6;CUTVIEW_BENCHMARK_FRAMES=3;CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-benchmark-smoke"

@@ -43,7 +43,7 @@ N02 closure passed: [queue and evidence](cut-view-n02-plan.md),
 [bounded audit](cut-view-n02-audit.md). The [N03 queue](cut-view-n03-plan.md) is now
 verified at [the closure scope](cut-view-n03-audit.md); all earlier increments
 remain in the regression suite. [N04](cut-view-n04-plan.md) is closed at its
-documented native contract; N05 is closed at [its native audit](cut-view-n05-audit.md); N06 is closed at [its native audit](cut-view-n06-audit.md); N07 is closed at [its native audit](cut-view-n07-audit.md); N08 is closed at [its native audit](cut-view-n08-audit.md); N09 is in final validation.
+documented native contract; N05 is closed at [its native audit](cut-view-n05-audit.md); N06 is closed at [its native audit](cut-view-n06-audit.md); N07 is closed at [its native audit](cut-view-n07-audit.md); N08 is closed at [its native audit](cut-view-n08-audit.md); N09 is closed at [its native audit](cut-view-n09-audit.md).
 
 | ID | Task | Depends On | Acceptance | Status |
 | --- | --- | --- | --- | --- |
@@ -63,9 +63,9 @@ documented native contract; N05 is closed at [its native audit](cut-view-n05-aud
 | D01 | Deformed guide/range bounds and material-following reference frames | G03, M02 | Guides and intersections follow deformation consistently | verified at N06: explicit reference/updated material anchors |
 | V01 | VTK Lines/polyline storage, import and rendering | G01 | Legacy/XML line fixtures, CellData mapping and DRAW pixels | verified at N04.2 native contract: ordinary scalar Viewer and Cut View; VTK-disabled general cells reject explicitly; browser excluded |
 | V02 | Remaining supported Legacy sections and explicit scope diagnostics | V01 | Format-specific fixtures and unsupported-section reports | verified at N04.3 format contract |
-| V03 | Changing geometry/topology series and time validation | V02 | Moving and remeshed fixtures, mismatched fields rejected | verified at N04.4/.7: complete independent snapshots, strict time/schema/tuple validation; playback remains N06 |
+| V03 | Changing geometry/topology series and time validation | V02 | Moving and remeshed fixtures, mismatched fields rejected | verified at N04.4/.7: complete independent snapshots, strict time/schema/tuple validation; coordinated playback verified at N06 |
 | V04 | Malformed/binary/compressed/multi-offset import regression coverage | V03 | Truncation, endian/offset/type errors, safe rejection | verified at N04.5 safety contract |
-| V05 | Bounded-memory appended decoding and configurable resource limits | V04 | Oversized payload rejection and measured peak memory | verified at N04.6/.7 logical import-budget contract; full-frame/session budgets remain N08 |
+| V05 | Bounded-memory appended decoding and configurable resource limits | V04 | Oversized payload rejection and measured peak memory | verified at N04.6/.7 logical import-budget contract; shared logical geometry/session accounting verified at N08/N09 |
 | D02 | Coordinated geometry/result/deformation time steps and animation | D01, V03 | Step switching, remeshing, pause/restart and no stale contours | verified at N06: coordinated snapshots, explicit remesh bindings and playback |
 | D03 | Regular/range/rotational/path slicing | G02, M02, D02 | Slice placement/count, path frames and interval results | verified at N06: regular/range/rotation/piecewise-linear path and interval bounds |
 | P01 | Cache policies, memory budgets and eviction | D02, D03 | Cache correctness after edits; memory bounded across repeated motion | verified at N08: logical reservations, local policies, shared leases and LRU |
@@ -78,7 +78,7 @@ documented native contract; N05 is closed at [its native audit](cut-view-n05-aud
 | B02 | Relative-file staging for composite manifests and series | V03, B01 | Nested relative paths, missing files and duplicate names | verified at N04.7 local-filesystem contract |
 | B03 | Native Viewer cut API; TypeScript excluded | M07, D02, B02 | Lifecycle, field bindings, drag events and error contracts | verified at N05/N06 native Viewer facade; TypeScript excluded |
 | B04 | Production Vue Cut View Manager and all shape controls | B03, M03, M04, M05 | Full user workflows, desktop/mobile layout and real pointer tests | excluded: web |
-| S01 | Native session persistence and schema migration | B03, M03, D02 | Source/fields/styles/deformation round trip; atomic invalid-load rejection | active: N09 final validation/documentation |
+| S01 | Native session persistence and schema migration | B03, M03, D02 | Source/fields/styles/deformation round trip; atomic invalid-load rejection | verified at N09: native v3 complete sessions, digests, migration and staged atomic publication |
 | P02 | Full-frame million-cell optimization and instrumentation | P01, B03 | Crossing-cell/rotating/deformed cuts, fields, primitives and rendering: >=15 FPS and p95 <=67 ms | verified at N08 measured million native-hex On-only plane workload, three full-frame runs |
 | P03 | Long-session memory, cancellation and lifecycle acceptance | S01, P02 | Repeated open/close/edit/drag; no growth, stale handles or rollback errors | verified at N08: cancellation/leases/200 edits and 60 actual display cycles, 4.41 MiB growth |
 | W01 | OCCT/Emscripten WASM SDK build and dependency packaging | B03 | Native-compatible API and successful WASM build | excluded: WASM |
@@ -385,12 +385,50 @@ the 48-concrete-cell matrix and transparent cloud comparisons. Source repair:
 `3a1fd44`; diagnostics/transparent gate: `eba2a37`. Logs and explicit support
 limits are recorded in [the N03 audit](cut-view-n03-audit.md).
 At that N03 milestone, N04 became active. Current N04 status is in
-[its queue](cut-view-n04-plan.md); N05 is closed at [its native audit](cut-view-n05-audit.md); N06 is closed at [its native audit](cut-view-n06-audit.md); N07 is closed at [its native audit](cut-view-n07-audit.md); N08 is closed at [its native audit](cut-view-n08-audit.md); N09 is in final validation. Full-frame
-performance, complete native sessions and excluded Web/WASM work remain open.
+[its queue](cut-view-n04-plan.md); N05 is closed at [its native audit](cut-view-n05-audit.md); N06 is closed at [its native audit](cut-view-n06-audit.md); N07 is closed at [its native audit](cut-view-n07-audit.md); N08 is closed at [its native audit](cut-view-n08-audit.md); N09 is closed at [its native audit](cut-view-n09-audit.md). Native full-frame performance is closed at the N08 measured workload; full native
+sessions are closed at N09. Web/WASM remain excluded.
 
 ## N04 Closure
 
 
-N04.8 closure: Final VTK ON **58/58**, OFF **22/22**, every case three times (174 / 66 executions; 547.47 / 41.50 seconds). DRAW/Viewer-disabled import/reference tests **2/2** each pass three times (0.52 seconds). The final gate preserves 47/47 Tk controls, the 48-cell matrix, independent N02 geometry/FE references, N03 physical/display fields, actual OR, curved caps and transparency. Ordinary Viewer images and all six kernel peak-memory gates were reviewed. Static field-step repair: 76d845b; first failed ON log retained. All current documents reflect the native support contract; N05 is closed at [its native audit](cut-view-n05-audit.md); N06 is closed at [its native audit](cut-view-n06-audit.md); N07 is closed at [its native audit](cut-view-n07-audit.md); N08 is closed at [its native audit](cut-view-n08-audit.md); N09 is in final validation. See cut-view-n04-audit.md.
+N04.8 closure: Final VTK ON **58/58**, OFF **22/22**, every case three times (174 / 66 executions; 547.47 / 41.50 seconds). DRAW/Viewer-disabled import/reference tests **2/2** each pass three times (0.52 seconds). The final gate preserves 47/47 Tk controls, the 48-cell matrix, independent N02 geometry/FE references, N03 physical/display fields, actual OR, curved caps and transparency. Ordinary Viewer images and all six kernel peak-memory gates were reviewed. Static field-step repair: 76d845b; first failed ON log retained. All current documents reflect the native support contract; N05 is closed at [its native audit](cut-view-n05-audit.md); N06 is closed at [its native audit](cut-view-n06-audit.md); N07 is closed at [its native audit](cut-view-n07-audit.md); N08 is closed at [its native audit](cut-view-n08-audit.md); N09 is closed at [its native audit](cut-view-n09-audit.md). See cut-view-n04-audit.md.
 
-N05 closure: ON **61/61**, OFF **24/24**, headless **2/2**, every case three times. Real main/tools inventory **48+36**, original-FE pointer picking, HUD legend/vector/annotation/CAD images verified. See cut-view-n05-audit.md. N06 is active.
+N05 closure: ON **61/61**, OFF **24/24**, headless **2/2**, every case three times. Real main/tools inventory **48+36**, original-FE pointer picking, HUD legend/vector/annotation/CAD images verified. See cut-view-n05-audit.md. At that historical milestone N06 became active; current stages are closed in the table above.
+
+## N05–N09 final native closure
+
+N05–N09 are verified at the native support contracts. See the
+[N08 cache/performance audit](cut-view-n08-audit.md) and
+[N09 full-session audit](cut-view-n09-audit.md). All final configurations below
+ran each registered case three consecutive times. Real widget inventories are
+main 48, tools 40, time 20, physics 31, cache 7 and session 6. The three measured
+million-native-hex plane processes passed >=15 FPS and p95 <=67 ms; this does
+not broaden acceptance to arbitrary high-order/general cells, isosurfaces or OR.
+Web/Vue/TypeScript/WASM remain excluded.
+
+## Final rebuilt validation
+
+| Configuration | Result | Elapsed | Log |
+| --- | --- | --- | --- |
+| VTK ON | 71/71, each three consecutive runs | 1421.50 s | `build/mingw/cut-n05-n09-final-gate.log` |
+| VTK OFF | 30/30, each three consecutive runs | 129.16 s | `build/mingw-no-vtk/cut-n05-n09-final-save-gate.log` |
+| headless | 17/17, each three consecutive runs | 91.21 s | `build/mingw-import-headless/cut-n08-n09-budget-gate.log` |
+| Release affected | 6/6, each three consecutive runs | 92.66 s | `build/mingw-release/cut-n05-n09-final-gate.log` |
+
+The full suites above use binaries rebuilt after the shared-budget definition-validator,
+per-step physical-validator and save-preview fixes. Two later Viewer-only fixes
+share drag-baseline accounting/options and directly remove an automatic cut after
+failed preparation. Those changes and their refusal/preservation regressions were
+rebuilt and verified separately on the final source:
+
+| Configuration | Result | Elapsed | Log |
+| --- | --- | --- | --- |
+| VTK ON affected | 11/11, each three consecutive runs | 48.58 s | `build/mingw/cut-n08-n09-rollback-final.log` |
+| VTK OFF affected | 6/6, each three consecutive runs | 7.00 s | `build/mingw-no-vtk/cut-n08-n09-rollback-final.log` |
+| Release Viewer affected | 4/4, each three consecutive runs | 6.80 s | `build/mingw-release/cut-n08-n09-rollback-final.log` |
+
+The first numeric-edit fixture
+was rejected as evidence because it reused an existing reservation and did not
+exercise budget refusal; its corrected source-epoch fixture passes. Initial failed
+and interrupted logs remain separate. These regressions do not replace the N08
+million-cell performance evidence or broaden its workload.

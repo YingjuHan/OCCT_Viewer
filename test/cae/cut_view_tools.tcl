@@ -164,6 +164,7 @@ proc scvcuttools {model} {
     ttk::button $w.time -text "Time and slicing" -command [list scvcuttime $model]
     ttk::button $w.physics -text "Physical resultants and automatic cuts" -command [list scvcutphysics $model]
     ttk::button $w.cache -text "Cache policy" -command [list scvcutcache $model]
+    ttk::button $w.session -text "Save and restore session" -command [list scvcutsession $model]
     ttk::button $w.close -text Close -command [list destroy $w]
-    pack $w.status $w.time $w.physics $w.cache $w.close -fill x -padx 6 -pady 4
+    pack $w.status $w.time $w.physics $w.cache $w.session $w.close -fill x -padx 6 -pady 4
 }

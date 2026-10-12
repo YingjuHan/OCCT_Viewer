@@ -642,3 +642,45 @@ interval. `draw_cut_view_benchmark_smoke` is only a small functional CTest case.
 Three accepted million-cell runs and 60 real display open/edit/close cycles are
 recorded in [N08](../DOCUMENT/cut-view-n08-audit.md), including renderer, retained
 failed runs, temporary background language-service pause and workload limits.
+
+## Native complete sessions and final N05–N09 gates
+
+`NativeCutSession` combines an existing `NativeCutView` and `NativeCutTimeline`.
+It saves version 3 native sessions with frozen relative source bundles, per-file
+sizes/SHA-256 and raw mesh/field identity, plus styles/field/deformation/steps,
+frames/recovery/physical requests, playback, annotations, CAD/clip and camera.
+CAD sections require an explicit matching BREP source. Keep the JSON and its
+`.assets` folder together when moving the session. Definition-only JSON remains
+separate. See [the N09 contract](../DOCUMENT/cut-view-n09-audit.md) for versions,
+limits, failure preservation and retained source bundles.
+
+```tcl
+scvcutview model sessionsave D:/models/cut.json
+scvcutview model sessionsave D:/models/cut.json D:/models/cad.brep
+scvcutview model sessionload D:/models/cut.json
+scvcutview model sessioninfo
+scvcutsession model
+```
+
+`native_session` covers SHA vectors, complete static/stable/remeshed sessions,
+explicit per-step mappings, automatic/physical fields, file/digest/JSON errors,
+legacy versions, relocation, drag/old-handle semantics and tight-budget edit/save
+rollback. `draw_cut_view_session` covers all six session controls with real Tk
+file dialogs, save/restore/CAD browse/cancel/errors and model-clear lifecycle.
+Restored screenshots must match before-save checksums; invalid/cancelled loads
+must preserve pixels, definitions and native generation. Windows shell-native
+file-dialog automation is outside this Tk acceptance. Final tools has 40 actual
+controls; main 48, time 20, physics 31 and cache seven.
+
+```powershell
+ctest --test-dir build/mingw --output-on-failure -j 1 --repeat until-fail:3
+ctest --test-dir build/mingw-no-vtk --output-on-failure -j 1 --repeat until-fail:3
+ctest --test-dir build/mingw-import-headless --output-on-failure -j 1 --repeat until-fail:3
+ctest --test-dir build/mingw-release --output-on-failure -j 1 -R '^(native_session|cut_cache|general_cut_cache|cut_iso|cut_trace_binding|cut_interface)$' --repeat until-fail:3
+```
+
+Final rebuilt ON 71/71, OFF 30/30, headless 17/17 and Release affected 6/6 pass
+each case three times. Gates and exact durations are in the N08/N09 audits;
+build-local fixture/output directories are retained and excluded from Git.
+Million-cell measurements run separately with builds, tests and indexing stopped.
+Native N05–N09 is closed at these support contracts; browser/WASM is excluded.

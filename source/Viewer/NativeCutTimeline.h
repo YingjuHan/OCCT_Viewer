@@ -36,6 +36,7 @@ public:
     void SetTraceForStep(int step, const std::string& cut, const ViewCaeGeom::MeshCutTraceOptions& display,
         const ViewCaeGeom::MeshCutTraceOptions& physical) { myTraceSteps[step][cut] = {display,physical}; }
 private:
+    friend class NativeCutSession;
     Handle(RWCae::MeshNVecProperty) resolve(const Handle(RWCae::MeshData)& mesh, const CutFieldBinding& binding) const;
     ViewCaeGeom::MeshCutFrame materialFrame(const CutMaterialFrame& binding, int step,
         const Handle(RWCae::MeshData)& mesh, const Handle(RWCae::MeshNVecProperty)& deformation, double effectiveScale) const;

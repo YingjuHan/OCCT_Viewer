@@ -42,6 +42,7 @@ public:
 private:
     friend class NativeCutTimeline;
     friend class NativeCutSession;
+    friend class NativeCutView;
     ViewCaeGeom::MeshCutPhysicsReport compute(const NativeCutAnalysisRequest& request) const;
     std::vector<Handle(AIS_Shape)> arrows(const NativeCutAnalysisRequest& request, const ViewCaeGeom::MeshCutPhysicsReport& report) const;
     void publish(const std::string& id, const NativeCutAnalysisRequest& request,
