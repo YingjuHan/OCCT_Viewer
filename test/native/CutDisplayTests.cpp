@@ -2,6 +2,7 @@
 #include <ViewCaeGeom/MeshCutFrame.h>
 #include <RWCae/MeshScalarProperty.h>
 #include <SelectMgr_Selection.hxx>
+#include <Image_SupportedFormats.hxx>
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
@@ -68,6 +69,18 @@ int main()
         for (int n = 0; n < 4; ++n) { scalar->SetValue(RWCae::MeshPropertyEntityInfo(n),7); }
         field->UpdateComponents(); view->Cuts().InvalidateFields(); view->Synchronize();
         require(view->ContourState() == ViewCae::MeshCutContourState::Constant,"Constant state");
+        auto fixed = view->ContourOptions(); fixed.Minimum = 0; fixed.Maximum = 20;
+        view->SetContourOptions(fixed); view->Synchronize();
+        const auto presentation = view->Presentations().front();
+        const auto properties = presentation->PropertyData();
+        const auto mapper = properties->ColorMapper(properties->Property(presentation->ActiveProperty()));
+        const auto texture = mapper->ColorTexture()->GetImage(new Image_SupportedFormats());
+        Quantity_Color expected; AIS_ColorScale::FindColor(7,0,20,(int)texture->SizeX(),expected);
+        const auto actual = texture->PixelColor(0,0).GetRGB();
+        require(std::abs(actual.Red()-expected.Red()) < 1.0/255 && std::abs(actual.Green()-expected.Green()) < 1.0/255
+            && std::abs(actual.Blue()-expected.Blue()) < 1.0/255,"Constant field color does not match fixed legend range");
+        double originalMin = 0, originalMax = 0; scalar->ValueRange().GetBounds(originalMin,originalMax);
+        closeTo(originalMin,7); closeTo(originalMax,7);
         view->Cuts().SetPlane("p",Graphic3d_Vec4d(1,0,0,-2)); view->Synchronize();
         require(view->ContourState() == ViewCae::MeshCutContourState::Empty,"Empty section state");
         view->SetField(nullptr); view->Synchronize(); require(view->ContourState() == ViewCae::MeshCutContourState::NoField,"No-field state");

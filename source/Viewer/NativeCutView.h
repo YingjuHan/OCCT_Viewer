@@ -58,6 +58,7 @@ public:
     const Handle(AIS_Shape)& CadSection() const { return myCadSection; }
     const Handle(Graphic3d_ClipPlane)& GlobalClip() const { return myGlobalClip; }
 private:
+    friend class NativeCutTimeline;
     bool attempt(const std::function<void()>& action);
     Handle(RWCae::MeshNVecProperty) resolveField(const CutFieldBinding& binding) const;
     void event(CutEditEvent value);

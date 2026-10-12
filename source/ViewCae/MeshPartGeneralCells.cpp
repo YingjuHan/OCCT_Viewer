@@ -80,7 +80,7 @@ void MeshPartGeneralCells::update(const Handle(MeshPresentation)& presentation)
     Handle(Image_PixMap) colors;
     double minimum = 0, maximum = 1;
     if (!mapper.IsNull()) {
-        mapper->ValuesRange().GetBounds(minimum, maximum);
+        field.GetScalarComp()->ValueRange().GetBounds(minimum, maximum);
         colors = mapper->ColorTexture()->GetImage(new Image_SupportedFormats());
     }
     decltype(myArrays) arrays;

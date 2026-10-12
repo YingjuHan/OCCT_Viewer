@@ -129,6 +129,8 @@ proc tools_run {} {
     tool_assert {[dict get [scvcutimagestats [file join $output tools.png]] colored] > 100} "Tools screenshot lacks field colors"
     tool_click .scvcuttools.cad.clear
     tool_click .scvcuttools.annotation.clear
+    tool_click .scvcuttools.time
+    CutViewTime::close
     tool_click .scvcuttools.close
     foreach widget $expected { tool_assert {$widget in $covered} "Untested tool $widget" }
     puts "CUT_VIEW_TOOLS_COVERAGE [llength $expected]/[llength $expected]"

@@ -19,7 +19,7 @@ not completed. Project/session persistence below maps to the native session API.
 
 Final VTK ON **58/58**, OFF **22/22**, every case three times (174 / 66 executions; 547.47 / 41.50 seconds). DRAW/Viewer-disabled import/reference tests **2/2** each pass three times (0.52 seconds).
 N01–N05 are closed at their documented native scopes. N05 final ON **61/61**, OFF **24/24**, headless **2/2**, each case three times; actual Tk inventory **48+36** controls. See
-[the N04 audit](cut-view-n04-audit.md); N05 is closed at [its native audit](cut-view-n05-audit.md); N06 is active and N07–N09 remain queued.
+[the N04 audit](cut-view-n04-audit.md); N05 is closed at [its native audit](cut-view-n05-audit.md); N06 is closed at [its native audit](cut-view-n06-audit.md); N07 is active and N08–N09 remain queued.
 Curved-family geometry/FE
 references, analytic precision fallback, high-order field isosurfaces, tensor/trace
 policies and actual presentation OR are included. N03 is verified at
@@ -203,7 +203,7 @@ Actual presentation OR has passed numerical, field/dimension and transparent
 acceptance and the full [N03 closure audit](cut-view-n03-audit.md).
 N04.1–N04.8 import/ordinary Viewer work is verified in
 [its acceptance queue](cut-view-n04-plan.md) and [closure audit](cut-view-n04-audit.md).
-N05-N09 remain queued; web/WASM work is excluded.
+N05–N06 are verified; N07 is active and N08–N09 remain queued; web/WASM work is excluded.
 First-order isosurfaces currently rebuild scalar-cut geometry when the threshold changes; they
 have not been accepted against the full-frame million-cell target. Supported high-order
 VTK chart cells use the bounded numerical isosurface contract recorded in N02.

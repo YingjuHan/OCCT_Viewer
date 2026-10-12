@@ -595,3 +595,8 @@ in [the import contract](../DOCUMENT/cut-view-import.md).
 
 N04.8 final native closure: Final VTK ON **58/58**, OFF **22/22**, every case three times (174 / 66 executions; 547.47 / 41.50 seconds). DRAW/Viewer-disabled import/reference tests **2/2** each pass three times (0.52 seconds).
 See [the audit](../DOCUMENT/cut-view-n04-audit.md) for current support boundaries and reproduction.
+
+N06: `cut_slicing`, `native_timeline` and `draw_cut_view_time` cover coordinated
+steps, remesh rejection, material frames, animation failure/abort and four slice
+distributions. The actual time panel has 20 controls; tools now has 37. See
+[the N06 audit](../DOCUMENT/cut-view-n06-audit.md).

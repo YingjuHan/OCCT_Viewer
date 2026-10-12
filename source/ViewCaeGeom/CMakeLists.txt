@@ -3,6 +3,7 @@ project (ViewCaeGeom)
 set (SRCFILES
   MeshCutViewManager.cpp
   MeshCutFrame.cpp
+  MeshCutSlicing.cpp
   MeshCutIntegration.cpp
   MeshCutRecovery.cpp
   MeshCutTensor.cpp
@@ -22,6 +23,7 @@ set (SRCFILES
 set (INCFILES
   MeshCutViewManager.h
   MeshCutFrame.h
+  MeshCutSlicing.h
   MeshCutIntegration.h
   MeshCutRecovery.h
   MeshCutTensor.h

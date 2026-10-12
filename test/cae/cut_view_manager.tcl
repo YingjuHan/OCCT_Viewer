@@ -62,6 +62,7 @@ namespace eval ::CutViewManager {
     variable timer ""
 }
 source [file join [file dirname [info script]] cut_view_tools.tcl]
+source [file join [file dirname [info script]] cut_view_time.tcl]
 
 proc ::CutViewManager::invoke {command args} {
     variable status
@@ -83,6 +84,7 @@ proc ::CutViewManager::refresh {{attach 0}} {
     set ids {}
     set busy 1
     try {
+        ::CutViewManager::refreshFields
         foreach cut $definitions {
             set id [dict get $cut id]
             lappend ids $id
@@ -430,6 +432,27 @@ proc ::CutViewManager::field {{selectionChanged 0}} {
     scvcutview $model field [dict get $field mapping] [dict get $field name] $component [dict get $field step]
 }
 
+proc ::CutViewManager::refreshFields {} {
+    variable model; variable w; variable fields; variable fieldLabels; variable fieldLabel; variable component
+    variable isoFieldLabel; variable recoveryFields; variable recoveryLabels
+    set current [scvcutview $model fields]
+    if {$current eq $fields} { return }
+    set fields $current; set fieldLabels [list "No Result"]; set fieldLabel "No Result"
+    set recoveryFields {}; set recoveryLabels [list "All regions" "Current regions"]
+    foreach field $fields {
+        set label "[dict get $field name] ([dict get $field mapping])"
+        if {[dict get $field step] >= 0} { append label " - step [dict get $field step]" }
+        lappend fieldLabels $label
+        if {[dict get $field active]} { set fieldLabel $label; set component [dict get $field component] }
+        if {[dict get $field mapping] eq "cell" && [dict get $field components] == 1} { lappend recoveryFields $field; lappend recoveryLabels $label }
+    }
+    $w.results.field configure -values $fieldLabels
+    $w.controls.isofield configure -values [lrange $fieldLabels 1 end]
+    if {$isoFieldLabel ni $fieldLabels} { set isoFieldLabel [lindex $fieldLabels 1] }
+    $w.recovery.region configure -values $recoveryLabels
+    if {[winfo exists .scvcuttools]} { ::CutViewTools::refreshVectors }
+}
+
 proc ::CutViewManager::recoveryRefresh {} {
     variable model; variable lastRecovery; variable recoveryThreshold; variable recoveryBefore; variable recoveryRegion
     variable tensorMeasure; variable tensorLayout; variable tensorShear
@@ -527,6 +550,7 @@ proc ::CutViewManager::load {} {
 }
 
 proc ::CutViewManager::close {} {
+    if {[winfo exists .scvcuttime]} { ::CutViewTime::close }
     variable w; variable model; variable selected; variable timer
     variable sliderSnapshot; set sliderSnapshot ""
     variable lastRecovery; set lastRecovery ""

@@ -42,7 +42,7 @@ N02 closure passed: [queue and evidence](cut-view-n02-plan.md),
 [bounded audit](cut-view-n02-audit.md). The [N03 queue](cut-view-n03-plan.md) is now
 verified at [the closure scope](cut-view-n03-audit.md); all earlier increments
 remain in the regression suite. [N04](cut-view-n04-plan.md) is closed at its
-documented native contract; N05 is closed at [its native audit](cut-view-n05-audit.md); N06 is active and N07–N09 remain queued.
+documented native contract; N05 is closed at [its native audit](cut-view-n05-audit.md); N06 is closed at [its native audit](cut-view-n06-audit.md); N07 is active and N08–N09 remain queued.
 
 | ID | Task | Depends On | Acceptance | Status |
 | --- | --- | --- | --- | --- |
@@ -384,12 +384,12 @@ the 48-concrete-cell matrix and transparent cloud comparisons. Source repair:
 `3a1fd44`; diagnostics/transparent gate: `eba2a37`. Logs and explicit support
 limits are recorded in [the N03 audit](cut-view-n03-audit.md).
 At that N03 milestone, N04 became active. Current N04 status is in
-[its queue](cut-view-n04-plan.md); N05 is closed at [its native audit](cut-view-n05-audit.md); N06 is active and N07–N09 remain queued. Full-frame
+[its queue](cut-view-n04-plan.md); N05 is closed at [its native audit](cut-view-n05-audit.md); N06 is closed at [its native audit](cut-view-n06-audit.md); N07 is active and N08–N09 remain queued. Full-frame
 performance, complete native sessions and excluded Web/WASM work remain open.
 
 ## N04 Closure
 
 
-N04.8 closure: Final VTK ON **58/58**, OFF **22/22**, every case three times (174 / 66 executions; 547.47 / 41.50 seconds). DRAW/Viewer-disabled import/reference tests **2/2** each pass three times (0.52 seconds). The final gate preserves 47/47 Tk controls, the 48-cell matrix, independent N02 geometry/FE references, N03 physical/display fields, actual OR, curved caps and transparency. Ordinary Viewer images and all six kernel peak-memory gates were reviewed. Static field-step repair: 76d845b; first failed ON log retained. All current documents reflect the native support contract; N05 is closed at [its native audit](cut-view-n05-audit.md); N06 is active and N07–N09 remain queued. See cut-view-n04-audit.md.
+N04.8 closure: Final VTK ON **58/58**, OFF **22/22**, every case three times (174 / 66 executions; 547.47 / 41.50 seconds). DRAW/Viewer-disabled import/reference tests **2/2** each pass three times (0.52 seconds). The final gate preserves 47/47 Tk controls, the 48-cell matrix, independent N02 geometry/FE references, N03 physical/display fields, actual OR, curved caps and transparency. Ordinary Viewer images and all six kernel peak-memory gates were reviewed. Static field-step repair: 76d845b; first failed ON log retained. All current documents reflect the native support contract; N05 is closed at [its native audit](cut-view-n05-audit.md); N06 is closed at [its native audit](cut-view-n06-audit.md); N07 is active and N08–N09 remain queued. See cut-view-n04-audit.md.
 
 N05 closure: ON **61/61**, OFF **24/24**, headless **2/2**, every case three times. Real main/tools inventory **48+36**, original-FE pointer picking, HUD legend/vector/annotation/CAD images verified. See cut-view-n05-audit.md. N06 is active.

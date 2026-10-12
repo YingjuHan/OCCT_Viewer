@@ -88,6 +88,21 @@ proc ::CutViewTools::clipping {} {
     } }
 }
 proc ::CutViewTools::picking {} { scvcutview $::CutViewTools::model pickmode $::CutViewTools::pick }
+proc ::CutViewTools::refreshVectors {} {
+    variable model; variable vector; variable vectorBindings; variable w
+    set previous {}
+    if {[info exists vectorBindings] && [dict exists $vectorBindings $vector]} { set previous [lrange [dict get $vectorBindings $vector] 0 1] }
+    set vectorBindings {}; set labels [list "No vectors"]; set vector "No vectors"
+    foreach field [scvcutview $model fields] {
+        if {[dict get $field kind] ne "vector" || [dict get $field components] != 4} { continue }
+        set binding [list [dict get $field mapping] [dict get $field name] [dict get $field step]]
+        set label "[dict get $field name] ([dict get $field mapping]) step [dict get $field step]"
+        dict set vectorBindings $label $binding; lappend labels $label
+        if {[lrange $binding 0 1] eq $previous} { set vector $label }
+    }
+    $w.vector.field configure -values $labels
+}
+
 proc scvcuttools {model} {
     set w $::CutViewTools::w
     if {[winfo exists $w]} { destroy $w }
@@ -120,16 +135,9 @@ proc scvcuttools {model} {
     ttk::checkbutton $w.contour.legend -text Legend -variable ::CutViewTools::legend -command {::CutViewTools::call contour}
     ttk::button $w.contour.apply -text Apply -command {::CutViewTools::call contour}
     pack $w.contour.auto $w.contour.minimum $w.contour.maximum $w.contour.intervals $w.contour.legend $w.contour.apply -side left -padx 3
-    set ::CutViewTools::vectorBindings {}
-    set vectorLabels [list "No vectors"]
-    foreach field [scvcutview $model fields] {
-        if {[dict get $field kind] ne "vector" || [dict get $field components] != 4} { continue }
-        set label "[dict get $field name] ([dict get $field mapping]) step [dict get $field step]"
-        dict set ::CutViewTools::vectorBindings $label [list [dict get $field mapping] [dict get $field name] [dict get $field step]]
-        lappend vectorLabels $label
-    }
     set ::CutViewTools::vector "No vectors"
-    ttk::combobox $w.vector.field -state readonly -values $vectorLabels -width 20 -textvariable ::CutViewTools::vector
+    ttk::combobox $w.vector.field -state readonly -width 20 -textvariable ::CutViewTools::vector
+    ::CutViewTools::refreshVectors
     bind $w.vector.field <<ComboboxSelected>> {::CutViewTools::call vectors}
     ttk::entry $w.vector.scale -width 6 -textvariable ::CutViewTools::scale
     ttk::entry $w.vector.sampling -width 6 -textvariable ::CutViewTools::sampling
@@ -153,6 +161,7 @@ proc scvcuttools {model} {
     ttk::button $w.cad.clear -text Clear -command {::CutViewTools::call cadclear}
     pack $w.cad.shape $w.cad.sync $w.cad.clip $w.cad.apply $w.cad.clear -side left -padx 3
     ttk::label $w.status -textvariable ::CutViewTools::status -wraplength 540
+    ttk::button $w.time -text "Time and slicing" -command [list scvcuttime $model]
     ttk::button $w.close -text Close -command [list destroy $w]
-    pack $w.status $w.close -fill x -padx 6 -pady 4
+    pack $w.status $w.time $w.close -fill x -padx 6 -pady 4
 }

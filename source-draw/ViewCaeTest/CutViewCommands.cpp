@@ -13,6 +13,8 @@
 #include <Draw.hxx>
 #include <Image_AlienPixMap.hxx>
 #include <Viewer/NativeCutView.h>
+#include <Viewer/NativeCutTimeline.h>
+#include <ViewCaeGeom/MeshCutSlicing.h>
 #include <DBRep.hxx>
 
 #include <cmath>
@@ -65,6 +67,7 @@ struct CutModel {
     Handle(RWCae::MeshData) Mesh;
     Handle(ViewCae::InteractiveCaeCutView) View;
     std::shared_ptr<Viewer::NativeCutView> Native;
+    std::shared_ptr<Viewer::NativeCutTimeline> Timeline;
     Handle(RWCae::MeshNVecProperty) Field;
     int Component = 0;
     Bnd_Box Bounds;
@@ -220,6 +223,7 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
                 throw std::runtime_error(model.ImportReport.errors.empty() ? "VTK import failed" : model.ImportReport.errors.front());
             }
             model.Native = std::make_shared<Viewer::NativeCutView>(model.Mesh);
+            model.Timeline = std::make_shared<Viewer::NativeCutTimeline>(*model.Native);
             model.View = model.Native->Display();
             for (RWCae::MeshEntityId n = 0; n < model.Mesh->NbNodes(); ++n) {
                 const auto& p = model.Mesh->Nodes()[n];
@@ -258,7 +262,74 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             for (double v : probe.Values) { di << v << " "; } di << "} nodes {";
             for (const auto& n : probe.SourceNodes) { di << "{" << (int)n.first << " " << n.second << "} "; } di << "}";
         };
-        if (action == "datum" && argc == 16) {
+        auto refreshStep = [&] {
+            const bool changed = model.View != model.Native->Display();
+            model.View = model.Native->Display(); model.Mesh = model.View->SourceMesh(); model.Field = model.View->Field();
+            model.Component = model.View->Component(); model.Bounds = model.View->Cuts().SourceBounds();
+            if (changed) { model.Plane.Nullify(); model.Quadric.Nullify(); model.Manipulator.Nullify(); model.EditedCut.clear(); }
+            const auto context = ViewerTest::GetAISContext();
+            if (!context.IsNull() && context->IsDisplayed(model.View)) {
+                ViewerTest::Display(name.c_str(),model.View,false);
+                context->UpdateCurrentViewer();
+            }
+        };
+        if (action == "timeinfo" && argc == 3) {
+            di << "step " << model.Timeline->Step() << " count " << (int)model.Timeline->StepCount() << " playing " << (int)model.Timeline->IsPlaying() << " times {";
+            for (const auto& step : model.Timeline->Source()->SeriesSteps()) { di << step.Time << " "; } di << "}"; return 0;
+        } else if (action == "step" && argc == 4) {
+            if (!model.Timeline->SwitchStep(cutInteger(argv[3]))) { throw std::invalid_argument(model.Native->LastError()); }
+            refreshStep(); return 0;
+        } else if (action == "timeddeform" && argc == 5) {
+            Viewer::CutFieldBinding binding; if (std::string(argv[3]) != "none") { binding = {argv[3],true,0,model.Timeline->Step()}; }
+            if (!model.Timeline->BindDeformation(binding,cutReal(argv[4]))) { throw std::invalid_argument(model.Native->LastError()); }
+            refreshStep(); return 0;
+        } else if (action == "materialframe" && argc >= 9 && (argc-5)%4 == 0) {
+            Viewer::CutMaterialFrame frame;
+            if (std::string(argv[4]) == "reference") { frame.Configuration = Viewer::CutFrameConfiguration::Reference; }
+            else if (std::string(argv[4]) == "updated") { frame.Configuration = Viewer::CutFrameConfiguration::Updated; }
+            else { throw std::invalid_argument("Material frame configuration must be reference/updated"); }
+            for (int i = 5; i < argc; i += 4) {
+                const int step = cutInteger(argv[i]); std::array<RWCae::MeshEntityId,3> nodes;
+                for (int n = 0; n < 3; ++n) { const int node = cutInteger(argv[i+1+n]); if (node < 0) { throw std::invalid_argument("Negative material anchor"); } nodes[n] = node; }
+                if (!frame.Anchors.emplace(step,nodes).second) { throw std::invalid_argument("Duplicate material anchor step"); }
+            }
+            ok = model.Timeline->SetMaterialFrame(argv[3],frame); if (!ok) { throw std::invalid_argument(model.Native->LastError()); }
+        } else if (action == "follow" && argc == 5) {
+            ok = model.Timeline->BindCutFrame(argv[3],argv[4]); if (!ok) { throw std::invalid_argument(model.Native->LastError()); }
+        } else if (action == "play" && argc == 7) {
+            const bool timestamps = cutBoolean(argv[6]);
+            ok = timestamps ? model.Timeline->PlayTime(cutReal(argv[3]),cutBoolean(argv[4]),cutBoolean(argv[5]))
+                : model.Timeline->Play(cutReal(argv[3]),cutBoolean(argv[4]),cutBoolean(argv[5]));
+            if (!ok) { throw std::invalid_argument(model.Native->LastError()); } refreshStep(); return 0;
+        } else if (action == "pause" && argc == 3) { model.Timeline->Pause(); return 0;
+        } else if (action == "tick" && argc == 4) {
+            if (!model.Timeline->Tick(cutReal(argv[3]))) { throw std::invalid_argument(model.Native->LastError()); }
+            refreshStep(); return 0;
+        } else if (action == "slicing" && argc >= 5) {
+            const auto definitions = cuts.Definitions();
+            const auto base = std::find_if(definitions.begin(),definitions.end(),[&](const auto& d) { return d.Id == argv[3]; });
+            if (base == definitions.end() || base->Shape != ViewCaeGeom::MeshCutShape::Plane) { throw std::invalid_argument("Slicing requires a selected plane"); }
+            auto definition = *base; definition.Id += "_"+std::string(argv[4])+"_"+std::to_string(model.Native->Generation());
+            std::vector<ViewCaeGeom::MeshCutSliceSample> samples; const std::string mode(argv[4]);
+            auto count = [&](const char* value) { const int n = cutInteger(value); if (n < 1 || n > 10000) { throw std::invalid_argument("Slice count outside 1..10000"); } return (size_t)n; };
+            if (mode == "regular" && argc == 8) { samples = ViewCaeGeom::MeshCutSlicing::Regular(definition,cutReal(argv[5]),cutReal(argv[6]),count(argv[7])); }
+            else if (mode == "range" && argc == 8) { samples = ViewCaeGeom::MeshCutSlicing::Range(definition,cutReal(argv[5]),cutReal(argv[6]),count(argv[7])); }
+            else if (mode == "rotational" && argc == 14) {
+                samples = ViewCaeGeom::MeshCutSlicing::Rotational(definition,Graphic3d_Vec3d(cutReal(argv[5]),cutReal(argv[6]),cutReal(argv[7])),
+                    Graphic3d_Vec3d(cutReal(argv[8]),cutReal(argv[9]),cutReal(argv[10])),cutReal(argv[11]),cutReal(argv[12]),count(argv[13]));
+            } else if (mode == "path" && argc >= 14 && (argc-8)%3 == 0) {
+                std::vector<Graphic3d_Vec3d> points; for (int i = 8; i < argc; i += 3) { points.emplace_back(cutReal(argv[i]),cutReal(argv[i+1]),cutReal(argv[i+2])); }
+                samples = ViewCaeGeom::MeshCutSlicing::Path(definition.Id,points,Graphic3d_Vec3d(cutReal(argv[5]),cutReal(argv[6]),cutReal(argv[7])));
+            } else { throw std::invalid_argument("Invalid slicing mode/parameters"); }
+            ViewCaeGeom::MeshCutViewManager staged(model.Mesh);
+            if (!staged.RestoreDefinitionsJson(cuts.DumpDefinitionsJson()) || !staged.SetDeformation(cuts.DeformationField(),cuts.DeformationScale())) { throw std::invalid_argument("Cannot stage slicing configuration"); }
+            for (const auto& sample : samples) {
+                if (!staged.AddPlane(sample.Definition.Id,sample.Definition.Plane)) { throw std::invalid_argument("Cannot stage slice definition"); }
+                staged.Evaluate(sample.Definition.Id,model.Field);
+            }
+            if (!cuts.RestoreDefinitionsJson(staged.DumpDefinitionsJson())) { throw std::invalid_argument("Cannot publish staged slicing definitions"); }
+            ok = true;
+        } else if (action == "datum" && argc == 16) {
             ViewCaeGeom::MeshCutFrame frame;
             for (int i = 0; i < 3; ++i) {
                 frame.Origin[i] = cutReal(argv[4+i]); frame.X[i] = cutReal(argv[7+i]);
@@ -926,6 +997,9 @@ void ViewCaeTest::CutViewCommands::Factory(Draw_Interpretor& di)
         "  | geometrymode [numerical/preferred/required]\n"
         "  | handle id 0/1 [gizmo0/1] | handleinfo | fit | field none\n"
         "  | datum name originX originY originZ Xx Xy Xz Yx Yy Yz Zx Zy Zz\n"
+        "  | timeinfo | step index | timeddeform name/none scale | play period/speed loop restart timestamps | pause | tick seconds\n"
+        "  | materialframe name reference/updated {step n0 n1 n2}... | follow cut datum\n"
+        "  | slicing plane regular/range start spacing/end count | rotational ax ay az ox oy oz start end count | path ux uy uz {x y z}...\n"
         "  | localmove id datum a b c d (plane) / cx cy cz ax ay az radius (quadric)\n"
         "  | axes datum/global show length | nativeinfo | pickmode 0/1/2\n"
         "  | cutstyle id/defaults portion [transparency width mode] | clearstyle id portion\n"

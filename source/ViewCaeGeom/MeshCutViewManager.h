@@ -162,6 +162,8 @@ public:
     //! Scale follows the existing model-size-normalized deformation convention.
     Standard_EXPORT bool SetDeformation(const Handle(RWCae::MeshNVecProperty)& theField, double theScale);
     Standard_EXPORT double EffectiveDeformationScale() const;
+    const Handle(RWCae::MeshNVecProperty)& DeformationField() const { return myDeformationField; }
+    double DeformationScale() const { return myDeformationScale; }
 
     //! Computes only enabled portions, sharing source mesh storage and cached BVHs.
     Standard_EXPORT MeshCutResult Evaluate(const std::string& theId,

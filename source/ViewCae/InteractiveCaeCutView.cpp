@@ -26,10 +26,32 @@ IMPLEMENT_STANDARD_RTTIEXT(ViewCae::MeshCutPickOwner, SelectMgr_EntityOwner)
 namespace {
 class CutRangeMapper : public ViewCae::MeshColorMapper {
 public:
-    explicit CutRangeMapper(double minimum, double maximum) : myRange(minimum,maximum) {}
+    explicit CutRangeMapper(double minimum, double maximum, int intervals) : myRange(minimum,maximum), myIntervals(intervals) {}
     Bnd_Range ValuesRange() const override { return myRange; }
+protected:
+    void updateColorTexture() override {
+        MeshColorMapper::updateColorTexture();
+        const auto image = myColorTexture->GetImage(new Image_SupportedFormats());
+        double sourceMin = 0, sourceMax = 1, targetMin = 0, targetMax = 1;
+        if (image.IsNull() || !MeshColorMapper::ValuesRange().GetBounds(sourceMin,sourceMax)
+            || !myRange.GetBounds(targetMin,targetMax)) { return; }
+        // Native arrays normalize UVs by the original field range. Re-map that
+        // texture domain to the common legend range without changing FE values.
+        for (size_t x = 0; x < image->SizeX(); ++x) {
+            const double t = (double)x/(image->SizeX()-1);
+            const double value = sourceMin*(1-t)+sourceMax*t;
+            Quantity_Color color;
+            // Keep the field cloud continuous; intervals control the legend's
+            // divisions, while the texture retains its full sampling resolution.
+            const int samples = std::max(myIntervals,(int)image->SizeX());
+            if (targetMax > targetMin) { AIS_ColorScale::FindColor(std::clamp(value,targetMin,targetMax),targetMin,targetMax,samples,color); }
+            else { AIS_ColorScale::FindColor(0.5,0,1,samples,color); }
+            image->SetPixelColor((int)x,0,Quantity_ColorRGBA(color));
+        }
+    }
 private:
     Bnd_Range myRange;
+    int myIntervals;
 };
 Handle(Graphic3d_ShaderProgram) cutLineShader()
 {
@@ -357,7 +379,7 @@ void InteractiveCaeCutView::Synchronize()
         const int aPropIndex = aProps->AddProperty(aResult.SourceField);
         if (!aResult.SourceField.IsNull()) {
             aProps->SetPropertyComponentIndex(component, aPropIndex);
-            Handle(MeshColorMapper) mapper = new CutRangeMapper(rangeMinimum,rangeMaximum);
+            Handle(MeshColorMapper) mapper = new CutRangeMapper(rangeMinimum,rangeMaximum,myContourOptions.Intervals);
             mapper->SetMeshProperty(aResult.SourceField,component);
             aProps->SetColorMapper(mapper,aProps->Property(aPropIndex));
         }
@@ -385,7 +407,7 @@ void InteractiveCaeCutView::Synchronize()
                 double minimum = 0, maximum = 1;
                 if (colored) {
                     const auto mapper = aProps->ColorMapper(aProps->Property(aPropIndex));
-                    mapper->ValuesRange().GetBounds(minimum,maximum);
+                    aResult.SourceField->GetRawComponent(component)->ValueRange().GetBounds(minimum,maximum);
                     colors = mapper->ColorTexture()->GetImage(new Image_SupportedFormats());
                 }
                 for (RWCae::MeshEntityId e = 0; e < points.NbElements(); ++e) {
@@ -427,7 +449,7 @@ void InteractiveCaeCutView::Synchronize()
             double aMin = 0.0, aMax = 1.0;
             if (hasField) {
                 auto aMapper = aProps->ColorMapper(aProps->Property(aPropIndex));
-                aMapper->ValuesRange().GetBounds(aMin, aMax);
+                aResult.SourceField->GetRawComponent(component)->ValueRange().GetBounds(aMin, aMax);
                 anAspect->SetTextureMap(aMapper->ColorTexture());
                 anAspect->SetTextureMapOn(true);
                 anAspect->SetShaderProgram(cutLineShader());
