@@ -525,3 +525,12 @@ ON `cut-n03-binding-focused.log`。已查看管理器与投影云图。
 下项 N03.3c：display/physical 独立选侧和原始积分；N03 整体仍未闭环。
 大量源码修改后主动执行 `index_repository(repo_path="D:/workspace/OpenCASCADE/OCCT_Viewer")`，
 coverage partial/unusable 的文件继续直接核对源码；不把索引自动刷新当作完整解析保证。
+
+## 18. N03.3c 独立选侧 API
+
+每 cut 的 `DisplayTrace` / `PhysicalTrace` 分别保存策略、int64 region ID 和
+assignments。`SetTraceOptions` 预验证隐藏 section，不可用/歧义策略原子拒绝。
+`EvaluatePhysical` 使用原始场和物理策略，不修改展示侧迹；`PhysicalLineField`
+提供独立线字段。Iso 选侧使用固定切割场的原始 FE 内部点值。
+ON 重点 **11/11 各三次**（5.20 秒）、OFF 完整 **11/11 各三次**（5.73 秒），
+日志 `cut-n03-selection-tests.log`。N03.3d 控件与 JSON migration 接着推进。

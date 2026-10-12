@@ -666,6 +666,22 @@ bool MeshCutViewManager::SetCellMode(const std::string& theId, MeshCutCellMode t
     return true;
 }
 
+bool MeshCutViewManager::SetTraceOptions(const std::string& id, bool physical, const MeshCutTraceOptions& options)
+{
+    auto entry = find(id);
+    if (!entry || !options.IsValid(myMesh->NbIndexedElems())) { return false; }
+    // Preflight only the proposed policy, including hidden sections, without
+    // changing the geometry's retained display selection.
+    const auto previous = entry->Definition;
+    entry->Definition.PhysicalTrace = options;
+    entry->Definition.Enabled = true; entry->Definition.Visibility |= 2;
+    try { evaluate(id,nullptr,false); }
+    catch (...) { entry->Definition = previous; return false; }
+    entry->Definition = previous;
+    (physical ? entry->Definition.PhysicalTrace : entry->Definition.DisplayTrace) = options;
+    ++entry->Revision; return true;
+}
+
 std::vector<MeshCutDefinition> MeshCutViewManager::Definitions() const
 {
     std::vector<MeshCutDefinition> aResult;
@@ -1085,6 +1101,41 @@ MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
                 anEntry->TraceRevision = anEntry->Revision;
             }
             aResult.Roots[1] = anEntry->TraceRoot; aResult.Portions[1] = anEntry->TraceSection;
+            const auto definition = anEntry->Definition;
+            const auto iso = definition.Shape == MeshCutShape::Isosurface ? isoValues(*anEntry) : Handle(RWCae::MeshScalarPropertyBase)();
+            MeshGeometryTraceSection::SignedValue signedValue = [definition,iso](const MeshCutPrimitiveTrace& trace) {
+                const auto p = trace.Interior;
+                if (definition.Shape == MeshCutShape::Plane) {
+                    return definition.Plane.x()*p.x()+definition.Plane.y()*p.y()+definition.Plane.z()*p.z()+definition.Plane.w();
+                }
+                if (definition.Shape == MeshCutShape::Isosurface) {
+                    double value = 0;
+                    for (const auto& w : trace.InteriorWeights.BaseNodes()) {
+                        if (w.second != 0) { value += w.second*iso->Value(RWCae::MeshPropertyEntityInfo(w.first)); }
+                    }
+                    return value-definition.IsoValue;
+                }
+                auto radius = p-definition.Center;
+                if (definition.Shape == MeshCutShape::Cylinder) { radius -= definition.Axis*radius.Dot(definition.Axis); }
+                return radius.Modulus()-definition.Radius;
+            };
+            double sideTolerance = myGeometryOptions.AbsoluteTolerance;
+            if (!iso.IsNull()) {
+                double low = 0, high = 0; iso->ValueRange().GetBounds(low,high);
+                sideTolerance = std::max(myIsoOptions.AbsoluteTolerance,myIsoOptions.RelativeTolerance*(high-low));
+            }
+            // Resolve physical options even with no field so invalid edits can
+            // be preflighted independently of contour binding.
+            anEntry->TraceSection->MapPhysical(nullptr,definition.PhysicalTrace,signedValue,sideTolerance);
+            anEntry->TraceSection->MapPhysical(nullptr,definition.PhysicalTrace,signedValue,sideTolerance,true);
+            if (display) { anEntry->TraceSection->SetDisplaySelection(definition.DisplayTrace,signedValue,sideTolerance); }
+            if (!theField.IsNull()) {
+                aResult.PhysicalFields[1] = anEntry->TraceSection->MapPhysical(theField,definition.PhysicalTrace,signedValue,sideTolerance);
+                aResult.PhysicalLineField = anEntry->TraceSection->MapPhysical(theField,definition.PhysicalTrace,signedValue,sideTolerance,true);
+                aResult.Fields[1] = display ? anEntry->TraceSection->CalculateProperty(aResult.SourceField) : aResult.PhysicalFields[1];
+                aResult.LineField = display ? anEntry->TraceSection->CalculateLineProperty(aResult.SourceField) : aResult.PhysicalLineField;
+            }
+            continue;
         }
         if (!aResult.SourceField.IsNull()) {
             aResult.Fields[i] = aResult.Portions[i]->CalculateProperty(aResult.SourceField);

@@ -23,6 +23,7 @@ set (INCFILES
   MeshCutRecovery.h
   MeshCutTensor.h
   MeshCutTrace.h
+  MeshCutTraceOptions.h
   MeshGeometryQuadric.h
   MeshBvhData.h
   MeshGeometry.h

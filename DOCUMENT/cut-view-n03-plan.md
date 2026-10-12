@@ -34,7 +34,7 @@ N03.3 is split into reviewable work items; see [the trace contract](cut-view-tra
 - N03.3b: bind both sources/weights to generated primitives, including the native
   fast slice path. Verified: ON 43/43, OFF 11/11 three times; focused ON 4/4 three times.
 - N03.3c: independent display/physical lowest/negative/positive/region policies
-  and original-field integrals. Queued after provenance binding.
+  and original-field integrals. Verified: native API and focused ON/OFF 11/11 three times.
 - N03.3d: native controls, exact region binding and atomic definition migration.
   Queued after the selection API.
 - N03.3e: full interface acceptance across line/surface/volume, deformation,

@@ -1,6 +1,8 @@
 #ifndef _MESHCUTTRACE_HEADERFILE
 #define _MESHCUTTRACE_HEADERFILE
 #include <ViewCaeGeom/MeshGeometrySlice.h>
+#include <ViewCaeGeom/MeshCutTraceOptions.h>
+#include <functional>
 #include <memory>
 #include <map>
 
@@ -12,6 +14,7 @@ struct MeshCutPrimitiveTrace {
     RWCae::MeshEntityId Element = 0;
     bool Ambiguous = false;
     Graphic3d_Vec3d Interior = Graphic3d_Vec3d(0);
+    MeshInterpolatedNode InteriorWeights;
     std::map<RWCae::MeshEntityId,MeshInterpolatedNode> Weights;
 };
 //! Cached topology and original-FE lookup for one source/deformation epoch.
@@ -38,6 +41,11 @@ public:
         const std::shared_ptr<MeshCutTraceSource>& topology);
     const std::vector<std::vector<MeshCutPrimitiveTrace>>& ElementTraces() const { return myElementTraces; }
     const std::vector<std::vector<MeshCutPrimitiveTrace>>& LineTraces() const { return myLineTraces; }
+    using SignedValue = std::function<double(const MeshCutPrimitiveTrace&)>;
+    Standard_EXPORT void SetDisplaySelection(const MeshCutTraceOptions& options,
+        SignedValue signedValue, double tolerance);
+    Standard_EXPORT Handle(RWCae::MeshNVecProperty) MapPhysical(const Handle(RWCae::MeshNVecProperty)& field,
+        const MeshCutTraceOptions& options, const SignedValue& signedValue, double tolerance, bool lines = false) const;
     Standard_EXPORT Handle(RWCae::MeshNVecProperty) CalculateProperty(
         const Handle(RWCae::MeshNVecProperty)& field, const MeshGeomElem* element = nullptr,
         const std::vector<RWCae::MeshEntityId>* nodes = nullptr) const override;
@@ -48,10 +56,16 @@ protected:
     void setToUpdate() override {}
 private:
     Handle(RWCae::MeshNVecProperty) mapTraces(const Handle(RWCae::MeshNVecProperty)& field, bool lines,
+        const MeshCutTraceOptions& options, const SignedValue& signedValue, double tolerance,
         const MeshGeomElem* element = nullptr, const std::vector<RWCae::MeshEntityId>* nodes = nullptr) const;
+    const MeshCutPrimitiveTrace& select(const std::vector<MeshCutPrimitiveTrace>& traces,
+        const MeshCutTraceOptions& options, const SignedValue& signedValue, double tolerance) const;
     Handle(RWCae::MeshData) myInput;
     Handle(MeshGeometry) mySource;
     std::vector<std::vector<MeshCutPrimitiveTrace>> myElementTraces, myLineTraces;
+    MeshCutTraceOptions myDisplayOptions;
+    SignedValue mySignedValue;
+    double mySideTolerance = 0;
 };
 }
 #endif

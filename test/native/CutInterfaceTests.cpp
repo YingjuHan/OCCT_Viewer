@@ -202,6 +202,13 @@ void adjacent(int type, double bend = 0, bool deformed = false, bool numerical =
         flux->UpdateComponents();
         near(MeshCutIntegration::HeatFlux(manager.EvaluatePhysical("interface",flux),{{0,0,0}}).HeatFlow,7,
             "Dual-source preparation changed original lowest-ID physical integration");
+        MeshCutTraceOptions trace; trace.Policy = MeshCutTracePolicy::Positive;
+        require(manager.SetTraceOptions("interface",true,trace),"General physical trace options rejected");
+        near(MeshCutIntegration::HeatFlux(manager.EvaluatePhysical("interface",flux),{{0,0,0}}).HeatFlow,9,
+            "General positive trace selected wrong source");
+        trace.Policy = MeshCutTracePolicy::Negative; manager.SetTraceOptions("interface",true,trace);
+        near(MeshCutIntegration::HeatFlux(manager.EvaluatePhysical("interface",flux),{{0,0,0}}).HeatFlow,7,
+            "General negative trace selected wrong source");
     }
     std::cout << "CUT_INTERFACE_SOURCE_PASS " << type << " bend " << bend << " deformed " << deformed
               << " numerical " << numerical << '\n';

@@ -75,6 +75,38 @@ checks generated source binding for hex/voxel/quadratic/Lagrange/polyhedron.
 Manager and projected-cloud images were inspected. Selection remains N03.3c;
 this binding and duplicate ownership do not constitute an OR union.
 
+## N03.3c Independent Selection API
+
+Each definition now has `DisplayTrace` and `PhysicalTrace`. `SetTraceOptions`
+preflights the requested policy on a materialized section, including a hidden
+section, and rejects unresolved or ambiguous choices without altering definitions
+or retained display selection. Lowest preserves legacy behavior. Negative and
+positive compare the deformed source interior to the cut; region must resolve
+exactly one side of a trusted interface. A non-interface single source is retained.
+Untrusted multiple-owner records reject explicit selection.
+
+Region assignments and the selected ID are signed int64. Display/physical
+assignment vectors are independent of recovery regions. Geometry retains display
+selection for subsequent renderer property calls; `EvaluatePhysical` explicitly
+maps original fields with physical options and never changes that display state.
+`PhysicalLineField` provides the independent shell-line mapping. Existing
+shell/beam integration and non-planar local-normal limitations still apply.
+
+Plane side follows its oriented normalized equation. Sphere/cylinder use signed
+radial distance. Iso side uses the fixed original cutting scalar (or its existing
+equal-weight nodal projection), evaluated with each cell's original-FE interior
+weights. Side values within the applicable absolute geometry/field tolerance are
+ambiguous. This interior-side rule does not certify an arbitrary nonlinear field
+as one-signed throughout an entire element.
+
+Acceptance: focused ON **11/11**, each three times, 5.20 seconds; OFF full
+**11/11**, each three times, 5.73 seconds. `cut-n03-selection-tests.log` in both
+builds covers all masks, reversed normals/iso fields, volume/surface/line traces,
+lowest/negative/positive/exact extreme int64 regions, independent original flux
+integrals, hex/voxel/quadratic/Lagrange/polyhedron positive/negative sources,
+sphere line-side selection and atomic invalid-region/non-manifold rejection.
+Native controls and versioned persistence are the next separate N03.3d item.
+
 ## Remaining N03.3 Work
 
 1. N03.3b is verified above. Nonmatching topology does not acquire a trusted pair.

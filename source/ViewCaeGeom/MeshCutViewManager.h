@@ -4,6 +4,7 @@
 #include <ViewCaeGeom/MeshGeometryClip.h>
 #include <ViewCaeGeom/MeshGeometrySlice.h>
 #include <ViewCaeGeom/MeshCutRecovery.h>
+#include <ViewCaeGeom/MeshCutTraceOptions.h>
 #include <Bnd_Box.hxx>
 
 #include <array>
@@ -69,6 +70,8 @@ struct MeshCutDefinition {
     unsigned Visibility = 2; //!< bits: negative=1, on=2, positive=4
     bool Enabled = true;
     MeshCutCellMode CellMode = MeshCutCellMode::Constant;
+    MeshCutTraceOptions DisplayTrace;
+    MeshCutTraceOptions PhysicalTrace;
     MeshCutShape Shape = MeshCutShape::Plane;
     std::string IsoFieldName;
     bool IsoFieldNodal = true;
@@ -92,6 +95,7 @@ struct MeshCutResult {
     std::array<Handle(RWCae::MeshNVecProperty), 3> PhysicalFields;
     Handle(RWCae::MeshNVecProperty) SourceField;
     Handle(RWCae::MeshNVecProperty) LineField;
+    Handle(RWCae::MeshNVecProperty) PhysicalLineField;
     //! OCCT measures of the cutting tool and source boundary (tessellated for general cells).
     std::array<double, 3> Volumes = {{0.0, 0.0, 0.0}};
     std::array<double, 3> Areas = {{0.0, 0.0, 0.0}};
@@ -142,6 +146,8 @@ public:
     Standard_EXPORT bool SetVisibility(const std::string& theId, unsigned theMask);
     Standard_EXPORT bool SetEnabled(const std::string& theId, bool theEnabled);
     Standard_EXPORT bool SetCellMode(const std::string& theId, MeshCutCellMode theMode);
+    Standard_EXPORT bool SetTraceOptions(const std::string& theId, bool thePhysical,
+        const MeshCutTraceOptions& theOptions);
     Standard_EXPORT std::vector<MeshCutDefinition> Definitions() const;
     Standard_EXPORT std::string DumpDefinitionsJson() const;
     //! Rejects invalid documents without changing current cuts.

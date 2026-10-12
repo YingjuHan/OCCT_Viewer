@@ -14,11 +14,18 @@
 #include <stdexcept>
 
 namespace ViewCaeGeom {
+bool MeshCutTraceOptions::IsValid(size_t elements) const
+{
+    return Policy >= MeshCutTracePolicy::Lowest && Policy <= MeshCutTracePolicy::Region
+        && (Regions.empty() || Regions.size() == elements)
+        && (Policy != MeshCutTracePolicy::Region || Regions.size() == elements);
+}
 struct MeshCutTraceSource::Data {
     struct Boundary { std::vector<RWCae::MeshEntityId> Nodes; std::vector<RWCae::MeshEntityId> Owners; bool Trusted = false; };
     struct Cell {
         int Dimension = 0;
         Graphic3d_Vec3d Interior = Graphic3d_Vec3d(0);
+        MeshInterpolatedNode InteriorWeights;
         std::vector<size_t> Boundaries;
 #ifdef OCCTV_USE_VTK
         std::unique_ptr<MeshVtkCell> Owned;
@@ -54,6 +61,7 @@ MeshCutTraceSource::MeshCutTraceSource(const Handle(RWCae::MeshData)& mesh,
             cell.Owned.reset(new MeshVtkCell(mesh,e,source.get(),tolerance,options,0,false)); cell.Geometry = cell.Owned.get();
         }
         cell.Dimension = cell.Geometry->Dimension(); cell.Interior = cell.Geometry->InteriorPoint();
+        cell.InteriorWeights = cell.Geometry->Origin(cell.Interior);
         boundaries = cell.Geometry->BoundaryNodes();
 #else
         const auto& indexed = mesh->IndexedElements()[e];
@@ -61,6 +69,7 @@ MeshCutTraceSource::MeshCutTraceSource(const Handle(RWCae::MeshData)& mesh,
         std::vector<RWCae::MeshEntityId> nodes; mesh->ElementNodes(e,nodes);
         for (auto n : nodes) { auto p = mesh->Nodes()[n]; source->ModifyNode(n,p); cell.Interior += Graphic3d_Vec3d(p); }
         if (!nodes.empty()) { cell.Interior /= (double)nodes.size(); }
+        for (auto n : nodes) { cell.InteriorWeights.AddBaseNode(n,1.0/nodes.size()); }
         cell.Dimension = indexed.Type == RWCae::MeshElemType::Elem0d ? 0 : (int)indexed.Type >= RWCae::MeshElem3dLowerType ? 3 : 2;
         if (cell.Dimension == 3) {
             RWCae::MeshAdaptorsIterator3dElems::Switch(indexed.Type,[&](const auto& adaptor) {
@@ -134,6 +143,7 @@ std::vector<MeshCutPrimitiveTrace> MeshCutTraceSource::Traces(RWCae::MeshEntityI
     const auto& data = *myData; const auto& cell = data.Cells.at(element);
     if (weights.size() != positions.size()) { throw std::invalid_argument("Trace sample size mismatch"); }
     std::vector<MeshCutPrimitiveTrace> result(1); result[0].Element = element; result[0].Interior = cell.Interior;
+    result[0].InteriorWeights = cell.InteriorWeights;
     for (size_t n = 0; n < weights.size(); ++n) { result[0].Weights.emplace((RWCae::MeshEntityId)n,weights[n]); }
     std::set<RWCae::MeshEntityId> support;
     for (const auto& weight : weights) {
@@ -146,6 +156,7 @@ std::vector<MeshCutPrimitiveTrace> MeshCutTraceSource::Traces(RWCae::MeshEntityI
         if (!boundary.Trusted) { result[0].Ambiguous = true; continue; }
         const auto neighbor = boundary.Owners[boundary.Owners[0] == element ? 1 : 0];
         MeshCutPrimitiveTrace other; other.Element = neighbor; other.Interior = data.Cells[neighbor].Interior;
+        other.InteriorWeights = data.Cells[neighbor].InteriorWeights;
         for (size_t n = 0; n < weights.size(); ++n) {
 #ifdef OCCTV_USE_VTK
             other.Weights.emplace((RWCae::MeshEntityId)n,data.Cells[neighbor].Geometry->Origin(positions[n]));
@@ -240,7 +251,8 @@ void MeshGeometryTraceSection::Refresh(const Handle(MeshGeometrySlice)& section,
 }
 
 Handle(RWCae::MeshNVecProperty) MeshGeometryTraceSection::mapTraces(
-    const Handle(RWCae::MeshNVecProperty)& field, bool lines, const MeshGeomElem* element,
+    const Handle(RWCae::MeshNVecProperty)& field, bool lines, const MeshCutTraceOptions& options,
+    const SignedValue& signedValue, double tolerance, const MeshGeomElem* element,
     const std::vector<RWCae::MeshEntityId>* nodes) const
 {
     if (field.IsNull() || (lines && myLineTraces.empty()) || myMeshData->NbNodes() == 0) { return nullptr; }
@@ -272,13 +284,13 @@ Handle(RWCae::MeshNVecProperty) MeshGeometryTraceSection::mapTraces(
         if (field->IsNodal()) {
             for (int n = 0; n < count; ++n) {
                 const auto sourceNode = nodes ? nodes->at(n) : (RWCae::MeshEntityId)n;
-                to->SetValue(RWCae::MeshPropertyEntityInfo(n),value({},myNodesMap.Find(sourceNode).second));
+                to->SetValue(RWCae::MeshPropertyEntityInfo(n),value(MeshCutPrimitiveTrace(),myNodesMap.Find(sourceNode).second));
             }
         }
         auto apply = [&](const auto& traces) {
             for (size_t e = 0; e < traces.size(); ++e) {
                 if (element && !field->IsNodal() && e != selected) { continue; }
-                const auto& trace = traces[e].front();
+                const auto& trace = select(traces[e],options,signedValue,tolerance);
                 for (const auto& sample : trace.Weights) {
                     RWCae::MeshEntityId target = sample.first;
                     if (field->IsNodal() && nodes) {
@@ -300,10 +312,50 @@ Handle(RWCae::MeshNVecProperty) MeshGeometryTraceSection::mapTraces(
 Handle(RWCae::MeshNVecProperty) MeshGeometryTraceSection::CalculateProperty(
     const Handle(RWCae::MeshNVecProperty)& field, const MeshGeomElem* element, const std::vector<RWCae::MeshEntityId>* nodes) const
 {
-    return mapTraces(field,false,element,nodes);
+    return mapTraces(field,false,myDisplayOptions,mySignedValue,mySideTolerance,element,nodes);
 }
 Handle(RWCae::MeshNVecProperty) MeshGeometryTraceSection::CalculateLineProperty(const Handle(RWCae::MeshNVecProperty)& field) const
 {
-    return mapTraces(field,true);
+    return mapTraces(field,true,myDisplayOptions,mySignedValue,mySideTolerance);
+}
+
+const MeshCutPrimitiveTrace& MeshGeometryTraceSection::select(const std::vector<MeshCutPrimitiveTrace>& traces,
+    const MeshCutTraceOptions& options, const SignedValue& signedValue, double tolerance) const
+{
+    if (traces.empty()) { throw std::invalid_argument("Section primitive has no trace"); }
+    if (options.Policy == MeshCutTracePolicy::Lowest) { return traces.front(); }
+    for (const auto& trace : traces) {
+        if (trace.Ambiguous) { throw std::invalid_argument("Trace selection requires a trusted two-sided interface"); }
+    }
+    if (traces.size() == 1) { return traces.front(); }
+    const MeshCutPrimitiveTrace* chosen = nullptr;
+    for (const auto& trace : traces) {
+        bool matches = false;
+        if (options.Policy == MeshCutTracePolicy::Region) { matches = options.Regions.at(trace.Element) == options.Region; }
+        else {
+            const double value = signedValue(trace);
+            if (!std::isfinite(value) || std::abs(value) <= tolerance) { throw std::invalid_argument("Interface side is ambiguous at the source interior"); }
+            matches = options.Policy == MeshCutTracePolicy::Negative ? value < 0 : value > 0;
+        }
+        if (matches) {
+            if (chosen) { throw std::invalid_argument("Trace policy matches more than one interface source"); }
+            chosen = &trace;
+        }
+    }
+    if (!chosen) { throw std::invalid_argument("Trace policy matches no interface source"); }
+    return *chosen;
+}
+void MeshGeometryTraceSection::SetDisplaySelection(const MeshCutTraceOptions& options,
+    SignedValue signedValue, double tolerance)
+{
+    for (const auto& traces : myElementTraces) { select(traces,options,signedValue,tolerance); }
+    for (const auto& traces : myLineTraces) { select(traces,options,signedValue,tolerance); }
+    myDisplayOptions = options; mySignedValue = std::move(signedValue); mySideTolerance = tolerance;
+}
+Handle(RWCae::MeshNVecProperty) MeshGeometryTraceSection::MapPhysical(const Handle(RWCae::MeshNVecProperty)& field,
+    const MeshCutTraceOptions& options, const SignedValue& signedValue, double tolerance, bool lines) const
+{
+    for (const auto& traces : lines ? myLineTraces : myElementTraces) { select(traces,options,signedValue,tolerance); }
+    return mapTraces(field,lines,options,signedValue,tolerance);
 }
 }

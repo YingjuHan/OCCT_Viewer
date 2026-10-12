@@ -5,6 +5,7 @@
 #include <RWCae/MeshNodeVecProperty.h>
 #include <cmath>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 #ifdef near
 #undef near
@@ -101,6 +102,68 @@ void verify(bool surface, bool connected, bool deformed)
     manager.Clear(); // Existing numerical result must retain source/root lifetime.
     require(!(surface ? moved.LineField : moved.PhysicalFields[1]).IsNull(),"Clear lost mapped field");
 }
+template<class F> void rejects(F operation, const char* message)
+{
+    try { operation(); } catch (const std::invalid_argument&) { return; } throw std::runtime_error(message);
+}
+void selections(bool surface, bool iso, bool reversed)
+{
+    const auto source = mesh(surface,true); const auto values = field(source); MeshCutViewManager manager(source);
+    if (iso) {
+        Handle(RWCae::MeshNVecProperty) cutting = new RWCae::MeshNVecProperty("cutting",1,RWCae::MeshPropertyBase::MappingType::Nodal);
+        cutting->Init<RWCae::MeshScalarProperty>(); auto scalar = Handle(RWCae::MeshScalarProperty)::DownCast(cutting->GetComponent(0)); scalar->Init(source->NbNodes());
+        for (RWCae::MeshEntityId n = 0; n < source->NbNodes(); ++n) { scalar->SetValue(RWCae::MeshPropertyEntityInfo(n),(reversed ? -1 : 1)*source->Nodes()[n].x()); }
+        cutting->UpdateComponents(); require(manager.AddIsosurface("cut",cutting,0,0),"Iso interface rejected");
+    } else { manager.AddPlane("cut",Graphic3d_Vec4d(reversed ? -1 : 1,0,0,0)); }
+    MeshCutTraceOptions display, physical;
+    for (auto policy : {MeshCutTracePolicy::Lowest,MeshCutTracePolicy::Negative,MeshCutTracePolicy::Positive,MeshCutTracePolicy::Region}) {
+        physical.Policy = policy; physical.Regions = {std::numeric_limits<int64_t>::min(),std::numeric_limits<int64_t>::max()}; physical.Region = physical.Regions[1];
+        require(manager.SetTraceOptions("cut",true,physical),"Physical policy rejected");
+        display.Policy = policy == MeshCutTracePolicy::Positive ? MeshCutTracePolicy::Negative : MeshCutTracePolicy::Positive;
+        require(manager.SetTraceOptions("cut",false,display),"Display policy rejected");
+        const int physicalOwner = policy == MeshCutTracePolicy::Lowest ? 0 : policy == MeshCutTracePolicy::Region ? 1
+            : policy == MeshCutTracePolicy::Positive ? (reversed ? 0 : 1) : (reversed ? 1 : 0);
+        const int displayOwner = display.Policy == MeshCutTracePolicy::Positive ? (reversed ? 0 : 1) : (reversed ? 1 : 0);
+        for (unsigned mask = 0; mask < 8; ++mask) {
+            manager.SetVisibility("cut",mask); const auto cut = manager.Evaluate("cut",values); if (!(mask&2)) { continue; }
+            auto traced = Handle(MeshGeometryTraceSection)::DownCast(cut.Portions[1]);
+            const auto shown = surface ? cut.LineField : cut.Fields[1], raw = surface ? cut.PhysicalLineField : cut.PhysicalFields[1];
+            const auto& traces = surface ? traced->LineTraces() : traced->ElementTraces();
+            for (size_t e = 0; e < traces.size(); ++e) {
+                for (const auto& sample : traces[e][0].Weights) {
+                    const auto p = traced->GetMeshData()->Nodes()[sample.first];
+                    near(shown->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(e,sample.first)),100*displayOwner+p.y()+2*p.z(),"Display policy mapped wrong source");
+                    near(raw->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(e,sample.first)),100*physicalOwner+p.y()+2*p.z(),"Physical policy mapped wrong source");
+                }
+            }
+            const auto original = manager.EvaluatePhysical("cut",values);
+            require(!original.DisplayRecovered,"Physical evaluation acquired recovery");
+            const auto after = surface ? traced->CalculateLineProperty(values) : traced->CalculateProperty(values);
+            const auto n = traces[0][0].Weights.begin()->first;
+            near(after->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(0,n)),shown->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(0,n)),"Physical evaluation mutated display selection");
+            if (!surface && !iso) {
+                const auto integral = MeshCutIntegration::HeatFlux(cut,{0,0,0});
+                near(integral.HeatFlow,(reversed ? -1 : 1)*(50*physicalOwner+0.5),"Physical integral policy or orientation changed");
+            }
+        }
+    }
+    const auto before = manager.Definitions()[0].PhysicalTrace;
+    physical.Regions = {1}; require(!manager.SetTraceOptions("cut",true,physical),"Wrong region count accepted");
+    require(manager.Definitions()[0].PhysicalTrace.Regions == before.Regions,"Invalid policy changed definition");
+    physical.Policy = (MeshCutTracePolicy)9; require(!manager.SetTraceOptions("cut",true,physical),"Invalid policy enum accepted");
+    physical = before; physical.Regions = {5,5}; physical.Region = 5;
+    require(!manager.SetTraceOptions("cut",true,physical),"Ambiguous region source accepted");
+    physical.Region = 6;
+    require(!manager.SetTraceOptions("cut",true,physical),"Unavailable region source accepted");
+    require(manager.Definitions()[0].PhysicalTrace.Regions == before.Regions,"Rejected region changed binding");
+}
+void ambiguous()
+{
+    auto source = mesh(false,true); const RWCae::MeshEntityId same[] = {0,1,2,3}; source->AddElement(RWCae::MeshElementTetrahedron(same));
+    MeshCutViewManager manager(source); manager.AddPlane("cut",Graphic3d_Vec4d(1,0,0,0)); manager.Evaluate("cut",field(source));
+    MeshCutTraceOptions options; options.Policy = MeshCutTracePolicy::Negative;
+    require(!manager.SetTraceOptions("cut",false,options),"Non-manifold trace selection accepted");
+}
 #ifdef OCCTV_USE_VTK
 void lines()
 {
@@ -110,6 +173,14 @@ void lines()
     MeshCutViewManager manager(source); manager.AddPlane("cut",Graphic3d_Vec4d(1,0,0,0));
     auto cut = manager.Evaluate("cut",field(source)); auto traced = Handle(MeshGeometryTraceSection)::DownCast(cut.Portions[1]);
     require(traced->ElementTraces().size() == 1 && traced->ElementTraces()[0].size() == 2,"Shared line endpoint lacks two traces");
+    MeshCutTraceOptions options; options.Policy = MeshCutTracePolicy::Positive;
+    manager.SetTraceOptions("cut",true,options);
+    auto positive = manager.EvaluatePhysical("cut",field(source));
+    const auto node = traced->ElementTraces()[0][0].Weights.begin()->first;
+    near(positive.PhysicalFields[1]->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(0,node)),100,"Line positive source");
+    manager.AddSphere("sphere",Graphic3d_Vec3d(-1,0,0),1); manager.SetTraceOptions("sphere",true,options);
+    auto sphere = manager.EvaluatePhysical("sphere",field(source));
+    near(sphere.PhysicalFields[1]->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(0,0)),100,"Sphere signed side");
 }
 #endif
 }
@@ -117,6 +188,8 @@ int main()
 {
     try {
         for (bool surface : {false,true}) { for (bool connected : {false,true}) { for (bool deformed : {false,true}) { verify(surface,connected,deformed); } } }
+        for (bool surface : {false,true}) { for (bool iso : {false,true}) { for (bool reversed : {false,true}) { selections(surface,iso,reversed); } } }
+        ambiguous();
 #ifdef OCCTV_USE_VTK
         lines();
 #endif
