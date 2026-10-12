@@ -274,6 +274,12 @@ but coincident shared interfaces still use existing deterministic ownership.
 Trace selection must preserve discontinuous CellData and explicit material-side
 semantics rather than reuse a smoothed display field.
 
+The N03.3a prepared VTK source now retains reciprocal trusted face references
+and can evaluate both original-FE weight sets at the same interface point;
+see [the trace scope](cut-view-traces.md). This source prerequisite does not yet
+bind both records to generated section primitives or implement trace selection.
+The VTK-disabled fast slice still needs its own topology/provenance integration.
+
 Numerical `Evaluate(id)` results remain independent. A separate presentation union
 uses source-cell provenance and OCCT boundary operations for the OR of visible
 side portions, followed by deterministic section/cap ownership. Do not globally

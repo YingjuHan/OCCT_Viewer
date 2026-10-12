@@ -10,6 +10,10 @@
 #include <BRep_Builder.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopoDS.hxx>
+#include <GeomAPI_ProjectPointOnSurf.hxx>
+#include <vtkNew.h>
+#include <vtkPoints.h>
+#include <vtkTriangle.h>
 #include <algorithm>
 #include <cmath>
 #include <map>
@@ -188,6 +192,8 @@ void MeshVtkCutSource::Prepare(const Handle(RWCae::MeshData)& mesh, MeshGeometry
         }
         if (!opposite) { ++unmerged; continue; }
         af.Internal = bf.Internal = true; af.Owner = bf.Owner = std::min(owners[0].first,owners[1].first);
+        af.NeighborElement = owners[1].first; af.NeighborFace = owners[1].second;
+        bf.NeighborElement = owners[0].first; bf.NeighborFace = owners[0].second;
     }
     if (boxes->Size()) { boxes->Build(); }
     myCells = std::move(cells); myBoxes = boxes; myBounds = bounds; myTolerance = tolerance; myReady = true;
@@ -202,6 +208,48 @@ void MeshVtkCutSource::Prepare(const Handle(RWCae::MeshData)& mesh, MeshGeometry
         Work.AnalyticCells += analytic ? 1 : 0;
         Work.AnalyticResidual = std::max(Work.AnalyticResidual,cell.Geometry->AnalyticResidual);
     }
+}
+
+std::array<MeshVtkCutSource::InterfaceTrace,2> MeshVtkCutSource::InterfaceTraces(
+    RWCae::MeshEntityId element, size_t faceIndex, const Graphic3d_Vec3d& position) const
+{
+    if (!myReady) { throw std::logic_error("Interface traces require a prepared source"); }
+    for (int a = 0; a < 3; ++a) {
+        if (!std::isfinite(position[a])) { throw std::invalid_argument("Interface point must be finite"); }
+    }
+    const auto& cell = myCells.at(element);
+    const auto& face = cell.Faces.at(faceIndex);
+    if (!face.Internal) { throw std::invalid_argument("Interface traces require verified two-sided topology"); }
+    const auto& neighbor = myCells.at(face.NeighborElement);
+    const auto& reciprocal = neighbor.Faces.at(face.NeighborFace);
+    if (!reciprocal.Internal || reciprocal.NeighborElement != element || reciprocal.NeighborFace != faceIndex) {
+        throw std::logic_error("Interface topology is not reciprocal");
+    }
+    const auto& topology = cell.Geometry->Faces.at(faceIndex);
+    const double tolerance = std::max(1e-7,myTolerance*2);
+    bool onFace = false;
+    if (!topology.Surface.IsNull()) {
+        GeomAPI_ProjectPointOnSurf projection(point(position),topology.Surface,0,1,0,1);
+        onFace = projection.NbPoints() && projection.LowerDistance() <= tolerance;
+    } else {
+        vtkNew<vtkTriangle> triangle;
+        const double p[] = {position.x(),position.y(),position.z()};
+        for (size_t t = topology.FirstTriangle; !onFace && t < topology.FirstTriangle+topology.NbTriangles; ++t) {
+            for (int n = 0; n < 3; ++n) {
+                const auto& q = cell.Geometry->Triangles[t][n]; triangle->GetPoints()->SetPoint(n,q.x(),q.y(),q.z());
+            }
+            double closest[3], parametric[3], distance, weights[3]; int sub = 0;
+            const int valid = triangle->EvaluatePosition(p,closest,sub,parametric,distance,weights);
+            onFace = valid >= 0 && std::isfinite(distance) && distance <= tolerance*tolerance;
+        }
+    }
+    if (!onFace) { throw std::invalid_argument("Point is outside the prepared interface face"); }
+    std::array<InterfaceTrace,2> result = {{
+        {element,faceIndex,cell.Geometry->InteriorPoint(),cell.Geometry->Origin(position)},
+        {face.NeighborElement,face.NeighborFace,neighbor.Geometry->InteriorPoint(),neighbor.Geometry->Origin(position)}
+    }};
+    if (result[0].Element > result[1].Element) { std::swap(result[0],result[1]); }
+    return result;
 }
 
 std::vector<RWCae::MeshEntityId> MeshVtkCutSource::Query(const MeshCutDefinition& cut, MeshCutPortion portion, bool sourceOnly)

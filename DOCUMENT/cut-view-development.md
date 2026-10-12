@@ -17,7 +17,7 @@
 Current execution is native only: Web/Vue/TypeScript and WASM tasks are excluded,
 not completed. Project/session persistence below maps to the native session API.
 
-Current Windows acceptance: VTK-enabled **41/41** and VTK-disabled **10/10**, each case
+Current Windows acceptance: VTK-enabled **42/42** and VTK-disabled **10/10**, each case
 passing three consecutive runs. Curved-family geometry/FE references, analytic
 precision fallback, high-order field isosurfaces and recovery robustness are included.
 N02 is verified at its documented bounded scope;
@@ -80,6 +80,9 @@ for SDK paths, logs, missing historical external fixtures and remaining work.
 - [x] N03.2 symmetric tensor Mises/pressure/principal/Tresca measures, explicit six/nine
   layouts and shear conventions, recovery order and original physical evaluation.
   See [the tensor display contract](cut-view-tensors.md).
+- [x] N03.3a VTK prepared-source reciprocal volume-face adjacency and two original-FE
+  traces, including curved/deformed source checks and independent element-node jumps.
+  See [the trace foundation and remaining selection work](cut-view-traces.md).
 - [ ] N03 physical interface traces and OR boundary/cap merging; complete native
   session persistence remains N09.
 

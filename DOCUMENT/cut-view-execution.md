@@ -346,3 +346,19 @@ recovery/derivation, including invalid unrelated display layouts. Full VTK ON
 123 / 30 successful executions). The full ON gate covers both late batch Tk
 initialization and interactive Tk with the portable `pack` layout. N03.3 physical
 traces is next.
+
+## N03.3a Prepared Interface Sources
+
+The prepared VTK source retains reciprocal trusted volume-face references and
+returns two independent original-FE weight sets at a shared point. Independent
+affine/quadratic and element-node references, deformation, curved analytic and
+numerical faces, ambiguous/disconnected rejection, all masks and unchanged
+default physical integration pass; see [the bounded scope](cut-view-traces.md).
+Full ON **42/42** and OFF **10/10**, each three times (126 / 30 successful
+executions; 444.71 / 4.70 seconds), are recorded in `cut-n03-interface-tests.log`
+in the respective builds. The UI remains **39/39**.
+
+N03.3 remains partial. N03.3b binds both sources to generated primitives and
+the native fast slice; N03.3c adds independent selection/integrals, N03.3d adds
+controls/migration, and N03.3e completes interface acceptance. Presentation OR
+union/cap ownership remains N03.4.

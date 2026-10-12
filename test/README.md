@@ -500,3 +500,14 @@ The manager inventories **39/39** controls. The control test captures
 Final ON 41/41 and OFF 10/10 pass each case three times; logs are
 `cut-n03-tensor-tests.log`. Standard VTK tensor fixtures use nine components.
 Definitions v6 persist conventions; complete native sessions remain separate.
+
+## Prepared interface source acceptance
+
+VTK-enabled `cut_interface` verifies reciprocal trusted volume-face adjacency
+and both original-FE traces; see [the scope](../DOCUMENT/cut-view-traces.md).
+It covers affine/quadratic references, element-node jumps, deformed/curved
+interfaces, ambiguous/disconnected rejection, all masks and unchanged default
+physical integration. These records are a prerequisite for N03.3 selection;
+negative/positive/region policies and fast native slice binding remain pending.
+Full ON 42/42 and OFF 10/10 pass each case three times; stage logs are
+`cut-n03-interface-tests.log` (444.71 / 4.70 seconds).

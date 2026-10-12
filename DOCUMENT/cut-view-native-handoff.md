@@ -2,8 +2,9 @@
 
 ## 1. 接续范围与当前停点
 
-用户已在 Windows 工作区发出继续开发指令。N02 四项已按文档范围闭环并提交，N03.1 恢复控件/定义持久化已验收，N03.2 张量已验收，下一步 N03.3 physical traces；
-已有恢复数值/元数据保留并回归。最新接续证据在第 15 节，旧停点保留为历史。
+用户已在 Windows 工作区发出继续开发指令。N02 四项已按文档范围闭环并提交，N03.1 恢复控件/定义持久化、N03.2 张量和 N03.3a 双侧来源基础已验收。
+下一步 N03.3b 生成图元来源绑定；已有恢复数值/元数据保留并回归。
+最新接续证据在第 16 节，旧停点保留为历史。
 后文的 Linux 验证记录保留为历史证据；
 本次 Windows 配置与结果以本节及第 6 节的接续记录为准。
 
@@ -11,6 +12,7 @@
 - 目标：完成原生 Cut View Manager 的 N02-N09 及对应 TODO，实施、修复并通过 native/DRAW 验收。
 - 排除：Web/Vue/TypeScript、浏览器测试、WASM SDK 与打包。排除项不是 done。
 - 上轮增量 `d02dd2e`、N02.1/N02.2 `7c925f2`、N02.3 `f975b86` 已提交；
+  N02.4 `7910a48`、N03.1 `2caeb2f`、N03.2 `17f421c` 已提交；
   N02 已按文档范围闭环，N03 为 partial，N04-N09 尚未实施。
 - 每个验收工作项单独提交；保留用户既有修改及 `AGENTS.md`。
 
@@ -489,3 +491,25 @@ physical traces、N03.4 OR union/cap ownership、N03.5 闭环。N03 整体仍 pa
 N03 仍 partial；后续 N03.3 trace selection、N03.4 真正 OR union/cap ownership、
 N03.5 闭环审计。不要把展示 scalar reconstruction 或 trace/cap 去重称为一般
 非线性 FE invariant 或 OR union 已完成。
+
+## 16. N03.3a 双侧来源基础
+
+- `MeshVtkCutSource` 可信共享体单元面保存 reciprocal element/face IDs，
+  `InterfaceTraces` 返回两侧各自原始 FE 权重和变形后的 interior points。
+  返回顺序按原始 element ID 稳定；默认显示/积分仍使用最低 ID。
+- `cut_interface` 用独立 affine/quadratic 参考验证 element-node 值跳变、
+  曲面 analytic/numerical 路径和 deformation；断开、同侧重叠、三来源
+  歧义界面拒绝，所有 masks 和原始 physical 积分保持原有契约。
+- 定向测试连续三次通过（1.89 秒）。完整 ON **42/42**、OFF **10/10**，
+  各项三次，实际 126 / 30 次成功，444.71 / 4.70 秒；日志为两配置的
+  `cut-n03-interface-tests.log`。控件 inventory 仍为 **39/39**。
+  验收仅闭环 N03.3a 来源基础，不能把 N03.3 标为完成。
+- 范围见 [侧迹说明](cut-view-traces.md)。该 API 是 VTK prepared source
+  的基础；native tetra 测试也走这一 API，VTK OFF fast Slice 尚未接入。
+- 下一工作项 N03.3b：生成 section 图元在 owner filtering 前保留双侧来源，
+  包括 native fast Slice。N03.3c 分开绑定 display/physical
+  lowest/negative/positive/region 选项，physical regions 不复用显示 recovery
+  regions；N03.3d 做 native controls 和持久化迁移；N03.3e 验收完整
+  line/surface/volume、deformation、mask、跳变及积分矩阵。各项验收后单独提交。
+
+N03.4 OR union/cap ownership 和 N03.5 闭环继续排队；N03 整体仍 partial。

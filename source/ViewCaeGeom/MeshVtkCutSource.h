@@ -16,7 +16,16 @@ public:
         bool Planar = false;
         bool Internal = false;
         RWCae::MeshEntityId Owner = 0;
+        //! Reciprocal topology references are valid only for a verified Internal face.
+        RWCae::MeshEntityId NeighborElement = 0;
+        size_t NeighborFace = 0;
         gp_Pln Plane;
+    };
+    struct InterfaceTrace {
+        RWCae::MeshEntityId Element;
+        size_t FaceIndex;
+        Graphic3d_Vec3d Interior;
+        MeshInterpolatedNode Weights;
     };
     struct PrimitiveFace {
         TopoDS_Shape Shape;
@@ -30,7 +39,12 @@ public:
         std::vector<PrimitiveFace> PrimitiveFaces;
     };
     MeshVtkCutSource(uint64_t epoch, const MeshCutGeometryOptions& options) : myOptions(options) { Work.SourceEpoch = epoch; }
-    void Prepare(const Handle(RWCae::MeshData)& mesh, MeshGeometry* source);
+    Standard_EXPORT void Prepare(const Handle(RWCae::MeshData)& mesh, MeshGeometry* source);
+    //! Both original-FE traces at a prepared shared-face point, ordered by element ID.
+    //! Rejects unverified interfaces and points outside the face tolerance. This does
+    //! not select a display/physical side or change the current lowest-ID ownership.
+    Standard_EXPORT std::array<InterfaceTrace,2> InterfaceTraces(RWCae::MeshEntityId element,
+        size_t face, const Graphic3d_Vec3d& position) const;
     std::vector<RWCae::MeshEntityId> Query(const MeshCutDefinition& cut, MeshCutPortion portion, bool sourceOnly);
     Cell& GetCell(RWCae::MeshEntityId index) { return myCells.at(index); }
     const TopoDS_Shape& Shape(RWCae::MeshEntityId index);
