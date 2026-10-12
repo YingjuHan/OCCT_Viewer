@@ -13,8 +13,8 @@ types. N01 is now implemented and verified: the expanded 25-case suite passes
 three consecutive runs per case. Design completion does not imply completion
 of N02-N09 or the full native manager. N02's numerical foundation passes the
 expanded 28-case suite three times; its analytic second-order geometry work
-remains partial. The current priority is the [N02 closure queue](cut-view-n02-plan.md).
-Existing N03 recovery increments remain partial; new N03 features follow N02 closure.
+is verified at its [bounded closure scope](cut-view-n02-audit.md).
+N03 recovery increments remain partial; the [N03 queue](cut-view-n03-plan.md) is active.
 N04-N09 remain scheduled.
 
 ## Existing Boundaries
@@ -280,3 +280,11 @@ merge coincident coordinates across elemental jumps. Test overlapping, identical
 and touching cuts, all masks and transparent images; numerical union measures and
 actual rendered opacity must both pass. Later per-cut style overrides use an
 explicit stable ownership rule for coincident visible faces.
+
+### N02 Closure
+
+[The bounded audit](cut-view-n02-audit.md) records the original-FE numerical
+isosurface contract and independent field/model tolerances alongside analytic
+and numerical geometric paths. Repeated complete native/DRAW/visual acceptance
+passes in both VTK configurations. N03 now owns recovery controls/persistence,
+tensor conventions, physical traces and presentation OR/cap ownership.

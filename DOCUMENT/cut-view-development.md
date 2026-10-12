@@ -17,9 +17,10 @@
 Current execution is native only: Web/Vue/TypeScript and WASM tasks are excluded,
 not completed. Project/session persistence below maps to the native session API.
 
-Current Windows acceptance: VTK-enabled **35/35** and VTK-disabled **8/8**, each case
+Current Windows acceptance: VTK-enabled **38/38** and VTK-disabled **8/8**, each case
 passing three consecutive runs. Curved-family geometry/FE references, analytic
-precision fallback and recovery robustness are included. N02 remains partial;
+precision fallback, high-order field isosurfaces and recovery robustness are included.
+N02 is verified at its documented bounded scope;
 see [its completion queue](cut-view-n02-plan.md) and [the current handoff](cut-view-native-handoff.md)
 for SDK paths, logs, missing historical external fixtures and remaining work.
 
@@ -65,7 +66,8 @@ for SDK paths, logs, missing historical external fixtures and remaining work.
   second-order families, enclosed/nonmonotone crossings, independent field tolerances,
   provenance, deformation, held-threshold pixels/versions, abort and definition migration.
   See [the supported scope and limits](cut-view-isosurfaces.md).
-- [ ] N02.4 bounded family/interface/precision closure audit and repeated full validation.
+- [x] N02.4 bounded family/interface/precision closure audit and repeated full validation:
+  VTK ON 38/38 and OFF 8/8, every case three times.
 - [x] N02 expanded independent references: curved wedges `26/31/32/73/80`, rational
   Bezier wedge `80`, and pyramids `27/37`, with native and DRAW geometry/FE checks.
 - [x] N02.1/N02.2 remaining curve/surface/tetra and mixed-order hex references,
@@ -173,8 +175,8 @@ acceptance gates. R00, G01 and native M01 are verified; G02/G03 have a general-c
 but remain partial. Current coverage includes the supplied VTK real-data cases and
 the 48-concrete-cell native/DRAW matrix. N01 and N02's numerical foundation are verified.
 N02 includes supported analytic source boundaries and expanded reference fixtures.
-N02 remains partial and takes priority over new N03 features; the concrete tasks
-and acceptance gates are in [cut-view-n02-plan.md](cut-view-n02-plan.md).
+N02 is verified at the [bounded closure scope](cut-view-n02-audit.md).
+The active work is [N03 recovery, traces and union](cut-view-n03-plan.md).
 N03 region/threshold recovery and original physical mapping are implemented; physical
 trace policies, tensor invariants, manager controls and multi-cut boundary/cap union
 remain open. N04-N09 remain queued;

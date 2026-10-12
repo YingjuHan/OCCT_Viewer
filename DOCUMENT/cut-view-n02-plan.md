@@ -1,6 +1,7 @@
 # N02 completion queue
 
-N02 remains **partial**. Finish the following gates before starting new N03 features.
+N02 is **verified at its documented bounded scope**. All four gates passed;
+continue with [the N03 queue](cut-view-n03-plan.md).
 The native track excludes Web/Vue/TypeScript/WASM. Existing N03 recovery work is
 retained and remains in the regression suite.
 
@@ -9,8 +10,8 @@ retained and remains in the regression suite.
 | N02.1 | Remaining curved-family independent references | Curves, triangular/quadrilateral surfaces, Lagrange/Bezier tetrahedra and mixed-order hex: independent measures, original FE values, provenance, moving-cut source reuse; native and DRAW checks | Verified for the listed references; each case passed three times |
 | N02.2 | Analytic support and precision boundary | Degree-six and anisotropic charts, positive rational weight scaling, unsupported degree/precision fallback, required-mode atomic rejection; document sampled geometry and float storage separately | Verified for the listed bounds and repair; each case passed three times |
 | N02.3 | Higher-order/generic field isosurfaces | Original cell FE evaluation; below/on/above and all masks; enclosed/nonmonotone field crossings; numerical convergence and explicit limits; DRAW field binding and held-threshold synchronization | Verified: 37 generic charts, six native second-order families, polynomial/rational references, held Tk threshold and abort |
-| N02.4 | N02 closure audit | Recheck remaining family/interface/precision gaps, deformed geometry and FE mapping, both VTK configurations, repeated native/DRAW/visual suite; identify remaining G02/G03 limits individually | Queued |
-| N03 | Recovery, physical traces and presentation OR union | Resume the N03 queue only after the N02 gates pass; N03's existing numerical/metadata foundation is partial | Deferred |
+| N02.4 | N02 closure audit | Recheck remaining family/interface/precision gaps, deformed geometry and FE mapping, both VTK configurations, repeated native/DRAW/visual suite; identify remaining G02/G03 limits individually | Verified: bounded gap audit and full VTK ON/OFF suite, each three times |
+| N03 | Recovery, physical traces and presentation OR union | Resume the N03 queue only after the N02 gates pass; N03's existing numerical/metadata foundation is partial | Active: N03.1 controls and recovery persistence next |
 
 ## N02.1 reference definition
 
@@ -90,7 +91,7 @@ had already passed the full repeated suite.
 Logs: `build/mingw/cut-n02-build.log`, `cut-n02-vtk-tests.log`,
 `cut-n02-reference-visual-tests.log`; and `build/mingw-no-vtk/cut-n02-build.log`,
 `cut-n02-tests.log`. Missing historical external fixtures are not substituted.
-N02.3 now passes its focused acceptance; N02.4 is still open, so N02 remains partial.
+N02.3 focused acceptance and N02.4 full closure acceptance have passed.
 
 ## N02.3 acceptance
 
@@ -100,5 +101,12 @@ DRAW targets rebuilt. The final focused run passed 5/5 in 67.02 seconds, includi
 The initial and held images were inspected. VTK-disabled full suite passed 8/8,
 each three times, in 6.24 seconds. Logs: `build/mingw/cut-n02-iso-build.log`,
 `cut-n02-iso-tests.log`, `cut-n02-iso-visual.log`, and
-`build/mingw-no-vtk/cut-n02-closure-tests.log`. Closure still requires the repeated
-full VTK-enabled suite and bounded gap audit.
+`build/mingw-no-vtk/cut-n02-closure-tests.log`. The repeated full suite and bounded audit subsequently passed.
+
+## N02.4 closure
+
+[Bounded audit](cut-view-n02-audit.md): VTK ON 38/38, every case three times
+(114 pass executions), 610.23 seconds. VTK OFF 8/8, every case three times
+(24 passes), 6.24 seconds. No failures; current control inventory 32/32.
+The documented sampling/float/unsupported limits remain explicit capabilities,
+while physical interface trace policy and display OR union remain N03 work.

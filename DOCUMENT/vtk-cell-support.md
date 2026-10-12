@@ -152,3 +152,10 @@ VTK-enabled acceptance is 35/35 cases, each passing three times; VTK-disabled is
 8/8, each passing three times. The final negative+section held-pointer image case
 also passes three additional runs. N02's higher-order field isosurfaces and closure
 audit remain open; see [the N02 queue](cut-view-n02-plan.md).
+
+## N02 closure record
+
+N02 closes at the documented bounded scope, including the separate
+[original-FE field chart path](cut-view-isosurfaces.md). Full VTK ON 38/38 and
+OFF 8/8 passed every case three times; [audit and remaining stage boundaries](cut-view-n02-audit.md).
+Earlier partial/milestone records above describe their historical validation.

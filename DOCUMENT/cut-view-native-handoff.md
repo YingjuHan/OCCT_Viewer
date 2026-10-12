@@ -2,17 +2,17 @@
 
 ## 1. 接续范围与当前停点
 
-用户已在 Windows 工作区发出继续开发指令。当前优先完成 N02 独立参考、
-解析支持/精度边界、高阶场等值面及闭环审计；已有 N03 恢复数值/元数据保留并回归。
+用户已在 Windows 工作区发出继续开发指令。N02 四项已按文档范围闭环并提交，当前推进 N03 恢复控件/持久化；
+已有恢复数值/元数据保留并回归。最新接续证据在第 12/13 节，旧停点保留为历史。
 后文的 Linux 验证记录保留为历史证据；
 本次 Windows 配置与结果以本节及第 6 节的接续记录为准。
 
 - 仓库：`D:/workspace/OpenCASCADE/OCCT_Viewer`；分支：`develop`；接续基线 HEAD：`95fb291`。
 - 目标：完成原生 Cut View Manager 的 N02-N09 及对应 TODO，实施、修复并通过 native/DRAW 验收。
 - 排除：Web/Vue/TypeScript、浏览器测试、WASM SDK 与打包。排除项不是 done。
-- 上轮曲楔体/金字塔参考及恢复增量已提交为 `d02dd2e`；本轮继续 N02，
-  N02/N03 尚未整体完成，N04-N09 尚未实施。
-- 本轮 N02 功能、测试和文档修改留在工作区；保留用户既有修改及 `AGENTS.md`。
+- 上轮增量 `d02dd2e`、N02.1/N02.2 `7c925f2`、N02.3 `f975b86` 已提交；
+  N02 已按文档范围闭环，N03 为 partial，N04-N09 尚未实施。
+- 每个验收工作项单独提交；保留用户既有修改及 `AGENTS.md`。
 
 接续时以本说明的最新证据为准。主交接、执行队列和设计中的当前 N03 状态已同步为 partial；
 历史 milestone 的 31/34 cases 记录保留，不代表当前 Windows 套件计数，也不能据此把未完成阶段改为 done。
@@ -441,3 +441,13 @@ N02.1/N02.2 已提交 `7c925f2`。新增原始 FE 参数场等值面、独立场
 [实现契约与限制](cut-view-isosurfaces.md)；日志位于 `build/mingw/cut-n02-iso-*`
 与 `build/mingw-no-vtk/cut-n02-closure-tests.log`。N02.3 已验收；下一步 N02.4
 双配置完整重复回归和范围审计，通过后推进 N03。前文旧停点保留为历史。
+
+## 13. N02.4 已闭环，进入 N03
+
+N02.3 提交 `f975b86`。完整 VTK ON 38/38 每项三次（114 次通过），610.23 秒；
+OFF 8/8 每项三次（24 次通过），6.24 秒；控件 32/32，零失败。日志见
+`build/mingw/cut-n02-closure-tests.log` 和 OFF 同名日志。
+
+[范围审计](cut-view-n02-audit.md)明确采样、float、非匹配接口与 unsupported 限制；
+N02 已在该范围 verified，后续物理侧迹和 OR union 属于 N03，百万单元全帧仍 N08。
+现在按 [N03 队列](cut-view-n03-plan.md) 实施 N03.1 恢复控件及精确选项持久化。
