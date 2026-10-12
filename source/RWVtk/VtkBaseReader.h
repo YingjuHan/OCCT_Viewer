@@ -28,6 +28,9 @@ public:
 
     const VtkImportReport& Report() const { return myReport; }
 
+    //! Collect diagnostics without printing rejected attempts during fallback.
+    void SetToReportMessages(bool theEnabled) { myToReportMessages = theEnabled; }
+
 protected:
     Standard_EXPORT bool fail(const std::string& theMessage);
     Standard_EXPORT void warn(const std::string& theMessage);
@@ -39,6 +42,7 @@ protected:
     std::vector<RWCae::MeshFieldMappingInfo> myMappingInfo;
     TCollection_AsciiString                    myMappingFileName;
     VtkImportReport myReport;
+    bool myToReportMessages = true;
 };
 
 }

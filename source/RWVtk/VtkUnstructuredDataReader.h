@@ -101,12 +101,12 @@ protected:
     //! Map properties according to the mapping info.
     Standard_EXPORT std::vector<MappedProp> extractMappedProps(const VtkBaseXMLReader::DataArray& theProp,
                                                                bool                               theIsNodal,
-                                                               RWCae::MeshNVecPropertyType theDefaultType) const;
+                                                               RWCae::MeshNVecPropertyType theDefaultType);
 
     //! Map property according to the mapping info.
     Standard_EXPORT bool extractMappedProp(const VtkBaseXMLReader::DataArray&   theProp,
                                            const RWCae::MeshFieldMappingInfo& theInfo,
-                                           MappedProp&                          theMappedProp) const;
+                                           MappedProp&                          theMappedProp);
 
     //! Store mesh data property values.
     Standard_EXPORT void storePropValues(RWCae::MeshScalarProperty*    theComp,

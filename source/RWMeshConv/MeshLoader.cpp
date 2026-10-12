@@ -128,13 +128,16 @@ Handle(RWCae::MeshData) MeshLoader::OpenMesh(const Handle(OSD_FileSystem)&  theF
                                                const TCollection_AsciiString& theArtifactFilePath)
 {
     myHasMissingFields = false;
+    myVtkReport = RWVtk::VtkImportReport();
+    myVtkReport.source = theFilePath.ToCString();
 
     // parse header
     char aBytes[2048] = {};
     {
         std::shared_ptr<std::istream> aFile = theFileSystem->OpenIStream(theFilePath, std::ios::in | std::ios::binary);
         if (aFile.get() == nullptr) {
-            Message::SendFail() << "[ERR_MESH_LOAD] the file '" << theFilePath << "' cannot be opened";
+            myVtkReport.errors.push_back("Input file is not accessible: " + myVtkReport.source);
+            if (myToReportMessages) { Message::SendFail() << "[ERR_MESH_LOAD] " << myVtkReport.errors.front(); }
             return nullptr;
         }
         aFile->read(aBytes, sizeof(aBytes) - 1);
@@ -142,16 +145,7 @@ Handle(RWCae::MeshData) MeshLoader::OpenMesh(const Handle(OSD_FileSystem)&  theF
 
     const std::string aForm = ProbeFileFormat(theFilePath.ToCString(), aBytes, (int)sizeof(aBytes), true);
     if (aForm == "VTK") {
-        RWVtk::VtkLegacyReader reader;
-        reader.SetMappingFile(theMappingFilePath);
-        if (reader.Perform(theFilePath)) { return reader.GetMeshData(); }
-#ifdef OCCTV_USE_VTK
-        if (theMappingFilePath.IsEmpty()) {
-            RWVtk::VtkNativeReader general;
-            if (general.Perform(theFilePath)) { return general.GetMeshData(); }
-        }
-#endif
-        return nullptr;
+        return openVtkMesh(theFilePath, theMappingFilePath, aForm);
     }
     if (aForm == "GMSH") {
         return OpenGmshMesh(theFilePath);
@@ -331,83 +325,119 @@ Handle(RWCae::MeshData) MeshLoader::OpenMedMesh(const TCollection_AsciiString& t
 }
 
 // ================================================================
-// Function : OpenVtuMesh
+// Function : openVtkMesh
 // ================================================================
+Handle(RWCae::MeshData) MeshLoader::openVtkMesh(const TCollection_AsciiString& theFilePath,
+                                               const TCollection_AsciiString& theMappingFilePath,
+                                               const std::string& theFormat)
+{
+    myHasMissingFields = false;
+    myVtkReport = RWVtk::VtkImportReport();
+    myVtkReport.source = theFilePath.ToCString();
+    myVtkReport.format = theFormat;
+    Handle(RWCae::MeshData) aMesh;
+
+    auto record = [&](const RWVtk::VtkImportReport& theReport, const char* theBackend, bool theSucceeded) {
+        myVtkReport.attempts.push_back({theBackend, theSucceeded, theReport.errors, theReport.warnings});
+        auto& anAttempt = myVtkReport.attempts.back();
+        if (!theSucceeded && anAttempt.errors.empty()) { anAttempt.errors.push_back("Reader returned no mesh"); }
+        myVtkReport.errors = anAttempt.errors;
+        myVtkReport.warnings = anAttempt.warnings;
+        myVtkReport.backend = theBackend;
+    };
+    auto read = [&](auto& theReader, auto theGetMesh) {
+        theReader.SetMappingFile(theMappingFilePath);
+        theReader.SetToReportMessages(false);
+        bool isRead = false;
+        RWVtk::VtkImportReport aReport;
+        try {
+            isRead = theReader.Perform(theFilePath);
+            if (isRead) { aMesh = theGetMesh(); }
+            aReport = theReader.Report();
+        } catch (const Standard_Failure& anError) {
+            aReport = theReader.Report();
+            aReport.errors.push_back(anError.GetMessageString());
+        } catch (const std::exception& anError) {
+            aReport = theReader.Report();
+            aReport.errors.push_back(anError.what());
+        }
+        record(aReport, "portable", isRead && !aMesh.IsNull() && aReport.errors.empty());
+        if (!myVtkReport.attempts.back().succeeded) { aMesh.Nullify(); }
+    };
+    if (theFormat == "VTK") {
+        RWVtk::VtkLegacyReader aReader;
+        read(aReader, [&]() { return aReader.GetMeshData(); });
+    } else if (theFormat == "VTU") {
+        RWVtk::VtkUnstructuredGridReader aReader;
+        read(aReader, [&]() { return aReader.GetMeshData(); });
+    } else if (theFormat == "VTP") {
+        RWVtk::VtkPolyDataReader aReader;
+        read(aReader, [&]() { return aReader.GetMeshData(); });
+    } else if (theFormat == "VTM") {
+        RWVtk::VtkMultiBlockDataReader aReader;
+        read(aReader, [&]() { return aReader.GetMergedMeshData(); });
+    } else if (theFormat == "VTMSERIES") {
+        RWVtk::VtkSeriesReader aReader;
+        read(aReader, [&]() { return aReader.GetMergedMeshData(); });
+    }
+#ifdef OCCTV_USE_VTK
+    // Native fallback does not implement mappings or composite/time-series semantics.
+    if (aMesh.IsNull() && theMappingFilePath.IsEmpty()
+        && (theFormat == "VTK" || theFormat == "VTU" || theFormat == "VTP")) {
+        RWVtk::VtkNativeReader aReader;
+        const bool isRead = aReader.Perform(theFilePath);
+        record(aReader.Report(), "native-vtk", isRead);
+        if (isRead) { aMesh = aReader.GetMeshData(); }
+    }
+#endif
+    myVtkReport.succeeded = !aMesh.IsNull();
+    if (myVtkReport.succeeded) {
+        // Counts describe the published mesh, not a rejected partial attempt.
+        myVtkReport.points = aMesh->NbNodes();
+        myVtkReport.cells = aMesh->NbIndexedElems();
+        myVtkReport.fields = aMesh->Properties().Size();
+        myVtkReport.errors.clear();
+    } else {
+        myVtkReport.errors.clear();
+        for (const auto& anAttempt : myVtkReport.attempts) {
+            for (const auto& anError : anAttempt.errors) {
+                myVtkReport.errors.push_back(anAttempt.backend + ": " + anError);
+            }
+        }
+    }
+    if (myToReportMessages) {
+        for (const auto& anError : myVtkReport.errors) {
+            Message::SendFail() << "[ERR_VTK_IMPORT] " << myVtkReport.source << ": " << anError;
+        }
+        for (const auto& aWarning : myVtkReport.warnings) {
+            Message::SendWarning() << "[VTK_IMPORT] " << myVtkReport.source << ": " << aWarning;
+        }
+    }
+    return aMesh;
+}
+
 Handle(RWCae::MeshData) MeshLoader::OpenVtuMesh(const TCollection_AsciiString& theFilePath,
-                                                  const TCollection_AsciiString& theMappingFilePath)
+                                              const TCollection_AsciiString& theMappingFilePath)
 {
-    myHasMissingFields = false;
-
-    RWVtk::VtkUnstructuredGridReader aVtuReader;
-    aVtuReader.SetMappingFile(theMappingFilePath);
-    if (!aVtuReader.Perform(theFilePath)) {
-#ifdef OCCTV_USE_VTK
-        if (theMappingFilePath.IsEmpty()) {
-            RWVtk::VtkNativeReader general;
-            if (general.Perform(theFilePath)) { return general.GetMeshData(); }
-        }
-#endif
-        Message::SendFail() << "[ERR_MESH_FORMAT] '" << theFilePath << "' is not a valid vtk unstructured grid file";
-        return nullptr;
-    }
-    return aVtuReader.GetMeshData();
+    return openVtkMesh(theFilePath, theMappingFilePath, "VTU");
 }
 
-// ================================================================
-// Function : OpenVtuMesh
-// ================================================================
 Handle(RWCae::MeshData) MeshLoader::OpenVtpMesh(const TCollection_AsciiString& theFilePath,
-                                                  const TCollection_AsciiString& theMappingFilePath)
+                                              const TCollection_AsciiString& theMappingFilePath)
 {
-    myHasMissingFields = false;
-
-    RWVtk::VtkPolyDataReader aVtpReader;
-    aVtpReader.SetMappingFile(theMappingFilePath);
-    if (!aVtpReader.Perform(theFilePath)) {
-#ifdef OCCTV_USE_VTK
-        if (theMappingFilePath.IsEmpty()) {
-            RWVtk::VtkNativeReader general;
-            if (general.Perform(theFilePath)) { return general.GetMeshData(); }
-        }
-#endif
-        Message::SendFail() << "[ERR_MESH_FORMAT] '" << theFilePath << "' is not a valid vtk poly data file";
-        return nullptr;
-    }
-    return aVtpReader.GetMeshData();
+    return openVtkMesh(theFilePath, theMappingFilePath, "VTP");
 }
 
-// ================================================================
-// Function : OpenVtmMesh
-// ================================================================
 Handle(RWCae::MeshData) MeshLoader::OpenVtmMesh(const TCollection_AsciiString& theFilePath,
-                                                  const TCollection_AsciiString& theMappingFilePath)
+                                              const TCollection_AsciiString& theMappingFilePath)
 {
-    myHasMissingFields = false;
-
-    RWVtk::VtkMultiBlockDataReader aVtmReader;
-    aVtmReader.SetMappingFile(theMappingFilePath);
-    if (!aVtmReader.Perform(theFilePath)) {
-        Message::SendFail() << "[ERR_MESH_FORMAT] '" << theFilePath << "' is not a valid vtk multi-block data file";
-        return nullptr;
-    }
-    return aVtmReader.GetMergedMeshData();
+    return openVtkMesh(theFilePath, theMappingFilePath, "VTM");
 }
 
-// ================================================================
-// Function : OpenVtmSeriesMesh
-// ================================================================
 Handle(RWCae::MeshData) MeshLoader::OpenVtmSeriesMesh(const TCollection_AsciiString& theFilePath,
-                                                        const TCollection_AsciiString& theMappingFilePath)
+                                                    const TCollection_AsciiString& theMappingFilePath)
 {
-    myHasMissingFields = false;
-
-    RWVtk::VtkSeriesReader aVtmSeriesReader;
-    aVtmSeriesReader.SetMappingFile(theMappingFilePath);
-    if (!aVtmSeriesReader.Perform(theFilePath)) {
-        Message::SendFail() << "[ERR_MESH_FORMAT] '" << theFilePath << "' is not a valid vtk multi-block data series file";
-        return nullptr;
-    }
-    return aVtmSeriesReader.GetMergedMeshData();
+    return openVtkMesh(theFilePath, theMappingFilePath, "VTMSERIES");
 }
 
 // ================================================================

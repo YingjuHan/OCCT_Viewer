@@ -5,6 +5,7 @@
 #include <RWCae/MeshBinIOBase.h>
 #include <RWCae/MeshData.h>
 #include <RWCae/MeshImportExport.h>
+#include <RWVtk/VtkImportReport.h>
 
 #include <NCollection_Map.hxx>
 #include <OSD_FileSystem.hxx>
@@ -82,6 +83,12 @@ public:
     //! Return TRUE if missing fields status has been reported by reader.
     bool HasMissingFields() const { return myHasMissingFields; }
 
+    //! Overall VTK import outcome and diagnostics for each attempted backend.
+    const RWVtk::VtkImportReport& VtkReport() const { return myVtkReport; }
+
+    //! Keep VTK diagnostics available to callers without printing reader attempts.
+    void SetToReportMessages(bool theEnabled) { myToReportMessages = theEnabled; }
+
     //! Define properties that should be loaded.
     void SetPropsToProcess(const Handle(RWCae::MeshBinIOBase::SharedMapOfAsciiString)& theProps)
     {
@@ -96,6 +103,12 @@ public:
     void SetDumpPropsToTempFolder(const TCollection_AsciiString& theTempFolder) { myPropsTempFolder = theTempFolder; }
 
 private:
+    Handle(RWCae::MeshData) openVtkMesh(const TCollection_AsciiString& theFilePath,
+                                      const TCollection_AsciiString& theMappingFilePath,
+                                      const std::string& theFormat);
+
+    RWVtk::VtkImportReport myVtkReport;
+    bool myToReportMessages = true;
     bool         myHasMissingFields = false;
     unsigned int myOptions          = (unsigned int)RWCae::MeshDataImportExportOptions::DEFAULTS;
 

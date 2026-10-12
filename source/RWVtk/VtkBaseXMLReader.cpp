@@ -174,14 +174,12 @@ bool VtkBaseXMLReader::readHeader()
 {
     LDOM_Element aRoot = myDOM.getDocumentElement();
     if (aRoot.isNull()) {
-        Message::SendFail() << "Error: Root element is null";
-        return false;
+        return fail("Root element is null");
     }
 
     TCollection_AsciiString aRootName = aRoot.getTagName();
     if (aRootName != "VTKFile") {
-        Message::SendFail() << "Error: Invalid root name : '" << aRootName << "'";
-        return false;
+        return fail(std::string("Invalid root name : '") + aRootName.ToCString() + "'");
     }
 
     if (!readRootAttributes(aRoot)) {
@@ -222,8 +220,7 @@ bool VtkBaseXMLReader::readRootAttributes(const LDOM_Element& theRoot)
     }
 
     if (aType != dataType()) {
-        Message::SendFail() << "Error: Invalid data type: '" << aType << "'";
-        return false;
+        return fail(std::string("Invalid data type: '") + aType.ToCString() + "'");
     }
 
     if (aByteOrder == "BigEndian") {
@@ -231,8 +228,7 @@ bool VtkBaseXMLReader::readRootAttributes(const LDOM_Element& theRoot)
     } else if (aByteOrder == "LittleEndian") {
         myByteOrder = ByteOrder::LittleEndian;
     } else {
-        Message::SendFail() << "Error: Invalid byte order: '" << aByteOrder << "'";
-        return false;
+        return fail(std::string("Invalid byte order: '") + aByteOrder.ToCString() + "'");
     }
 
     myCompressor = aCompressor.ToCString();
@@ -245,8 +241,7 @@ bool VtkBaseXMLReader::readRootAttributes(const LDOM_Element& theRoot)
     } else if (aHeaderType == "UInt64") {
         myHeaderSize = sizeof(uint64_t);
     } else if (!aHeaderType.IsEmpty()) {
-        Message::SendFail() << "Error: Unsupported header type '" << aHeaderType << "'";
-        return false;
+        return fail(std::string("Unsupported header type '") + aHeaderType.ToCString() + "'");
     }
 
     return true;
@@ -271,8 +266,7 @@ bool VtkBaseXMLReader::readDataElements(const LDOM_Element& theRoot)
     }
 
     if (myDataElement.isNull()) {
-        Message::SendFail() << "Error: '" << dataType() << "' element not found";
-        return false;
+        return fail(std::string("'") + dataType().ToCString() + "' element not found");
     }
 
     return true;
@@ -340,15 +334,13 @@ bool VtkBaseXMLReader::readDataArrayHeader(const LDOM_Element& theElem, VtkBaseX
 
     theDataArray.Type = getXmlAttribute(theElem, "Type", "type");
     if (theDataArray.Type.IsEmpty()) {
-        Message::SendFail() << "Error: 'DataArray -> type' attribute not found";
-        return false;
+        return fail("'DataArray -> type' attribute not found");
     }
 
     int aNbComponents = 1;
     getXmlAttribute(theElem, "NumberOfComponents", "numberOfComponents").GetInteger(aNbComponents);
     if (aNbComponents <= 0) {
-        Message::SendFail() << "Error: Invalid number of components '" << aNbComponents << "'";
-        return false;
+        return fail(std::string("Invalid number of components '") + std::to_string(aNbComponents) + "'");
     }
     theDataArray.Components.resize(aNbComponents, "");
     for (int i = 0; i < aNbComponents; ++i) {
@@ -364,8 +356,7 @@ bool VtkBaseXMLReader::readDataArrayHeader(const LDOM_Element& theElem, VtkBaseX
     } else if (aFormat == "appended") {
         theDataArray.Format = DataFormat::Appended;
     } else {
-        Message::SendFail() << "Error: Invalid points format '" << aFormat << "'";
-        return false;
+        return fail(std::string("Invalid points format '") + aFormat.ToCString() + "'");
     }
 
     const TCollection_AsciiString offset = getXmlAttribute(theElem, "offset", "Offset");

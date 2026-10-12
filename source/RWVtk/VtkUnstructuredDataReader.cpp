@@ -131,8 +131,7 @@ bool VtkUnstructuredDataReader::readMeshInfo(const LDOM_Element& theElem)
 {
     getXmlAttribute(theElem, "NumberOfPoints", "numberOfPoints").GetInteger(myNbNodes);
     if (myNbNodes <= 0) {
-        Message::SendFail() << "Error: Invalid number of nodes '" << myNbNodes << "'";
-        return false;
+        return fail(std::string("Invalid number of nodes '") + std::to_string(myNbNodes) + "'");
     }
 
     myNbProcessed = 0;
@@ -147,8 +146,7 @@ bool VtkUnstructuredDataReader::readMeshGeometry(const LDOM_Element& theElem)
 {
     LDOM_Element aPoints = getFirstElement(theElem, "Points");
     if (aPoints.isNull()) {
-        Message::SendFail() << "Error: 'Points' element not found";
-        return false;
+        return fail("'Points' element not found");
     }
 
     if (!parsePoints(aPoints)) {
@@ -187,21 +185,18 @@ bool VtkUnstructuredDataReader::parsePoints(const LDOM_Element& theElem)
 {
     LDOM_Element aPointsDataArray = getFirstElement(theElem, "DataArray");
     if (aPointsDataArray.isNull()) {
-        Message::SendFail() << "Error: 'Points/DataArray' element not found";
-        return false;
+        return fail("'Points/DataArray' element not found");
     }
 
     constexpr int aNbPntComp = 3;
 
     DataArray aDataArray = readDataArray(aPointsDataArray);
     if (aDataArray.Components.size() != aNbPntComp) {
-        Message::SendFail() << "Error: Invalid number of point components '" << aDataArray.Components.size() << "'";
-        return false;
+        return fail(std::string("Invalid number of point components '") + std::to_string(aDataArray.Components.size()) + "'");
     }
 
     if (aDataArray.Data.IsNull()) {
-        Message::SendFail() << "Error: Failed to read points data";
-        return false;
+        return fail("Failed to read points data");
     }
 
     if (aDataArray.Data->NbElements() != myNbNodes) { return fail("Point array length does not match NumberOfPoints"); }
@@ -393,7 +388,7 @@ void VtkUnstructuredDataReader::parseMappedProps(
 std::vector<VtkUnstructuredDataReader::MappedProp> VtkUnstructuredDataReader::extractMappedProps(
     const VtkBaseXMLReader::DataArray& theProp,
     bool                               theIsNodal,
-    RWCae::MeshNVecPropertyType theDefaultType) const
+    RWCae::MeshNVecPropertyType theDefaultType)
 {
     std::vector<MappedProp> aRes;
 
@@ -427,7 +422,7 @@ std::vector<VtkUnstructuredDataReader::MappedProp> VtkUnstructuredDataReader::ex
         MappedProp& aMapperProp = aRes.back();
 
         if (!extractMappedProp(theProp, anInfo, aMapperProp)) {
-            Message::SendWarning() << "Warning: Failed to parse mapping for property '" << anInfo.FieldMask << "'";
+            warn(std::string("Failed to parse mapping for property '") + anInfo.FieldMask + "'");
             aRes.erase(aRes.end() - 1);
             continue;
         }
@@ -457,7 +452,7 @@ std::vector<VtkUnstructuredDataReader::MappedProp> VtkUnstructuredDataReader::ex
 // =======================================================================
 bool VtkUnstructuredDataReader::extractMappedProp(const VtkBaseXMLReader::DataArray&     theProp,
                                                   const RWCae::MeshFieldMappingInfo&   theInfo,
-                                                  VtkUnstructuredDataReader::MappedProp& theMappedProp) const
+                                                  VtkUnstructuredDataReader::MappedProp& theMappedProp)
 {
     for (int aMappedCompIdx = 0; aMappedCompIdx < (int)theInfo.ComponentMasks.size(); aMappedCompIdx++) {
         std::regex aCompMaskRegex(theInfo.ComponentMasks[aMappedCompIdx]);
@@ -474,8 +469,7 @@ bool VtkUnstructuredDataReader::extractMappedProp(const VtkBaseXMLReader::DataAr
         }
 
         if (!hasFound) {
-            Message::SendWarning() << "Warning: Cannot find component '" << theInfo.ComponentMasks[aMappedCompIdx]
-                                   << "' for property '" << theInfo.FieldMask << "'";
+            warn(std::string("Cannot find component '") + theInfo.ComponentMasks[aMappedCompIdx] + "' for property '" + theInfo.FieldMask + "'");
             continue;
         }
     }

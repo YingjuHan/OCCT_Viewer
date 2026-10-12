@@ -60,14 +60,14 @@ bool VtkBaseReader::PerformStream(std::istream& theStream, const TCollection_Asc
 bool VtkBaseReader::fail(const std::string& theMessage)
 {
     myReport.errors.push_back(theMessage);
-    Message::SendFail() << "[ERR_VTK_IMPORT] " << theMessage;
+    if (myToReportMessages) { Message::SendFail() << "[ERR_VTK_IMPORT] " << theMessage; }
     return false;
 }
 
 void VtkBaseReader::warn(const std::string& theMessage)
 {
     myReport.warnings.push_back(theMessage);
-    Message::SendWarning() << "[VTK_IMPORT] " << theMessage;
+    if (myToReportMessages) { Message::SendWarning() << "[VTK_IMPORT] " << theMessage; }
 }
 
 }

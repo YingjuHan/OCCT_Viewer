@@ -75,8 +75,7 @@ bool VtkSeriesReader::PerformStream(std::istream& theStream, const TCollection_A
 
     const JsonValue* aFiles = findObjectMember(*myReader.get(), "files");
     if (!readFiles(aFiles)) {
-        Message::SendFail() << "Error: Cannot read 'files' property";
-        return false;
+        return fail("Cannot read 'files' property");
     }
 
     return true;
@@ -104,6 +103,7 @@ bool VtkSeriesReader::readFiles(const JsonValue* theValue)
         TCollection_AsciiString aFileName = aFileNameJson->GetString();
 
         VtkMultiBlockDataReader aVtmReader;
+        aVtmReader.SetToReportMessages(myToReportMessages);
         aVtmReader.SetMappingInfo(myMappingInfo);
         aVtmReader.SetTimeStep(++aTimeStep);
         aVtmReader.SetTimeStamp(aTimeJson->GetDouble());
@@ -112,8 +112,10 @@ bool VtkSeriesReader::readFiles(const JsonValue* theValue)
         }
         if (!aVtmReader.Perform(myPath + aFileName)) {
             for (const auto& anError : aVtmReader.Report().errors) { myReport.errors.push_back(anError); }
+            myReport.warnings.insert(myReport.warnings.end(), aVtmReader.Report().warnings.begin(), aVtmReader.Report().warnings.end());
             return fail(std::string("Cannot read series file: ") + aFileName.ToCString());
         }
+        myReport.warnings.insert(myReport.warnings.end(), aVtmReader.Report().warnings.begin(), aVtmReader.Report().warnings.end());
         if (anIter == theValue->Begin()) {
             myAccumMeshDataTreeRoot = aVtmReader.GetMeshDataTree();
         }

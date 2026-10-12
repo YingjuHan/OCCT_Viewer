@@ -17,8 +17,9 @@
 Current execution is native only: Web/Vue/TypeScript and WASM tasks are excluded,
 not completed. Project/session persistence below maps to the native session API.
 
-Current Windows acceptance: VTK-enabled **48/48** and VTK-disabled **14/14**,
-each case passing three consecutive runs (144 / 42 successful executions).
+Current Windows acceptance after N04.1: VTK-enabled **51/51** and VTK-disabled **16/16**,
+each case passing three consecutive runs (153 / 48 successful executions).
+The DRAW/Viewer-disabled reader/report test also passes three times.
 Curved-family geometry/FE
 references, analytic precision fallback, high-order field isosurfaces, tensor/trace
 policies and actual presentation OR are included. N03 is verified at
@@ -95,6 +96,9 @@ for SDK paths, logs, missing historical external fixtures and remaining work.
   See [the union contract](cut-view-union.md). Complete native session persistence remains N09.
 - [x] N03.5 full repeated ON/OFF closure audit, repaired curved On-only caps and
   internal compsolid faces, inspected UI/cloud images and documented support limits.
+- [x] N04.1 overall VTK import reports and backend attempts, successful fallback diagnostics,
+  composite/series warnings, rejected pipeline outputs and failed native Viewer/DRAW replacement preservation.
+  See [the import contract](cut-view-import.md). Ordinary general-cell rendering remains N04.2.
 
 These are native building blocks, not completion of the entire Cut View Manager plan.
 
@@ -190,8 +194,8 @@ N03 region/threshold recovery, symmetric tensor measures, manager controls and
 original physical mapping and independent trace policies are verified.
 Actual presentation OR has passed numerical, field/dimension and transparent
 acceptance and the full [N03 closure audit](cut-view-n03-audit.md).
-N04-N09 remain queued; N04 import/ordinary Viewer work is the next stage;
-web/WASM work is excluded.
+N04 import/ordinary Viewer work is active in [its acceptance queue](cut-view-n04-plan.md).
+N05-N09 remain queued; web/WASM work is excluded.
 First-order isosurfaces currently rebuild scalar-cut geometry when the threshold changes; they
 have not been accepted against the full-frame million-cell target. Supported high-order
 VTK chart cells use the bounded numerical isosurface contract recorded in N02.

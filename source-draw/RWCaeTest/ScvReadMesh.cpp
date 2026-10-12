@@ -96,9 +96,6 @@ bool ScvReadMesh::Perform()
         OSD_Path::FolderAndFileFromPath(m_fileName, aFileFolder, m_prsName);
     }
 
-    // remove previous object with the same name
-    RemoveObject(m_prsName);
-
     Handle(RWCae::MeshData) aMeshData;
     {
         Handle(OSD_FileSystem) aFileSystem = RWBase::EmulatedFileSystem::Create(m_fileName);
@@ -123,6 +120,8 @@ bool ScvReadMesh::Perform()
         }
     }
 
+    // Publish only after a successful import, preserving a live model on failure.
+    RemoveObject(m_prsName);
     aMeshData->SetId(m_prsName);
     *myDI << aMeshData->Id() << " "; // print read objects
 

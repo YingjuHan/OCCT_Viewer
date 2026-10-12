@@ -121,14 +121,11 @@ bool VtkPolyDataReader::parseVerts(const LDOM_Element& theElem)
     if (!validateElements(aMeshElements, myNbVerts, 1)) { return false; }
 
     if (aMeshElements.Connectivity.Data.IsNull() || aMeshElements.Offsets.Data.IsNull()) {
-        Message::SendFail() << "Error: Failed to read verts data";
-        return false;
+        return fail("Failed to read verts data");
     }
 
     if (aMeshElements.Offsets.Data->NbElements() != myNbVerts) {
-        Message::SendFail() << "Error: Incorrect number of verts '" << aMeshElements.Offsets.Data->NbElements()
-                            << "', should be '" << myNbVerts << "'";
-        return false;
+        return fail(std::string("Incorrect number of verts '") + std::to_string(aMeshElements.Offsets.Data->NbElements()) + "', should be '" + std::to_string(myNbVerts) + "'");
     }
 
     int aCellBegin = 0;
@@ -161,14 +158,11 @@ bool VtkPolyDataReader::parseStrips(const LDOM_Element& theElem)
     if (!validateElements(aMeshElements, myNbStrips, 3)) { return false; }
 
     if (aMeshElements.Connectivity.Data.IsNull() || aMeshElements.Offsets.Data.IsNull()) {
-        Message::SendFail() << "Error: Failed to read strips data";
-        return false;
+        return fail("Failed to read strips data");
     }
 
     if (aMeshElements.Offsets.Data->NbElements() != myNbStrips) {
-        Message::SendFail() << "Error: Incorrect number of strips '" << aMeshElements.Offsets.Data->NbElements()
-                            << "', should be '" << myNbStrips << "'";
-        return false;
+        return fail(std::string("Incorrect number of strips '") + std::to_string(aMeshElements.Offsets.Data->NbElements()) + "', should be '" + std::to_string(myNbStrips) + "'");
     }
 
     constexpr int aNbTrgPnts = 3;
@@ -209,14 +203,11 @@ bool VtkPolyDataReader::parsePolys(const LDOM_Element& theElem)
     if (!validateElements(aMeshElements, myNbPolys, 3)) { return false; }
 
     if (aMeshElements.Connectivity.Data.IsNull() || aMeshElements.Offsets.Data.IsNull()) {
-        Message::SendFail() << "Error: Failed to read polys data";
-        return false;
+        return fail("Failed to read polys data");
     }
 
     if (aMeshElements.Offsets.Data->NbElements() != myNbPolys) {
-        Message::SendFail() << "Error: Incorrect number of polys '" << aMeshElements.Offsets.Data->NbElements()
-                            << "', should be '" << myNbPolys << "'";
-        return false;
+        return fail(std::string("Incorrect number of polys '") + std::to_string(aMeshElements.Offsets.Data->NbElements()) + "', should be '" + std::to_string(myNbPolys) + "'");
     }
 
     constexpr int aNbTrgPnts = 3;

@@ -6,7 +6,8 @@
 N03.1 恢复控件/定义持久化、N03.2 张量、N03.3 双侧来源/独立选侧及
 N03.4 实际 OR 并集/透明显示均已验收。N03.5 完整双配置闭环审计通过，
 N03 已按 [原生支持契约](cut-view-n03-audit.md) 闭环。最新证据在第 23 节，
-旧 milestone 记录保留为历史。N04–N09 尚未启动，下一阶段为 N04 导入与普通 Viewer。
+旧 milestone 记录保留为历史。N04 导入与普通 Viewer 已启动，见 [N04 队列](cut-view-n04-plan.md)；
+N05–N09 尚未启动。最新 N04 证据在第 24 节。
 后文的 Linux 验证记录保留为历史证据；
 本次 Windows 配置与结果以本节及第 6 节的接续记录为准。
 
@@ -16,7 +17,8 @@ N03 已按 [原生支持契约](cut-view-n03-audit.md) 闭环。最新证据在�
 - 上轮增量 `d02dd2e`、N02.1/N02.2 `7c925f2`、N02.3 `f975b86` 已提交；
   N02.4 `7910a48`、N03.1 `2caeb2f`、N03.2 `17f421c` 已提交；
   N03.3 `f719eeb`、N03.4a `db6268b`、N03.4b `addbb03`、N03.4c `eba2a37` 已提交；
-  曲面 cap/内部面修复 `3a1fd44` 已提交；N01–N03 已按支持范围闭环，N04–N09 尚未实施。
+  曲面 cap/内部面修复 `3a1fd44`、N03 闭环文档 `6bacc14` 已提交；
+  N01–N03 已按支持范围闭环，N04.1 诊断/导入发布基础已验收；N05–N09 尚未实施。
 - 每个验收工作项单独提交；保留用户既有修改及 `AGENTS.md`。
 
 接续时以本说明的最新证据为准。主交接、执行队列和设计中的当前 N03 状态为 verified；
@@ -604,3 +606,36 @@ OR 云图均已查看。完整支持范围及限制见 [N03 审计](cut-view-n03
 缺口继续直接读源码。N03.1–N03.5 均 verified，N03 已收敛。N04–N09 尚未
 启动；完整 native sessions、per-cut styles/legend/probes、shell/beam 与非平面
 物理映射、百万单元全帧/硬缓存预算仍是后续工作，Web/WASM 继续排除。
+
+## 24. N04.1 导入报告与失败发布保留
+
+统一 MeshLoader 和 CutView 的 VTK 导入入口；报告区分最终 outcome 和
+portable/native-vtk 的每次尝试。成功 fallback 不再输出主 reader 的整体
+失败诊断，原诊断仍保留在 attempts。映射请求不能通过 fallback 被悄悄丢弃。
+Legacy 内部 XML reader、VTM/series 子 reader 继承消息策略并传递 warnings。
+普通 native Viewer 的 `OpenMesh(..., options, &report)` 可返回结构化报告；
+`scvcutview model importreport` 提供对应 Tcl dict，支持带空格的路径。
+
+Viewer 和 `scvreadmesh` 在 reader 成功后才替换旧同名对象。原生测试验证
+失败后旧 AIS 对象、mesh/fields 与显示状态保留；DRAW 验证非空普通 Viewer
+四面体图像在缺文件、畸形文件、缺 composite 引用后均零像素变化。
+VTK executive 失败不能发布其空输出；完全无实体输出明确拒绝，但合法
+`vtkEmptyCell` 的零节点连接保留。首次完整回归发现该空单元误拒绝，
+修复后重跑完整 ON 套件，未把失败及依赖未运行 case 算作通过。
+
+最终 ON **51/51 各三次**：153 次成功，604.78 秒；OFF **16/16 各三次**：
+48 次成功，50.79 秒。逐项核对所有 case 恰好三次，合计 201 次。
+日志 `cut-n04-diagnostics-tests.log` 在两配置中；ON 首次失败日志
+`cut-n04-diagnostics-first-full-tests.log` 保留。测试目标按 Viewer 是否存在
+启用生命周期检查，精简 DRAW/Viewer-disabled 配置下 reader/report **1/1
+各三次**（0.19 秒）另通过，日志 `build/cut-n04-headless-tests.log`。
+条件化后的 Viewer 测试再验收 ON 3/3、OFF 2/2 各三次，日志
+`cut-n04-diagnostics-viewer-tests.log`；构建日志为 `cut-n04-diagnostics-build.log`。
+Tk inventory 仍 **47/47**。图片 `build/mingw/test/native/draw-import/`
+已检查；原始、失败后及成功替换图片 SHA256 相同，且非空。
+
+[N04.1 契约](cut-view-import.md) 与 [N04 task list](cut-view-n04-plan.md)
+已同步。MCP 的 C++/Tcl partial 范围直接核对源码，提交后显式刷新索引。
+下一项 N04.2：普通 Viewer 的点、line/polyline、一般 VTK 单元与原始字段
+显示。N04 整体仍 active；变化拓扑 series、格式矩阵、资源限额及相对引用
+staging 未完成，不能因本项诊断/发布基础通过就宣称 N04 闭环。

@@ -72,8 +72,7 @@ bool VtkUnstructuredGridReader::readMeshInfo(const LDOM_Element& theElem)
 
     getXmlAttribute(theElem, "NumberOfCells", "numberOfCells").GetInteger(myNbElements);
     if (myNbElements <= 0) {
-        Message::SendFail() << "Error: Invalid number of elements '" << myNbElements << "'";
-        return false;
+        return fail(std::string("Invalid number of elements '") + std::to_string(myNbElements) + "'");
     }
 
     if (myToReadMeshGeometry) { (*myStoredElements)[myCurPiece].assign(myNbElements, 0); }
@@ -95,8 +94,7 @@ bool VtkUnstructuredGridReader::readMeshGeometry(const LDOM_Element& theElem)
 
     LDOM_Element aCells = getFirstElement(theElem, "Cells");
     if (aCells.isNull()) {
-        Message::SendFail() << "Error: 'UnstructuredGrid/Piece/Cells' element not found";
-        return false;
+        return fail("'UnstructuredGrid/Piece/Cells' element not found");
     }
 
     if (!parseCells(aCells)) {
@@ -116,8 +114,7 @@ bool VtkUnstructuredGridReader::parseCells(const LDOM_Element& theElem)
 
     if (aMeshElements.Connectivity.Data.IsNull() || aMeshElements.Offsets.Data.IsNull()
         || aMeshElements.Types.Data.IsNull()) {
-        Message::SendFail() << "Error: Failed to read cells data";
-        return false;
+        return fail("Failed to read cells data");
     }
     if (aMeshElements.Connectivity.Components.size() != 1 || aMeshElements.Offsets.Components.size() != 1
         || aMeshElements.Types.Components.size() != 1) {
@@ -126,9 +123,7 @@ bool VtkUnstructuredGridReader::parseCells(const LDOM_Element& theElem)
 
     if (aMeshElements.Offsets.Data->NbElements() != myNbElements
         || aMeshElements.Types.Data->NbElements() != myNbElements) {
-        Message::SendFail() << "Error: Incorrect number of cells '" << aMeshElements.Offsets.Data->NbElements() << ", "
-                            << aMeshElements.Types.Data->NbElements() << "', should be '" << myNbElements << "'";
-        return false;
+        return fail(std::string("Incorrect number of cells '") + std::to_string(aMeshElements.Offsets.Data->NbElements()) + ", " + std::to_string(aMeshElements.Types.Data->NbElements()) + "', should be '" + std::to_string(myNbElements) + "'");
     }
 
     NCollection_DataMap<int, int> aSkippedElements;
@@ -140,7 +135,6 @@ bool VtkUnstructuredGridReader::parseCells(const LDOM_Element& theElem)
     myNbProcessed += myNbElements;
 
     if (!aSkippedElements.IsEmpty()) {
-        Message::SendInfo() << "Skipped elements: ";
         for (NCollection_DataMap<int, int>::Iterator anIter(aSkippedElements); anIter.More(); anIter.Next()) {
             fail("Unsupported VTK cell type " + std::to_string(anIter.Key()) + " ("
                  + std::to_string(anIter.Value()) + " cells)");

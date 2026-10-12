@@ -544,3 +544,25 @@ Final N03 closure: ON **48/48**, OFF **14/14**, every case three times (144 / 42
 executions, 538.76 / 47.00 seconds); current Tk inventory **47/47**. Logs:
 `cut-n03-closure-tests.log` in both build directories. See
 [the bounded audit](../DOCUMENT/cut-view-n03-audit.md) for support limits and image review.
+
+## Native import outcome and replacement acceptance
+
+N04.1 adds `vtk_import`, `draw_vtk_import` and the optional
+`draw_vtk_import_visual`. See [the import contract](../DOCUMENT/cut-view-import.md)
+and [the remaining N04 queue](../DOCUMENT/cut-view-n04-plan.md).
+The native case generates separate build-local fixtures in `vtk-import-fixtures/`;
+DRAW consumes them through the `vtk_import_fixtures` CTest dependency.
+
+The tests cover portable success, ON native fallback for VTU/VTP/legacy Polylines,
+uppercase suffixes, original CellData, rejected mapping fallback, malformed XML,
+missing composite children, warnings through series, quiet OCCT report emission,
+report reset and preservation of the old Viewer object/mesh/fields after failure.
+OFF explicitly rejects unsupported Polylines. The visual case also requires a
+nonblank ordinary Viewer reference and zero changed pixels after three failed
+`scvreadmesh` replacements. Images are in `draw-import/`.
+
+The executable initializes TKDraw's Tcl runtime and CTest requires its explicit
+PASS marker, so SDK process finalization cannot turn a failed check into a pass.
+Viewer lifecycle checks run on Windows and on Linux with an X display; without
+`DISPLAY`, the executable explicitly reports that part as skipped. The reduced
+DRAW/Viewer-disabled build still runs reader/report checks without linking Viewer.

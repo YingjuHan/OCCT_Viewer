@@ -4,13 +4,7 @@
 #include <ViewCaeGeom/MeshCutIntegration.h>
 #include <ViewCaeGeom/MeshCutUnion.h>
 #include <RWCae/MeshAdaptorsIterator.h>
-#include <RWVtk/VtkLegacyReader.h>
-#include <RWVtk/VtkPolyDataReader.h>
-#include <RWVtk/VtkSeriesReader.h>
-#include <RWVtk/VtkUnstructuredGridReader.h>
-#ifdef OCCTV_USE_VTK
-#include <RWVtk/VtkNativeReader.h>
-#endif
+#include <RWMeshConv/MeshLoader.h>
 #include <ViewerTest.hxx>
 #include <ViewerTest_EventManager.hxx>
 #include <AIS_InteractiveContext.hxx>
@@ -63,6 +57,7 @@ bool cutBoolean(const char* argument)
 }
 
 struct CutModel {
+    RWVtk::VtkImportReport ImportReport;
     uint64_t Generation = 0;
     std::string Source;
     Handle(RWCae::MeshData) Mesh;
@@ -213,36 +208,13 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
         if ((action == "read" || action == "replace") && argc == 4) {
             if (action == "read" && models.count(name)) { throw std::invalid_argument("Cut model already exists"); }
             const std::string path(argv[3]);
-            const auto ends = [&path](const std::string& ext) { return path.size() >= ext.size() && path.compare(path.size()-ext.size(), ext.size(), ext) == 0; };
             CutModel model;
-            if (ends(".vtm.series")) {
-                RWVtk::VtkSeriesReader reader;
-                if (!reader.Perform(argv[3])) { throw std::runtime_error("VTK series import failed"); }
-                model.Mesh = reader.GetMergedMeshData();
-            } else if (ends(".vtm")) {
-                RWVtk::VtkMultiBlockDataReader reader;
-                if (!reader.Perform(argv[3])) { throw std::runtime_error("VTK composite import failed"); }
-                model.Mesh = reader.GetMergedMeshData();
-            } else if (ends(".vtk")) {
-                RWVtk::VtkLegacyReader reader;
-                if (reader.Perform(argv[3])) { model.Mesh = reader.GetMeshData(); }
-            } else if (ends(".vtp")) {
-                RWVtk::VtkPolyDataReader reader;
-                if (reader.Perform(argv[3])) { model.Mesh = reader.GetMeshData(); }
-            } else {
-                RWVtk::VtkUnstructuredGridReader reader;
-                if (reader.Perform(argv[3])) { model.Mesh = reader.GetMeshData(); }
-            }
-#ifdef OCCTV_USE_VTK
+            RWMeshConv::MeshLoader loader;
+            model.Mesh = loader.OpenMesh(OSD_FileSystem::DefaultFileSystem(), argv[3]);
+            model.ImportReport = loader.VtkReport();
             if (model.Mesh.IsNull()) {
-                RWVtk::VtkNativeReader reader;
-                if (!reader.Perform(argv[3])) {
-                    throw std::runtime_error(reader.Report().errors.empty() ? "Native VTK import failed" : reader.Report().errors.front());
-                }
-                model.Mesh = reader.GetMeshData();
+                throw std::runtime_error(model.ImportReport.errors.empty() ? "VTK import failed" : model.ImportReport.errors.front());
             }
-#endif
-            if (model.Mesh.IsNull()) { throw std::runtime_error("VTK import failed; general cells require OCCTV_USE_VTK"); }
             model.View = new ViewCae::InteractiveCaeCutView(model.Mesh);
             for (RWCae::MeshEntityId n = 0; n < model.Mesh->NbNodes(); ++n) {
                 const auto& p = model.Mesh->Nodes()[n];
@@ -274,7 +246,28 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
         auto& model = found->second;
         auto& cuts = model.View->Cuts();
         bool ok = false;
-        if (action == "info" && argc == 3) {
+        if (action == "importreport" && argc == 3) {
+            const auto& report = model.ImportReport;
+            auto messages = [&](const std::vector<std::string>& values) {
+                di << " {";
+                for (const auto& value : values) { di.AppendElement(value.c_str()); }
+                di << "}";
+            };
+            di << "succeeded " << (int)report.succeeded << " source"; di.AppendElement(report.source.c_str());
+            di << " format"; di.AppendElement(report.format.c_str());
+            di << " backend"; di.AppendElement(report.backend.c_str());
+            di << " points " << (int)report.points << " cells " << (int)report.cells << " fields " << (int)report.fields;
+            di << " errors"; messages(report.errors);
+            di << " warnings"; messages(report.warnings);
+            di << " attempts {";
+            for (const auto& attempt : report.attempts) {
+                di << " {backend"; di.AppendElement(attempt.backend.c_str());
+                di << " succeeded " << (int)attempt.succeeded << " errors"; messages(attempt.errors);
+                di << " warnings"; messages(attempt.warnings); di << "}";
+            }
+            di << "}";
+            return 0;
+        } else if (action == "info" && argc == 3) {
             di << "generation " << std::to_string(model.Generation).c_str() << " source";
             di.AppendElement(model.Source.c_str());
             di << " points " << (int)model.Mesh->NbNodes() << " cells " << (int)model.Mesh->NbIndexedElems();
@@ -820,7 +813,7 @@ void ViewCaeTest::CutViewCommands::Factory(Draw_Interpretor& di)
         imageStats, "SC Viewer CAE Prs");
     di.Add("scvcutimagecompare", "scvcutimagecompare reference.png actual.png: RGB byte differences", __FILE__,
         imageCompare, "SC Viewer CAE Prs");
-    di.Add("scvcutview", "scvcutview name read/replace file | info | defaults | add/move id A B C D | visibility id mask\n"
+    di.Add("scvcutview", "scvcutview name read/replace file | info | importreport | defaults | add/move id A B C D | visibility id mask\n"
         "  | isoadd/isomove id point/cell field rawComponent value [timeStep] | isovalue id value\n"
         "  | sphereadd/spheremove id centerX centerY centerZ radius | radius id radius\n"
         "  | cylinderadd/cylindermove id centerX centerY centerZ axisX axisY axisZ radius\n"

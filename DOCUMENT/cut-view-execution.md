@@ -14,9 +14,10 @@ Current environment, test counts and remaining work are recorded
 in [cut-view-native-handoff.md](cut-view-native-handoff.md); older milestone counts
 below describe their original validation runs.
 
-Current acceptance: VTK-enabled **48/48**, VTK-disabled **14/14**,
-each case passing three times (538.76 / 47.00 seconds; 144 / 42 executions).
-Logs: `cut-n03-closure-tests.log`
+Current acceptance after N04.1: VTK-enabled **51/51**, VTK-disabled **16/16**,
+each case passing three times (604.78 / 50.79 seconds; 153 / 48 executions).
+The DRAW/Viewer-disabled import test also passes three times.
+Logs: `cut-n04-diagnostics-tests.log`
 in both build directories. Two historical external fixtures are absent from the
 current official data set; their old counts are not reused.
 
@@ -42,7 +43,8 @@ The plane-interaction repair gate R00 takes priority over new cut shapes.
 N02 closure passed: [queue and evidence](cut-view-n02-plan.md),
 [bounded audit](cut-view-n02-audit.md). The [N03 queue](cut-view-n03-plan.md) is now
 verified at [the closure scope](cut-view-n03-audit.md); all earlier increments
-remain in the regression suite. N04-N09 are queued; N04 is next and has not started.
+remain in the regression suite. [N04](cut-view-n04-plan.md) is active with the import
+diagnostic/publication foundation first; N05-N09 remain queued.
 
 | ID | Task | Depends On | Acceptance | Status |
 | --- | --- | --- | --- | --- |
@@ -73,7 +75,7 @@ remain in the regression suite. N04-N09 are queued; N04 is next and has not star
 | I03 | Resultant overlays, distributed resultants and exportable reports | I02, M06, D03 | Arrow directions, group sums and interval report checks | queued |
 | A01 | Automatic crack-distance cuts from explicitly mapped fields | G01, G03 | Sign/threshold semantics, provenance and special display states | queued |
 | A02 | Automatic optimization-density cuts | G01, G04 | Mapping/range validation and reproducible thresholds | queued |
-| B01 | Import diagnostics through MeshLoader and Viewer | V04 | Structured warnings/errors reach caller without data loss | queued |
+| B01 | Import diagnostics through MeshLoader and Viewer | V04 | Structured warnings/errors reach caller without data loss | partial: N04.1 report/publication foundation; full format/staging closure remains N04.3-N04.7 |
 | B02 | Relative-file staging for composite manifests and series | V03, B01 | Nested relative paths, missing files and duplicate names | queued |
 | B03 | Native Viewer cut API; TypeScript excluded | M07, D02, B02 | Lifecycle, field bindings, drag events and error contracts | queued |
 | B04 | Production Vue Cut View Manager and all shape controls | B03, M03, M04, M05 | Full user workflows, desktop/mobile layout and real pointer tests | excluded: web |
@@ -379,5 +381,5 @@ Final ON 48/48 and OFF 14/14 each pass three times (144 / 42 executions,
 the 48-concrete-cell matrix and transparent cloud comparisons. Source repair:
 `3a1fd44`; diagnostics/transparent gate: `eba2a37`. Logs and explicit support
 limits are recorded in [the N03 audit](cut-view-n03-audit.md).
-N04-N09 remain queued, with import/ordinary Viewer work next. Full-frame
+N04 is now active in [its queue](cut-view-n04-plan.md); N05-N09 remain queued. Full-frame
 performance, complete native sessions and excluded Web/WASM work remain open.

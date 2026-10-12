@@ -62,8 +62,7 @@ bool VtkMultiBlockDataReader::processBlock(const LDOM_Element& theElem, const Ha
         } else {
             aSubNode = theTreeNode->GetChild(aChildName);
             if (aSubNode.IsNull()) {
-                Message::SendFail() << "Error: Loaded MeshData has no subblock '" << aChildName << "'";
-                return false;
+                return fail(std::string("Loaded MeshData has no subblock '") + aChildName.ToCString() + "'");
             }
         }
 
@@ -88,8 +87,7 @@ bool VtkMultiBlockDataReader::processBlock(const LDOM_Element& theElem, const Ha
         } else {
             aSubNode = theTreeNode->GetChild(aChildName);
             if (aSubNode.IsNull()) {
-                Message::SendFail() << "Error: Loaded MeshData has no subblock '" << aChildName << "'";
-                return false;
+                return fail(std::string("Loaded MeshData has no subblock '") + aChildName.ToCString() + "'");
             }
         }
 
@@ -117,6 +115,7 @@ bool VtkMultiBlockDataReader::processDataSet(const TCollection_AsciiString&  the
     aProbeFileName.LowerCase();
     if (aProbeFileName.EndsWith(".vtu")) {
         VtkUnstructuredGridReader aVtuReader;
+        aVtuReader.SetToReportMessages(myToReportMessages);
         aVtuReader.SetMappingInfo(myMappingInfo);
         aVtuReader.SetTimeStep(myTimeStep);
         if (myHasExplicitTimeStamp) { aVtuReader.SetTimeStamp(myTimeStamp); }
@@ -125,9 +124,11 @@ bool VtkMultiBlockDataReader::processDataSet(const TCollection_AsciiString&  the
         }
         if (!aVtuReader.Perform(theFileName)) {
             for (const auto& anError : aVtuReader.Report().errors) { myReport.errors.push_back(anError); }
+            myReport.warnings.insert(myReport.warnings.end(), aVtuReader.Report().warnings.begin(), aVtuReader.Report().warnings.end());
             return false;
         }
 
+        myReport.warnings.insert(myReport.warnings.end(), aVtuReader.Report().warnings.begin(), aVtuReader.Report().warnings.end());
         if (!myIsMeshDataLoaded) {
             theTreeNode->NodeMeshData   = aVtuReader.GetMeshData();
             theTreeNode->StoredElements = aVtuReader.GetStoredElements();
@@ -137,6 +138,7 @@ bool VtkMultiBlockDataReader::processDataSet(const TCollection_AsciiString&  the
         myReport.fields += aVtuReader.Report().fields;
     } else if (aProbeFileName.EndsWith(".vtp")) {
         VtkPolyDataReader aVtpReader;
+        aVtpReader.SetToReportMessages(myToReportMessages);
         aVtpReader.SetMappingInfo(myMappingInfo);
         aVtpReader.SetTimeStep(myTimeStep);
         if (myHasExplicitTimeStamp) { aVtpReader.SetTimeStamp(myTimeStamp); }
@@ -145,9 +147,11 @@ bool VtkMultiBlockDataReader::processDataSet(const TCollection_AsciiString&  the
         }
         if (!aVtpReader.Perform(theFileName)) {
             for (const auto& anError : aVtpReader.Report().errors) { myReport.errors.push_back(anError); }
+            myReport.warnings.insert(myReport.warnings.end(), aVtpReader.Report().warnings.begin(), aVtpReader.Report().warnings.end());
             return false;
         }
 
+        myReport.warnings.insert(myReport.warnings.end(), aVtpReader.Report().warnings.begin(), aVtpReader.Report().warnings.end());
         if (!myIsMeshDataLoaded) {
             theTreeNode->NodeMeshData   = aVtpReader.GetMeshData();
             theTreeNode->StoredElements = aVtpReader.GetStoredElements();

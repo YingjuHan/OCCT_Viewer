@@ -3,6 +3,16 @@ add_executable (occtviewer_tests VtkTests.cpp)
 target_link_libraries (occtviewer_tests PRIVATE RWVtk RWMeshConv ViewCaeGeom ZLIB::ZLIB)
 target_compile_definitions (occtviewer_tests PRIVATE VTK_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/fixtures/")
 add_test (NAME vtk_reader COMMAND occtviewer_tests)
+add_executable (vtk_import_tests VtkImportTests.cpp)
+target_link_libraries (vtk_import_tests PRIVATE RWMeshConv)
+if (TARGET Viewer)
+  target_link_libraries (vtk_import_tests PRIVATE Viewer)
+  target_compile_definitions (vtk_import_tests PRIVATE OCCTV_TEST_VIEWER)
+endif()
+target_compile_definitions (vtk_import_tests PRIVATE VTK_IMPORT_FIXTURE_DIR="${CMAKE_CURRENT_BINARY_DIR}/vtk-import-fixtures" VTK_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/fixtures")
+add_test (NAME vtk_import COMMAND vtk_import_tests)
+set_tests_properties (vtk_import PROPERTIES FIXTURES_SETUP vtk_import_fixtures TIMEOUT 60
+  PASS_REGULAR_EXPRESSION "VTK_IMPORT_PASS" FAIL_REGULAR_EXPRESSION "VTK_IMPORT_FAIL")
 add_executable (cut_view_tests CutViewTests.cpp)
 target_link_libraries (cut_view_tests PRIVATE ViewCaeGeom ViewCae)
 add_test (NAME cut_view COMMAND cut_view_tests)
@@ -82,7 +92,7 @@ endif()
 add_executable (cut_view_benchmark CutViewBenchmark.cpp)
 target_link_libraries (cut_view_benchmark PRIVATE ViewCaeGeom)
 if (UNIX)
-  set_tests_properties (vtk_reader cut_view quadric_cut cut_recovery cut_tensor cut_trace_binding PROPERTIES ENVIRONMENT "LD_LIBRARY_PATH=${OpenCASCADE_LIBRARY_DIR}:$ENV{LD_LIBRARY_PATH}")
+  set_tests_properties (vtk_reader vtk_import cut_view quadric_cut cut_recovery cut_tensor cut_trace_binding PROPERTIES ENVIRONMENT "LD_LIBRARY_PATH=$<TARGET_FILE_DIR:ViewCaeGeom>:${OpenCASCADE_LIBRARY_DIR}:$ENV{LD_LIBRARY_PATH}")
 endif()
 
 if (TARGET ViewDraw)
@@ -96,6 +106,11 @@ if (TARGET ViewDraw)
       "DRAWHOME=${OpenCASCADE_RESOURCE_DIR}/DrawResources"
       "DRAWDEFAULT=${OpenCASCADE_RESOURCE_DIR}/DrawResources/DrawDefault"
       "LD_LIBRARY_PATH=$<TARGET_FILE_DIR:ViewDraw>:${OpenCASCADE_LIBRARY_DIR}:$ENV{LD_LIBRARY_PATH}")
+    add_test (NAME draw_vtk_import COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/vtk_import.tcl")
+    set_tests_properties (draw_vtk_import PROPERTIES
+      ENVIRONMENT "${DRAW_TEST_ENV};VTK_IMPORT_FIXTURES=${CMAKE_CURRENT_BINARY_DIR}/vtk-import-fixtures;VTK_IMPORT_HAS_NATIVE=$<BOOL:${OCCTV_USE_VTK}>"
+      FIXTURES_REQUIRED vtk_import_fixtures TIMEOUT 60
+      PASS_REGULAR_EXPRESSION "VTK_IMPORT_DRAW_PASS" FAIL_REGULAR_EXPRESSION "VTK_IMPORT_DRAW_FAIL")
     set_tests_properties (draw_cut_view PROPERTIES ENVIRONMENT "${DRAW_TEST_ENV}"
       PASS_REGULAR_EXPRESSION "CUT_VIEW_DRAW_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_DRAW_FAIL")
     add_test (NAME draw_cut_view_iso COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_iso.tcl")
@@ -150,6 +165,11 @@ if (TARGET ViewDraw)
     set_tests_properties (draw_cut_view_recovery PROPERTIES ENVIRONMENT "${DRAW_TEST_ENV}"
       PASS_REGULAR_EXPRESSION "CUT_VIEW_RECOVERY_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" TIMEOUT 90)
     if (OCCTV_TEST_DRAW_VISUAL)
+      add_test (NAME draw_vtk_import_visual COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/vtk_import.tcl")
+      set_tests_properties (draw_vtk_import_visual PROPERTIES
+        ENVIRONMENT "${DRAW_TEST_ENV};VTK_IMPORT_FIXTURES=${CMAKE_CURRENT_BINARY_DIR}/vtk-import-fixtures;VTK_IMPORT_HAS_NATIVE=$<BOOL:${OCCTV_USE_VTK}>;VTK_IMPORT_VISUAL=1;VTK_IMPORT_OUTPUT=${CMAKE_CURRENT_BINARY_DIR}/draw-import"
+        FIXTURES_REQUIRED vtk_import_fixtures RUN_SERIAL TRUE TIMEOUT 90
+        PASS_REGULAR_EXPRESSION "VTK_IMPORT_DRAW_PASS" FAIL_REGULAR_EXPRESSION "VTK_IMPORT_DRAW_FAIL")
       add_test (NAME draw_cut_view_recovery_visual COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_recovery.tcl")
       set_tests_properties (draw_cut_view_recovery_visual PROPERTIES
         ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_RECOVERY_VISUAL=1;CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-recovery"

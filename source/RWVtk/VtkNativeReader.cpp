@@ -11,10 +11,13 @@
 #include <vtkSmartPointer.h>
 #include <vtkXMLGenericDataObjectReader.h>
 #include <vtkCommand.h>
+#include <vtkExecutive.h>
 #include <vtkUnstructuredGrid.h>
 #include <Standard_Failure.hxx>
 
 #include <cmath>
+#include <algorithm>
+#include <cctype>
 #include <limits>
 #include <map>
 #include <set>
@@ -67,21 +70,32 @@ bool VtkNativeReader::Perform(const TCollection_AsciiString& filename)
     try {
         vtkSmartPointer<vtkDataSet> data;
         vtkSmartPointer<ImportErrors> errors = vtkSmartPointer<ImportErrors>::New();
+        vtkSmartPointer<ImportErrors> warnings = vtkSmartPointer<ImportErrors>::New();
         const std::string path(filename.ToCString());
-        if (path.size() >= 4 && path.substr(path.size()-4) == ".vtk") {
+        std::string lowerPath = path;
+        std::transform(lowerPath.begin(), lowerPath.end(), lowerPath.begin(), [](unsigned char c) { return (char)std::tolower(c); });
+        if (lowerPath.size() >= 4 && lowerPath.substr(lowerPath.size()-4) == ".vtk") {
             vtkNew<vtkGenericDataObjectReader> reader;
             reader->AddObserver(vtkCommand::ErrorEvent,errors);
+            reader->AddObserver(vtkCommand::WarningEvent,warnings);
+            reader->GetExecutive()->AddObserver(vtkCommand::ErrorEvent,errors);
             reader->SetFileName(path.c_str()); reader->ReadAllScalarsOn(); reader->ReadAllVectorsOn();
-            reader->ReadAllTensorsOn(); reader->ReadAllFieldsOn(); reader->Update();
+            reader->ReadAllTensorsOn(); reader->ReadAllFieldsOn();
+            if (!reader->GetExecutive()->Update()) { throw std::runtime_error("Native VTK legacy pipeline failed"); }
             data = vtkDataSet::SafeDownCast(reader->GetOutput());
         } else {
             vtkNew<vtkXMLGenericDataObjectReader> reader;
             reader->AddObserver(vtkCommand::ErrorEvent,errors);
-            reader->SetFileName(path.c_str()); reader->Update();
+            reader->AddObserver(vtkCommand::WarningEvent,warnings);
+            reader->GetExecutive()->AddObserver(vtkCommand::ErrorEvent,errors);
+            reader->SetFileName(path.c_str());
+            if (!reader->GetExecutive()->Update()) { throw std::runtime_error("Native VTK XML pipeline failed"); }
             data = vtkDataSet::SafeDownCast(reader->GetOutput());
         }
+        if (!warnings->Message.empty()) { myReport.warnings.push_back(warnings->Message); }
         if (!errors->Message.empty()) { throw std::runtime_error(errors->Message); }
-        if (!data || data->GetNumberOfPoints() > std::numeric_limits<int>::max()
+        if (!data || (data->GetNumberOfPoints() == 0 && data->GetNumberOfCells() == 0)
+            || data->GetNumberOfPoints() > std::numeric_limits<int>::max()
             || data->GetNumberOfCells() > std::numeric_limits<int>::max()) {
             throw std::runtime_error("Native VTK requires a dataset within native entity limits");
         }
