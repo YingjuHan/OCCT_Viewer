@@ -7,14 +7,16 @@ Native acceptance uses the existing `VIEWDRAW` plugin and Tcl scripts under `tes
 Do not add a separate `CUTVIEW` plugin or modify the existing `AGENTS.md`.
 
 The Windows continuation now has VTK 9.5.2/MinGW SDK support, expanded native/DRAW
-wedge/pyramid independent references, and N03 recovery robustness/metadata repairs.
-G04/N03 is partial. Current environment, test counts and remaining work are recorded
+curve/surface/tetra/hex/wedge/pyramid independent references, analytic precision
+fallback repair, and N03 recovery robustness/metadata repairs. N02/G03 and G04/N03
+remain partial. Current environment, test counts and remaining work are recorded
 in [cut-view-native-handoff.md](cut-view-native-handoff.md); older milestone counts
 below describe their original validation runs.
 
-Acceptance: VTK-enabled **32/32**, each case passing three times (232.34 seconds);
-VTK-disabled **8/8**, each case passing three times (4.56 seconds). Images for recovery,
-analytic sections and VTK held motion were inspected. Two historical external fixtures
+Acceptance: VTK-enabled **35/35**, each case passing three times (635.41 seconds);
+VTK-disabled **8/8**, each case passing three times (7.75 seconds). The final clipped
+reference visual case passed three additional runs; its initial/held images were
+inspected alongside the earlier recovery, analytic and VTK evidence. Two historical external fixtures
 are absent from the current official data set; the old 34-case count is not reused.
 
 ## Baseline
@@ -36,12 +38,17 @@ native session persistence. Original web tasks remain recorded, not completed.
 Status: **active**, **queued**, **partial**, **environment pending**, or **verified**.
 The plane-interaction repair gate R00 takes priority over new cut shapes.
 
+N02 remains partial and has priority over new N03 work. Its concrete closure
+queue is [cut-view-n02-plan.md](cut-view-n02-plan.md): remaining family references,
+analytic support/precision gates, higher-order field isosurfaces, then a closure
+audit. Existing N03 recovery increments are retained and tested.
+
 | ID | Task | Depends On | Acceptance | Status |
 | --- | --- | --- | --- | --- |
 | R00 | Plane held-drag recomputation, every existing control, interactive DRAW/Tk crashes and invalid-input handling | Baseline | Interactive (-i) menus/dialogs, current 32/32 controls; pre-release geometry/field/pixel assertions; all regressions | verified |
 | G01 | Field isosurface: fixed field/component/step binding, below/on/above, surface lines, live threshold, definition migration | Baseline | Native numerical tests, all masks, independent contour changes, DRAW pixels and manager controls | verified |
 | G02 | Cylinder and sphere: position/axis/radius, enclosed intersections, three portions | G01 | Analytic volume/area checks, same-sign vertex cases, DRAW interaction | partial: 48 concrete VTK types, shared BVH/cache and conforming curved-reference adjacency verified; mismatching interfaces stay visible; full-frame performance pending |
-| G03 | Exact second-order cell geometry and FE result interpolation | G02 | Curved-cell reference solutions and convergence tests; explicit unsupported-cell diagnostics | partial: supported numerical/analytic boundaries and expanded wedge/pyramid native/DRAW independent references verified; general family/precision limits remain; exact arbitrary-order intersections not claimed |
+| G03 | Exact second-order cell geometry and FE result interpolation | G02 | Curved-cell reference solutions and convergence tests; explicit unsupported-cell diagnostics | partial: curve/surface/tetra/hex/wedge/pyramid independent references and bounded precision fallback verified; higher-order field isosurfaces and closure audit remain; exact arbitrary-order intersections not claimed |
 | G04 | Cell recovery/averaging thresholds, region boundaries and discontinuity policies | G03 | Constant and recovered results verified across material boundaries; physical fields unchanged | partial: region/threshold and element-node recovery, vector magnitude order and original physical mapping implemented; tensor invariants, explicit interface traces, manager widgets and persistence pending |
 | G05 | Multi-cut OR boundary merging, deduplication and shared opacity | G02 | Overlapping/touching cuts, no duplicate faces or darkened overlap, all masks | queued |
 | M01 | Native model lifecycle, defaults X/Y/Z, selection independent of activation | R00 | Open/replace/close model tests and deterministic defaults | verified |
@@ -218,8 +225,9 @@ no million-cell full-frame/FPS claim follows from this acceptance.
 
 ## Next Task
 
-Finish N02 analytic source acceptance and remaining curved-family evidence, then
-start N03 recovery/physical trace policies and multi-cut OR boundary/cap merging.
+Finish the N02 queue in [cut-view-n02-plan.md](cut-view-n02-plan.md), including
+generic/high-order field isosurfaces and the final geometry/FE/precision audit.
+Only then resume N03 recovery/physical trace policies and multi-cut OR boundary/cap merging.
 Preserve all 48-cell, real-fixture and held-pointer gates. Do not substitute field isosurfaces
 or corner-only interpolation for geometric sections.
 

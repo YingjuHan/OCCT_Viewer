@@ -32,7 +32,12 @@ if (OCCTV_USE_VTK)
   target_compile_definitions (cut_analytic_tests PRIVATE CUT_ANALYTIC_FIXTURE_DIR="${CMAKE_CURRENT_BINARY_DIR}/cut-analytic-fixtures")
   add_test (NAME cut_analytic COMMAND cut_analytic_tests)
   set_tests_properties (cut_analytic PROPERTIES TIMEOUT 180 FIXTURES_SETUP cut_analytic_fixtures)
-  set (VTK_NATIVE_TESTS vtk_cell_cut general_cut_cache cut_geometry cut_analytic)
+  add_executable (cut_reference_tests CutReferenceTests.cpp)
+  target_link_libraries (cut_reference_tests PRIVATE RWVtk ViewCaeGeom)
+  target_compile_definitions (cut_reference_tests PRIVATE CUT_REFERENCE_FIXTURE_DIR="${CMAKE_CURRENT_BINARY_DIR}/cut-reference-fixtures")
+  add_test (NAME cut_reference COMMAND cut_reference_tests)
+  set_tests_properties (cut_reference PROPERTIES TIMEOUT 180 FIXTURES_SETUP cut_reference_fixtures)
+  set (VTK_NATIVE_TESTS vtk_cell_cut general_cut_cache cut_geometry cut_analytic cut_reference)
   set_tests_properties (vtk_cell_cut PROPERTIES TIMEOUT 300 FIXTURES_SETUP vtk_cell_fixtures)
   set (OCCTV_VTK_TEST_DATA "" CACHE PATH "Optional VTK ExternalData/Testing/Data directory")
   foreach (fixture quadraticTetra01.vtu onePolyhedron.vtu concavePolyhedron.vtu nonplanar_quad.vtk Disc_BiQuadraticQuads_0_0.vtu cube.vtu)
@@ -81,6 +86,11 @@ if (TARGET ViewDraw)
     set_tests_properties (draw_cut_view_quadric PROPERTIES ENVIRONMENT "${DRAW_TEST_ENV}"
       PASS_REGULAR_EXPRESSION "CUT_VIEW_QUADRIC_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" TIMEOUT 60)
     if (OCCTV_USE_VTK)
+      add_test (NAME draw_cut_view_references COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_references.tcl")
+      set_tests_properties (draw_cut_view_references PROPERTIES
+        ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_REFERENCE_FIXTURES=${CMAKE_CURRENT_BINARY_DIR}/cut-reference-fixtures"
+        FIXTURES_REQUIRED cut_reference_fixtures TIMEOUT 120
+        PASS_REGULAR_EXPRESSION "CUT_VIEW_REFERENCE_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_REFERENCE_FAIL")
       add_test (NAME draw_cut_view_analytic COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_analytic.tcl")
       set_tests_properties (draw_cut_view_analytic PROPERTIES
         ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_ANALYTIC_FIXTURES=${CMAKE_CURRENT_BINARY_DIR}/cut-analytic-fixtures"
@@ -112,6 +122,11 @@ if (TARGET ViewDraw)
         ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_RECOVERY_VISUAL=1;CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-recovery"
         PASS_REGULAR_EXPRESSION "CUT_VIEW_RECOVERY_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" RUN_SERIAL TRUE TIMEOUT 90)
       if (OCCTV_USE_VTK)
+        add_test (NAME draw_cut_view_references_visual COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_references.tcl")
+        set_tests_properties (draw_cut_view_references_visual PROPERTIES
+          ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_REFERENCE_FIXTURES=${CMAKE_CURRENT_BINARY_DIR}/cut-reference-fixtures;CUTVIEW_REFERENCE_VISUAL=1;CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-references"
+          FIXTURES_REQUIRED cut_reference_fixtures RUN_SERIAL TRUE TIMEOUT 180
+          PASS_REGULAR_EXPRESSION "CUT_VIEW_REFERENCE_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_REFERENCE_FAIL")
         add_test (NAME draw_cut_view_analytic_visual COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_analytic.tcl")
         set_tests_properties (draw_cut_view_analytic_visual PROPERTIES
           ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_ANALYTIC_FIXTURES=${CMAKE_CURRENT_BINARY_DIR}/cut-analytic-fixtures;CUTVIEW_ANALYTIC_VISUAL=1;CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-analytic"

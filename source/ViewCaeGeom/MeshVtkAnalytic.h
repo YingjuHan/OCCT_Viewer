@@ -7,7 +7,8 @@
 #include <vtkCell.h>
 
 namespace ViewCaeGeom {
-//! Exact polynomial/rational parameter conversion; unsupported orders return null.
+//! Polynomial/rational parameter conversion through degree six. Unsupported charts
+//! or normalized positive weights <=1e-12 return null; invalid weights are rejected.
 Handle(Geom_BezierSurface) VtkAnalyticSurface(vtkCell* cell, Bnd_Box& bounds, double& residual);
 Handle(Geom_BezierCurve) VtkAnalyticCurve(vtkCell* cell, Bnd_Box& bounds, double& residual);
 }

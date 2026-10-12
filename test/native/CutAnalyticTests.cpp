@@ -33,7 +33,7 @@ void near(double actual, double expected, double tolerance, const char* message)
 }
 Handle(RWCae::MeshData) fixture(int type, bool rational = false, int count = 0)
 {
-    const int size = count ? count : type == 24 ? 10 : type == 25 ? 20 : type == 21 ? 3 : 27;
+    const int size = count ? count : type == 24 ? 10 : type == 25 ? 20 : type == 33 ? 24 : type == 21 ? 3 : 27;
     vtkNew<vtkGenericCell> cell; cell->SetCellType(type);
     cell->GetPoints()->SetNumberOfPoints(size); cell->GetPointIds()->SetNumberOfIds(size);
     for (int n = 0; n < size; ++n) { cell->GetPointIds()->SetId(n,n); }
@@ -296,7 +296,7 @@ void writeFixture(const Handle(RWCae::MeshData)& mesh, const std::string& name, 
 int main()
 {
     try {
-        for (int type : {25,29,72,79}) { box(type); }
+        for (int type : {25,29,33,72,79}) { box(type); }
         for (int type : {26,31,32,73,80}) { wedge(type); }
         wedge(80,true); pyramid(27); pyramid(37);
         tetra(); curveAndFallback(); polygon(); writeFixture(fixture(24),"bowed_tetra",true); std::cout << "CUT_ANALYTIC_NATIVE_PASS\n"; return 0;

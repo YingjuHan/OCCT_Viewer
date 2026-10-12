@@ -2,16 +2,17 @@
 
 ## 1. 接续范围与当前停点
 
-用户已在 Windows 工作区发出继续开发指令。当前接续收尾 N02 曲面参考与
-N03 恢复数值/元数据，并重建原生验证环境。后文的 Linux 验证记录保留为历史证据；
+用户已在 Windows 工作区发出继续开发指令。当前优先完成 N02 独立参考、
+解析支持/精度边界、高阶场等值面及闭环审计；已有 N03 恢复数值/元数据保留并回归。
+后文的 Linux 验证记录保留为历史证据；
 本次 Windows 配置与结果以本节及第 6 节的接续记录为准。
 
 - 仓库：`D:/workspace/OpenCASCADE/OCCT_Viewer`；分支：`develop`；接续基线 HEAD：`95fb291`。
 - 目标：完成原生 Cut View Manager 的 N02-N09 及对应 TODO，实施、修复并通过 native/DRAW 验收。
 - 排除：Web/Vue/TypeScript、浏览器测试、WASM SDK 与打包。排除项不是 done。
-- 本次已完成 N02 曲楔体/金字塔扩展参考及 Windows 双配置验收；当前阶段为 N03 恢复策略增量，
-  N03 尚未整体完成，N04-N09 尚未实施。
-- 本次功能、测试和文档纳入同一 Git 提交；保留用户既有修改及 `AGENTS.md`。
+- 上轮曲楔体/金字塔参考及恢复增量已提交为 `d02dd2e`；本轮继续 N02，
+  N02/N03 尚未整体完成，N04-N09 尚未实施。
+- 本轮 N02 功能、测试和文档修改留在工作区；保留用户既有修改及 `AGENTS.md`。
 
 接续时以本说明的最新证据为准。主交接、执行队列和设计中的当前 N03 状态已同步为 partial；
 历史 milestone 的 31/34 cases 记录保留，不代表当前 Windows 套件计数，也不能据此把未完成阶段改为 done。
@@ -55,7 +56,7 @@ N03 恢复数值/元数据，并重建原生验证环境。后文的 Linux 验�
 | VTK 源码/构建 | `D:/workspace/VTK/vtk-9.5.2` / `build-9.5.2-mingw64` |
 | VTK 官方数据 | `D:/workspace/VTK/test-data-9.5.2`，六个 SHA512 校验文件 |
 | 本项目当前构建 | `build/mingw`，MinGW Debug，VTK ON，DRAW/visual ON，Web OFF |
-| 无 VTK 验证 | 同一 cache 先配置 VTK OFF / visual OFF，8/8 各三次通过 |
+| 无 VTK 验证 | `build/mingw-no-vtk`，MinGW Debug，VTK OFF / visual OFF；8/8 各三次通过 |
 | 产物 | `build/mingw/bind/`、`build/mingw/libd/` |
 
 使用自定义 OCCT SDK。Windows 应用现有补丁中的 `AIS_ViewController.cxx` 和
@@ -186,7 +187,29 @@ Windows 接续已收尾 fixture 的 double-to-float 显式转换。上述八个�
 - 同时已查看 `draw-analytic/held_3.png`、`draw-vtk-cells/cell_12_held_2.png`，
   解析截面和 VTK 拖曳云图非空，场梯度可见。上述目录均位于 `build/mingw/test/native/`。
 
-### 6.4 历史 Linux 验证时间顺序
+### 6.4 N02 独立参考与解析精度边界
+
+- 执行顺序见 [N02 接续清单](cut-view-n02-plan.md)：先完成参考和精度门槛，再做高阶场等值面及闭环审计；随后恢复 N03 新功能。
+- 新增 `cut_reference`、`draw_cut_view_references` 及 visual 变体，生成 24 组有效曲面家族/阶数参考和两组 unsupported fixture。
+  曲线覆盖 21/35/68/75，曲面覆盖 22/23/28/30/34/69/70/76/77，新增体参考为 71/78；
+  `cut_analytic` 增加混合阶 hex 33。几何 measure 和原始 FE scalar 使用独立多项式/Bernstein moments。
+- 原生检查所有生成节点的非线性 FE 值、partition of unity、移动切面 source reuse 及曲面全部八个 masks；
+  新增三角曲面、有理 quad 和有理 tetra 的 numerical measure 收敛检查。
+- 验证 degree six、各向异性 2x3，以及 rational weights 整体乘 `1e-200`/`1e200` 后的相同几何/FE 参考。
+- 修复 normalized positive weight `<=1e-12` 时 preferred 路径被端点采样异常中断的问题：
+  转换前识别解析精度不支持，preferred 可显式 numerical fallback，required 原子拒绝。
+  fallback 仍受细分/primitive 预算约束；极端权重 fixture 的粗网格只验证回退发布，不证明精度。
+- DRAW 检查几何 plane、独立面积/体积、非线性 FE 值、CellData 和 line field；
+  held-pointer 检查 release 前 revision/pixels、source reuse、abort 回滚。
+- VTK-enabled **35/35** 每项各连续三次通过，105 次通过，635.41 秒；无 VTK **8/8** 每项各连续三次，24 次通过，7.75 秒。
+  无 VTK 使用独立 `build/mingw-no-vtk`，当前 `build/mingw` 保持 VTK/visual ON。
+- 最终 visual 用例只显示 negative+section，让实际云图裁剪边界随拖曳变化；测试调整后该项另连续三次通过，21.55 秒。
+  已查看最终 `draw-references/before.png`、`held_3.png`。控件仍为 32/32，通过完整重复回归。
+- 日志：`build/mingw/cut-n02-build.log`、`cut-n02-vtk-tests.log`、`cut-n02-reference-visual-tests.log`；
+  `build/mingw-no-vtk/cut-n02-build.log`、`cut-n02-tests.log`。
+  N02.1/N02.2 在已列参考/边界范围内 verified；N02.3 高阶场等值面和 N02.4 闭环审计仍未实施，N02 不能整体标 done。
+
+### 6.5 历史 Linux 验证时间顺序
 
 | 时间顺序 | 已证实的结果 | 不应推导出的结论 |
 | --- | --- | --- |
@@ -203,11 +226,12 @@ Windows 接续已收尾 fixture 的 double-to-float 显式转换。上述八个�
 
 1. 已完成：Windows SDK 准备、MinGW 编译问题、恢复元数据/所有分量/极端数值验证，
    八类新曲面 DRAW 独立参考，以及 VTK-enabled/disabled 三次完整回归。
-2. 下一步 N03：完整张量不变量契约、physical interface traces、presentation OR union/cap ownership、
-   manager recovery controls 与对应实际交互验收；恢复设置持久化仍待完成。
-3. G03 仍保留一般曲面家族、precision/fallback 支持边界与高阶场等值面限制；
-   本次八类参考通过不能泛化为所有阶精确或百万单元全帧指标达标。
-4. 随后按 N04-N09 顺序推进；保留工作区修改，更新执行清单只引用实际证据。
+2. 当前优先 N02：[独立参考、解析精度、高阶场等值面、闭环审计](cut-view-n02-plan.md)。
+   N02.1/N02.2 新增用例和修复已三次完整验收；N02.3 高阶场等值面是下一实现任务，N02.4 尚待审计。
+3. N02 完成后继续 N03：完整张量不变量契约、physical interface traces、presentation OR union/cap ownership、
+   manager recovery controls 与实际交互验收；完整恢复/session 持久化仍待完成。
+4. G02/G03 仍保留一般支持/精度与高阶等值面限制；新增参考不能泛化为所有阶精确或百万单元全帧指标达标。
+   随后按 N04-N09 顺序推进；更新执行清单只引用实际证据。
 
 ## 8. 历史 Linux 可复用命令
 
@@ -362,7 +386,7 @@ scvcutview model eval cut
 | R00 | held-drag、所有现有控件、崩溃修复 | verified；后续持续回归 |
 | G01 | 一阶 field isosurface | verified；高阶场等值面仍另行待做，不代替 plane |
 | G02 | sphere/cylinder、一般单元 | partial；全帧性能等仍待验收 |
-| G03 | 高阶几何与 FE、参考精度 | partial；八类曲楔体/金字塔 native/DRAW 参考已三次验收，一般支持/精度边界待做 |
+| G03 | 高阶几何与 FE、参考精度 | partial；曲线/曲面/tetra/hex/wedge/pyramid 参考及有界精度回退已三次验收，高阶场等值面和闭环审计待做 |
 | G04 | recovery/region/threshold/discontinuity | partial；数值、全分量、元数据及显示/物理分离已三次回归，完整 tensor/trace/UI 待做 |
 | G05 | 多 cut OR 边界/cap、opacity | 待做，N03 |
 | M01 | 模型生命周期、defaults、选择/激活分离 | verified |
@@ -403,5 +427,5 @@ scvcutview model eval cut
 5. 视觉变化查看截图；性能变化记录全帧与内存测量，不能只报告非空画面。
 6. 更新执行文档中的具体证据、限制、命令和状态，再推进下一阶段。
 
-推荐接续指令：继续 N03 的完整 tensor/trace、OR union 与原生控件；之后依 N04-N09 实施，
+推荐接续指令：先完成 N02 清单中的高阶场等值面及闭环审计，再继续 N03 的完整 tensor/trace、OR union 与原生控件；之后依 N04-N09 实施，
 保留原有回归与用户修改，Web/WASM 始终排除。Windows 本次数值/参考与双配置验收已完成。

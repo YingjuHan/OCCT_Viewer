@@ -85,7 +85,18 @@ struct Map {
         if (Weights) {
             if (Weights->GetNumberOfValues() != cell->GetNumberOfPoints()) { U = V = 0; return; }
             WeightScale = 0;
-            for (vtkIdType n = 0; n < Weights->GetNumberOfValues(); ++n) { WeightScale = std::max(WeightScale,Weights->GetValue(n)); }
+            double minimum = std::numeric_limits<double>::infinity();
+            for (vtkIdType n = 0; n < Weights->GetNumberOfValues(); ++n) {
+                const double weight = Weights->GetValue(n);
+                if (!std::isfinite(weight) || weight <= 0) {
+                    throw std::invalid_argument("VTK analytic weights must be finite and positive");
+                }
+                WeightScale = std::max(WeightScale,weight); minimum = std::min(minimum,weight);
+            }
+            // The converted control net requires normalized weights above 1e-12.
+            // Reject this representation before endpoint sampling can throw, so
+            // analytic-preferred geometry retains its explicit numerical fallback.
+            if (minimum/WeightScale <= 1e-12) { U = V = 0; return; }
         }
         const auto bounds = cell->GetBounds();
         double extent = 0, coordinate = 0;

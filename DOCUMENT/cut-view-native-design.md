@@ -13,7 +13,9 @@ types. N01 is now implemented and verified: the expanded 25-case suite passes
 three consecutive runs per case. Design completion does not imply completion
 of N02-N09 or the full native manager. N02's numerical foundation passes the
 expanded 28-case suite three times; its analytic second-order geometry work
-remains active. N03-N09 remain scheduled.
+remains partial. The current priority is the [N02 closure queue](cut-view-n02-plan.md).
+Existing N03 recovery increments remain partial; new N03 features follow N02 closure.
+N04-N09 remain scheduled.
 
 ## Existing Boundaries
 
@@ -220,8 +222,16 @@ Planar quadratic polygons use curved wires and original quadratic edge functions
 on their boundary. Exact source shape measures use adaptive OCCT integration;
 display meshes remain tessellated floats. All 31 native/DRAW cases pass three
 consecutive runs per case, and all six VTK-disabled cases pass three times.
-Remaining curved-family reference evidence is still required before closing G03;
+That milestone still needed the remaining curved-family reference evidence;
 general arbitrary-order geometry is not labelled exact.
+
+The remaining-family increment adds independent curve/surface/tetra references,
+mixed-order hex 33, degree-six/anisotropic charts, original nonlinear FE values
+and numerical convergence. It preflights finite positive rational weights and
+returns unsupported for normalized weights `<=1e-12` before endpoint sampling,
+preserving preferred-mode numerical fallback and required-mode atomic rejection.
+Uniform weight scale is not the precision limit. See the N02 queue for acceptance
+and the remaining generic/high-order field isosurface and closure tasks.
 
 ### N03 Recovery Increment (Partial)
 

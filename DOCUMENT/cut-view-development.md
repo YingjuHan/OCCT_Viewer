@@ -17,10 +17,11 @@
 Current execution is native only: Web/Vue/TypeScript and WASM tasks are excluded,
 not completed. Project/session persistence below maps to the native session API.
 
-Current Windows acceptance: VTK-enabled **32/32** and VTK-disabled **8/8**, each case
-passing three consecutive runs. Expanded wedge/pyramid independent references and
-recovery robustness are included. See [the current handoff](cut-view-native-handoff.md)
-for SDK paths, logs, missing historical external fixtures and remaining N03 work.
+Current Windows acceptance: VTK-enabled **35/35** and VTK-disabled **8/8**, each case
+passing three consecutive runs. Curved-family geometry/FE references, analytic
+precision fallback and recovery robustness are included. N02 remains partial;
+see [its completion queue](cut-view-n02-plan.md) and [the current handoff](cut-view-native-handoff.md)
+for SDK paths, logs, missing historical external fixtures and remaining work.
 
 ## Verified Native Work
 
@@ -60,9 +61,12 @@ for SDK paths, logs, missing historical external fixtures and remaining N03 work
 - [x] N02 analytic source increment: OCCT polynomial/rational Bezier boundaries, explicit
   numerical fallback, exact bowed-tetra/warped-hex/curve/polygon references and held-pointer
   clouds; 31/31 native/DRAW cases pass three times.
-- [ ] G03 remaining curved-family independent reference evidence and precision limits.
+- [ ] G03 general family/interface support and precision closure audit; higher-order field isosurfaces.
 - [x] N02 expanded independent references: curved wedges `26/31/32/73/80`, rational
   Bezier wedge `80`, and pyramids `27/37`, with native and DRAW geometry/FE checks.
+- [x] N02.1/N02.2 remaining curve/surface/tetra and mixed-order hex references,
+  original nonlinear FE values, degree-six/anisotropic charts, weight rescaling,
+  numerical convergence and unsupported precision fallback; native/DRAW/visual acceptance.
 - [x] N03 display recovery foundation: region IDs, averaging thresholds, elemental-per-node
   discontinuities, vector magnitude before/after averaging and independent original physical fields.
 - [ ] N03 complete tensor invariants, physical interface traces, OR boundary/cap merging,
@@ -115,8 +119,9 @@ that million-cell rendering meets 15 fps.
    tests. Original high-order FE interpolation and quadratic fields are tested; source geometry is
    still tessellated, not exact arbitrary-order geometry. Tolerance/limit controls and reference
    convergence and supported analytic Bezier source boundaries are implemented in N02;
-   wedge/pyramid native and DRAW references are now included. Remaining families and
-   the general support/precision contract still require bounded acceptance.
+   curve/surface/tetra/hex/wedge/pyramid native and DRAW references are now included.
+   Remaining family/interface variants and the general support/precision closure
+   audit still require bounded acceptance.
    Higher-order field isosurfaces remain open.
 3. Complete multi-cut OR boundary merging/deduplication. Current cuts are independently evaluated and
    additively displayed, not chained as AND clips; overlapping side boundaries are not Boolean-unioned.
@@ -164,6 +169,8 @@ acceptance gates. R00, G01 and native M01 are verified; G02/G03 have a general-c
 but remain partial. Current coverage includes the supplied VTK real-data cases and
 the 48-concrete-cell native/DRAW matrix. N01 and N02's numerical foundation are verified.
 N02 includes supported analytic source boundaries and expanded reference fixtures.
+N02 remains partial and takes priority over new N03 features; the concrete tasks
+and acceptance gates are in [cut-view-n02-plan.md](cut-view-n02-plan.md).
 N03 region/threshold recovery and original physical mapping are implemented; physical
 trace policies, tensor invariants, manager controls and multi-cut boundary/cap union
 remain open. N04-N09 remain queued;

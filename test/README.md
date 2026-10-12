@@ -356,10 +356,38 @@ receive generated events. Windows shell dialogs are excluded from this automated
 the manager's ordinary dialog calls are unchanged. Its Windows functional timeout is
 300 seconds; this is not a frame-performance threshold.
 Use `ctest -N` to check actual registration: the six available official external
-files produce 32 cases here, while the historical Linux data set registered 34.
+files produced the earlier 32-case baseline; the N02 reference increment adds three
+cases. The historical Linux data set registered 34 cases with different fixtures.
 The absent two external files are documented rather than replaced with synthetic
 fixtures. Current build/test results are recorded in
 [the native handoff](../DOCUMENT/cut-view-native-handoff.md).
+
+### N02 independent curved references
+
+With VTK enabled, `cut_reference` generates VTU source fixtures and verifies
+independent polynomial/Bernstein reference measures, original nonlinear FE values,
+provenance, source reuse, degree-six/anisotropic charts, weight rescaling and
+unsupported-order/precision fallback. It also checks numerical convergence on
+curved triangular surfaces, rational quads and rational tetrahedra. These references
+extend `cut_analytic`; mixed-order hex 33 is included there.
+
+`draw_cut_view_references` consumes the generated sources and checks its own
+geometry/field references, constant CellData and section-line fields. Its visual
+variant asserts geometry/field/display synchronization before pointer release,
+source reuse, changing pixels and abort rollback. CTest fixtures generate the
+sources automatically for a filtered run:
+
+```powershell
+ctest --test-dir build/mingw -R '^(cut_reference|draw_cut_view_references.*)$' --output-on-failure
+```
+
+Generated sources and images are under `test/native/cut-reference-fixtures` and
+`test/native/draw-references` in the build directory. Direct DRAW invocation uses
+`CUTVIEW_REFERENCE_FIXTURES`; enable images with `CUTVIEW_REFERENCE_VISUAL=1` and
+set `CUTVIEW_OUTPUT_DIR`. The extreme-weight fixture deliberately uses a coarse
+numerical tolerance to test fallback publication, not geometric accuracy.
+N02 is still partial; its remaining queue is
+[cut-view-n02-plan.md](../DOCUMENT/cut-view-n02-plan.md).
 
 ## OCCT SDK Fixes
 

@@ -70,6 +70,13 @@ functions, while interior values retain VTK's world-coordinate MVC convention.
 Unsupported representations use the identified numerical fallback in preferred
 mode and fail explicitly in required mode. Nonplanar quadratic polygons and
 orders beyond the conversion limit are not labelled analytic.
+Rational chart conversion preflights finite positive input weights. Normalized
+weights at or below `1e-12` do not meet the analytic precision prerequisite and
+return unsupported before endpoint sampling; preferred mode can then attempt
+bounded numerical geometry. Uniform rescaling by `1e-200`/`1e200` is independently
+tested and is distinct from the ratio limit. Numerical fallback must still meet
+tessellation/primitive budgets; the extreme-weight fixture is a publication test
+with deliberately coarse geometry, not an accuracy reference.
 Flat straight-sided high-order faces avoid unnecessary parametric-spacing
 subdivision. OCCT cuts this geometric boundary; output coordinates use the
 repository's float mesh storage. Surface FE points may differ from displayed
@@ -137,3 +144,11 @@ warped quadratic/triquadratic/Lagrange/rational-Bezier hex references, exact cur
 and planar quadratic polygons. Its expanded 31-case suite passes three consecutive
 runs per case; the VTK-disabled build passes all six cases three times. Remaining
 curved-family reference evidence and manager tasks are not closed by this result.
+
+The current Windows N02 increment adds independent curve/surface/Lagrange-tetra/
+Bezier-tetra references, mixed-order hex 33, original nonlinear FE values and
+numerical convergence, plus degree-six/anisotropic and unsupported-precision gates.
+VTK-enabled acceptance is 35/35 cases, each passing three times; VTK-disabled is
+8/8, each passing three times. The final negative+section held-pointer image case
+also passes three additional runs. N02's higher-order field isosurfaces and closure
+audit remain open; see [the N02 queue](cut-view-n02-plan.md).
