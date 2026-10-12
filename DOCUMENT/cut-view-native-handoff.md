@@ -554,3 +554,16 @@ negative/positive 云图已逐张查看。日志为 `cut-n03-trace-controls-focu
 完整族测试发现并修复空/多顶点 0D 单元的内部点 FE 反算问题，相关 DRAW
 与 visual 依赖在最终重复套件通过。N03.3 在现有支持契约内已闭环。
 N03.4 OR union/cap ownership 接着推进；N03 整体仍 partial，后续 N03.5 审计未完成。
+
+## 21. N03.4a/b OR 基础与 FE 验收
+
+N03.4a 已提交 `db6268b`：实际 OCCT retained-region OR、64 组双 cut masks、
+可信邻接/断开来源、独立数值与 presentation 分离。ON 重点 7/7、OFF 完整
+13/13 各三次（29.25 / 26.67 秒），日志 `cut-n03-union-foundation-tests.log`。
+N03.4b 补齐斜向/相切/分离平面、球交叠与相切、圆柱、表面截线、变形、
+material region 与 element-node 跳变、二次 FE、high-order iso/plane、线端点、
+polyvertex/空单元。修复共享内部 On sheet、0D BRep 缺点及 OFF 邻侧微小
+非共享权重引发 NaN。ON 重点 7/7、OFF 完整 13/13 各三次通过
+（286.04 / 28.31 秒）；日志 `cut-n03-union-fields-tests.log`。
+每次提交后刷新 MCP 索引；解析缺口继续直接核对源码。N03.4c 透明 DRAW
+比较正在实施，N03.5 完整闭环审计尚未运行；N03 整体仍 partial。

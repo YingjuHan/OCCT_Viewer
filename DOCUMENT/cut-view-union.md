@@ -33,11 +33,23 @@ roots to break parent/child Handle cycles.
 | Item | Acceptance | State |
 | --- | --- | --- |
 | N03.4a | Actual retained-region OR, identical/crossing cuts, 64 mask pairs, stable cut ownership, trusted/disconnected source boundaries, renderer/integration separation | Verified: ON focused 7/7 and OFF full 13/13, each three times (29.25 / 26.67 s) |
-| N03.4b | FE interpolation, material jumps, cap ownership, touching cuts, deformation, mixed dimensions and geometry/iso cases | Active |
-| N03.4c | DRAW presentation diagnostics and transparent cloud comparisons | Queued |
+| N03.4b | FE interpolation, material jumps, cap ownership, touching cuts, deformation, mixed dimensions and geometry/iso cases | Verified: ON focused 7/7 and OFF full 13/13, each three times (286.04 / 28.31 s) |
+| N03.4c | DRAW presentation diagnostics and transparent cloud comparisons | Active |
 | N03.5 | Full repeated ON/OFF native/DRAW/visual suites and scope audit | Queued |
 
 Evidence: `build/mingw/cut-n03-union-foundation-tests.log` and its OFF counterpart.
 The 64-pair oracle uses rectangular occupancy, volume, exposed perimeter and
 uncovered sheet area, independently of OCCT and the numerical cut backend.
 This foundation gate does not close N03.4 or establish the N08 performance target.
+
+N03.4b adds oblique/touching/separated planes, overlapping/touching spheres,
+cylinder ownership, surface caps, deformation, exact material region selection,
+disconnected element-node jumps, original quadratic FE interpolation, mixed
+high-order iso/plane regions, line endpoints, polyvertices and empty cells.
+Independent section area, force, moment and heat flow are unchanged by display OR.
+The iso replacement partition first cancels equal generated topology faces within
+one original cell and sews a closed boundary; cross-cut overlaps then undergo
+actual Boolean OR. A covered trusted interface sheet is removed from display.
+Native neighbor traces discard tiny off-interface inverse weights before mapping
+the neighboring element-node tuple. Logs: `cut-n03-union-fields-tests.log` in both
+build configurations. These are bounded correctness checks, not full-frame timings.

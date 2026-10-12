@@ -1167,6 +1167,7 @@ MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
                 double low = 0, high = 0; iso->ValueRange().GetBounds(low,high);
                 sideTolerance = std::max(myIsoOptions.AbsoluteTolerance,myIsoOptions.RelativeTolerance*(high-low));
             }
+            aResult.TraceTolerance = sideTolerance;
             // Resolve physical options even with no field so invalid edits can
             // be preflighted independently of contour binding.
             anEntry->TraceSection->MapPhysical(nullptr,definition.PhysicalTrace,signedValue,sideTolerance);
@@ -1206,6 +1207,7 @@ std::vector<MeshCutResult> MeshCutViewManager::EvaluateVisible(const Handle(RWCa
 std::shared_ptr<MeshCutPresentation> MeshCutViewManager::EvaluatePresentation(const Handle(RWCae::MeshNVecProperty)& field)
 {
     const auto cuts = EvaluateVisible(field);
+    if (cuts.empty()) { return std::make_shared<MeshCutPresentation>(); }
     auto source = makeSourceGeometry(false);
     if (!myTraceSource) {
         myTraceSource = std::make_shared<MeshCutTraceSource>(myMesh,source,myGeometryOptions

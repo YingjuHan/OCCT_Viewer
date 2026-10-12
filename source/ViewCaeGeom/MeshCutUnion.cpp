@@ -155,8 +155,30 @@ template<class Operation> TaggedShape boolean(const TaggedShape& a, const Tagged
 }
 TaggedShape fuse(const std::vector<TaggedShape>& shapes)
 {
-    TaggedShape result;
-    for (const auto& shape : shapes) { result = boolean<BRepAlgoAPI_Fuse>(result,shape); } return result;
+    std::vector<const TaggedShape*> inputs;
+    for (const auto& shape : shapes) { if (!shape.Tags.empty()) { inputs.push_back(&shape); } }
+    if (inputs.empty()) { return {}; }
+    if (inputs.size() == 1) { return *inputs[0]; }
+    if (inputs.size() == 2) { return boolean<BRepAlgoAPI_Fuse>(*inputs[0],*inputs[1]); }
+    BRepAlgoAPI_Fuse operation; TopTools_ListOfShape arguments, tools;
+    arguments.Append(inputs[0]->Shape);
+    for (size_t n = 1; n < inputs.size(); ++n) { tools.Append(inputs[n]->Shape); }
+    operation.SetArguments(arguments); operation.SetTools(tools); operation.SetNonDestructive(true);
+    operation.SetToFillHistory(true); operation.Build();
+    if (!operation.IsDone() || operation.HasErrors()) { throw std::runtime_error("Presentation OR fuse failed"); }
+    TaggedShape result; result.Shape = operation.Shape();
+    for (const auto& output : primitives(result.Shape,boundaryType(result.Shape))) {
+        bool found = false; Owner owner;
+        for (const auto input : inputs) { for (const auto& tag : input->Tags) {
+            bool descendant = tag.Shape.IsSame(output);
+            for (const auto& modified : operation.Modified(tag.Shape)) { descendant |= modified.IsSame(output); }
+            for (const auto& generated : operation.Generated(tag.Shape)) { descendant |= generated.IsSame(output); }
+            if (descendant && (!found || preferred(tag.Origin,owner))) { owner = tag.Origin; found = true; }
+        } }
+        if (!found) { throw std::runtime_error("Presentation OR fuse lost primitive history"); }
+        result.Tags.push_back({output,owner});
+    }
+    return result;
 }
 TopoDS_Shape cuttingTool(const MeshCutDefinition& cut, const Bnd_Box& bounds)
 {
@@ -348,6 +370,57 @@ void identifyCaps(TaggedShape& shape, const MeshCutResult& cut, const CellEvalua
     }
 }
 
+// Replacement simplices from one numerical iso cell are a conforming partition.
+// Cancel only equal generated topology faces within that original cell, then sew
+// their boundary. Actual cross-cut overlap is still split by the OR booleans.
+TaggedShape isoRegion(const Handle(MeshGeometry)& geometry, RWCae::MeshEntityId sourceId, const Owner& owner)
+{
+    const auto data = geometry->GetMeshData();
+    struct Face { std::vector<RWCae::MeshEntityId> Nodes; unsigned Count = 0; };
+    std::map<std::vector<RWCae::MeshEntityId>,Face> faces;
+    std::vector<TopoDS_Shape> surfaces;
+    bool volume = false;
+    for (RWCae::MeshEntityId e = 0; e < data->NbIndexedElems(); ++e) {
+        const auto& indexed = data->IndexedElements()[e]; RWCae::MeshEntityId original = 0;
+        if (!geometry->OriginElement(MeshGeomElem(indexed.Index,indexed.Type,false),original) || original != sourceId) { continue; }
+        if ((int)indexed.Type >= RWCae::MeshElem3dLowerType) {
+            volume = true;
+            RWCae::MeshAdaptorsIterator3dElems::Switch(indexed.Type,[&](const auto& adaptor) {
+                const auto& element = adaptor.GetElement(indexed.Index);
+                for (RWCae::MeshElemEntityId f = 0; f < adaptor.NbFaces(element); ++f) {
+                    std::vector<RWCae::MeshEntityId> nodes; RWCae::MeshElemType type; adaptor.FaceNodes(element,f,nodes,type);
+                    auto key = nodes; std::sort(key.begin(),key.end()); auto& face = faces[key]; face.Nodes = nodes;
+                    if (++face.Count > 2) { throw std::runtime_error("Non-manifold iso replacement partition"); }
+                }
+                return true;
+            },data);
+        } else { surfaces.push_back(nativeShape(data,e,nullptr)); }
+    }
+    BRepBuilderAPI_Sewing sewing(1e-7);
+    for (const auto& entry : faces) { if (entry.second.Count == 1) {
+        std::vector<Vec> positions; for (auto n : entry.second.Nodes) { positions.emplace_back(data->Nodes()[n]); }
+        sewing.Add(polygon(positions));
+    } }
+    for (const auto& surface : surfaces) { sewing.Add(surface); }
+    if (!faces.empty() || !surfaces.empty()) { sewing.Perform(); }
+    std::vector<TopoDS_Shape> shapes;
+    if (volume) {
+        for (const auto& shell : primitives(sewing.SewedShape(),TopAbs_SHELL)) {
+            auto solid = BRepBuilderAPI_MakeSolid(TopoDS::Shell(shell)).Solid();
+            if (!BRepLib::OrientClosedSolid(solid) || !BRepCheck_Analyzer(solid).IsValid()) {
+                throw std::runtime_error("Invalid iso replacement region boundary");
+            }
+            shapes.push_back(solid);
+        }
+        if (!faces.empty() && shapes.empty()) { throw std::runtime_error("Iso replacement region did not close"); }
+    } else if (!surfaces.empty()) { shapes.push_back(sewing.SewedShape()); }
+    const auto slice = Handle(MeshGeometrySlice)::DownCast(geometry);
+    if (!slice.IsNull()) { for (const auto& line : slice->Lines()) {
+        if (line.SourceElement == sourceId) { shapes.push_back(BRepBuilderAPI_MakeEdge(point(Vec(data->Nodes()[line.Nodes[0]])),point(Vec(data->Nodes()[line.Nodes[1]]))).Edge()); }
+    } }
+    return tagged(compound(shapes),owner);
+}
+
 std::vector<TaggedShape> sectionSeeds(const MeshCutResult& cut, size_t index, RWCae::MeshEntityId sourceId, int dimension)
 {
     std::vector<TaggedShape> result; const auto section = Handle(MeshGeometrySlice)::DownCast(cut.Portions[1]);
@@ -408,7 +481,11 @@ std::shared_ptr<MeshCutPresentation> BuildCutPresentationUnion(
     if (cuts.empty()) { return artifact; }
     artifact->Unified = true;
     std::vector<CellEvaluator> cells(mesh->NbIndexedElems()); Bnd_Box bounds;
-    const double tolerance = options.Tolerance(mesh->BoundingBox().IsVoid() ? 0 : (mesh->BoundingBox().CornerMax().XYZ()-mesh->BoundingBox().CornerMin().XYZ()).Modulus());
+    for (RWCae::MeshEntityId e = 0; e < mesh->NbIndexedElems(); ++e) {
+        auto& cell = cells[e]; const auto& indexed = mesh->IndexedElements()[e]; cell.Type = indexed.Type; mesh->ElementNodes(e,cell.Nodes);
+        for (auto n : cell.Nodes) { auto p = mesh->Nodes()[n]; source->ModifyNode(n,p); cell.Positions.emplace_back(p); bounds.Add(point(Vec(p))); }
+    }
+    const double tolerance = options.Tolerance(bounds.IsVoid() ? 0 : (bounds.CornerMax().XYZ()-bounds.CornerMin().XYZ()).Modulus());
 #ifdef OCCTV_USE_VTK
     auto sourceShapes = prepared ? prepared : std::make_shared<MeshVtkCutSource>(1,options);
     const bool needsSourceShapes = std::any_of(cuts.begin(),cuts.end(),[](const auto& cut) {
@@ -419,19 +496,23 @@ std::shared_ptr<MeshCutPresentation> BuildCutPresentationUnion(
     (void)prepared;
 #endif
     for (RWCae::MeshEntityId e = 0; e < mesh->NbIndexedElems(); ++e) {
-        auto& cell = cells[e]; const auto& indexed = mesh->IndexedElements()[e]; cell.Type = indexed.Type; mesh->ElementNodes(e,cell.Nodes);
-        for (auto n : cell.Nodes) { auto p = mesh->Nodes()[n]; source->ModifyNode(n,p); cell.Positions.emplace_back(p); bounds.Add(point(Vec(p))); }
+        auto& cell = cells[e];
 #ifdef OCCTV_USE_VTK
         if (sourceShapes->Work.PreparedCells == mesh->NbIndexedElems()) { cell.Vtk = sourceShapes->GetCell(e).Geometry.get(); }
         else { cell.Owned.reset(new MeshVtkCell(mesh,e,source.get(),tolerance,options,0,false)); cell.Vtk = cell.Owned.get(); }
         cell.Dimension = cell.Vtk->Dimension();
 #else
-        cell.Dimension = indexed.Type == RWCae::MeshElemType::Elem0d ? 0 : (int)indexed.Type >= RWCae::MeshElem3dLowerType ? 3 : 2;
+        cell.Dimension = cell.Type == RWCae::MeshElemType::Elem0d ? 0 : (int)cell.Type >= RWCae::MeshElem3dLowerType ? 3 : 2;
 #endif
     }
     std::vector<TopoDS_Shape> bodies(cells.size());
     auto body = [&](RWCae::MeshEntityId e) -> const TopoDS_Shape& {
         if (bodies[e].IsNull()) {
+            if (cells[e].Dimension == 0) {
+                std::vector<TopoDS_Shape> vertices;
+                for (const auto& p : cells[e].Positions) { vertices.push_back(BRepBuilderAPI_MakeVertex(point(p)).Vertex()); }
+                bodies[e] = compound(vertices); return bodies[e];
+            }
 #ifdef OCCTV_USE_VTK
             if (sourceShapes->Work.PreparedCells == mesh->NbIndexedElems()) { bodies[e] = sourceShapes->Shape(e); }
             else
@@ -456,20 +537,9 @@ std::shared_ptr<MeshCutPresentation> BuildCutPresentationUnion(
                 if (!(cut.Definition.Visibility&(1u<<part))) { continue; }
                 const Owner owner{c,(MeshCutPortion)part,e,false}; TaggedShape branch;
                 if (cut.Definition.Shape == MeshCutShape::Isosurface) {
-                    std::vector<TaggedShape> fragments; const auto geometry = cut.Portions[part]; const auto data = geometry->GetMeshData();
+                    std::vector<TaggedShape> fragments; const auto geometry = cut.Portions[part];
                     if (geometry->IsModifier() && cut.Roots[part]->AcceptElement(e)) { fragments.push_back(tagged(body(e),owner)); }
-                    for (RWCae::MeshEntityId generated = 0; generated < data->NbIndexedElems(); ++generated) {
-                        const auto& indexed = data->IndexedElements()[generated]; RWCae::MeshEntityId original = 0;
-                        if (geometry->OriginElement(MeshGeomElem(indexed.Index,indexed.Type,false),original) && original == e) {
-                            fragments.push_back(tagged(nativeShape(data,generated,nullptr),owner));
-                        }
-                    }
-                    auto slice = Handle(MeshGeometrySlice)::DownCast(geometry);
-                    if (!slice.IsNull()) {
-                        for (const auto& line : slice->Lines()) {
-                            if (line.SourceElement == e) { fragments.push_back(tagged(BRepBuilderAPI_MakeEdge(point(Vec(data->Nodes()[line.Nodes[0]])),point(Vec(data->Nodes()[line.Nodes[1]]))).Edge(),owner)); }
-                        }
-                    }
+                    fragments.push_back(isoRegion(geometry,e,owner));
                     branch = fuse(fragments); identifyCaps(branch,cut,cells[e],iso[c],options.AbsoluteTolerance);
                 } else {
                     const auto original = tagged(body(e),owner);
@@ -521,6 +591,23 @@ std::shared_ptr<MeshCutPresentation> BuildCutPresentationUnion(
     };
     for (RWCae::MeshEntityId e = 0; e < cells.size(); ++e) {
         const auto& cell = cells[e]; const auto& visible = retained[e];
+        TaggedShape boundary; std::vector<TopoDS_Shape> faces;
+        for (const auto& tag : visible.Tags) {
+            TaggedShape fragment{tag.Shape,{tag}};
+            if (cell.Dimension == 3 && !fragment.Tags.empty()) {
+                std::vector<MeshInterpolatedNode> weights; std::vector<Vec> positions;
+                for (const auto& vertex : primitives(tag.Shape,TopAbs_VERTEX)) { const auto p = vector(BRep_Tool::Pnt(TopoDS::Vertex(vertex))); positions.push_back(p); weights.push_back(cell.origin(p)); }
+                if (!weights.empty()) {
+                    const auto traces = topology->Traces(e,weights,positions);
+                    if (traces.size() == 2) {
+                        const auto neighbor = traces[0].Element == e ? traces[1].Element : traces[0].Element;
+                        if (!retained[neighbor].Tags.empty()) { fragment = boolean<BRepAlgoAPI_Cut>(fragment,tagged(retained[neighbor].Shape,tag.Origin)); }
+                    }
+                }
+            }
+            for (const auto& piece : fragment.Tags) { boundary.Tags.push_back(piece); faces.push_back(piece.Shape); }
+        }
+        boundary.Shape = compound(faces);
         std::array<TaggedShape,3> on;
         for (int d = 0; d < 3; ++d) {
             std::vector<TaggedShape> seeds;
@@ -534,29 +621,13 @@ std::shared_ptr<MeshCutPresentation> BuildCutPresentationUnion(
             on[d] = fuse(seeds);
             if (!visible.Tags.empty() && !on[d].Tags.empty()) {
                 auto outside = boolean<BRepAlgoAPI_Cut>(on[d],visible);
-                auto boundary = cell.Dimension == 3 ? TaggedShape{compound([&] { std::vector<TopoDS_Shape> faces; for (const auto& tag : visible.Tags) { faces.push_back(tag.Shape); } return faces; }()),visible.Tags}
+                auto exposed = cell.Dimension == 3 ? boundary
                     : cell.Dimension >= 1 ? lowerBoundary(visible,cell.Dimension) : visible;
-                on[d] = boolean<BRepAlgoAPI_Fuse>(outside,boolean<BRepAlgoAPI_Common>(on[d],boundary));
+                on[d] = boolean<BRepAlgoAPI_Fuse>(outside,boolean<BRepAlgoAPI_Common>(on[d],exposed));
             }
         }
         if (cell.Dimension >= 2) {
-            TaggedShape boundary; std::vector<TopoDS_Shape> faces;
-            for (const auto& tag : visible.Tags) {
-                TaggedShape fragment{tag.Shape,{tag}};
-                if (cell.Dimension == 3 && !fragment.Tags.empty()) {
-                    std::vector<MeshInterpolatedNode> weights; std::vector<Vec> positions;
-                    for (const auto& vertex : primitives(tag.Shape,TopAbs_VERTEX)) { const auto p = vector(BRep_Tool::Pnt(TopoDS::Vertex(vertex))); positions.push_back(p); weights.push_back(cell.origin(p)); }
-                    if (!weights.empty()) {
-                        const auto traces = topology->Traces(e,weights,positions);
-                        if (traces.size() == 2) {
-                            const auto neighbor = traces[0].Element == e ? traces[1].Element : traces[0].Element;
-                            if (!retained[neighbor].Tags.empty()) { fragment = boolean<BRepAlgoAPI_Cut>(fragment,tagged(retained[neighbor].Shape,tag.Origin)); }
-                        }
-                    }
-                }
-                for (const auto& piece : fragment.Tags) { boundary.Tags.push_back(piece); faces.push_back(piece.Shape); }
-            }
-            boundary.Shape = compound(faces); emit(boolean<BRepAlgoAPI_Fuse>(boundary,on[2]),2,cell);
+            emit(boolean<BRepAlgoAPI_Fuse>(boundary,on[2]),2,cell);
             emit(on[1],1,cell); emit(on[0],0,cell);
         } else {
             emit(boolean<BRepAlgoAPI_Fuse>(visible,on[cell.Dimension]),cell.Dimension,cell);
@@ -573,7 +644,7 @@ std::shared_ptr<MeshCutPresentation> BuildCutPresentationUnion(
                 Handle(MeshGeometryTraceSection) traced = new MeshGeometryTraceSection(bvh,raw,source,topology);
                 const auto definition = cut.Definition; const auto values = iso[c];
                 traced->SetDisplaySelection(definition.DisplayTrace,[definition,values](const MeshCutPrimitiveTrace& trace) { return signedCut(definition,trace.Interior,trace.InteriorWeights,values); },
-                    definition.Shape == MeshCutShape::Isosurface ? std::max(cut.IsoFieldTolerance,1e-10) : options.AbsoluteTolerance);
+                    cut.TraceTolerance);
                 Handle(MeshGeometry) root = new MeshGeometryBase(bvh,mesh); root->Append(traced); artifact->OwnedRoots.push_back(root);
                 cut.Roots[part] = root; cut.Portions[part] = traced;
             }

@@ -106,6 +106,7 @@ struct MeshCutResult {
     bool DisplayRecovered = false;
     bool TensorDerived = false; //!< Display component is zero; PhysicalFields still retain original tensors.
     double IsoFieldTolerance = 0;
+    double TraceTolerance = 0; //!< Same model/field-unit tolerance used by independent trace selection.
     double IsoFieldResidual = 0;
     double IsoGeometryResidual = 0;
     int IsoSubdivisionDepth = 0;

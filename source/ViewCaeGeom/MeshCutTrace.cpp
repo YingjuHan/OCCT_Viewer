@@ -165,7 +165,19 @@ std::vector<MeshCutPrimitiveTrace> MeshCutTraceSource::Traces(RWCae::MeshEntityI
 #ifdef OCCTV_USE_VTK
             other.Weights.emplace((RWCae::MeshEntityId)n,data.Cells[neighbor].Geometry->Origin(positions[n]));
 #else
-            other.Weights.emplace((RWCae::MeshEntityId)n,weights[n]);
+            // A native inverse may leave tiny off-face weights. Those nodes do
+            // not belong to the neighboring element-node tuple. Restrict the
+            // trace to this trusted topology face and preserve its partition.
+            double total = 0;
+            for (const auto& w : weights[n].BaseNodes()) {
+                if (std::binary_search(boundary.Nodes.begin(),boundary.Nodes.end(),w.first)) { total += w.second; }
+            }
+            if (!std::isfinite(total) || std::abs(total) <= 1e-12) { throw std::runtime_error("Invalid native interface FE partition"); }
+            MeshInterpolatedNode mapped;
+            for (const auto& w : weights[n].BaseNodes()) {
+                if (std::binary_search(boundary.Nodes.begin(),boundary.Nodes.end(),w.first)) { mapped.AddBaseNode(w.first,w.second/total); }
+            }
+            other.Weights.emplace((RWCae::MeshEntityId)n,mapped);
 #endif
         }
         result.push_back(std::move(other)); break;
