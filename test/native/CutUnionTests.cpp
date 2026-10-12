@@ -228,6 +228,40 @@ static void surfacesAndQuadrics()
     const auto independent = curved.Evaluate("a"); const auto cylinder = curved.EvaluatePresentation();
     near(cylinder->Volume,independent.Volumes[0],"Cylinder duplicate volume"); near(cylinder->Area,independent.Areas[0],"Cylinder duplicate area");
 }
+static void warmSphereMasks()
+{
+    // Warm the independent source/section meshes before OR presentation, as
+    // the interactive viewer does when changing an already displayed cut.
+#ifdef OCCTV_USE_VTK
+    const auto mesh = cube(); const double radius = 0.15, center = 0.25, sourceVolume = 1, sourceArea = 6;
+#else
+    Handle(RWCae::MeshData) mesh = new RWCae::MeshData();
+    for (const auto& p : {Graphic3d_Vec3(0,0,0),Graphic3d_Vec3(1,0,0),Graphic3d_Vec3(0,1,0),Graphic3d_Vec3(0,0,1)}) { mesh->AddNodePosition(p); }
+    const RWCae::MeshEntityId nodes[] = {0,1,2,3}; mesh->AddElement(RWCae::MeshElementTetrahedron(nodes));
+    const double radius = 0.08, center = 0.2, sourceVolume = 1.0/6, sourceArea = 1.5+std::sqrt(3.0)/2;
+#endif
+    MeshCutViewManager manager(mesh);
+    require(manager.AddSphere("sphere",Graphic3d_Vec3d(center),radius),"Add warm sphere");
+    const double sphereVolume = 4*std::acos(-1.0)*std::pow(radius,3)/3;
+    const double sphereArea = 4*std::acos(-1.0)*radius*radius;
+    for (unsigned mask = 0; mask < 8; ++mask) {
+        manager.SetVisibility("sphere",mask);
+        manager.Evaluate("sphere");
+        const auto display = manager.EvaluatePresentation();
+        const bool negative = mask&1, positive = mask&4;
+        near(display->Volume,negative ? positive ? sourceVolume : sphereVolume : positive ? sourceVolume-sphereVolume : 0,"Warm sphere mask volume");
+        near(display->Area,negative && positive ? sourceArea : positive ? sourceArea+sphereArea : mask ? sphereArea : 0,"Warm sphere mask area");
+    }
+    manager.SetVisibility("sphere",2); manager.Duplicate("sphere","z_duplicate");
+    const auto duplicate = manager.EvaluatePresentation(nodal(mesh));
+    near(duplicate->Area,sphereArea,"Duplicate On-only sphere area");
+    for (const auto& primitive : duplicate->Provenance) {
+        require(primitive.CutId == "sphere" && primitive.Cap && primitive.Portion == MeshCutPortion::On,
+            "On-only sphere cap ownership");
+    }
+    manager.SetSphere("z_duplicate",Graphic3d_Vec3d(center+radius,center,center),radius);
+    near(manager.EvaluatePresentation()->Area,2*sphereArea,"Intersecting On-only sphere sheet area");
+}
 #ifdef OCCTV_USE_VTK
 static void chartCells()
 {
@@ -281,7 +315,7 @@ static void chartCells()
 int main()
 {
     try {
-        basic(); masks(); adjacent(true); adjacent(false); fieldsAndDeformation(); surfacesAndQuadrics();
+        basic(); masks(); adjacent(true); adjacent(false); fieldsAndDeformation(); surfacesAndQuadrics(); warmSphereMasks();
 #ifdef OCCTV_USE_VTK
         chartCells();
 #endif

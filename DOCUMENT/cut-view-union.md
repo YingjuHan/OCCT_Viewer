@@ -35,7 +35,8 @@ roots to break parent/child Handle cycles.
 | N03.4a | Actual retained-region OR, identical/crossing cuts, 64 mask pairs, stable cut ownership, trusted/disconnected source boundaries, renderer/integration separation | Verified: ON focused 7/7 and OFF full 13/13, each three times (29.25 / 26.67 s) |
 | N03.4b | FE interpolation, material jumps, cap ownership, touching cuts, deformation, mixed dimensions and geometry/iso cases | Verified: ON focused 7/7 and OFF full 13/13, each three times (286.04 / 28.31 s) |
 | N03.4c | DRAW presentation diagnostics and transparent cloud comparisons | Verified: ON focused 3/3 and OFF focused 2/2, each three times (27.80 / 22.62 s); tightened opacity gate separately repeated |
-| N03.5 | Full repeated ON/OFF native/DRAW/visual suites and scope audit | Queued |
+| N03.4d | Curved On-only caps, warm sphere masks and compsolid internal-face exclusion | Verified: final ON 48/48 and OFF 14/14, each three times (538.76 / 47.00 s) |
+| N03.5 | Full repeated ON/OFF native/DRAW/visual suites and scope audit | Full gate passed; closure documentation being synchronized |
 
 Evidence: `build/mingw/cut-n03-union-foundation-tests.log` and its OFF counterpart.
 The 64-pair oracle uses rectangular occupancy, volume, exposed perimeter and
@@ -67,3 +68,17 @@ order-independent variable-color blending in a viewer configured with OIT off.
 Images: `build/mingw/test/native/draw-union/`; logs in both configurations:
 `cut-n03-union-visual-tests.log`, plus ON `cut-n03-union-opacity-tests.log`.
 N03.4 is verified at this support contract; N03.5 full-suite closure is next.
+
+The full gate exposed a curved On-only regression: rebuilding float sphere-pole
+section triangles as BRep faces produced degenerate faces with no triangulation.
+N03.4d retains sphere/cylinder cap surfaces from the OCCT Boolean result instead.
+Plane boundary-coplanar sections keep their numerical seed path so disconnected
+material sources remain separate. Curve caps retain the one-percent-radius
+deflection limit. Within one original cell, shared faces of a fused compsolid and
+explicit internal faces are excluded from the exposed boundary; no coordinate
+welding is introduced. A warmed sphere oracle checks all eight masks against
+analytic volume/area, plus duplicate/intersecting On-only sheets and cap ownership.
+ON uses a hexahedron; OFF uses its supported native tetrahedron curved-tool path.
+The repaired complete gate passes 48/48 ON and 14/14 OFF, each case three times.
+Logs: `cut-n03-closure-tests.log` in both build directories; the initial failed
+ON gate is preserved as `cut-n03-closure-initial-tests.log`.

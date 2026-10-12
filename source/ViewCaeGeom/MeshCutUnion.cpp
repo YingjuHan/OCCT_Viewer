@@ -489,7 +489,9 @@ std::shared_ptr<MeshCutPresentation> BuildCutPresentationUnion(
 #ifdef OCCTV_USE_VTK
     auto sourceShapes = prepared ? prepared : std::make_shared<MeshVtkCutSource>(1,options);
     const bool needsSourceShapes = std::any_of(cuts.begin(),cuts.end(),[](const auto& cut) {
-        return cut.Definition.Shape != MeshCutShape::Isosurface && (cut.Definition.Visibility&5);
+        const auto shape = cut.Definition.Shape;
+        return shape != MeshCutShape::Isosurface
+            && ((cut.Definition.Visibility&5) || shape == MeshCutShape::Sphere || shape == MeshCutShape::Cylinder);
     });
     if (needsSourceShapes) { sourceShapes->Prepare(mesh,source.get()); }
 #else
@@ -569,14 +571,27 @@ std::shared_ptr<MeshCutPresentation> BuildCutPresentationUnion(
     }
     auto emit = [&](const TaggedShape& shape, int dimension, const CellEvaluator& cell) {
         if (shape.Tags.empty()) { return; }
-        BRepMesh_IncrementalMesh mesher(shape.Shape,tolerance,false,0.25,false);
+        double deflection = tolerance;
+        for (const auto& tag : shape.Tags) {
+            const auto& definition = artifact->Branches[tag.Origin.Cut].Definition;
+            if (tag.Origin.Cap && (definition.Shape == MeshCutShape::Sphere || definition.Shape == MeshCutShape::Cylinder)) {
+                deflection = std::min(deflection,definition.Radius*0.01);
+            }
+        }
+        BRepMesh_IncrementalMesh mesher(shape.Shape,deflection,false,0.25,false);
         for (const auto& tag : shape.Tags) {
             auto geometry = outputs[tag.Origin.Cut][(int)tag.Origin.Portion];
             if (geometry.IsNull()) { throw std::logic_error("Union ownership selected a hidden portion"); }
             if (dimension == 2) {
                 const auto face = TopoDS::Face(tag.Shape); TopLoc_Location location;
                 const auto triangulation = BRep_Tool::Triangulation(face,location);
-                if (triangulation.IsNull()) { throw std::runtime_error("Union face has no triangulation"); }
+                if (triangulation.IsNull()) {
+                    throw std::runtime_error("Union face meshing failed for cut "
+                        +artifact->Branches[tag.Origin.Cut].Definition.Id+", source "
+                        +std::to_string(tag.Origin.Element)+", mask "
+                        +std::to_string(artifact->Branches[tag.Origin.Cut].Definition.Visibility)
+                        +", status "+std::to_string(mesher.GetStatusFlags()));
+                }
                 GProp_GProps area; BRepGProp::SurfaceProperties(face,area); artifact->Area += area.Mass();
                 for (int t = 1; t <= triangulation->NbTriangles(); ++t) {
                     int a,b,c; triangulation->Triangle(t).Get(a,b,c); if (face.Orientation() == TopAbs_REVERSED) { std::swap(b,c); }
@@ -591,8 +606,24 @@ std::shared_ptr<MeshCutPresentation> BuildCutPresentationUnion(
     };
     for (RWCae::MeshEntityId e = 0; e < cells.size(); ++e) {
         const auto& cell = cells[e]; const auto& visible = retained[e];
+        TopTools_IndexedMapOfShape volumeFaces; std::vector<unsigned> faceUses;
+        if (cell.Dimension == 3) {
+            // Fuse may return a compsolid whose two solids share a curved
+            // face. Count topology within this original cell, not coordinates.
+            for (const auto& solid : primitives(visible.Shape,TopAbs_SOLID)) {
+                for (const auto& face : primitives(solid,TopAbs_FACE)) {
+                    const int index = volumeFaces.Add(face);
+                    if (index > (int)faceUses.size()) { faceUses.push_back(0); }
+                    ++faceUses[index-1];
+                }
+            }
+        }
         TaggedShape boundary; std::vector<TopoDS_Shape> faces;
         for (const auto& tag : visible.Tags) {
+            if (cell.Dimension == 3 && (tag.Shape.Orientation() == TopAbs_INTERNAL
+                || tag.Shape.Orientation() == TopAbs_EXTERNAL)) { continue; }
+            const int faceIndex = volumeFaces.FindIndex(tag.Shape);
+            if (faceIndex && faceUses[faceIndex-1] > 1) { continue; }
             TaggedShape fragment{tag.Shape,{tag}};
             if (cell.Dimension == 3 && !fragment.Tags.empty()) {
                 std::vector<MeshInterpolatedNode> weights; std::vector<Vec> positions;
@@ -616,6 +647,23 @@ std::shared_ptr<MeshCutPresentation> BuildCutPresentationUnion(
                 const auto found = std::find_if(cuts.begin(),cuts.end(),[&](const auto& cut) { return cut.Definition.Id == artifact->Branches[c].Definition.Id; });
                 // A retained side already supplies its cap with On ownership.
                 if ((found->Definition.Visibility&5) && cell.Dimension == 3 && d == 2) { continue; }
+                if (cell.Dimension == 3 && d == 2
+                    && (found->Definition.Shape == MeshCutShape::Sphere || found->Definition.Shape == MeshCutShape::Cylinder)
+                    && (found->Definition.Visibility&2)) {
+                    // Curved On-only faces must retain the OCCT cutting
+                    // surface. Rebuilding its float section triangles as BRep
+                    // faces collapses the small triangles at sphere poles.
+                    const Owner owner{c,MeshCutPortion::On,e,false};
+                    auto section = boolean<BRepAlgoAPI_Common>(tagged(body(e),owner),tagged(tools[c],owner));
+                    identifyCaps(section,*found,cell,iso[c],options.AbsoluteTolerance);
+                    TaggedShape caps; std::vector<TopoDS_Shape> faces;
+                    for (const auto& tag : section.Tags) {
+                        if (tag.Origin.Cap && tag.Shape.ShapeType() == TopAbs_FACE) {
+                            caps.Tags.push_back(tag); faces.push_back(tag.Shape);
+                        }
+                    }
+                    caps.Shape = compound(faces); seeds.push_back(std::move(caps)); continue;
+                }
                 auto pieces = sectionSeeds(*found,c,e,d); seeds.insert(seeds.end(),pieces.begin(),pieces.end());
             }
             on[d] = fuse(seeds);
