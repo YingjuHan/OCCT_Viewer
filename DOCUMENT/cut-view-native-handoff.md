@@ -534,3 +534,13 @@ assignments。`SetTraceOptions` 预验证隐藏 section，不可用/歧义策略
 提供独立线字段。Iso 选侧使用固定切割场的原始 FE 内部点值。
 ON 重点 **11/11 各三次**（5.20 秒）、OFF 完整 **11/11 各三次**（5.73 秒），
 日志 `cut-n03-selection-tests.log`。N03.3d 控件与 JSON migration 接着推进。
+
+## 19. N03.3d 原生控件与迁移
+
+DRAW `trace id display/physical` 与 Tk 独立策略、region ID、assignments、Apply
+已接入，整数输入不经 double。JSON **v7** 保存两组 exact signed int64 配置，
+独立缓存预验证后再替换；v1-v6 默认 lowest，无效输入/恢复保持当前定义。
+ON 重点 **5/5 各三次**（53.30 秒）、OFF 完整 **12/12 各三次**（4.66 秒）。
+实际控件 **47/47**；最终紧凑布局测试通过（16.08 秒），两张管理器和
+negative/positive 云图已逐张查看。日志为 `cut-n03-trace-controls-focused.log`
+与 ON `cut-n03-trace-controls-layout.log`。继续 N03.3e 完整矩阵验收。

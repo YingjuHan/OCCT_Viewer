@@ -98,6 +98,9 @@ if (TARGET ViewDraw)
     set_tests_properties (draw_cut_view_iso PROPERTIES ENVIRONMENT "${DRAW_TEST_ENV}"
       PASS_REGULAR_EXPRESSION "CUT_VIEW_ISO_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" TIMEOUT 60)
     add_test (NAME draw_cut_view_tensor COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_tensor.tcl")
+    add_test (NAME draw_cut_view_trace COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_trace.tcl")
+    set_tests_properties (draw_cut_view_trace PROPERTIES ENVIRONMENT "${DRAW_TEST_ENV}"
+      PASS_REGULAR_EXPRESSION "CUT_VIEW_TRACE_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" TIMEOUT 60)
     set_tests_properties (draw_cut_view_tensor PROPERTIES ENVIRONMENT "${DRAW_TEST_ENV}"
       PASS_REGULAR_EXPRESSION "CUT_VIEW_TENSOR_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" TIMEOUT 60)
     add_test (NAME draw_cut_view_quadric COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_quadric.tcl")
@@ -181,6 +184,10 @@ if (TARGET ViewDraw)
         PASS_REGULAR_EXPRESSION "CUT_VIEW_QUADRIC_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" RUN_SERIAL TRUE TIMEOUT 120)
       add_test (NAME draw_cut_view_controls COMMAND "${OCCTV_DRAWEXE}" -i -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_controls.tcl")
       add_test (NAME draw_cut_view_tensor_visual COMMAND "${OCCTV_DRAWEXE}" -i -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_tensor.tcl")
+      add_test (NAME draw_cut_view_trace_visual COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_trace.tcl")
+      set_tests_properties (draw_cut_view_trace_visual PROPERTIES
+        ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_TRACE_VISUAL=1;CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-trace"
+        RUN_SERIAL TRUE PASS_REGULAR_EXPRESSION "CUT_VIEW_TRACE_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" TIMEOUT 60)
       set_tests_properties (draw_cut_view_tensor_visual PROPERTIES
         ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_TENSOR_VISUAL=1;CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-tensor"
         RUN_SERIAL TRUE PASS_REGULAR_EXPRESSION "CUT_VIEW_TENSOR_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" TIMEOUT 60)

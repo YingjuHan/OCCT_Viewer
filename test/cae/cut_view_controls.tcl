@@ -180,6 +180,32 @@ proc ui_run {} {
     destroy .grid_probe
     if {[catch {grid 0} message]} { ui_assert {$message eq "DRAW grid object is unavailable"} "Numeric DRAW grid dispatch changed: $message" }
 
+    ui_tree x
+    foreach role {display physical} {
+        foreach policy {negative positive lowest} {
+            ui_combo .scvcutmanager.traces.${role}Policy $policy
+            ui_click .scvcutmanager.traces.${role}Apply
+            ui_ok
+            ui_assert {[dict get [scvcutview $ui_model trace x $role] policy] eq $policy} "Trace policy control failed"
+        }
+        ui_combo .scvcutmanager.traces.${role}Policy region
+        ui_entry .scvcutmanager.traces.${role}Region -9223372036854775808
+        ui_entry .scvcutmanager.traces.${role}Regions {-9223372036854775808}
+        ui_click .scvcutmanager.traces.${role}Apply
+        ui_ok
+        set exact [scvcutview $ui_model trace x $role]
+        ui_assert {[dict get $exact region] eq "-9223372036854775808" && [lindex [dict get $exact regions] 0] eq "-9223372036854775808"} "Trace control rounded int64 IDs"
+        set snapshot [scvcutview $ui_model snapshot]
+        ui_entry .scvcutmanager.traces.${role}Region 1.5 1
+        ui_assert {$::CutViewManager::status ne "" && [scvcutview $ui_model snapshot] eq $snapshot} "Invalid trace edit changed definitions"
+        ui_entry .scvcutmanager.traces.${role}Region -9223372036854775808 1
+        ui_ok
+        ui_combo .scvcutmanager.traces.${role}Policy lowest
+        ui_click .scvcutmanager.traces.${role}Apply
+        ui_ok
+    }
+    ui_capture [file join $controls_output trace_manager.png]
+
     ui_tree y
     ui_assert {$::CutViewManager::selected eq "y" && ![dict get [ui_cut y] enabled]} "Selecting enabled an inactive cut"
     ui_tree y show

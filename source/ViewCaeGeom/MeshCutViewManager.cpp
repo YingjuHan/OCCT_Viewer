@@ -695,7 +695,7 @@ std::string MeshCutViewManager::DumpDefinitionsJson() const
     rapidjson::OStreamWrapper wrapper(stream);
     RWBase::JsonHelper::Writer writer(wrapper);
     writer.StartObject();
-    writer.Key("version"); writer.Int(6);
+    writer.Key("version"); writer.Int(7);
     writer.Key("isoOptions"); writer.StartObject();
     writer.Key("absolute"); writer.Double(myIsoOptions.AbsoluteTolerance);
     writer.Key("relative"); writer.Double(myIsoOptions.RelativeTolerance);
@@ -745,6 +745,15 @@ std::string MeshCutViewManager::DumpDefinitionsJson() const
         writer.Key("visibility"); writer.Uint(definition.Visibility);
         writer.Key("enabled"); writer.Bool(definition.Enabled);
         writer.Key("cellMode"); writer.String(definition.CellMode == MeshCutCellMode::Constant ? "constant" : "projected");
+        auto writeTrace = [&](const char* name, const MeshCutTraceOptions& options) {
+            writer.Key(name); writer.StartObject();
+            writer.Key("policy"); writer.Int((int)options.Policy);
+            writer.Key("region"); writer.Int64(options.Region);
+            writer.Key("regions"); writer.StartArray();
+            for (auto region : options.Regions) { writer.Int64(region); }
+            writer.EndArray(); writer.EndObject();
+        };
+        writeTrace("displayTrace",definition.DisplayTrace); writeTrace("physicalTrace",definition.PhysicalTrace);
         writer.EndObject();
     }
     writer.EndArray(); writer.EndObject();
@@ -756,7 +765,7 @@ bool MeshCutViewManager::RestoreDefinitionsJson(const std::string& theJson)
     rapidjson::Document document;
     document.Parse<rapidjson::kParseFullPrecisionFlag>(theJson.data(), theJson.size());
     if (document.HasParseError() || !document.IsObject() || !document.HasMember("version")
-        || !document["version"].IsInt() || document["version"].GetInt() < 1 || document["version"].GetInt() > 6
+        || !document["version"].IsInt() || document["version"].GetInt() < 1 || document["version"].GetInt() > 7
         || !document.HasMember("cuts") || !document["cuts"].IsArray()) { return false; }
     std::map<std::string, std::unique_ptr<Entry>> entries;
     MeshCutIsoOptions isoOptions;
@@ -811,6 +820,21 @@ bool MeshCutViewManager::RestoreDefinitionsJson(const std::string& theJson)
         definition.Id = id; definition.Name = name;
         definition.Visibility = cut["visibility"].GetUint(); definition.Enabled = cut["enabled"].GetBool();
         definition.CellMode = mode == "constant" ? MeshCutCellMode::Constant : MeshCutCellMode::Projected;
+        if (document["version"].GetInt() >= 7) {
+            auto readTrace = [&](const char* name, MeshCutTraceOptions& options) {
+                if (!cut.HasMember(name) || !cut[name].IsObject()) { return false; }
+                const auto& trace = cut[name];
+                if (!trace.HasMember("policy") || !trace["policy"].IsInt()
+                    || !trace.HasMember("region") || !trace["region"].IsInt64()
+                    || !trace.HasMember("regions") || !trace["regions"].IsArray()) { return false; }
+                options.Policy = (MeshCutTracePolicy)trace["policy"].GetInt(); options.Region = trace["region"].GetInt64();
+                for (const auto& region : trace["regions"].GetArray()) {
+                    if (!region.IsInt64()) { return false; } options.Regions.push_back(region.GetInt64());
+                }
+                return options.IsValid(myMesh->NbIndexedElems());
+            };
+            if (!readTrace("displayTrace",definition.DisplayTrace) || !readTrace("physicalTrace",definition.PhysicalTrace)) { return false; }
+        }
         std::string shape = "plane";
         if (document["version"].GetInt() >= 2) {
             if (!cut.HasMember("shape") || !cut["shape"].IsString()) { return false; }
@@ -851,6 +875,24 @@ bool MeshCutViewManager::RestoreDefinitionsJson(const std::string& theJson)
         } else { return false; }
         entries.emplace(id, std::move(entry));
     }
+    // Validate source resolution on isolated caches before replacing live cuts.
+    // Older documents migrate to lowest and need no extra geometry preparation.
+    try {
+        MeshCutViewManager staged(myMesh);
+        staged.myGeometryOptions = myGeometryOptions; staged.myIsoOptions = isoOptions;
+        staged.myDeformationField = myDeformationField; staged.myDeformationScale = myDeformationScale;
+        for (const auto& item : entries) {
+            auto copy = std::make_unique<Entry>(); copy->Definition = item.second->Definition;
+            staged.myEntries.emplace(item.first,std::move(copy));
+        }
+        for (const auto& item : entries) {
+            const auto& definition = item.second->Definition;
+            if (definition.DisplayTrace.Policy != MeshCutTracePolicy::Lowest
+                && !staged.SetTraceOptions(item.first,false,definition.DisplayTrace)) { return false; }
+            if (definition.PhysicalTrace.Policy != MeshCutTracePolicy::Lowest
+                && !staged.SetTraceOptions(item.first,true,definition.PhysicalTrace)) { return false; }
+        }
+    } catch (...) { return false; }
     Clear();
     myIsoOptions = isoOptions;
     myRecoveryOptions = recoveryOptions;

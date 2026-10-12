@@ -1,8 +1,7 @@
 # N03 Physical Interface Traces
 
-N03.3 is in progress. Its source foundation is separate from the selectable
-display/physical trace feature; the current viewer and integration still use
-the existing lowest-original-element rule.
+N03.3a-d are verified. Generated sections retain selectable independent display
+and physical traces; lowest remains the default. Full matrix closure is N03.3e.
 
 ## N03.3a Prepared Source Foundation
 
@@ -106,6 +105,30 @@ lowest/negative/positive/exact extreme int64 regions, independent original flux
 integrals, hex/voxel/quadratic/Lagrange/polyhedron positive/negative sources,
 sphere line-side selection and atomic invalid-region/non-manifold rejection.
 Native controls and versioned persistence are the next separate N03.3d item.
+
+## N03.3d Controls and Persistence
+
+DRAW `trace id display/physical` reports the independent policy, chosen region and
+assignments. Set with `lowest`, `negative`, `positive`, or
+`region regionId {elementRegionIds}`. Assignments follow original element ID
+order. Decimal signed int64 parsing never converts through double. The manager
+has two policy menus, two region inputs, two assignment inputs and two Apply
+buttons; invalid edits report an error and restore the prior values.
+
+JSON v7 requires both trace objects, with strict types/counts and exact int64 IDs.
+Source-policy resolution is preflighted on isolated caches before replacing live
+definitions. Versions 1-6 migrate to lowest with empty assignments. Recovery
+regions remain independent. Native tests verify round-trip, fractional/overflow/
+missing-region/count rejection and v6 migration. DRAW verifies a 7/9 interface
+jump, independent original flux, reversed normal and failed-edit/restoration
+atomicity. Visual negative/positive clouds change blue/red as expected.
+
+Acceptance: focused ON **5/5**, each three times, 53.30 seconds; OFF full
+**12/12**, each three times, 4.66 seconds. Logs are
+`cut-n03-trace-controls-focused.log`. Actual Tk inventory is **47/47**.
+After reducing the list height, the final layout gate passed in 16.08 seconds
+(`cut-n03-trace-controls-layout.log`); inspected manager images show all controls
+and Close within the window. Both trace cloud images were inspected.
 
 ## Remaining N03.3 Work
 

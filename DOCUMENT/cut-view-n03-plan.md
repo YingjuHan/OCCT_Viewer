@@ -36,7 +36,7 @@ N03.3 is split into reviewable work items; see [the trace contract](cut-view-tra
 - N03.3c: independent display/physical lowest/negative/positive/region policies
   and original-field integrals. Verified: native API and focused ON/OFF 11/11 three times.
 - N03.3d: native controls, exact region binding and atomic definition migration.
-  Queued after the selection API.
+  Verified: 47/47 controls, JSON v7, focused ON 5/5 and OFF 12/12 three times.
 - N03.3e: full interface acceptance across line/surface/volume, deformation,
   jumps and all masks in both VTK configurations. Queued.
 

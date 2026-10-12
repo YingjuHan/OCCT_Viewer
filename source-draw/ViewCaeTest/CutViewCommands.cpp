@@ -23,8 +23,18 @@
 #include <stdexcept>
 #include <set>
 #include <limits>
+#include <sstream>
 
 namespace {
+int64_t cutInt64(const std::string& argument)
+{
+    const size_t start = !argument.empty() && (argument[0] == '-' || argument[0] == '+') ? 1 : 0;
+    if (argument.size() == start || argument.find_first_not_of("0123456789",start) != std::string::npos) {
+        throw std::invalid_argument("Trace region IDs require signed 64-bit decimal integers");
+    }
+    size_t consumed = 0; const auto value = std::stoll(argument,&consumed);
+    if (consumed != argument.size()) { throw std::invalid_argument("Invalid trace region ID"); } return value;
+}
 int cutInteger(const char* argument)
 {
     Standard_Real value;
@@ -539,6 +549,31 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
                 di << "effectiveScale " << cuts.EffectiveDeformationScale();
             }
         }
+        else if (action == "trace" && (argc == 5 || argc == 6 || argc == 8)) {
+            const std::string role(argv[4]);
+            if (role != "display" && role != "physical") { throw std::invalid_argument("Trace role: display or physical"); }
+            ViewCaeGeom::MeshCutTraceOptions options; bool found = false;
+            for (const auto& cut : cuts.Definitions()) {
+                if (cut.Id == argv[3]) { options = role == "physical" ? cut.PhysicalTrace : cut.DisplayTrace; found = true; break; }
+            }
+            if (!found) { throw std::invalid_argument("Unknown trace cut ID"); }
+            const char* policies[] = {"lowest","negative","positive","region"};
+            if (argc == 5) {
+                di << "policy " << policies[(int)options.Policy] << " region " << std::to_string(options.Region).c_str() << " regions {";
+                for (auto region : options.Regions) { di << std::to_string(region).c_str() << " "; }
+                di << "}"; return 0;
+            }
+            int policy = -1; for (int i = 0; i < 4; ++i) { if (std::string(argv[5]) == policies[i]) { policy = i; } }
+            if (policy < 0 || (policy == 3) != (argc == 8)) { throw std::invalid_argument("Region trace requires an ID and explicit per-element assignments"); }
+            options.Policy = (ViewCaeGeom::MeshCutTracePolicy)policy;
+            if (policy == 3) {
+                options.Region = cutInt64(argv[6]); options.Regions.clear();
+                std::istringstream ids(argv[7]); std::string id;
+                while (ids >> id) { options.Regions.push_back(cutInt64(id)); }
+            }
+            ok = cuts.SetTraceOptions(argv[3],role == "physical",options);
+            if (!ok) { throw std::invalid_argument("Trace selection is unavailable or ambiguous; check policy, region count and interface topology"); }
+        }
         else if (action == "tensor" && (argc == 3 || argc == 6)) {
             const char* measures[] = {"components","mises","pressure","maxprincipal","midprincipal","minprincipal","tresca"};
             const char* layouts[] = {"xx-yy-zz-xy-xz-yz","xx-yy-zz-xy-yz-xz","row-major","column-major"};
@@ -748,6 +783,7 @@ void ViewCaeTest::CutViewCommands::Factory(Draw_Interpretor& di)
         "  | field point/cell name rawComponent [timeStep] | cellmode id constant/projected\n"
         "  | recovery [thresholdPercent beforeInvariant0/1 regionField/none/keep [timeStep]]\n"
         "  | tensor [components/mises/pressure/maxprincipal/midprincipal/minprincipal/tresca layout tensor/engineering]\n"
+        "  | trace id display/physical [lowest/negative/positive | region regionId {elementRegionIds}]\n"
         "    layout: xx-yy-zz-xy-xz-yz, xx-yy-zz-xy-yz-xz, row-major, column-major\n"
         "  | copy id newId | rename id name | enable id 0/1 | remove id | eval id | display | clear\n"
         "  | snapshot | restore json | deform property/none normalizedScale [timeStep]\n"

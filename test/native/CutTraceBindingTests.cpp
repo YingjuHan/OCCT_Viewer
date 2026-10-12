@@ -148,6 +148,22 @@ void selections(bool surface, bool iso, bool reversed)
         }
     }
     const auto before = manager.Definitions()[0].PhysicalTrace;
+    const auto saved = manager.DumpDefinitionsJson();
+    require(manager.RestoreDefinitionsJson(saved) && manager.DumpDefinitionsJson() == saved,"Trace JSON v7 exact round trip");
+    for (const auto& replacements : std::vector<std::pair<std::string,std::string>>{
+        {"\"policy\":3","\"policy\":8"}, {"\"region\":9223372036854775807","\"region\":1.5"},
+        {"\"region\":9223372036854775807","\"region\":9223372036854775808"},
+        {"\"region\":9223372036854775807","\"region\":0"},
+        {"[-9223372036854775808,9223372036854775807]","[-9223372036854775808]"}}) {
+        auto invalid = saved; const auto at = invalid.find(replacements.first); require(at != std::string::npos,"Trace JSON mutation fixture missing");
+        invalid.replace(at,replacements.first.size(),replacements.second);
+        require(!manager.RestoreDefinitionsJson(invalid) && manager.DumpDefinitionsJson() == saved,"Invalid trace JSON was not atomic");
+    }
+    auto legacy = saved; legacy.replace(legacy.find("\"version\":7"),11,"\"version\":6");
+    require(manager.RestoreDefinitionsJson(legacy),"JSON v6 migration failed");
+    require(manager.Definitions()[0].DisplayTrace.Policy == MeshCutTracePolicy::Lowest
+        && manager.Definitions()[0].PhysicalTrace.Policy == MeshCutTracePolicy::Lowest,"JSON v6 trace defaults changed");
+    require(manager.RestoreDefinitionsJson(saved),"Trace JSON restore after migration failed");
     physical.Regions = {1}; require(!manager.SetTraceOptions("cut",true,physical),"Wrong region count accepted");
     require(manager.Definitions()[0].PhysicalTrace.Regions == before.Regions,"Invalid policy changed definition");
     physical.Policy = (MeshCutTracePolicy)9; require(!manager.SetTraceOptions("cut",true,physical),"Invalid policy enum accepted");

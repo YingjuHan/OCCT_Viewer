@@ -150,7 +150,7 @@ void recoveryAndPhysical()
     auto invalid = saved; const auto index = invalid.find("\"measure\":3"); require(index != std::string::npos,"Missing tensor definition");
     invalid.replace(index,11,"\"measure\":99");
     require(!cuts.RestoreDefinitionsJson(invalid) && cuts.DumpDefinitionsJson() == saved,"Invalid tensor restore changed live state");
-    auto legacy = saved; legacy.replace(legacy.find("\"version\":6"),11,"\"version\":5");
+    auto legacy = saved; legacy.replace(legacy.find("\"version\":7"),11,"\"version\":5");
     require(cuts.RestoreDefinitionsJson(legacy) && cuts.RecoveryOptions().Tensor.Measure == MeshCutTensorMeasure::Components,"v5 migration did not use tensor defaults");
     auto scalar = DeriveCutTensorField(stress,options.Tensor);
     require(scalar->GetComponent(0)->DisplayUnits() == "MPa" && scalar->TimeStep() == 3 && scalar->Description() == "Original stress","Tensor metadata lost");

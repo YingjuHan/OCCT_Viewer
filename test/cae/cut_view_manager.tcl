@@ -43,6 +43,14 @@ namespace eval ::CutViewManager {
     variable tensorMeasure components
     variable tensorLayout xx-yy-zz-xy-xz-yz
     variable tensorShear tensor
+    variable displayTracePolicy lowest
+    variable displayTraceRegion 0
+    variable displayTraceRegions {}
+    variable physicalTracePolicy lowest
+    variable physicalTraceRegion 0
+    variable physicalTraceRegions {}
+    variable lastTrace {}
+    variable lastTraceKey ""
     variable fields {}
     variable fieldLabels {}
     variable status ""
@@ -95,6 +103,10 @@ proc ::CutViewManager::refresh {{attach 0}} {
             $widget configure -state [expr {$selected eq "" ? "disabled" : "readonly"}]
         }
         ::CutViewManager::recoveryRefresh
+        foreach role {display physical} {
+            $w.traces.${role}Policy configure -state [expr {$selected eq "" ? "disabled" : "readonly"}]
+            foreach suffix {Region Regions Apply} { $w.traces.$role$suffix configure -state [expr {$selected eq "" ? "disabled" : "normal"}] }
+        }
         if {$selected eq ""} { set lastPlane {}; set lastShape ""; return }
         if {[$w.cuts selection] ne [list $selected]} { $w.cuts selection set $selected }
         foreach cut $definitions { if {[dict get $cut id] eq $selected} { break } }
@@ -186,6 +198,7 @@ proc ::CutViewManager::refresh {{attach 0}} {
         set mask [dict get $cut visibility]
         set below [expr {($mask & 1) != 0}]; set on [expr {($mask & 2) != 0}]; set above [expr {($mask & 4) != 0}]
         set cellmode [dict get $cut cellmode]
+        ::CutViewManager::traceRefresh
         if {$attach} { set angle 0; set lastAngle 0 }
         if {!$dragging && ($attach || $changed || $lastDragging)} {
             scvcutview $model handle $selected [expr {$shape ne "isosurface"}] $gizmo
@@ -435,6 +448,35 @@ proc ::CutViewManager::tensor {} {
     refresh
 }
 
+proc ::CutViewManager::traceRefresh {} {
+    variable w; variable model; variable selected; variable generation; variable lastTrace; variable lastTraceKey
+    set key [list $model $generation $selected]
+    if {$key ne $lastTraceKey} { set lastTrace {}; set lastTraceKey $key }
+    foreach role {display physical} {
+        set current [scvcutview $model trace $selected $role]
+        foreach key {policy region regions} suffix {Policy Region Regions} {
+            variable ${role}Trace$suffix
+            set value [dict get $current $key]
+            if {![dict exists $lastTrace $selected $role $key] || [dict get $lastTrace $selected $role $key] ne $value} {
+                set ${role}Trace$suffix $value
+            }
+        }
+        dict set lastTrace $selected $role $current
+        $w.traces.${role}Policy configure -state readonly
+    }
+}
+proc ::CutViewManager::trace {role} {
+    variable model; variable selected; variable lastTrace
+    variable ${role}TracePolicy; variable ${role}TraceRegion; variable ${role}TraceRegions
+    set policy [set ${role}TracePolicy]
+    set command [list scvcutview $model trace $selected $role $policy]
+    if {$policy eq "region"} { lappend command [set ${role}TraceRegion] [set ${role}TraceRegions] }
+    if {[catch {{*}$command} message]} {
+        set lastTrace {}; refresh; error $message
+    }
+    refresh
+}
+
 proc ::CutViewManager::recovery {} {
     variable model; variable recoveryThreshold; variable recoveryBefore; variable recoveryRegion
     variable recoveryLabels; variable recoveryFields
@@ -505,7 +547,7 @@ proc scvcutmanager {theModel} {
     toplevel $w
     wm title $w "Cut View Manager"
     wm minsize $w 560 560
-    wm geometry $w +[expr {max(0,min(840,[winfo screenwidth $w]-800))}]+60
+    wm geometry $w +[expr {max(0,min(840,[winfo screenwidth $w]-800))}]+10
     ttk::style configure CutView.Treeview -rowheight [expr {[font metrics TkDefaultFont -linespace]+10}]
     ttk::frame $w.header -padding 8
     ttk::label $w.header.model -text "Model: $theModel"
@@ -513,7 +555,7 @@ proc scvcutmanager {theModel} {
     pack $w.header.model -side left
     pack $w.header.multiple -side right
     pack $w.header -fill x
-    ttk::treeview $w.cuts -columns {show below on above} -height 6 -selectmode browse -style CutView.Treeview
+    ttk::treeview $w.cuts -columns {show below on above} -height 2 -selectmode browse -style CutView.Treeview
     $w.cuts heading #0 -text Name; $w.cuts column #0 -width 220 -minwidth 100
     foreach column {show below on above} label {Show Below On Above} {
         set width [expr {[font measure TkHeadingFont $label]+24}]
@@ -657,6 +699,25 @@ proc scvcutmanager {theModel} {
     pack $w.tensor.layout -in $w.tensor.row1 -side left -fill x -expand 1 -padx 3
     foreach control {measure layout shear} { bind $w.tensor.$control <<ComboboxSelected>> {::CutViewManager::invoke ::CutViewManager::tensor} }
     pack $w.tensor -fill x -padx 8
+    ttk::labelframe $w.traces -text "Interface Source Selection" -padding 6
+    foreach role {display physical} title {Display Physical} {
+        ttk::frame $w.traces.${role}Row
+        ttk::frame $w.traces.${role}Assignments
+        ttk::label $w.traces.${role}Label -text $title -width 8
+        ttk::combobox $w.traces.${role}Policy -state readonly -width 10 -values {lowest negative positive region} -textvariable ::CutViewManager::${role}TracePolicy
+        ttk::label $w.traces.${role}RegionLabel -text "Region ID"
+        ttk::entry $w.traces.${role}Region -width 20 -textvariable ::CutViewManager::${role}TraceRegion
+        ttk::button $w.traces.${role}Apply -text Apply -command [list ::CutViewManager::invoke ::CutViewManager::trace $role]
+        pack $w.traces.${role}Label $w.traces.${role}Policy $w.traces.${role}RegionLabel $w.traces.${role}Region -in $w.traces.${role}Row -side left -padx 3
+        pack $w.traces.${role}Apply -in $w.traces.${role}Row -side right
+        ttk::label $w.traces.${role}RegionsLabel -text "Element regions"
+        ttk::entry $w.traces.${role}Regions -textvariable ::CutViewManager::${role}TraceRegions
+        pack $w.traces.${role}RegionsLabel -in $w.traces.${role}Assignments -side left -padx 3
+        pack $w.traces.${role}Regions -in $w.traces.${role}Assignments -side left -fill x -expand 1 -padx 3
+        pack $w.traces.${role}Row $w.traces.${role}Assignments -fill x -pady 2
+        foreach suffix {Region Regions} { bind $w.traces.$role$suffix <Return> [list ::CutViewManager::invoke ::CutViewManager::trace $role] }
+    }
+    pack $w.traces -fill x -padx 8
     ttk::label $w.status -textvariable ::CutViewManager::status -wraplength 530 -foreground #a02020
     pack $w.status -fill x -padx 8
     ttk::button $w.close -text Close -command ::CutViewManager::close
