@@ -10,8 +10,8 @@ fields remain separate from display recovery and presentation merging.
 | N03.1 | Native recovery controls and definition persistence | Real threshold/before-invariant/region controls; complete widget inventory; invalid edits and save/load; versioned options and exact signed region IDs; unchanged physical fields and fixed iso binding | Verified: 36/36 controls, JSON v5, ON/OFF repeat gates |
 | N03.2 | Tensor measures and component conventions | Explicit six/nine component layouts and shear meaning; invariant before/after recovery; independent tensor references, missing-value/extreme-value contract, physical integration unchanged | Verified: tensor references, 39/39 controls, JSON v6 |
 | N03.3 | Physical interface traces | Lowest/negative/positive/region selection preserving both element sources; all masks, region jumps, deformation and line/surface/volume cases | Verified: independent policies, JSON v7, 47/47 controls, full ON/OFF repeat matrix |
-| N03.4 | Presentation OR union and cap ownership | Identical, overlapping, touching and multi-direction cuts; all masks; source/cap provenance; transparent cloud images; independent per-cut numerical results | Verified: N03.4a/b/c numerical, FE and transparent gates |
-| N03.5 | Closure audit | Repeated full VTK ON/OFF native/DRAW/visual suites; inspect changed UI/cloud images; preserve explicit unsupported cases and all remaining native stages | Active |
+| N03.4 | Presentation OR union and cap ownership | Identical, overlapping, touching and multi-direction cuts; all masks; source/cap provenance; transparent cloud images; independent per-cut numerical results | Verified: N03.4a/b/c/d numerical, FE, transparent and curved-cap gates |
+| N03.5 | Closure audit | Repeated full VTK ON/OFF native/DRAW/visual suites; inspect changed UI/cloud images; preserve explicit unsupported cases and all remaining native stages | Verified: ON 48/48, OFF 14/14, every case three times; 47/47 controls |
 
 N03.4 requires an actual union of displayed regions, including split overlapping
 faces and cut-cap ownership. Removing only identical triangles does not complete
@@ -44,5 +44,6 @@ N03.3 is split into reviewable work items; see [the trace contract](cut-view-tra
 Each subitem gets its own focused commit after its acceptance evidence passes.
 
 N03.3 is closed within the documented geometry/support and integration contracts.
-N03.4 presentation OR boundary/cap union is verified; N03.5 is the active item.
+N03 is closed at [the bounded native scope](cut-view-n03-audit.md).
+N04-N09 remain queued; full native sessions and full-frame performance are separate gates.
 The [union contract and subitems](cut-view-union.md) record its acceptance gates.

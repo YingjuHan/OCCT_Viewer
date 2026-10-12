@@ -11,7 +11,7 @@ retained and remains in the regression suite.
 | N02.2 | Analytic support and precision boundary | Degree-six and anisotropic charts, positive rational weight scaling, unsupported degree/precision fallback, required-mode atomic rejection; document sampled geometry and float storage separately | Verified for the listed bounds and repair; each case passed three times |
 | N02.3 | Higher-order/generic field isosurfaces | Original cell FE evaluation; below/on/above and all masks; enclosed/nonmonotone field crossings; numerical convergence and explicit limits; DRAW field binding and held-threshold synchronization | Verified: 37 generic charts, six native second-order families, polynomial/rational references, held Tk threshold and abort |
 | N02.4 | N02 closure audit | Recheck remaining family/interface/precision gaps, deformed geometry and FE mapping, both VTK configurations, repeated native/DRAW/visual suite; identify remaining G02/G03 limits individually | Verified: bounded gap audit and full VTK ON/OFF suite, each three times |
-| N03 | Recovery, physical traces and presentation OR union | Resume the N03 queue only after the N02 gates pass; N03's existing numerical/metadata foundation is partial | Active: N03.1 controls and recovery persistence next |
+| N03 | Recovery, physical traces and presentation OR union | Resume the N03 queue only after the N02 gates pass | Verified at bounded native scope; ON 48/48 and OFF 14/14 each three times; see the N03 audit |
 
 ## N02.1 reference definition
 

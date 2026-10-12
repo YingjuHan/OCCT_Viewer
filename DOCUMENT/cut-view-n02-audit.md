@@ -6,7 +6,7 @@ contracts. It does not close N03 recovery/physical traces/OR union or N04–N09.
 N02.4 is verified at this bounded scope. VTK ON: 38/38, each three times
 (114 passes), 610.23 seconds. VTK OFF: 8/8, each three times (24 passes),
 6.24 seconds. Logs: `build/mingw/cut-n02-closure-tests.log` and
-`build/mingw-no-vtk/cut-n02-closure-tests.log`. Current control inventory remains
+`build/mingw-no-vtk/cut-n02-closure-tests.log`. That milestone's control inventory was
 32/32; initial/held high-order iso images were inspected.
 
 | Area | Evidence and supported boundary | Disposition |

@@ -14,7 +14,8 @@ three consecutive runs per case. Design completion does not imply completion
 of N02-N09 or the full native manager. N02's numerical foundation passes the
 expanded 28-case suite three times; its analytic second-order geometry work
 is verified at its [bounded closure scope](cut-view-n02-audit.md).
-N03 recovery increments remain partial; the [N03 queue](cut-view-n03-plan.md) is active.
+N03 is verified at [its bounded closure scope](cut-view-n03-audit.md): ON 48/48
+and OFF 14/14, each case three times, with 47/47 real native controls.
 N04-N09 remain scheduled.
 
 ## Existing Boundaries
@@ -257,7 +258,7 @@ element provenance and signed FE weights. DRAW exposes recovery configuration;
 manager widgets and JSON v5 recovery definitions are verified (36/36 controls).
 Complete native session persistence remains N09.
 
-### N03 Remaining Implementation
+### N03 Recovery, Trace and Union Contracts
 
 Use the existing `RWCae::MeshNodeVecProperty` elemental-per-node storage for
 recovered values. A shared node can retain separate values for different material
@@ -268,24 +269,22 @@ only when recovery settings change. Vector/tensor recovery must define whether
 invariants are evaluated before or after averaging, rather than silently mixing
 those conventions. Extend line/point contour adapters to carry the same trace.
 
-Extend the separate physical path with explicit lowest/negative/positive/region
-interface traces. Current integration is invariant under display-policy changes,
-but coincident shared interfaces still use existing deterministic ownership.
-Trace selection must preserve discontinuous CellData and explicit material-side
-semantics rather than reuse a smoothed display field.
+The separate physical path now supports explicit lowest/negative/positive/region
+interface traces. Integration is invariant under display-policy changes. Trace
+selection preserves discontinuous CellData and explicit material-side semantics;
+it evaluates the selected original field and original-FE weights.
 
-The N03.3a prepared VTK source now retains reciprocal trusted face references
-and can evaluate both original-FE weight sets at the same interface point;
-see [the trace scope](cut-view-traces.md). This source prerequisite does not yet
-bind both records to generated section primitives or implement trace selection.
-The VTK-disabled fast slice still needs its own topology/provenance integration.
+The prepared VTK source and VTK-disabled fast slice retain reciprocal trusted
+topology references, bind both original-FE weight sets to generated primitives
+and apply independent display/physical policies; see [the trace scope](cut-view-traces.md).
 
 Numerical `Evaluate(id)` results remain independent. A separate presentation union
 uses source-cell provenance and OCCT boundary operations for the OR of visible
 side portions, followed by deterministic section/cap ownership. Do not globally
 merge coincident coordinates across elemental jumps. Test overlapping, identical
 and touching cuts, all masks and transparent images; numerical union measures and
-actual rendered opacity must both pass. Later per-cut style overrides use an
+actual rendered opacity pass N03.4's [acceptance gates](cut-view-union.md).
+Later per-cut style overrides use an
 explicit stable ownership rule for coincident visible faces.
 
 ### N02 Closure
@@ -313,6 +312,7 @@ components then derives source scalar tuples. Both use scalar FE mapping onto
 generated cut points. Missing tuples stay missing, infinity/nonsymmetry/finite
 result overflow reject; normalized Jacobi/norm intermediates cover extreme scales.
 `EvaluatePhysical()` bypasses all display policies; `PhysicalFields` remain original.
-JSON v6 persists conventions with v1-v5 defaults. 39/39 real widgets and independent
-rotated tensor/native/DRAW/visual references form the stage gate. Traces and OR
-union remain N03.3/N03.4.
+JSON v6 persists conventions with v1-v5 defaults. The tensor milestone verified
+39/39 real widgets and independent rotated tensor/native/DRAW/visual references.
+N03.3 subsequently added trace controls and JSON v7 (47/47 widgets); N03.4 added
+actual OR union. Complete native sessions remain N09.

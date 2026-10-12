@@ -2,21 +2,24 @@
 
 ## 1. 接续范围与当前停点
 
-用户已在 Windows 工作区发出继续开发指令。N02 四项已按文档范围闭环并提交，N03.1 恢复控件/定义持久化、N03.2 张量和 N03.3a 双侧来源基础已验收。
-下一步 N03.3b 生成图元来源绑定；已有恢复数值/元数据保留并回归。
-最新接续证据在第 16 节，旧停点保留为历史。
+用户已在 Windows 工作区发出继续开发指令。N02 已按文档范围闭环并提交；
+N03.1 恢复控件/定义持久化、N03.2 张量、N03.3 双侧来源/独立选侧及
+N03.4 实际 OR 并集/透明显示均已验收。N03.5 完整双配置闭环审计通过，
+N03 已按 [原生支持契约](cut-view-n03-audit.md) 闭环。最新证据在第 23 节，
+旧 milestone 记录保留为历史。N04–N09 尚未启动，下一阶段为 N04 导入与普通 Viewer。
 后文的 Linux 验证记录保留为历史证据；
 本次 Windows 配置与结果以本节及第 6 节的接续记录为准。
 
-- 仓库：`D:/workspace/OpenCASCADE/OCCT_Viewer`；分支：`develop`；接续基线 HEAD：`95fb291`。
+- 仓库：`D:/workspace/OpenCASCADE/OCCT_Viewer`；分支：`develop`；初始接续基线：`95fb291`。
 - 目标：完成原生 Cut View Manager 的 N02-N09 及对应 TODO，实施、修复并通过 native/DRAW 验收。
 - 排除：Web/Vue/TypeScript、浏览器测试、WASM SDK 与打包。排除项不是 done。
 - 上轮增量 `d02dd2e`、N02.1/N02.2 `7c925f2`、N02.3 `f975b86` 已提交；
   N02.4 `7910a48`、N03.1 `2caeb2f`、N03.2 `17f421c` 已提交；
-  N02 已按文档范围闭环，N03 为 partial，N04-N09 尚未实施。
+  N03.3 `f719eeb`、N03.4a `db6268b`、N03.4b `addbb03`、N03.4c `eba2a37` 已提交；
+  曲面 cap/内部面修复 `3a1fd44` 已提交；N01–N03 已按支持范围闭环，N04–N09 尚未实施。
 - 每个验收工作项单独提交；保留用户既有修改及 `AGENTS.md`。
 
-接续时以本说明的最新证据为准。主交接、执行队列和设计中的当前 N03 状态已同步为 partial；
+接续时以本说明的最新证据为准。主交接、执行队列和设计中的当前 N03 状态为 verified；
 历史 milestone 的 31/34 cases 记录保留，不代表当前 Windows 套件计数，也不能据此把未完成阶段改为 done。
 
 相关规划与说明：
@@ -105,7 +108,7 @@
 
 ## 6. 最新增量与验证证据
 
-### 6.1 N03 恢复策略：已有代码，阶段仍未完成
+### 6.1 历史 N03 恢复基础（当前状态见第 20–22 节）
 
 新增 `MeshCutRecoveryOptions`：
 
@@ -144,7 +147,8 @@ scvcutview model recovery 100 0 material 0
 
 VTK role 注意：三分量数组不会仅凭 component 数自动视为 vector。测试通过 `CellData Vectors="opposing"` 明确绑定向量角色，避免把 raw component 0 误认为模长。
 
-仍缺：完整张量不变量契约、显式界面 physical trace、OR 边界/cap 合并、manager 新恢复控件与控件验收、恢复设置的完整 session 持久化。N03/G04/G05 不得整体标为 done。
+该历史基线当时仍缺完整 tensor/trace、OR union 及恢复控件；这些门槛现已分别
+通过 N03.1–N03.4。恢复设置的完整 session 持久化仍属于 N09。
 
 ### 6.2 N02 曲面家族参考扩展
 
@@ -228,12 +232,10 @@ Windows 接续已收尾 fixture 的 double-to-float 显式转换。上述八个�
 
 1. 已完成：Windows SDK 准备、MinGW 编译问题、恢复元数据/所有分量/极端数值验证，
    八类新曲面 DRAW 独立参考，以及 VTK-enabled/disabled 三次完整回归。
-2. 当前优先 N02：[独立参考、解析精度、高阶场等值面、闭环审计](cut-view-n02-plan.md)。
-   N02.1/N02.2 新增用例和修复已三次完整验收；N02.3 高阶场等值面是下一实现任务，N02.4 尚待审计。
-3. N02 完成后继续 N03：完整张量不变量契约、physical interface traces、presentation OR union/cap ownership、
-   manager recovery controls 与实际交互验收；完整恢复/session 持久化仍待完成。
-4. G02/G03 仍保留一般支持/精度与高阶等值面限制；新增参考不能泛化为所有阶精确或百万单元全帧指标达标。
-   随后按 N04-N09 顺序推进；更新执行清单只引用实际证据。
+2. N02 已在 [闭环支持范围](cut-view-n02-audit.md) verified，N03.1–N03.4 已验收。
+3. N03.5 已闭环：完整 VTK ON 48/48、OFF 14/14 每项三次；截图、支持边界和文档已核对。
+   完整 session 持久化仍 N09；下一阶段为 N04，当前尚未启动。
+4. 保留一般支持/精度限制；新增参考不能泛化为所有阶精确或百万单元全帧指标达标。
 
 ## 8. 历史 Linux 可复用命令
 
@@ -386,11 +388,11 @@ scvcutview model eval cut
 | ID | 原生任务 | 暂停状态/下一步 |
 | --- | --- | --- |
 | R00 | held-drag、所有现有控件、崩溃修复 | verified；后续持续回归 |
-| G01 | 一阶 field isosurface | verified；高阶场等值面仍另行待做，不代替 plane |
+| G01 | 一阶 field isosurface | verified；支持的高阶数值 FE 等值面另由 N02 验收，不代替 plane |
 | G02 | sphere/cylinder、一般单元 | partial；全帧性能等仍待验收 |
-| G03 | 高阶几何与 FE、参考精度 | partial；曲线/曲面/tetra/hex/wedge/pyramid 参考及有界精度回退已三次验收，高阶场等值面和闭环审计待做 |
-| G04 | recovery/region/threshold/discontinuity | partial；数值、全分量、元数据及显示/物理分离已三次回归，完整 tensor/trace/UI 待做 |
-| G05 | 多 cut OR 边界/cap、opacity | 待做，N03 |
+| G03 | 高阶几何与 FE、参考精度 | verified at N02 bounded scope；族参考/精度回退/高阶 FE 等值面/闭环审计，不泛化为任意阶精确几何 |
+| G04 | recovery/region/threshold/discontinuity | verified；完整 tensor/独立 trace/JSON v7/47 个控件及物理字段隔离已验收 |
+| G05 | 多 cut OR 边界/cap、opacity | verified at N03.4 contract；实际 OR、来源/FE/透明云图；全帧性能仍 N08 |
 | M01 | 模型生命周期、defaults、选择/激活分离 | verified |
 | M02 | datum/reference axes、各 shape 编辑 | 待做，N05 |
 | M03 | cut/portion styles 与 overrides | 仅共享样式基础，N05 |
@@ -429,8 +431,8 @@ scvcutview model eval cut
 5. 视觉变化查看截图；性能变化记录全帧与内存测量，不能只报告非空画面。
 6. 更新执行文档中的具体证据、限制、命令和状态，再推进下一阶段。
 
-推荐接续指令：先完成 N02 清单中的高阶场等值面及闭环审计，再继续 N03 的完整 tensor/trace、OR union 与原生控件；之后依 N04-N09 实施，
-保留原有回归与用户修改，Web/WASM 始终排除。Windows 本次数值/参考与双配置验收已完成。
+推荐接续指令：N03 已闭环，下一阶段按 N04-N09 顺序推进，先完成导入与普通
+Viewer 的剩余范围。保留原有回归与用户修改，Web/WASM 始终排除。
 
 ## 12. 最新 N02.3 接续记录
 
@@ -580,3 +582,25 @@ ON 重点 3/3、OFF 重点 2/2 各三次（27.80 / 22.62 秒）；收紧后的 v
 另重复三次。日志 `cut-n03-union-visual-tests.log` 和 ON
 `cut-n03-union-opacity-tests.log`；图片 `build/mingw/test/native/draw-union/`
 已核对。N03.4 在现有支持范围内 verified，N03.5 完整双配置闭环审计接着运行。
+
+## 23. N03.4d 修复与 N03.5 完整闭环
+
+完整 ON 验收最初发现 VTK-cell/quadric visual 两项缺少 triangulation。
+新增 warm sphere 八种 masks 解析参考复现了只显示 On 时的浮点极点三角形
+BRep 退化，并补出 full mask 下 compsolid 共享内部球面的暴露面积错误。
+`3a1fd44` 保留球面/圆柱的 OCCT cap 曲面，按同一原始单元内的实体共享
+拓扑排除内部面，保持 one-percent-radius deflection。平面共面截面保留原
+数值构造，断开拓扑的两个材料来源仍独立。重复/相交 On-only sphere 面积
+及来源所有权均补入；OFF 明确使用已支持的 native tetra 曲面路径。
+
+最终 ON **48/48 各三次**，144 次成功（538.76 秒）；OFF **14/14 各三次**，
+42 次成功（47.00 秒）。已逐项检查日志中的次数，所有 case 都恰好通过三次。
+日志 `build/mingw/cut-n03-closure-tests.log` 与对应 OFF 路径；初次失败记录
+保存在 ON `cut-n03-closure-initial-tests.log`，没有将失败运行当作通过。
+控件 **47/47**；最终 manager、tensor/trace、球面/圆柱、held-drag 和透明
+OR 云图均已查看。完整支持范围及限制见 [N03 审计](cut-view-n03-audit.md)。
+
+源码修复提交后已刷新 MCP 索引：34,418 nodes / 127,831 edges；部分解析
+缺口继续直接读源码。N03.1–N03.5 均 verified，N03 已收敛。N04–N09 尚未
+启动；完整 native sessions、per-cut styles/legend/probes、shell/beam 与非平面
+物理映射、百万单元全帧/硬缓存预算仍是后续工作，Web/WASM 继续排除。

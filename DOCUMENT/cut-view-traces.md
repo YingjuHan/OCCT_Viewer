@@ -172,5 +172,6 @@ work. Million-cell full-frame performance remains N08. OR union is separate.
    VTK configurations. N03.3e repeats the full acceptance matrix. N03.3 completion
    requires all of these checks; each subitem is committed separately after acceptance.
 
-Presentation OR boundary/cap union remains N03.4. Double-source provenance and
-duplicate removal alone do not satisfy that separate acceptance gate.
+Presentation OR boundary/cap union is separately verified in
+[N03.4](cut-view-union.md). Double-source provenance and duplicate removal alone
+do not satisfy that acceptance gate.

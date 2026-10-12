@@ -8,15 +8,17 @@ Do not add a separate `CUTVIEW` plugin or modify the existing `AGENTS.md`.
 
 The Windows continuation now has VTK 9.5.2/MinGW SDK support, expanded native/DRAW
 curve/surface/tetra/hex/wedge/pyramid independent references, analytic precision
-fallback repair, and N03 recovery robustness/metadata repairs. N02/G03 are verified at their documented bounded scope; G04/N03 remains partial. Current environment, test counts and remaining work are recorded
+fallback repair, and N03 recovery/tensor/trace/OR implementation. N02/G03 and
+N03 are verified at their documented bounded scopes.
+Current environment, test counts and remaining work are recorded
 in [cut-view-native-handoff.md](cut-view-native-handoff.md); older milestone counts
 below describe their original validation runs.
 
-Acceptance: VTK-enabled **38/38**, each case passing three times (610.23 seconds);
-VTK-disabled **8/8**, each case passing three times (6.24 seconds). The final clipped
-reference visual case passed three additional runs; its initial/held images were
-inspected alongside the earlier recovery, analytic and VTK evidence. Two historical external fixtures
-are absent from the current official data set; the old 34-case count is not reused.
+Current acceptance: VTK-enabled **48/48**, VTK-disabled **14/14**,
+each case passing three times (538.76 / 47.00 seconds; 144 / 42 executions).
+Logs: `cut-n03-closure-tests.log`
+in both build directories. Two historical external fixtures are absent from the
+current official data set; their old counts are not reused.
 
 ## Baseline
 
@@ -39,16 +41,17 @@ The plane-interaction repair gate R00 takes priority over new cut shapes.
 
 N02 closure passed: [queue and evidence](cut-view-n02-plan.md),
 [bounded audit](cut-view-n02-audit.md). The [N03 queue](cut-view-n03-plan.md) is now
-active; existing recovery increments remain in the regression suite.
+verified at [the closure scope](cut-view-n03-audit.md); all earlier increments
+remain in the regression suite. N04-N09 are queued; N04 is next and has not started.
 
 | ID | Task | Depends On | Acceptance | Status |
 | --- | --- | --- | --- | --- |
-| R00 | Plane held-drag recomputation, every existing control, interactive DRAW/Tk crashes and invalid-input handling | Baseline | Interactive (-i) menus/dialogs, current 39/39 controls; pre-release geometry/field/pixel assertions; all regressions | verified |
+| R00 | Plane held-drag recomputation, every existing control, interactive DRAW/Tk crashes and invalid-input handling | Baseline | Interactive (-i) menus/dialogs, current 47/47 controls; pre-release geometry/field/pixel assertions; all regressions | verified |
 | G01 | Field isosurface: fixed field/component/step binding, below/on/above, surface lines, live threshold, definition migration | Baseline | Native numerical tests, all masks, independent contour changes, DRAW pixels and manager controls | verified |
 | G02 | Cylinder and sphere: position/axis/radius, enclosed intersections, three portions | G01 | Analytic volume/area checks, same-sign vertex cases, DRAW interaction | partial: 48 concrete VTK types, shared BVH/cache and conforming curved-reference adjacency verified; mismatching interfaces stay visible; full-frame performance pending |
 | G03 | Exact second-order cell geometry and FE result interpolation | G02 | Curved-cell reference solutions and convergence tests; explicit unsupported-cell diagnostics | verified at bounded N02 scope: independent family references, analytic/precision limits and original-FE higher-order isosurfaces; exact arbitrary-order intersections not claimed |
-| G04 | Cell recovery/averaging thresholds, region boundaries and discontinuity policies | G03 | Constant and recovered results verified across material boundaries; physical fields unchanged | partial: region/threshold and element-node recovery, vector magnitude order and original physical mapping implemented; manager recovery/tensor controls and definition options verified; explicit interface traces pending; full sessions remain N09 |
-| G05 | Multi-cut OR boundary merging, deduplication and shared opacity | G02 | Overlapping/touching cuts, no duplicate faces or darkened overlap, all masks | queued |
+| G04 | Cell recovery/averaging thresholds, region boundaries and discontinuity policies | G03 | Constant and recovered results verified across material boundaries; physical fields unchanged | verified at N03 contract: recovery/tensor/trace policies, original physical mapping, JSON v7 and 47/47 controls; full sessions remain N09 |
+| G05 | Multi-cut OR boundary merging, deduplication and shared opacity | G02 | Overlapping/touching cuts, no duplicate faces or darkened overlap, all masks | verified at N03.4 contract: actual OR, source/cap provenance, independent numerical cuts and transparent clouds; performance remains N08 |
 | M01 | Native model lifecycle, defaults X/Y/Z, selection independent of activation | R00 | Open/replace/close model tests and deterministic defaults | verified |
 | M02 | Datum positioning, reference axes and numeric editing for all shapes | G02, M01 | Local/global transforms, numeric and pointer edits agree | queued |
 | M03 | Per-cut/per-portion styles and common options with overrides | M01, G05 | Color/opacity/edges/visibility persistence and DRAW images | queued |
@@ -260,7 +263,7 @@ remains active in N02. N03-N09 remain scheduled.
   (188.67 seconds), including the new analytic held-pointer images and 32/32 control
   inventory. VTK-disabled native/DRAW Release acceptance passes all six cases three
   times. G03 remains partial pending remaining curved-family reference evidence;
-  N03-N09 were queued at that milestone; current N03 status is partial.
+  N03-N09 were queued at that historical milestone; current status is recorded above.
   Images from that run: `build/test/native/draw-analytic/`.
 
 ## N02 Geometry Controls and Curved Refinement
@@ -362,3 +365,19 @@ N03.3 remains partial. N03.3b binds both sources to generated primitives and
 the native fast slice; N03.3c adds independent selection/integrals, N03.3d adds
 controls/migration, and N03.3e completes interface acceptance. Presentation OR
 union/cap ownership remains N03.4.
+
+## N03 Closure
+
+N03.1 recovery controls, N03.2 tensor conventions, N03.3 independent interface
+traces and N03.4 actual presentation OR are verified. The full gate found and
+repaired degenerate float sphere-pole BRep seeds and shared internal curved faces
+of compsolids. Curved On-only caps keep OCCT surfaces; original-cell topology
+controls exposed boundaries. Warm sphere masks have independent analytic references.
+
+Final ON 48/48 and OFF 14/14 each pass three times (144 / 42 executions,
+538.76 / 47.00 seconds), including 47/47 real Tk controls, held pointer updates,
+the 48-concrete-cell matrix and transparent cloud comparisons. Source repair:
+`3a1fd44`; diagnostics/transparent gate: `eba2a37`. Logs and explicit support
+limits are recorded in [the N03 audit](cut-view-n03-audit.md).
+N04-N09 remain queued, with import/ordinary Viewer work next. Full-frame
+performance, complete native sessions and excluded Web/WASM work remain open.

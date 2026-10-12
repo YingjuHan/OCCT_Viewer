@@ -325,7 +325,8 @@ jumps, synchronization and changed pixels during held motion, followed by abort.
 integration must remain unchanged by display recovery; missing original mapping
 on a recovered result fails explicitly. Symmetric tensor measures now follow
 [the explicit display contract](../DOCUMENT/cut-view-tensors.md). Physical
-interface-side selection and OR union remain N03 work; full sessions remain N09.
+interface-side selection and actual OR union are verified by the trace/union
+gates below; full sessions remain N09.
 
 ```powershell
 ctest --test-dir build/mingw -R 'cut_recovery|draw_cut_view_recovery' --output-on-failure --repeat until-fail:3
@@ -507,7 +508,39 @@ VTK-enabled `cut_interface` verifies reciprocal trusted volume-face adjacency
 and both original-FE traces; see [the scope](../DOCUMENT/cut-view-traces.md).
 It covers affine/quadratic references, element-node jumps, deformed/curved
 interfaces, ambiguous/disconnected rejection, all masks and unchanged default
-physical integration. These records are a prerequisite for N03.3 selection;
-negative/positive/region policies and fast native slice binding remain pending.
-Full ON 42/42 and OFF 10/10 pass each case three times; stage logs are
+physical integration. N03.3 now also verifies negative/positive/region policies,
+independent display/physical selection, fast native slice binding, JSON v7 and
+47/47 Tk controls. The source-foundation milestone's ON 42/42 and OFF 10/10
+passed each case three times; stage logs are
 `cut-n03-interface-tests.log` (444.71 / 4.70 seconds).
+
+## Presentation OR acceptance
+
+`cut_union` uses independent rectangular occupancy/area oracles for all 64 pairs
+of visibility masks. It also checks FE interpolation, material jumps, deformation,
+trusted/disconnected topology, geometry/iso intersections and mixed dimensions.
+`draw_cut_view_union` verifies actual display volume/area and stable provenance.
+`draw_cut_view_union_visual` checks duplicate/contained/full-mask transparent
+clouds and transparency sensitivity. See [the contract](../DOCUMENT/cut-view-union.md).
+
+```tcl
+scvcutview model union
+scvcutview model style on 0.55
+scvcutimagecompare reference.png actual.png
+```
+
+`union` measures the display artifact; `eval id` remains an independent numerical
+cut. Physical integration rejects presentation branches. Variable-color image
+comparisons use unlit weighted OIT; a constant contour also checks ordinary alpha
+blending. Images are in `build/mingw/test/native/draw-union/`.
+
+The closure regression also warms independent sphere meshes before all eight
+presentation masks and checks analytic volume/area, duplicate/intersecting On-only
+sheets and cap ownership. Curved caps keep their OCCT surfaces; shared internal
+compsolid faces are excluded by original-cell topology. OFF curved-tool tests use
+native tetrahedra; hexahedron curved cuts require VTK.
+
+Final N03 closure: ON **48/48**, OFF **14/14**, every case three times (144 / 42
+executions, 538.76 / 47.00 seconds); current Tk inventory **47/47**. Logs:
+`cut-n03-closure-tests.log` in both build directories. See
+[the bounded audit](../DOCUMENT/cut-view-n03-audit.md) for support limits and image review.
