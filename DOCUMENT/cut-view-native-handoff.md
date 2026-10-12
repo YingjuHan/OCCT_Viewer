@@ -544,3 +544,13 @@ ON 重点 **5/5 各三次**（53.30 秒）、OFF 完整 **12/12 各三次**（4.
 实际控件 **47/47**；最终紧凑布局测试通过（16.08 秒），两张管理器和
 negative/positive 云图已逐张查看。日志为 `cut-n03-trace-controls-focused.log`
 与 ON `cut-n03-trace-controls-layout.log`。继续 N03.3e 完整矩阵验收。
+
+## 20. N03.3e 侧迹闭环
+
+变形后的 plane/iso 选侧、反向法向、全部 masks、独立原始应力合力/力矩、
+线端点四种策略，以及 OFF 对 VTK-only 线拓扑的拒绝均补入矩阵。
+完整 ON **45/45 各三次**，135 次成功（501.41 秒）；OFF **12/12 各三次**，
+36 次成功（7.81 秒）。日志 `cut-n03-trace-matrix-tests.log`，控件 **47/47**。
+完整族测试发现并修复空/多顶点 0D 单元的内部点 FE 反算问题，相关 DRAW
+与 visual 依赖在最终重复套件通过。N03.3 在现有支持契约内已闭环。
+N03.4 OR union/cap ownership 接着推进；N03 整体仍 partial，后续 N03.5 审计未完成。

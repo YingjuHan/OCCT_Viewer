@@ -106,15 +106,26 @@ template<class F> void rejects(F operation, const char* message)
 {
     try { operation(); } catch (const std::invalid_argument&) { return; } throw std::runtime_error(message);
 }
-void selections(bool surface, bool iso, bool reversed)
+void selections(bool surface, bool iso, bool reversed, bool deformed)
 {
     const auto source = mesh(surface,true); const auto values = field(source); MeshCutViewManager manager(source);
+    double shift = 0;
+    if (deformed) {
+        Handle(RWCae::MeshNVecProperty) displacement = new RWCae::MeshNVecProperty("displacement",3,
+            RWCae::MeshPropertyBase::MappingType::Nodal,RWCae::MeshNVecPropertyType::Vector);
+        displacement->Init<RWCae::MeshScalarProperty>();
+        for (int c = 0; c < 3; ++c) {
+            auto scalar = Handle(RWCae::MeshScalarProperty)::DownCast(displacement->GetComponent(c)); scalar->Init(source->NbNodes());
+            for (RWCae::MeshEntityId n = 0; n < source->NbNodes(); ++n) { scalar->SetValue(RWCae::MeshPropertyEntityInfo(n),c == 0 ? 1 : 0); }
+        }
+        displacement->UpdateComponents(); require(manager.SetDeformation(displacement,0.2),"Selection deformation rejected"); shift = manager.EffectiveDeformationScale();
+    }
     if (iso) {
         Handle(RWCae::MeshNVecProperty) cutting = new RWCae::MeshNVecProperty("cutting",1,RWCae::MeshPropertyBase::MappingType::Nodal);
         cutting->Init<RWCae::MeshScalarProperty>(); auto scalar = Handle(RWCae::MeshScalarProperty)::DownCast(cutting->GetComponent(0)); scalar->Init(source->NbNodes());
         for (RWCae::MeshEntityId n = 0; n < source->NbNodes(); ++n) { scalar->SetValue(RWCae::MeshPropertyEntityInfo(n),(reversed ? -1 : 1)*source->Nodes()[n].x()); }
         cutting->UpdateComponents(); require(manager.AddIsosurface("cut",cutting,0,0),"Iso interface rejected");
-    } else { manager.AddPlane("cut",Graphic3d_Vec4d(reversed ? -1 : 1,0,0,0)); }
+    } else { manager.AddPlane("cut",Graphic3d_Vec4d(reversed ? -1 : 1,0,0,(reversed ? 1 : -1)*shift)); }
     MeshCutTraceOptions display, physical;
     for (auto policy : {MeshCutTracePolicy::Lowest,MeshCutTracePolicy::Negative,MeshCutTracePolicy::Positive,MeshCutTracePolicy::Region}) {
         physical.Policy = policy; physical.Regions = {std::numeric_limits<int64_t>::min(),std::numeric_limits<int64_t>::max()}; physical.Region = physical.Regions[1];
@@ -197,6 +208,28 @@ void lines()
     manager.AddSphere("sphere",Graphic3d_Vec3d(-1,0,0),1); manager.SetTraceOptions("sphere",true,options);
     auto sphere = manager.EvaluatePhysical("sphere",field(source));
     near(sphere.PhysicalFields[1]->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(0,0)),100,"Sphere signed side");
+    for (unsigned mask = 0; mask < 8; ++mask) {
+        manager.SetVisibility("cut",mask);
+        for (auto policy : {MeshCutTracePolicy::Lowest,MeshCutTracePolicy::Negative,MeshCutTracePolicy::Positive,MeshCutTracePolicy::Region}) {
+            options.Policy = policy; options.Region = -1; options.Regions = {1,-1};
+            require(manager.SetTraceOptions("cut",true,options),"Line trace selection rejected");
+            auto result = manager.EvaluatePhysical("cut",field(source));
+            if (!(mask&2)) { require(result.Portions[1].IsNull(),"Line mask ignored"); continue; }
+            auto section = Handle(MeshGeometryTraceSection)::DownCast(result.Portions[1]);
+            const auto nodeId = section->ElementTraces()[0][0].Weights.begin()->first;
+            near(result.PhysicalFields[1]->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(0,nodeId)),
+                policy == MeshCutTracePolicy::Lowest || policy == MeshCutTracePolicy::Negative ? 0 : 100,"Line selected jump");
+        }
+    }
+}
+#else
+void lines()
+{
+    Handle(RWCae::MeshData) source = new RWCae::MeshData();
+    source->AddNodePosition(Graphic3d_Vec3(-1,0,0)); source->AddNodePosition(Graphic3d_Vec3(1,0,0));
+    RWCae::MeshData::GenericCell cell; cell.Type = 3; cell.Nodes = {0,1}; source->AddGenericCell(cell);
+    MeshCutViewManager manager(source); manager.AddPlane("cut",Graphic3d_Vec4d(1,0,0,0));
+    rejects([&] { manager.Evaluate("cut"); },"OFF accepted VTK-only line topology");
 }
 #endif
 }
@@ -204,11 +237,11 @@ int main()
 {
     try {
         for (bool surface : {false,true}) { for (bool connected : {false,true}) { for (bool deformed : {false,true}) { verify(surface,connected,deformed); } } }
-        for (bool surface : {false,true}) { for (bool iso : {false,true}) { for (bool reversed : {false,true}) { selections(surface,iso,reversed); } } }
+        for (bool surface : {false,true}) { for (bool iso : {false,true}) { for (bool reversed : {false,true}) {
+            for (bool deformed : {false,true}) { selections(surface,iso,reversed,deformed); }
+        } } }
         ambiguous();
-#ifdef OCCTV_USE_VTK
         lines();
-#endif
         std::cout << "CUT_TRACE_BINDING_PASS\n"; return 0;
     } catch (const std::exception& e) { std::cerr << "CUT_TRACE_BINDING_FAIL: " << e.what() << '\n'; return 1; }
 }

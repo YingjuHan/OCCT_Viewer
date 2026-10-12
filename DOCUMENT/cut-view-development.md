@@ -85,7 +85,9 @@ for SDK paths, logs, missing historical external fixtures and remaining work.
   See [the trace foundation and remaining selection work](cut-view-traces.md).
 - [x] N03.3b generated face/line/point dual-source FE binding and native fast-slice
   parity; trusted primitive ownership, disconnected topology and cached movement verified.
-- [ ] N03 physical interface traces and OR boundary/cap merging; complete native
+- [x] N03.3 independent physical/display interface traces, JSON v7 and 47/47 controls;
+  ON 45/45 and OFF 12/12 each repeated three times, within the documented support contract.
+- [ ] N03 OR boundary/cap merging; complete native
   session persistence remains N09.
 
 These are native building blocks, not completion of the entire Cut View Manager plan.

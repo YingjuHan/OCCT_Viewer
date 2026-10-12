@@ -1,7 +1,7 @@
 # N03 Physical Interface Traces
 
-N03.3a-d are verified. Generated sections retain selectable independent display
-and physical traces; lowest remains the default. Full matrix closure is N03.3e.
+N03.3a-e are verified. Generated sections retain selectable independent display
+and physical traces; lowest remains the default.
 
 ## N03.3a Prepared Source Foundation
 
@@ -130,7 +130,29 @@ After reducing the list height, the final layout gate passed in 16.08 seconds
 (`cut-n03-trace-controls-layout.log`); inspected manager images show all controls
 and Close within the window. Both trace cloud images were inspected.
 
-## Remaining N03.3 Work
+## N03.3e Full Matrix Closure
+
+Final ON **45/45**, every case three times, **135 successful executions** in
+501.41 seconds; OFF **12/12**, every case three times, **36 executions** in 7.81
+seconds. Logs: `cut-n03-trace-matrix-tests.log` in both build directories.
+The selection matrix now crosses deformation, plane/iso orientation, all masks
+and volume/surface policies. VTK line endpoints cross all four policies/masks;
+OFF explicitly rejects VTK-only line topology. DRAW independently checks selected
+original stress force and moments while tensor display conventions change.
+All native/DRAW/visual suites and the **47/47** Tk inventory pass repeatedly.
+
+The full family gate found and fixed one uncovered case: empty/polyvertex 0D
+cells have no FE interior chart and must not attempt an interior inverse mapping.
+They cache available original node weights and remain non-interface cells.
+The fixed VTK family test and its dependent native/visual DRAW cases pass.
+
+Nonmatching interfaces are unpaired; explicit selection of ambiguous multiple
+owners is rejected. Side classification follows the documented source-interior
+rule. VTK-only curve topology remains unavailable in OFF. Non-planar physical
+integration and shell/beam section adapters remain the existing later-stage
+work. Million-cell full-frame performance remains N08. OR union is separate.
+
+## Historical N03.3 Queue
 
 1. N03.3b is verified above. Nonmatching topology does not acquire a trusted pair.
 2. N03.3c: introduce explicit lowest/negative/positive/region policies. Determine the

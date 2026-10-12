@@ -9,7 +9,7 @@ fields remain separate from display recovery and presentation merging.
 | --- | --- | --- | --- |
 | N03.1 | Native recovery controls and definition persistence | Real threshold/before-invariant/region controls; complete widget inventory; invalid edits and save/load; versioned options and exact signed region IDs; unchanged physical fields and fixed iso binding | Verified: 36/36 controls, JSON v5, ON/OFF repeat gates |
 | N03.2 | Tensor measures and component conventions | Explicit six/nine component layouts and shear meaning; invariant before/after recovery; independent tensor references, missing-value/extreme-value contract, physical integration unchanged | Verified: tensor references, 39/39 controls, JSON v6 |
-| N03.3 | Physical interface traces | Lowest/negative/positive/region selection preserving both element sources; all masks, region jumps, deformation and line/surface/volume cases | In progress: dual-source foundation; selection and fast/native binding pending |
+| N03.3 | Physical interface traces | Lowest/negative/positive/region selection preserving both element sources; all masks, region jumps, deformation and line/surface/volume cases | Verified: independent policies, JSON v7, 47/47 controls, full ON/OFF repeat matrix |
 | N03.4 | Presentation OR union and cap ownership | Identical, overlapping, touching and multi-direction cuts; all masks; source/cap provenance; transparent cloud images; independent per-cut numerical results | Queued |
 | N03.5 | Closure audit | Repeated full VTK ON/OFF native/DRAW/visual suites; inspect changed UI/cloud images; preserve explicit unsupported cases and all remaining native stages | Queued |
 
@@ -38,9 +38,10 @@ N03.3 is split into reviewable work items; see [the trace contract](cut-view-tra
 - N03.3d: native controls, exact region binding and atomic definition migration.
   Verified: 47/47 controls, JSON v7, focused ON 5/5 and OFF 12/12 three times.
 - N03.3e: full interface acceptance across line/surface/volume, deformation,
-  jumps and all masks in both VTK configurations. Queued.
+  jumps and all masks in both VTK configurations. Verified: ON 45/45, OFF 12/12,
+  every case three times (501.41 / 7.81 seconds).
 
 Each subitem gets its own focused commit after its acceptance evidence passes.
 
-N03.3a does not change the current lowest-ID display or physical policy and
-does not complete N03.3. N03.4 and N03.5 remain queued.
+N03.3 is closed within the documented geometry/support and integration contracts.
+N03.4 presentation OR boundary/cap union is now the active item; N03.5 remains queued.

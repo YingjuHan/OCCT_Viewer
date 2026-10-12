@@ -61,7 +61,11 @@ MeshCutTraceSource::MeshCutTraceSource(const Handle(RWCae::MeshData)& mesh,
             cell.Owned.reset(new MeshVtkCell(mesh,e,source.get(),tolerance,options,0,false)); cell.Geometry = cell.Owned.get();
         }
         cell.Dimension = cell.Geometry->Dimension(); cell.Interior = cell.Geometry->InteriorPoint();
-        cell.InteriorWeights = cell.Geometry->Origin(cell.Interior);
+        if (cell.Dimension == 0) {
+            // Empty/polyvertex cells have no FE interior chart or interfaces.
+            std::vector<RWCae::MeshEntityId> nodes; mesh->ElementNodes(e,nodes);
+            for (auto n : nodes) { cell.InteriorWeights.AddBaseNode(n,1.0/nodes.size()); }
+        } else { cell.InteriorWeights = cell.Geometry->Origin(cell.Interior); }
         boundaries = cell.Geometry->BoundaryNodes();
 #else
         const auto& indexed = mesh->IndexedElements()[e];

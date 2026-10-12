@@ -42,6 +42,16 @@ proc trace_run {} {
     scvcutview trace_model recovery 0 1 material
     trace_flux 9
     scvcutview trace_model cellmode cut constant
+    scvcutview trace_model tensor mises xx-yy-zz-xy-xz-yz tensor
+    scvcutview trace_model field cell stress 0
+    set force [scvcutview trace_model freebody cut stress 0 1 2 3 4 5 0 0 0]
+    trace_near [lindex [dict get $force force] 0] 9 "Original positive stress force"
+    trace_near [lindex [dict get $force moment] 1] 4.5 "Original positive stress moment Y"
+    trace_near [lindex [dict get $force moment] 2] -4.5 "Original positive stress moment Z"
+    scvcutview trace_model tensor pressure xx-yy-zz-xy-xz-yz engineering
+    set force [scvcutview trace_model freebody cut stress 0 1 2 3 4 5 0 0 0]
+    trace_near [lindex [dict get $force force] 0] 9 "Tensor display changed physical stress"
+    scvcutview trace_model field cell pressure 0
     scvcutview trace_model move cut -1 0 0 1
     trace_values 9
     trace_flux -9
