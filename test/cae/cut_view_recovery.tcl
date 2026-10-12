@@ -39,6 +39,17 @@ proc run_recovery {} {
     scvcutview recovery_model recovery 100 0 material
     recovery_jump
     set stable [scvcutview recovery_model recovery]
+    set snapshot [scvcutview recovery_model snapshot]
+    scvcutview recovery_model recovery 0 1 none
+    scvcutview recovery_model restore $snapshot
+    recovery_assert {[scvcutview recovery_model recovery] eq $stable && [scvcutview recovery_model snapshot] eq $snapshot} "Recovery option round trip"
+    set exact [string map [list {"regions":[10,20]} {"regions":[-9223372036854775808,9223372036854775807]}] $snapshot]
+    scvcutview recovery_model restore $exact
+    set ids [dict get [scvcutview recovery_model recovery] regions]
+    recovery_assert {[lindex $ids 0] eq "-9223372036854775808" && [lindex $ids 1] eq "9223372036854775807"} "Region ID round trip lost precision"
+    scvcutview recovery_model recovery 99 1 keep
+    recovery_assert {[dict get [scvcutview recovery_model recovery] regions] eq $ids} "Keep regions changed exact IDs"
+    scvcutview recovery_model restore $snapshot
     foreach command {{-1 0 none} {101 0 none} {100 2 none} {100 0 absent} {100 0 invalid_region} {100 0 none 0}} {
         recovery_assert {[catch {scvcutview recovery_model recovery {*}$command}]} "Invalid recovery settings accepted"
         recovery_assert {[scvcutview recovery_model recovery] eq $stable} "Invalid settings changed live recovery"

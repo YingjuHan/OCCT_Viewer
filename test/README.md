@@ -324,7 +324,7 @@ jumps, synchronization and changed pixels during held motion, followed by abort.
 `MeshCutResult::PhysicalFields` maps the original field separately. Stress/heat-flow
 integration must remain unchanged by display recovery; missing original mapping
 on a recovered result fails explicitly. Tensor invariants, explicit physical
-interface-side selection, recovery widgets, OR union and session settings remain
+interface-side selection, OR union and full session settings remain
 open N03 work.
 
 ```powershell
@@ -421,7 +421,8 @@ scvcutview model move cut1 1 0 0 -0.5
 
 Masks are negative=1, on=2, positive=4. `display` requires `vinit`; other operations work in batch.
 `field` accepts an optional timestep index. `deform` uses the repository's model-size-normalized
-scale convention. `snapshot`/`restore` cover definitions only.
+scale convention. `snapshot`/`restore` cover cut definitions and their iso/recovery options (JSON v5),
+not a complete native session.
 
 ## Native Interface
 
@@ -475,3 +476,16 @@ and changing cloud pixels. See [the contract](../DOCUMENT/cut-view-isosurfaces.m
 
 Final focused acceptance: 5/5 in 67.02 seconds. VTK OFF: 8/8, each three times,
 6.24 seconds. Logs: `cut-n02-iso-*`, `cut-n02-closure-tests.log`.
+
+## Recovery control and persistence acceptance
+
+`draw_cut_view_controls` inventories **36/36** widgets, including threshold
+Apply/Return, before-magnitude ordering, elemental region/step menus and
+Save/Load refresh. On Windows its asynchronous helper captures only the manager
+root wrapper and rejects missing/stale/blank output. Inspect
+`build/mingw/test/native/draw-controls/manager_controls.png`.
+
+`cut_recovery` and `draw_cut_view_recovery` also check JSON v5 signed int64 region
+extremes, atomic invalid restore and v1-v4 recovery defaults. `recovery ... keep`
+retains restored exact IDs. Final stage logs: `cut-n03-recovery-tests.log` in
+ON/OFF builds; 38/38 and 8/8 respectively, every case three times.

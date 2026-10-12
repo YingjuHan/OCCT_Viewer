@@ -2,8 +2,8 @@
 
 ## 1. 接续范围与当前停点
 
-用户已在 Windows 工作区发出继续开发指令。N02 四项已按文档范围闭环并提交，当前推进 N03 恢复控件/持久化；
-已有恢复数值/元数据保留并回归。最新接续证据在第 12/13 节，旧停点保留为历史。
+用户已在 Windows 工作区发出继续开发指令。N02 四项已按文档范围闭环并提交，N03.1 恢复控件/定义持久化已验收，当前推进 N03.2 张量；
+已有恢复数值/元数据保留并回归。最新接续证据在第 14 节，旧停点保留为历史。
 后文的 Linux 验证记录保留为历史证据；
 本次 Windows 配置与结果以本节及第 6 节的接续记录为准。
 
@@ -451,3 +451,19 @@ OFF 8/8 每项三次（24 次通过），6.24 秒；控件 32/32，零失败。�
 [范围审计](cut-view-n02-audit.md)明确采样、float、非匹配接口与 unsupported 限制；
 N02 已在该范围 verified，后续物理侧迹和 OR union 属于 N03，百万单元全帧仍 N08。
 现在按 [N03 队列](cut-view-n03-plan.md) 实施 N03.1 恢复控件及精确选项持久化。
+
+## 14. N03.1 已验收：恢复控件和定义持久化
+
+- 实际 Tk controls **36/36**，阈值 Return/Apply、非法草稿、checkbox、region
+  菜单与 Save/Load 均通过；`draw-controls/manager_controls.png` 已查看，控件完整。
+- JSON **v5** 持久化 threshold/before/regions，signed int64 极端 region IDs
+  精确 round-trip；v1-v4 使用恢复默认值，非法字段/计数/溢出恢复原子拒绝。
+- DRAW `recovery threshold before keep` 保留精确恢复的 IDs，getter 不转 double。
+- Windows capture 使用 Tk root wrapper 的完整绘制；异步等待时继续分派 Tk
+  事件，要求 fresh PNG、非空 client 内容和成功标记，避免旧截图假通过。
+- VTK ON **38/38 每项三次**，OFF **8/8 每项三次**；日志分别为
+  `build/mingw/cut-n03-recovery-tests.log` 和 OFF 同名日志。
+
+后续按 N03.2 明确六/九分量布局、剪切约定和张量 measures，再做 N03.3
+physical traces、N03.4 OR union/cap ownership、N03.5 闭环。N03 整体仍 partial；
+完整 native session 是 N09，不能以 definitions v5 代替。

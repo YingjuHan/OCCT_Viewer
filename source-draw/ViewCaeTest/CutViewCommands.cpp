@@ -542,7 +542,7 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             if (argc == 3) {
                 const auto& options = cuts.RecoveryOptions();
                 di << "threshold " << options.ThresholdPercent << " before " << (int)options.InvariantsBeforeAveraging << " regions {";
-                for (auto region : options.Regions) { di << (Standard_Real)region << " "; }
+                for (auto region : options.Regions) { di << std::to_string(region).c_str() << " "; }
                 di << "}";
                 return 0;
             }
@@ -551,7 +551,10 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             const int before = cutInteger(argv[4]);
             if (before != 0 && before != 1) { throw std::invalid_argument("Recovery before-invariant flag must be 0 or 1"); }
             options.InvariantsBeforeAveraging = before != 0;
-            if (std::string(argv[5]) != "none") {
+            if (std::string(argv[5]) == "keep") {
+                if (argc == 7) { throw std::invalid_argument("Retaining region IDs does not take a field step"); }
+                options.Regions = cuts.RecoveryOptions().Regions;
+            } else if (std::string(argv[5]) != "none") {
                 const int step = argc == 7 ? cutInteger(argv[6]) : -1;
                 Handle(RWCae::MeshNVecProperty) regions;
                 for (const auto& candidate : model.Mesh->Properties()) {
@@ -719,7 +722,7 @@ void ViewCaeTest::CutViewCommands::Factory(Draw_Interpretor& di)
         "  | sphereadd/spheremove id centerX centerY centerZ radius | radius id radius\n"
         "  | cylinderadd/cylindermove id centerX centerY centerZ axisX axisY axisZ radius\n"
         "  | field point/cell name rawComponent [timeStep] | cellmode id constant/projected\n"
-        "  | recovery [thresholdPercent beforeInvariant0/1 regionField/none [timeStep]]\n"
+        "  | recovery [thresholdPercent beforeInvariant0/1 regionField/none/keep [timeStep]]\n"
         "  | copy id newId | rename id name | enable id 0/1 | remove id | eval id | display | clear\n"
         "  | snapshot | restore json | deform property/none normalizedScale [timeStep]\n"
         "  | freebody id field xx yy zz xy xz yz originX originY originZ [timeStep]\n"

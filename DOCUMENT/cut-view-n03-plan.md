@@ -7,8 +7,8 @@ fields remain separate from display recovery and presentation merging.
 
 | Order | Work | Acceptance | Status |
 | --- | --- | --- | --- |
-| N03.1 | Native recovery controls and definition persistence | Real threshold/before-invariant/region controls; complete widget inventory; invalid edits and save/load; versioned options and exact signed region IDs; unchanged physical fields and fixed iso binding | Next after N02 |
-| N03.2 | Tensor measures and component conventions | Explicit six/nine component layouts and shear meaning; invariant before/after recovery; independent tensor references, missing-value/extreme-value contract, physical integration unchanged | Queued |
+| N03.1 | Native recovery controls and definition persistence | Real threshold/before-invariant/region controls; complete widget inventory; invalid edits and save/load; versioned options and exact signed region IDs; unchanged physical fields and fixed iso binding | Verified: 36/36 controls, JSON v5, ON/OFF repeat gates |
+| N03.2 | Tensor measures and component conventions | Explicit six/nine component layouts and shear meaning; invariant before/after recovery; independent tensor references, missing-value/extreme-value contract, physical integration unchanged | Next |
 | N03.3 | Physical interface traces | Lowest/negative/positive/region selection preserving both element sources; all masks, region jumps, deformation and line/surface/volume cases | Queued |
 | N03.4 | Presentation OR union and cap ownership | Identical, overlapping, touching and multi-direction cuts; all masks; source/cap provenance; transparent cloud images; independent per-cut numerical results | Queued |
 | N03.5 | Closure audit | Repeated full VTK ON/OFF native/DRAW/visual suites; inspect changed UI/cloud images; preserve explicit unsupported cases and all remaining native stages | Queued |

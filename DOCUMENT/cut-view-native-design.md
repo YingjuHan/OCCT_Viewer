@@ -254,7 +254,8 @@ overflow; NaN traces are preserved and infinite recovery input is rejected.
 of display recovery. Integration uses it and rejects a recovered result that
 has lost the physical mapping. NodeVec line/point adapters retain original
 element provenance and signed FE weights. DRAW exposes recovery configuration;
-manager widgets and complete session persistence remain pending.
+manager widgets and JSON v5 recovery definitions are verified (36/36 controls).
+Complete native session persistence remains N09.
 
 ### N03 Remaining Implementation
 
@@ -288,3 +289,12 @@ isosurface contract and independent field/model tolerances alongside analytic
 and numerical geometric paths. Repeated complete native/DRAW/visual acceptance
 passes in both VTK configurations. N03 now owns recovery controls/persistence,
 tensor conventions, physical traces and presentation OR/cap ownership.
+
+### N03.1 Definition Recovery Contract
+
+JSON v5 includes threshold, before-order flag and exact signed int64 region IDs.
+Restore validates the whole document in staging and applies options only after
+all cuts resolve. Legacy v1-v4 restoration uses default recovery settings. Tk
+threshold edits stay as drafts until Apply/Return; periodic refresh preserves
+drafts, while successful Load refreshes the persisted settings. The region menu
+can retain exact restored IDs without converting them through a floating scalar.

@@ -271,6 +271,25 @@ proc ui_run {} {
     ui_combo .scvcutmanager.results.field "No Result"
     ui_assert {[.scvcutmanager.results.component instate disabled]} "No Result leaves the component spinner enabled"
     ui_combo .scvcutmanager.results.field "temperature (point)"
+    # Recovery controls are part of the real widget inventory and Save/Load state.
+    ui_entry .scvcutmanager.recovery.threshold 0 1
+    ui_near [dict get [scvcutview $ui_model recovery] threshold] 0 "Recovery threshold Return"
+    foreach invalid {nonsense -1 101 NaN Inf} {
+        set saved [scvcutview $ui_model snapshot]
+        ui_entry .scvcutmanager.recovery.threshold $invalid 1
+        ui_assert {$::CutViewManager::status ne "" && [scvcutview $ui_model snapshot] eq $saved} "Invalid recovery threshold changed state"
+    }
+    ui_entry .scvcutmanager.recovery.threshold 99
+    ui_click .scvcutmanager.recovery.apply; ui_ok
+    ui_near [dict get [scvcutview $ui_model recovery] threshold] 99 "Recovery Apply"
+    ui_click .scvcutmanager.recovery.before; ui_ok
+    ui_assert {[dict get [scvcutview $ui_model recovery] before]} "Before-average control"
+    ui_combo .scvcutmanager.recovery.region "pressure (cell)"; ui_ok
+    ui_assert {[llength [dict get [scvcutview $ui_model recovery] regions]] > 0} "Region field menu"
+    ui_combo .scvcutmanager.recovery.region "Current regions"; ui_ok
+    ui_combo .scvcutmanager.recovery.region "All regions"; ui_ok
+    ui_assert {![llength [dict get [scvcutview $ui_model recovery] regions]]} "Clear recovery regions"
+    ui_combo .scvcutmanager.recovery.region "pressure (cell)"; ui_ok
     ui_mark .scvcutmanager.results.component
     event generate .scvcutmanager.results.component <<Increment>>
     ui_pump
@@ -298,10 +317,13 @@ proc ui_run {} {
     ui_dialog .scvcutmanager.actions.save $path
     ui_ok
     ui_assert {[file exists $path]} "Save button did not write definitions"
+    scvcutview $ui_model recovery 100 0 none
     scvcutview $ui_model remove y
     ui_dialog .scvcutmanager.actions.load $path
     ui_ok
     ui_assert {[scvcutview $ui_model snapshot] eq $saved} "Load button did not restore definitions: saved=$saved actual=[scvcutview $ui_model snapshot]"
+    ui_near $::CutViewManager::recoveryThreshold 99 "Load did not refresh recovery threshold"
+    ui_assert {$::CutViewManager::recoveryBefore && $::CutViewManager::recoveryRegion eq "Current regions"} "Load did not refresh recovery policy widgets"
     ui_dialog .scvcutmanager.actions.save $path 1
     ui_dialog .scvcutmanager.actions.load $path 1
     ui_assert {[scvcutview $ui_model snapshot] eq $saved} "Cancelled dialog changed definitions"
@@ -403,7 +425,24 @@ proc ui_run {} {
     scvcutview $ui_model mouse move [expr {$px-10}] $py
     ui_assert {[dict get [scvcutview $ui_model handleinfo] dragging]} "Close-during-drag test did not start dragging"
     update idletasks
-    if {[auto_execok import] ne ""} { exec import -window [winfo id .scvcutmanager] [file join $controls_output manager_controls.png] }
+    if {$::tcl_platform(platform) eq "windows"} {
+        # Keep Tk responsive while PrintWindow captures the manager root wrapper.
+        set capturePath [file join $controls_output manager_controls.png]
+        file delete $capturePath
+        set capture [open [list | powershell.exe -NoProfile -NonInteractive -WindowStyle Hidden -File \
+            [file join $controls_dir cut_view_capture.ps1] -WindowHandle [winfo id .scvcutmanager] \
+            -OutputPath [file join $controls_output manager_controls.png] 2>@1] r]
+        fconfigure $capture -blocking 0
+        set captureLog ""
+        set captureDeadline [expr {[clock milliseconds]+30000}]
+        while {![eof $capture] && [clock milliseconds] < $captureDeadline} {
+            append captureLog [read $capture]
+            ui_pump 25
+        }
+        set captured [eof $capture]
+        close $capture
+        ui_assert {$captured && [string first CUT_VIEW_CAPTURE_PASS $captureLog] >= 0 && [file exists $capturePath]} "Manager capture failed: $captureLog"
+    } elseif {[auto_execok import] ne ""} { exec import -window [winfo id .scvcutmanager] [file join $controls_output manager_controls.png] }
     ui_click .scvcutmanager.close
     ui_assert {![winfo exists .scvcutmanager] && $::CutViewManager::timer eq ""} "Close left a window/timer"
     ui_assert {[dict get [scvcutview $ui_model handleinfo] id] eq ""} "Close left a positioning aid"

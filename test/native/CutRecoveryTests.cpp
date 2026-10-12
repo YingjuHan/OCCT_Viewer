@@ -286,10 +286,33 @@ void extremeValues()
     options = MeshCutRecoveryOptions(); auto recovered = RecoverCutField(mesh,missing,options);
     require(std::isnan(recovered->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(1,4))),"Missing trace was filled by finite neighbor");
 }
+void persistence()
+{
+    auto mesh = joined(); MeshCutViewManager manager(mesh); manager.AddPlane("cut",Graphic3d_Vec4d(0,1,0,-0.5));
+    MeshCutRecoveryOptions options; options.ThresholdPercent = 42.5; options.InvariantsBeforeAveraging = true;
+    options.Regions = {std::numeric_limits<int64_t>::min(),std::numeric_limits<int64_t>::max()};
+    require(manager.SetRecoveryOptions(options),"Signed 64-bit region settings rejected");
+    const auto snapshot = manager.DumpDefinitionsJson();
+    require(snapshot.find("-9223372036854775808") != std::string::npos && snapshot.find("9223372036854775807") != std::string::npos,"Region ID serialization lost integer precision");
+    manager.SetRecoveryOptions(MeshCutRecoveryOptions()); require(manager.RestoreDefinitionsJson(snapshot),"Recovery restore failed");
+    require(manager.RecoveryOptions().Regions == options.Regions && manager.RecoveryOptions().InvariantsBeforeAveraging,"Recovery settings lost on restore");
+    near(manager.RecoveryOptions().ThresholdPercent,42.5,"Recovery threshold lost on restore");
+    require(manager.DumpDefinitionsJson() == snapshot,"Recovery round trip changed snapshot");
+    for (const auto& replacement : {std::string("[1]"),std::string("[1.5,2]"),std::string("[0,9223372036854775808]")}) {
+        auto invalid = snapshot; const auto start = invalid.find("\"regions\":[")+10; const auto end = invalid.find(']',start)+1;
+        invalid.replace(start,end-start,replacement);
+        require(!manager.RestoreDefinitionsJson(invalid) && manager.DumpDefinitionsJson() == snapshot,"Invalid recovery restore changed live state");
+    }
+    auto invalid = snapshot; const auto pos = invalid.find("42.5"); invalid.replace(pos,4,"101");
+    require(!manager.RestoreDefinitionsJson(invalid) && manager.DumpDefinitionsJson() == snapshot,"Invalid persisted threshold changed live state");
+    const std::string legacy = R"({"version":3,"cuts":[{"id":"cut","name":"cut","shape":"plane","plane":[0,1,0,-0.5],"visibility":2,"enabled":true,"cellMode":"constant"}]})";
+    require(manager.RestoreDefinitionsJson(legacy) && manager.RecoveryOptions().Regions.empty() && !manager.RecoveryOptions().InvariantsBeforeAveraging,"Legacy recovery migration did not use defaults");
+    near(manager.RecoveryOptions().ThresholdPercent,100,"Legacy threshold migration");
+}
 }
 int main()
 {
-    try { recovery(); invariantsAndPhysical(); linesAndOriginalNodeVec(); signedWeights(); metadataAndValidation(); extremeValues(); std::cout << "CUT_RECOVERY_PASS\n"; }
+    try { recovery(); invariantsAndPhysical(); linesAndOriginalNodeVec(); signedWeights(); metadataAndValidation(); extremeValues(); persistence(); std::cout << "CUT_RECOVERY_PASS\n"; }
     catch (const std::exception& error) { std::cerr << "CUT_RECOVERY_FAIL: " << error.what() << '\n'; return 1; }
     return 0;
 }

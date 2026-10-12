@@ -673,7 +673,7 @@ std::string MeshCutViewManager::DumpDefinitionsJson() const
     rapidjson::OStreamWrapper wrapper(stream);
     RWBase::JsonHelper::Writer writer(wrapper);
     writer.StartObject();
-    writer.Key("version"); writer.Int(4);
+    writer.Key("version"); writer.Int(5);
     writer.Key("isoOptions"); writer.StartObject();
     writer.Key("absolute"); writer.Double(myIsoOptions.AbsoluteTolerance);
     writer.Key("relative"); writer.Double(myIsoOptions.RelativeTolerance);
@@ -681,6 +681,12 @@ std::string MeshCutViewManager::DumpDefinitionsJson() const
     writer.Key("limit"); writer.Int(myIsoOptions.SubdivisionLimit);
     writer.Key("primitives"); writer.Uint64(myIsoOptions.MaxPrimitives);
     writer.EndObject();
+    writer.Key("recovery"); writer.StartObject();
+    writer.Key("threshold"); writer.Double(myRecoveryOptions.ThresholdPercent);
+    writer.Key("before"); writer.Bool(myRecoveryOptions.InvariantsBeforeAveraging);
+    writer.Key("regions"); writer.StartArray();
+    for (auto region : myRecoveryOptions.Regions) { writer.Int64(region); }
+    writer.EndArray(); writer.EndObject();
     writer.Key("cuts"); writer.StartArray();
     for (const auto& entry : myEntries) {
         const auto& definition = entry.second->Definition;
@@ -723,10 +729,24 @@ bool MeshCutViewManager::RestoreDefinitionsJson(const std::string& theJson)
     rapidjson::Document document;
     document.Parse<rapidjson::kParseFullPrecisionFlag>(theJson.data(), theJson.size());
     if (document.HasParseError() || !document.IsObject() || !document.HasMember("version")
-        || !document["version"].IsInt() || document["version"].GetInt() < 1 || document["version"].GetInt() > 4
+        || !document["version"].IsInt() || document["version"].GetInt() < 1 || document["version"].GetInt() > 5
         || !document.HasMember("cuts") || !document["cuts"].IsArray()) { return false; }
     std::map<std::string, std::unique_ptr<Entry>> entries;
     MeshCutIsoOptions isoOptions;
+    MeshCutRecoveryOptions recoveryOptions;
+    if (document["version"].GetInt() >= 5) {
+        if (!document.HasMember("recovery") || !document["recovery"].IsObject()) { return false; }
+        const auto& recovery = document["recovery"];
+        if (!recovery.HasMember("threshold") || !recovery["threshold"].IsNumber()
+            || !recovery.HasMember("before") || !recovery["before"].IsBool()
+            || !recovery.HasMember("regions") || !recovery["regions"].IsArray()) { return false; }
+        recoveryOptions.ThresholdPercent = recovery["threshold"].GetDouble();
+        recoveryOptions.InvariantsBeforeAveraging = recovery["before"].GetBool();
+        for (const auto& region : recovery["regions"].GetArray()) {
+            if (!region.IsInt64()) { return false; } recoveryOptions.Regions.push_back(region.GetInt64());
+        }
+        if (!recoveryOptions.IsValid(myMesh->NbIndexedElems())) { return false; }
+    }
     if (document["version"].GetInt() >= 4) {
         if (!document.HasMember("isoOptions") || !document["isoOptions"].IsObject()) { return false; }
         const auto& options = document["isoOptions"];
@@ -796,6 +816,7 @@ bool MeshCutViewManager::RestoreDefinitionsJson(const std::string& theJson)
     }
     Clear();
     myIsoOptions = isoOptions;
+    myRecoveryOptions = recoveryOptions;
     myEntries = std::move(entries);
     return true;
 }

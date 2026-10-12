@@ -48,7 +48,7 @@ for SDK paths, logs, missing historical external fixtures and remaining work.
   rather than averaging vector components before taking a magnitude.
 - [x] DRAW/Tk isosurface creation, copy/edit/delete, field binding and threshold slider; JSON v2
   snapshots with atomic v1 plane migration and missing/ambiguous binding rejection.
-- [x] Interactive DRAW/Tk control acceptance: 32/32 widget inventory, real menus/file dialogs,
+- [x] Interactive DRAW/Tk control acceptance: 36/36 widget inventory, real menus/file dialogs,
   all buttons, editable numeric fields, errors, cancellation and empty-manager states.
 - [x] Pre-release plane-drag checks for completed presentation synchronization and changing pixels,
   all eight masks, constant/projected CellData and deformed meshes beyond original bounds.
@@ -75,8 +75,10 @@ for SDK paths, logs, missing historical external fixtures and remaining work.
   numerical convergence and unsupported precision fallback; native/DRAW/visual acceptance.
 - [x] N03 display recovery foundation: region IDs, averaging thresholds, elemental-per-node
   discontinuities, vector magnitude before/after averaging and independent original physical fields.
-- [ ] N03 complete tensor invariants, physical interface traces, OR boundary/cap merging,
-  recovery manager widgets and session persistence.
+- [x] N03.1 manager recovery threshold/order/region controls and atomic JSON v5 options,
+  with exact signed 64-bit region IDs and legacy migration.
+- [ ] N03 complete tensor invariants, physical interface traces, OR boundary/cap merging
+  and complete native session persistence.
 
 These are native building blocks, not completion of the entire Cut View Manager plan.
 
@@ -95,7 +97,7 @@ interface, not the production Vue manager. See the official [view-cut overview](
 | Translate/rotate with numeric values and sliders | Plane controls and scalar-isovalue slider implemented | Explicit datum coordinate systems, reference axes and curved-shape controls |
 | Mouse positioning | Plane picking, normal arrow, rotation rings, cancellation tested | Result-node/element picking and probe tools |
 | Real mesh and nodal-result sections during motion | Original FE functions; 48-cell matrix and held-pointer volume-family checks | Exact curved geometry/convergence and large-model frame budget |
-| Element-result sections | Constant/projected CellData, region/threshold and element-node recovery; display/physical mapping separated | Tensor invariants, explicit physical interface traces and manager recovery widgets |
+| Element-result sections | Constant/projected CellData, region/threshold and element-node recovery; display/physical mapping separated | Tensor invariants and explicit physical interface traces |
 | Plane/cylinder/sphere/isosurface shapes | Geometric cuts for concrete VTK cells; native first-order field isosurfaces | General internal walls, exact curved geometry and higher-order isosurfaces |
 | Per-portion/per-cut plot options | Native shared `SetStyle()` API only | Per-cut styles, manager controls, legend/contour options |
 | Deformed plots and following deformation | Native intersection, deformed nodal guide/range/fit bounds and held-drag regression | Material-following reference frames and production GUI controls |

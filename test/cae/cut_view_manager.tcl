@@ -34,6 +34,12 @@ namespace eval ::CutViewManager {
     variable cellmode constant
     variable fieldLabel "No Result"
     variable component 0
+    variable recoveryThreshold 100
+    variable recoveryBefore 0
+    variable recoveryRegion "All regions"
+    variable recoveryFields {}
+    variable recoveryLabels {}
+    variable lastRecovery ""
     variable fields {}
     variable fieldLabels {}
     variable status ""
@@ -85,6 +91,7 @@ proc ::CutViewManager::refresh {{attach 0}} {
         foreach widget [list $w.controls.motion $w.controls.axis $w.controls.isofield $w.results.cellmode] {
             $widget configure -state [expr {$selected eq "" ? "disabled" : "readonly"}]
         }
+        ::CutViewManager::recoveryRefresh
         if {$selected eq ""} { set lastPlane {}; set lastShape ""; return }
         if {[$w.cuts selection] ne [list $selected]} { $w.cuts selection set $selected }
         foreach cut $definitions { if {[dict get $cut id] eq $selected} { break } }
@@ -406,6 +413,37 @@ proc ::CutViewManager::field {{selectionChanged 0}} {
     scvcutview $model field [dict get $field mapping] [dict get $field name] $component [dict get $field step]
 }
 
+proc ::CutViewManager::recoveryRefresh {} {
+    variable model; variable lastRecovery; variable recoveryThreshold; variable recoveryBefore; variable recoveryRegion
+    set current [scvcutview $model recovery]
+    if {$current eq $lastRecovery} { return }
+    set recoveryThreshold [dict get $current threshold]
+    set recoveryBefore [dict get $current before]
+    set recoveryRegion [expr {[llength [dict get $current regions]] ? "Current regions" : "All regions"}]
+    set lastRecovery $current
+}
+
+proc ::CutViewManager::recovery {} {
+    variable model; variable recoveryThreshold; variable recoveryBefore; variable recoveryRegion
+    variable recoveryLabels; variable recoveryFields
+    variable lastRecovery
+    set command [list scvcutview $model recovery $recoveryThreshold $recoveryBefore]
+    if {$recoveryRegion eq "All regions"} { lappend command none } elseif {$recoveryRegion eq "Current regions"} {
+        lappend command keep
+    } else {
+        set index [lsearch -exact $recoveryLabels $recoveryRegion]
+        if {$index < 2} { error "Select a region field" }
+        set field [lindex $recoveryFields [expr {$index-2}]]
+        lappend command [dict get $field name]
+        if {[dict get $field step] >= 0} { lappend command [dict get $field step] }
+    }
+    {*}$command
+    set lastRecovery [scvcutview $model recovery]
+    set recoveryThreshold [dict get $lastRecovery threshold]
+    set recoveryBefore [dict get $lastRecovery before]
+    refresh
+}
+
 proc ::CutViewManager::cellmode {} {
     variable model; variable selected; variable cellmode
     if {$selected ne ""} { scvcutview $model cellmode $selected $cellmode }
@@ -422,11 +460,13 @@ proc ::CutViewManager::save {} {
 
 proc ::CutViewManager::load {} {
     variable model; variable w; variable selected
+    variable lastRecovery
     set path [tk_getOpenFile -parent $w -filetypes {{{Cut Definitions} {.json}}}]
     if {$path eq ""} { return }
     set stream [open $path r]
     try { set document [read $stream] } finally { ::close $stream }
     scvcutview $model restore $document
+    set lastRecovery ""
     set selected ""
     refresh 1
 }
@@ -434,6 +474,7 @@ proc ::CutViewManager::load {} {
 proc ::CutViewManager::close {} {
     variable w; variable model; variable selected; variable timer
     variable sliderSnapshot; set sliderSnapshot ""
+    variable lastRecovery; set lastRecovery ""
     if {$timer ne ""} { after cancel $timer; set timer "" }
     if {$model ne "" && $selected ne ""} { catch {scvcutview $model handle $selected 0} }
     if {[winfo exists $w]} { destroy $w }
@@ -565,6 +606,30 @@ proc scvcutmanager {theModel} {
     bind $w.results.component <Return> {::CutViewManager::invoke ::CutViewManager::field}
     bind $w.results.cellmode <<ComboboxSelected>> {::CutViewManager::invoke ::CutViewManager::cellmode}
     pack $w.results -fill x
+    ttk::labelframe $w.recovery -text "Projected CellData Recovery" -padding 8
+    ttk::frame $w.recovery.row0; ttk::frame $w.recovery.row1
+    pack $w.recovery.row0 $w.recovery.row1 -fill x -pady 3
+    ttk::label $w.recovery.thresholdLabel -text "Threshold (%)"
+    ttk::entry $w.recovery.threshold -textvariable ::CutViewManager::recoveryThreshold -width 7
+    ttk::checkbutton $w.recovery.before -text "Magnitude before averaging" -variable ::CutViewManager::recoveryBefore -command {::CutViewManager::invoke ::CutViewManager::recovery}
+    ttk::button $w.recovery.apply -text Apply -command {::CutViewManager::invoke ::CutViewManager::recovery}
+    pack $w.recovery.thresholdLabel $w.recovery.threshold $w.recovery.before -in $w.recovery.row0 -side left -padx 3
+    pack $w.recovery.apply -in $w.recovery.row0 -side right
+    set ::CutViewManager::recoveryFields {}
+    set ::CutViewManager::recoveryLabels [list "All regions" "Current regions"]
+    foreach field $::CutViewManager::fields label [lrange $::CutViewManager::fieldLabels 1 end] {
+        if {[dict get $field mapping] eq "cell" && [dict get $field components] == 1} {
+            lappend ::CutViewManager::recoveryFields $field
+            lappend ::CutViewManager::recoveryLabels $label
+        }
+    }
+    ttk::label $w.recovery.regionLabel -text Region
+    ttk::combobox $w.recovery.region -state readonly -values $::CutViewManager::recoveryLabels -textvariable ::CutViewManager::recoveryRegion
+    pack $w.recovery.regionLabel -in $w.recovery.row1 -side left -padx 3
+    pack $w.recovery.region -in $w.recovery.row1 -side left -fill x -expand 1
+    bind $w.recovery.threshold <Return> {::CutViewManager::invoke ::CutViewManager::recovery}
+    bind $w.recovery.region <<ComboboxSelected>> {::CutViewManager::invoke ::CutViewManager::recovery}
+    pack $w.recovery -fill x -padx 8
     ttk::label $w.status -textvariable ::CutViewManager::status -wraplength 530 -foreground #a02020
     pack $w.status -fill x -padx 8
     ttk::button $w.close -text Close -command ::CutViewManager::close

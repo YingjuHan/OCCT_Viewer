@@ -43,11 +43,11 @@ active; existing recovery increments remain in the regression suite.
 
 | ID | Task | Depends On | Acceptance | Status |
 | --- | --- | --- | --- | --- |
-| R00 | Plane held-drag recomputation, every existing control, interactive DRAW/Tk crashes and invalid-input handling | Baseline | Interactive (-i) menus/dialogs, current 32/32 controls; pre-release geometry/field/pixel assertions; all regressions | verified |
+| R00 | Plane held-drag recomputation, every existing control, interactive DRAW/Tk crashes and invalid-input handling | Baseline | Interactive (-i) menus/dialogs, current 36/36 controls; pre-release geometry/field/pixel assertions; all regressions | verified |
 | G01 | Field isosurface: fixed field/component/step binding, below/on/above, surface lines, live threshold, definition migration | Baseline | Native numerical tests, all masks, independent contour changes, DRAW pixels and manager controls | verified |
 | G02 | Cylinder and sphere: position/axis/radius, enclosed intersections, three portions | G01 | Analytic volume/area checks, same-sign vertex cases, DRAW interaction | partial: 48 concrete VTK types, shared BVH/cache and conforming curved-reference adjacency verified; mismatching interfaces stay visible; full-frame performance pending |
 | G03 | Exact second-order cell geometry and FE result interpolation | G02 | Curved-cell reference solutions and convergence tests; explicit unsupported-cell diagnostics | verified at bounded N02 scope: independent family references, analytic/precision limits and original-FE higher-order isosurfaces; exact arbitrary-order intersections not claimed |
-| G04 | Cell recovery/averaging thresholds, region boundaries and discontinuity policies | G03 | Constant and recovered results verified across material boundaries; physical fields unchanged | partial: region/threshold and element-node recovery, vector magnitude order and original physical mapping implemented; tensor invariants, explicit interface traces, manager widgets and persistence pending |
+| G04 | Cell recovery/averaging thresholds, region boundaries and discontinuity policies | G03 | Constant and recovered results verified across material boundaries; physical fields unchanged | partial: region/threshold and element-node recovery, vector magnitude order and original physical mapping implemented; manager recovery controls and definition options verified; tensor invariants, explicit interface traces and full sessions pending |
 | G05 | Multi-cut OR boundary merging, deduplication and shared opacity | G02 | Overlapping/touching cuts, no duplicate faces or darkened overlap, all masks | queued |
 | M01 | Native model lifecycle, defaults X/Y/Z, selection independent of activation | R00 | Open/replace/close model tests and deterministic defaults | verified |
 | M02 | Datum positioning, reference axes and numeric editing for all shapes | G02, M01 | Local/global transforms, numeric and pointer edits agree | queued |
@@ -107,7 +107,7 @@ active; existing recovery increments remain in the regression suite.
 
 - Current acceptance: **11/11 CTest tests pass**, including interactive `draw_cut_view_controls`;
   `ctest --repeat until-fail:3` also passes all three consecutive runs of every case.
-- The control test inventories widgets and requires **32/32** coverage. It opens actual
+- The control test inventories widgets and requires **36/36** coverage. It opens actual
   combobox popdowns and file dialogs, tests Save/Load/cancel/invalid files, numeric editing,
   every button/checkbutton, three rotation axes, held slider movement and empty-manager states.
 - Pointer tests assert geometry and field values plus completed display synchronization
@@ -316,3 +316,18 @@ The [audit](cut-view-n02-audit.md) closes the planned N02 gates. Full VTK ON
 respectively (610.23 / 6.24 seconds). N03.1 controls and recovery persistence are
 next; tensor measures, physical interface traces and general presentation OR
 union/cap ownership remain separate acceptance items.
+
+## N03.1 Recovery Controls and Definitions
+
+The native Tk panel now edits recovery threshold, magnitude ordering and elemental
+region fields (including their timestep), with Apply/Return, validation and real
+save/load dialogs. Widget inventory is **36/36**. The Windows capture helper
+requires fresh output and a successful nonblank manager capture;
+`draw-controls/manager_controls.png` has been visually reviewed.
+
+Definition JSON v5 stores recovery options and exact signed 64-bit region IDs;
+v1-v4 use recovery defaults. Invalid restoration preserves live definitions and
+options. Original physical fields and fixed isosurface bindings remain independent.
+Full ON 38/38 and OFF 8/8 pass every case three times; logs are
+`build/mingw/cut-n03-recovery-tests.log` and the OFF counterpart.
+N03.2 tensor conventions/measures are next; N03 remains partial.
