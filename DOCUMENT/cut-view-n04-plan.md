@@ -9,7 +9,7 @@ item separately, then explicitly refresh the codebase-memory index.
 | --- | --- | --- | --- |
 | N04.1 | B01 foundation: overall import outcome, backend attempt reports, warnings through composite/series, failed native Viewer/DRAW replacement preservation | VTK ON/OFF native reports, successful fallback without failed-overall message, failed import retains live object/fields and DRAW pixels | verified |
 | N04.2 | V01: ordinary native Viewer points, Lines/polyline and general cells | Legacy/XML fixtures; original CellData and nodal mapping; visible ordinary Viewer primitives and pixels; no CutView-only substitute | verified |
-| N04.3 | V02: explicit Legacy/XML/composite/series support contract and unsupported-section reports | Format-specific fixtures; no silent loss or field mapping substitution | queued |
+| N04.3 | V02: explicit Legacy/XML/composite/series support contract and unsupported-section reports | Format-specific fixtures; no silent loss or field mapping substitution | verified |
 | N04.4 | V03: staged composite/time-series import retaining each step's geometry/topology | Moving/remeshed fixtures, time ordering, field/deformation/tuple validation, failed import preserves live model | queued |
 | N04.5 | V04: malformed/endian/binary/compressed/appended regression matrix | Truncation, bad types/lengths/connections/offsets and compression blocks; all readers reject safely | queued |
 | N04.6 | V05: configurable limits checked before allocation and bounded appended decoding | Arrays/nodes/cells/decompressed-byte limits and measured peak memory | queued |
@@ -51,3 +51,11 @@ were corrected after the first full ON gate; that failed log is preserved.
 Reviewed `ordinary-*` images include pure points, Legacy/VTU/VTP polylines,
 mixed-dimensional CellData, bowed quadratic nodal fields and a general voxel.
 N04.3 format/unsupported-section closure is next; N04 remains active.
+
+N04.3 closure: explicit Legacy attributes/types, metadata/LUT warnings, XML section
+validation and restricted native fallback pass full ON **52/52** (190.58 seconds)
+and OFF **17/17** (18.12 seconds). Focused ON **5/5**, OFF **4/4**, each three
+times (5.32 / 0.53 seconds), pass on the final source. Logs: `cut-n04-format-full.log`
+and `cut-n04-format-focused.log`. The first ON failure exposed XML 2.3 polyhedron
+face encoding; its repaired native path passes the complete concrete-cell suite.
+See [format boundaries](cut-view-import.md). N04.4 per-step staging is next.

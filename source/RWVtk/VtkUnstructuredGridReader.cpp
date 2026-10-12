@@ -5,6 +5,7 @@
 #include <Message.hxx>
 #include <Message_Messenger.hxx>
 #include <map>
+#include <set>
 
 namespace {
 
@@ -109,6 +110,26 @@ bool VtkUnstructuredGridReader::readMeshGeometry(const LDOM_Element& theElem)
 // =======================================================================
 bool VtkUnstructuredGridReader::parseCells(const LDOM_Element& theElem)
 {
+    // VTK XML 2.3 stores shared faces separately from polyhedron-to-face IDs.
+    // Recognize this concrete encoding as a backend gap, while incomplete or
+    // malformed arrays remain validation failures and cannot trigger fallback.
+    int modernFaces = 0;
+    std::set<std::string> names;
+    for (const auto& element : getChildrenElementsByTagName(theElem, "DataArray")) {
+        const TCollection_AsciiString name = getXmlAttribute(element, "Name", "name");
+        if (!names.insert(name.ToCString()).second) { return fail("Duplicate VTK topology array name"); }
+        if (name == "face_connectivity" || name == "face_offsets"
+            || name == "polyhedron_to_faces" || name == "polyhedron_offsets") {
+            ++modernFaces;
+            const auto array = readDataArray(element);
+            if (array.Data.IsNull() || array.Components.size() != 1
+                || (array.Type != "Int32" && array.Type != "Int64")) { return fail("Invalid XML 2.3 polyhedron face array"); }
+        }
+    }
+    if (modernFaces) {
+        return fail(modernFaces == 4 ? "VTK XML 2.3 polyhedron face encoding requires native cells"
+            : "Incomplete XML 2.3 polyhedron face arrays");
+    }
     MeshElements aMeshElements;
     parseElements(theElem, aMeshElements);
 

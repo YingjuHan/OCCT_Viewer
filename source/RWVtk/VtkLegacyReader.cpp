@@ -8,6 +8,7 @@
 #include <cstring>
 #include <iomanip>
 #include <limits>
+#include <map>
 #include <sstream>
 #include <stdexcept>
 
@@ -76,6 +77,11 @@ double readBigEndian(std::istream& input)
 
 Array readArray(std::istream& input, const std::string& type, size_t tuples, int components, bool binary)
 {
+    const std::vector<std::string> supported = {"float", "double", "int", "vtkTypeInt32", "unsigned_int",
+        "short", "unsigned_short", "char", "signed_char", "unsigned_char", "long_long", "vtkTypeInt64", "unsigned_long_long"};
+    if (std::find(supported.begin(), supported.end(), type) == supported.end()) {
+        throw std::runtime_error("Unsupported legacy numeric type: " + type);
+    }
     if (components <= 0 || tuples > std::numeric_limits<size_t>::max() / static_cast<size_t>(components)) {
         throw std::runtime_error("Invalid legacy VTK array shape");
     }
@@ -105,6 +111,20 @@ Array readArray(std::istream& input, const std::string& type, size_t tuples, int
         else if (type == "long_long" || type == "vtkTypeInt64") { value = readBigEndian<int64_t>(input); }
         else if (type == "unsigned_long_long") { value = readBigEndian<uint64_t>(input); }
         else { throw std::runtime_error("Unsupported legacy binary numeric type: " + type); }
+        static const std::map<std::string, std::pair<double, double>> ranges = {
+            {"char", {-128, 127}}, {"signed_char", {-128, 127}}, {"unsigned_char", {0, 255}},
+            {"short", {-32768, 32767}}, {"unsigned_short", {0, 65535}},
+            {"int", {-2147483648.0, 2147483647.0}}, {"vtkTypeInt32", {-2147483648.0, 2147483647.0}},
+            {"unsigned_int", {0, 4294967295.0}}, {"long_long", {-9007199254740991.0, 9007199254740991.0}},
+            {"vtkTypeInt64", {-9007199254740991.0, 9007199254740991.0}}, {"unsigned_long_long", {0, 9007199254740991.0}}};
+        const auto range = ranges.find(type);
+        if (range != ranges.end() && (!std::isfinite(value) || std::trunc(value) != value
+            || value < range->second.first || value > range->second.second)) {
+            throw std::runtime_error("Legacy value exceeds declared numeric type or exact double integer range");
+        }
+        if (type == "float" && std::isfinite(value) && std::abs(value) > std::numeric_limits<float>::max()) {
+            throw std::runtime_error("Legacy float value out of range");
+        }
         result.values.push_back(value);
     }
     return result;
@@ -238,6 +258,44 @@ bool VtkLegacyReader::PerformStream(std::istream& input, const TCollection_Ascii
                     if (tupleCount && n == tupleCount) { (nodal ? pointFields : cellFields).push_back(std::move(field)); }
                     else { metadata.push_back(std::move(field)); }
                 }
+            } else if (keyword == "TEXTURE_COORDINATES") {
+                std::string name, type;
+                input >> name;
+                const int components = static_cast<int>(count(input));
+                input >> type;
+                if (components < 1 || components > 3 || tupleCount == 0) {
+                    return fail("Invalid legacy TEXTURE_COORDINATES shape/association");
+                }
+                Array field = readArray(input, type, tupleCount, components, binary);
+                field.name = name;
+                (nodal ? pointFields : cellFields).push_back(std::move(field));
+            } else if (keyword == "COLOR_SCALARS") {
+                std::string name;
+                input >> name;
+                const int components = static_cast<int>(count(input));
+                if (components < 1 || components > 4 || tupleCount == 0) {
+                    return fail("Invalid legacy COLOR_SCALARS shape/association");
+                }
+                Array field = readArray(input, binary ? "unsigned_char" : "float", tupleCount, components, binary);
+                field.name = name;
+                // VTK stores binary colors as bytes and ASCII colors as normalized floats.
+                for (double& value : field.values) {
+                    if (!std::isfinite(value) || value < 0 || value > (binary ? 255 : 1)) {
+                        return fail("Legacy COLOR_SCALARS value out of range");
+                    }
+                }
+                (nodal ? pointFields : cellFields).push_back(std::move(field));
+            } else if (keyword == "LOOKUP_TABLE") {
+                std::string name;
+                input >> name;
+                const size_t entries = count(input);
+                const Array table = readArray(input, binary ? "unsigned_char" : "float", entries, 4, binary);
+                for (double value : table.values) {
+                    if (!std::isfinite(value) || value < 0 || value > (binary ? 255 : 1)) {
+                        return fail("Legacy LOOKUP_TABLE value out of range");
+                    }
+                }
+                warn("Legacy LOOKUP_TABLE '" + name + "' is validated but not applied; numeric scalar values are retained");
             } else { return fail("Unsupported legacy VTK section: " + keyword); }
         }
         if (points.values.empty()) { return fail("Legacy VTK has no points"); }
@@ -281,7 +339,9 @@ bool VtkLegacyReader::PerformStream(std::istream& input, const TCollection_Ascii
             reader.SetToReportMessages(myToReportMessages);
             reader.SetMappingInfo(myMappingInfo);
             const bool ok = reader.PerformStream(normalized, fileName);
+            const auto warnings = myReport.warnings;
             myReport = reader.Report();
+            myReport.warnings.insert(myReport.warnings.begin(), warnings.begin(), warnings.end());
             if (ok) { myMeshData = reader.GetMeshData(); }
             return ok;
         }
@@ -289,7 +349,9 @@ bool VtkLegacyReader::PerformStream(std::istream& input, const TCollection_Ascii
         reader.SetToReportMessages(myToReportMessages);
         reader.SetMappingInfo(myMappingInfo);
         const bool ok = reader.PerformStream(normalized, fileName);
+        const auto warnings = myReport.warnings;
         myReport = reader.Report();
+        myReport.warnings.insert(myReport.warnings.begin(), warnings.begin(), warnings.end());
         if (ok) { myMeshData = reader.GetMeshData(); }
         return ok;
     } catch (const std::exception& error) { return fail(error.what()); }

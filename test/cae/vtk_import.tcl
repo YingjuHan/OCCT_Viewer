@@ -16,6 +16,8 @@ if {[catch {
     set before [scvcutview imported info]
     import_assert {[catch {scvcutview imported replace [file join $fixtures invalid.vtu]}]} "Invalid replace accepted"
     import_assert {[scvcutview imported info] eq $before && [scvcutview imported importreport] eq $report} "Failed cut replacement mutated live model/report"
+    import_assert {[catch {scvcutview imported replace [file join $fixtures unsupported_section.vtk]}]} "Legacy unsupported section accepted"
+    import_assert {[scvcutview imported info] eq $before} "Unsupported section mutated live model"
     if {$::env(VTK_IMPORT_HAS_NATIVE)} {
         set copied [file join $fixtures {polyline with spaces.vtp}]
         file copy -force [file join $fixtures polyline.vtp] $copied

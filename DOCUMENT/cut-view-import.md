@@ -68,3 +68,36 @@ running reader/report checks. The current Windows acceptance runs that lifecycle
 check. When the Viewer target is disabled, the same executable runs the reader
 checks and explicitly reports the lifecycle check as skipped. This item does not establish complete per-step staging or general-cell
 ordinary Viewer rendering.
+
+## N04.3 Format Contract
+
+| Format | Supported data | Boundary |
+| --- | --- | --- |
+| Legacy `.vtk` | UNSTRUCTURED_GRID / POLYDATA; ASCII and big-endian binary; POINTS, CELLS/CELL_TYPES, VERTICES/LINES/POLYGONS/TRIANGLE_STRIPS | Structured datasets and unknown sections reject before fallback |
+| Legacy attributes | SCALARS, VECTORS, NORMALS, TENSORS, FIELD, TEXTURE_COORDINATES (1–3), COLOR_SCALARS (1–4) | Numeric fields retain original association and values; ASCII colors are 0..1, binary colors are raw 0..255 bytes |
+| Legacy lookup/metadata | Validated custom RGBA LOOKUP_TABLE and dataset FIELD | Named warnings: tables are not applied to the Viewer and dataset metadata is not exposed as nodal/elemental fields |
+| XML VTU/VTP | Multiple Pieces, ASCII, inline binary, appended base64/raw, zlib; scalar/vector/tensor roles | Unsupported Piece sections, missing/duplicate field names and malformed arrays reject |
+| XML polyhedra | Legacy faces/faceoffsets; XML 2.3 face_connectivity/face_offsets/polyhedron_to_faces/polyhedron_offsets | XML 2.3 uses native VTK ON; incomplete/type-invalid arrays reject |
+| VTM / `.vtm.series` | Portable VTU/VTP references, hierarchical blocks and fractional times | Immutable changing-topology staging and recursive references are subsequent N04 gates |
+
+Legacy numeric types are float/double, signed/unsigned 8/16/32-bit integer names,
+`vtkTypeInt32`, `long_long`, `vtkTypeInt64` and `unsigned_long_long`. Ambiguous
+platform-dependent `long` and unknown types reject. Values must fit the declared
+type; Legacy integers beyond ±(2^53−1) reject rather than lose precision during
+normalization. Coordinates must be finite and representable as internal float;
+field storage uses double. XML integer connectivity is validated before narrowing.
+Dataset FieldData is validated and warned by name; TimeValue is reserved for time.
+Native nonnumeric attributes issue a warning instead of disappearing silently.
+
+Fallback is permitted only for recognized portable topology gaps: unsupported
+concrete cells, PolyData Lines, native empty cells and modern polyhedron encoding.
+Malformed syntax, unknown formats/sections or invalid mapping do not trigger it.
+Warnings from both attempts survive successful fallback. Mapping requests keep
+their explicit portable outcome. Structured/parallel XML, PVD/PVTU/PVTP, VTKHDF
+and Abaqus ODB are outside this format contract.
+
+`vtk_format` covers Legacy texture/color/normal values, binary raw colors, custom
+lookup tables, metadata, invalid types/sections/attributes, and XML duplicate names
+or unsupported sections. The native import and DRAW replacement regressions verify
+that rejected imports keep the live model. Full ON 52/52 and OFF 17/17 pass; focused
+format/import cases each pass three times on the final source.

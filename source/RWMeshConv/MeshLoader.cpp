@@ -20,6 +20,7 @@
 #include <OSD_FileSystem.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopoDS.hxx>
+#include <algorithm>
 
 namespace {
 //! Function to check if specified data stream starts with specified header.
@@ -336,6 +337,7 @@ Handle(RWCae::MeshData) MeshLoader::openVtkMesh(const TCollection_AsciiString& t
     myVtkReport.source = theFilePath.ToCString();
     myVtkReport.format = theFormat;
     Handle(RWCae::MeshData) aMesh;
+    bool canUseNativeCells = false;
 
     auto record = [&](const RWVtk::VtkImportReport& theReport, const char* theBackend, bool theSucceeded) {
         myVtkReport.attempts.push_back({theBackend, theSucceeded, theReport.errors, theReport.warnings});
@@ -343,6 +345,15 @@ Handle(RWCae::MeshData) MeshLoader::openVtkMesh(const TCollection_AsciiString& t
         if (!theSucceeded && anAttempt.errors.empty()) { anAttempt.errors.push_back("Reader returned no mesh"); }
         myVtkReport.errors = anAttempt.errors;
         myVtkReport.warnings = anAttempt.warnings;
+        if (std::string(theBackend) == "native-vtk") {
+            for (const auto& attempt : myVtkReport.attempts) {
+                for (const auto& warning : attempt.warnings) {
+                    if (std::find(myVtkReport.warnings.begin(), myVtkReport.warnings.end(), warning) == myVtkReport.warnings.end()) {
+                        myVtkReport.warnings.push_back(warning);
+                    }
+                }
+            }
+        }
         myVtkReport.backend = theBackend;
     };
     auto read = [&](auto& theReader, auto theGetMesh) {
@@ -362,6 +373,15 @@ Handle(RWCae::MeshData) MeshLoader::openVtkMesh(const TCollection_AsciiString& t
             aReport.errors.push_back(anError.what());
         }
         record(aReport, "portable", isRead && !aMesh.IsNull() && aReport.errors.empty());
+        // A concrete-cell implementation gap permits fallback. Syntax, arrays,
+        // unsupported sections and validation failures must not be bypassed.
+        canUseNativeCells = !aReport.errors.empty() && std::all_of(aReport.errors.begin(), aReport.errors.end(),
+            [](const std::string& error) {
+                return error.find("Unsupported VTK cell type ") == 0
+                    || error == "VTK PolyData Lines require line-element support"
+                    || error == "VTK XML 2.3 polyhedron face encoding requires native cells"
+                    || error == "Invalid number of nodes '0'";
+            });
         if (!myVtkReport.attempts.back().succeeded) { aMesh.Nullify(); }
     };
     if (theFormat == "VTK") {
@@ -382,7 +402,7 @@ Handle(RWCae::MeshData) MeshLoader::openVtkMesh(const TCollection_AsciiString& t
     }
 #ifdef OCCTV_USE_VTK
     // Native fallback does not implement mappings or composite/time-series semantics.
-    if (aMesh.IsNull() && theMappingFilePath.IsEmpty()
+    if (aMesh.IsNull() && canUseNativeCells && theMappingFilePath.IsEmpty()
         && (theFormat == "VTK" || theFormat == "VTU" || theFormat == "VTP")) {
         RWVtk::VtkNativeReader aReader;
         const bool isRead = aReader.Perform(theFilePath);

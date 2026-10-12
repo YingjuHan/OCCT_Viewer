@@ -659,3 +659,15 @@ pure-point 白色显示失败保留在 `cut-n04-viewer-first-full.log`，修复�
 契约见 [普通 Viewer](cut-view-viewer.md)。本项闭环后提交并刷新 MCP 索引。
 N04 已完成 2/8 验收项，整体仍 active；下一项 N04.3 格式范围和诊断，随后
 推进每步几何/拓扑 staging、安全矩阵、资源限额和相对引用闭环。
+
+## 26. N04.3 — 格式边界和字段诊断
+
+Legacy 增加 texture/color 数值字段、自定义 LUT 验证/告警、类型/范围检查；
+binary color 保留原始字节。XML 未支持 section、缺名/重名字段明确拒绝。
+仅已知拓扑缺口允许 native fallback，成功 fallback 合并双方 warnings。
+VTK 9.5 XML 2.3 polyhedron 使用 native 路径；不完整/type-invalid 编码拒绝。
+
+最终 ON 52/52（190.58 秒）、OFF 17/17（18.12 秒）全量通过；定向 ON
+5/5、OFF 4/4 各三次通过（5.32 / 0.53 秒）。日志 `cut-n04-format-full.log`
+和 `cut-n04-format-focused.log`；首次 polyhedron 失败日志保留。支持矩阵见
+[import contract](cut-view-import.md)。N04 已闭环 3/8 项，下一项 N04.4。

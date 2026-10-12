@@ -80,6 +80,9 @@ void fixtures()
     write("tetra.vtm", "<VTKFile type=\"vtkMultiBlockDataSet\" byte_order=\"LittleEndian\"><vtkMultiBlockDataSet>"
         "<DataSet file=\"tetra.vtu\"/></vtkMultiBlockDataSet></VTKFile>");
     write("tetra.vtm.series", "{\"files\":[{\"name\":\"tetra.vtm\",\"time\":0.25}]}");
+    write("unsupported_section.vtk", "# vtk DataFile Version 3.0\nUnsupported section\nASCII\n"
+        "DATASET UNSTRUCTURED_GRID\nPOINTS 4 float\n0 0 0 1 0 0 0 1 0 0 0 1\n"
+        "CELLS 1 5\n4 0 1 2 3\nCELL_TYPES 1\n10\nUNSUPPORTED_SECTION 1\n");
     write("mixed.vtu", "<VTKFile type=\"UnstructuredGrid\" byte_order=\"LittleEndian\"><UnstructuredGrid>"
         "<Piece NumberOfPoints=\"4\" NumberOfCells=\"3\">" + points + "<Cells>"
         "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">0 1 0 1 2 3 0 1 2 3</DataArray>"
@@ -147,7 +150,7 @@ void outcomes(const Handle(Capture)& capture)
     report = loader.VtkReport();
     require(!report.succeeded && !report.errors.empty() && report.points == 0 && !capture->Errors.empty(), "Final errors missing");
 #ifdef OCCTV_USE_VTK
-    require(report.attempts.size() == 2 && !report.attempts[1].succeeded, "Native rejection missing");
+    require(report.attempts.size() == 1, "Native fallback bypassed XML syntax rejection");
 #endif
     require(load(loader, "polyline.vtu", path("mapping.json")).IsNull(), "Fallback silently discarded mapping");
     require(loader.VtkReport().attempts.size() == 1, "Mapping fallback policy changed");

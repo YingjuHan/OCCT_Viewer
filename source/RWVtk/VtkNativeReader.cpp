@@ -81,6 +81,7 @@ bool VtkNativeReader::Perform(const TCollection_AsciiString& filename)
             reader->GetExecutive()->AddObserver(vtkCommand::ErrorEvent,errors);
             reader->SetFileName(path.c_str()); reader->ReadAllScalarsOn(); reader->ReadAllVectorsOn();
             reader->ReadAllTensorsOn(); reader->ReadAllFieldsOn();
+            reader->ReadAllNormalsOn(); reader->ReadAllColorScalarsOn(); reader->ReadAllTCoordsOn();
             if (!reader->GetExecutive()->Update()) { throw std::runtime_error("Native VTK legacy pipeline failed"); }
             data = vtkDataSet::SafeDownCast(reader->GetOutput());
         } else {
@@ -188,9 +189,13 @@ bool VtkNativeReader::Perform(const TCollection_AsciiString& filename)
             const auto count = nodal ? data->GetNumberOfPoints() : data->GetNumberOfCells();
             for (int a = 0; a < attributes->GetNumberOfArrays(); ++a) {
                 auto array = attributes->GetArray(a);
-                if (!array || !array->GetName()) { continue; }
+                if (!array) {
+                    myReport.warnings.push_back("Non-numeric VTK attribute array is not exposed as a numeric field");
+                    continue;
+                }
+                if (!array->GetName() || !array->GetName()[0]) { throw std::runtime_error("VTK numeric field has no name"); }
                 if (array->GetNumberOfTuples() != count) { throw std::runtime_error("VTK field tuple count mismatch"); }
-                const auto type = array == attributes->GetVectors() ? RWCae::MeshNVecPropertyType::Vector
+                const auto type = array == attributes->GetVectors() || array == attributes->GetNormals() ? RWCae::MeshNVecPropertyType::Vector
                     : array == attributes->GetTensors() ? RWCae::MeshNVecPropertyType::Tensor : RWCae::MeshNVecPropertyType::ScalarSet;
                 Handle(RWCae::MeshNVecProperty) field = new RWCae::MeshNVecProperty(array->GetName(),array->GetNumberOfComponents(),
                     nodal ? RWCae::MeshPropertyBase::MappingType::Nodal : RWCae::MeshPropertyBase::MappingType::Elemental,type);
@@ -204,6 +209,11 @@ bool VtkNativeReader::Perform(const TCollection_AsciiString& filename)
             }
         };
         fields(data->GetPointData(),true); fields(data->GetCellData(),false);
+        for (int a = 0; a < data->GetFieldData()->GetNumberOfArrays(); ++a) {
+            const auto array = data->GetFieldData()->GetAbstractArray(a);
+            myReport.warnings.push_back(std::string("Dataset FieldData '")
+                + (array->GetName() ? array->GetName() : "unnamed") + "' is not exposed as a nodal/elemental field");
+        }
         myReport.points = mesh->NbNodes(); myReport.cells = mesh->NbIndexedElems();
         myReport.fields = mesh->Properties().Size(); myMesh = mesh;
         return true;

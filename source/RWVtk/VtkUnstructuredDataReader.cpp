@@ -1,4 +1,5 @@
 #include <RWVtk/VtkUnstructuredDataReader.h>
+#include <set>
 
 #include <Message.hxx>
 #include <Message_Messenger.hxx>
@@ -87,6 +88,9 @@ bool VtkUnstructuredDataReader::perform()
                 && !aDataArray.Data.IsNull() && aDataArray.Data->NbElements() == 1) {
                 myTimeStamp = aDataArray.Data->GetDouble(0, 0);
                 myTimeStep  = myTimeStep == -1 ? (int)myTimeStamp : myTimeStep;
+            } else if (aDataArray.Name != "TimeValue") {
+                warn(std::string("Dataset FieldData '") + aDataArray.Name.ToCString()
+                    + "' is validated but not exposed as a nodal/elemental field");
             }
         }
     }
@@ -101,6 +105,23 @@ bool VtkUnstructuredDataReader::perform()
     }
 
     for (const LDOM_Element& aPieceElement : aPieceElements) {
+        for (LDOM_Node node = aPieceElement.getFirstChild(); !node.isNull(); node = node.getNextSibling()) {
+            if (node.getNodeType() != LDOM_Node::ELEMENT_NODE) { continue; }
+            const std::string tag = TCollection_AsciiString(node.getNodeName()).ToCString();
+            const std::set<std::string> supported = {"Points", "Cells", "PointData", "CellData", "Verts", "Lines", "Polys", "Strips"};
+            if (!supported.count(tag)) { return fail("Unsupported VTK Piece section: " + tag); }
+        }
+        for (const char* association : {"PointData", "CellData"}) {
+            std::set<std::string> names;
+            const auto section = getFirstElement(aPieceElement, association);
+            if (section.isNull()) { continue; }
+            for (const auto& element : getChildrenElementsByTagName(section, "DataArray")) {
+                const std::string name = TCollection_AsciiString(getXmlAttribute(element, "Name", "name")).ToCString();
+                if (name.empty() || !names.insert(name).second) {
+                    return fail(std::string("Missing/duplicate VTK field name in ") + association + ": " + name);
+                }
+            }
+        }
         if (!readMeshInfo(aPieceElement)) {
             return false;
         }
