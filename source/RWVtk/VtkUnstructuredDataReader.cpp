@@ -260,9 +260,14 @@ void VtkUnstructuredDataReader::parseElements(const LDOM_Element& theElem, MeshE
     if (aDataArrays.empty()) {
         return;
     }
-
+    std::set<std::string> names;
     for (const LDOM_Element& anElement : aDataArrays) {
         TCollection_AsciiString aName = getXmlAttribute(anElement, "Name", "name");
+        if (!names.insert(aName.ToCString()).second) { fail("Duplicate VTK topology array name"); return; }
+        const TCollection_AsciiString type = getXmlAttribute(anElement, "type", "Type");
+        if ((aName == "types" && type != "UInt8") || (aName != "types" && type != "Int32" && type != "Int64")) {
+            fail("Invalid VTK topology array type"); return;
+        }
         if (aName == "connectivity") {
             theMeshElems.Connectivity = readDataArray(anElement);
         } else if (aName == "offsets") {
@@ -273,6 +278,8 @@ void VtkUnstructuredDataReader::parseElements(const LDOM_Element& theElem, MeshE
             theMeshElems.Faces = readDataArray(anElement);
         } else if (aName == "faceoffsets") {
             theMeshElems.FaceOffsets = readDataArray(anElement);
+        } else {
+            fail(std::string("Unsupported VTK topology array: ") + aName.ToCString()); return;
         }
     }
 }

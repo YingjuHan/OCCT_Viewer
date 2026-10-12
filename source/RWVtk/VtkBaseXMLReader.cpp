@@ -20,21 +20,28 @@ Bytes decodeBase64(const char* data, size_t size)
 {
     const char* alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     Bytes result;
-    unsigned value = 0;
-    int bits = 0;
+    char group[4]; int count = 0;
     for (size_t i = 0; i < size; ++i) {
         const unsigned char ch = static_cast<unsigned char>(data[i]);
         if (std::isspace(ch)) { continue; }
-        if (ch == '=') { value = 0; bits = 0; continue; }
-        const char* digit = std::strchr(alphabet, ch);
-        if (ch == 0 || digit == nullptr) { throw std::runtime_error("Invalid base64 data"); }
-        value = (value << 6) | static_cast<unsigned>(digit - alphabet);
-        bits += 6;
-        if (bits >= 8) {
-            bits -= 8;
-            result.push_back(static_cast<unsigned char>(value >> bits));
+        group[count++] = (char)ch;
+        if (count != 4) { continue; }
+        unsigned digits[4] = {};
+        for (int n = 0; n < 4; ++n) {
+            const char* digit = std::strchr(alphabet, group[n]);
+            if (group[n] != '=' && (group[n] == 0 || !digit)) { throw std::runtime_error("Invalid base64 digit"); }
+            if (group[n] != '=') { digits[n] = (unsigned)(digit - alphabet); }
         }
+        if (group[0] == '=' || group[1] == '=' || (group[2] == '=' && group[3] != '=')
+            || (group[2] == '=' && (digits[1] & 15)) || (group[3] == '=' && group[2] != '=' && (digits[2] & 3))) {
+            throw std::runtime_error("Invalid base64 padding");
+        }
+        result.push_back((unsigned char)((digits[0] << 2) | (digits[1] >> 4)));
+        if (group[2] != '=') { result.push_back((unsigned char)((digits[1] << 4) | (digits[2] >> 2))); }
+        if (group[3] != '=') { result.push_back((unsigned char)((digits[2] << 6) | digits[3])); }
+        count = 0;
     }
+    if (count) { throw std::runtime_error("Truncated base64 quartet"); }
     return result;
 }
 
@@ -50,11 +57,12 @@ uint64_t readWord(const Bytes& bytes, size_t offset, size_t size, bool bigEndian
     return value;
 }
 
-Bytes decodePayload(const Bytes& bytes, size_t headerSize, bool bigEndian, bool compressed)
+Bytes decodePayload(const Bytes& bytes, size_t headerSize, bool bigEndian, bool compressed, bool exact)
 {
     if (!compressed) {
         const uint64_t length = readWord(bytes, 0, headerSize, bigEndian);
         if (length > bytes.size() - headerSize) { throw std::runtime_error("Truncated VTK binary array"); }
+        if (exact && length != bytes.size() - headerSize) { throw std::runtime_error("Extra inline VTK binary bytes"); }
         return Bytes(bytes.begin() + headerSize, bytes.begin() + headerSize + static_cast<size_t>(length));
     }
     const uint64_t blocks = readWord(bytes, 0, headerSize, bigEndian);
@@ -83,6 +91,7 @@ Bytes decodePayload(const Bytes& bytes, size_t headerSize, bool bigEndian, bool 
         }
         offset += static_cast<size_t>(packedSize);
     }
+    if (exact && offset != bytes.size()) { throw std::runtime_error("Extra inline compressed bytes"); }
     return result;
 }
 
@@ -302,7 +311,7 @@ VtkBaseXMLReader::DataArray VtkBaseXMLReader::readDataArray(const LDOM_Element& 
             Bytes encoded = aRes.Format == DataFormat::Appended && myAppendedIsRaw
                                 ? Bytes(text.begin(), text.end()) : decodeBase64(text.data(), text.size());
             Bytes payload = decodePayload(encoded, myHeaderSize, myByteOrder == ByteOrder::BigEndian,
-                                          !myCompressor.empty());
+                                          !myCompressor.empty(), aRes.Format != DataFormat::Appended);
             if (payload.size() % (valueSize * aRes.Components.size()) != 0) {
                 throw std::runtime_error("VTK array byte length does not match component count");
             }
@@ -338,7 +347,14 @@ bool VtkBaseXMLReader::readDataArrayHeader(const LDOM_Element& theElem, VtkBaseX
     }
 
     int aNbComponents = 1;
-    getXmlAttribute(theElem, "NumberOfComponents", "numberOfComponents").GetInteger(aNbComponents);
+    const TCollection_AsciiString componentCount = getXmlAttribute(theElem, "NumberOfComponents", "numberOfComponents");
+    if (!componentCount.IsEmpty()) {
+        try {
+            size_t used = 0; const auto count = std::stoll(componentCount.ToCString(), &used);
+            if (used != (size_t)componentCount.Length() || count < 1 || count > std::numeric_limits<int>::max()) { return fail("Invalid NumberOfComponents"); }
+            aNbComponents = (int)count;
+        } catch (const std::exception&) { return fail("Invalid NumberOfComponents"); }
+    }
     if (aNbComponents <= 0) {
         return fail(std::string("Invalid number of components '") + std::to_string(aNbComponents) + "'");
     }
@@ -360,6 +376,7 @@ bool VtkBaseXMLReader::readDataArrayHeader(const LDOM_Element& theElem, VtkBaseX
     }
 
     const TCollection_AsciiString offset = getXmlAttribute(theElem, "offset", "Offset");
+    if (theDataArray.Format == DataFormat::Appended && offset.IsEmpty()) { return fail("Missing appended offset"); }
     if (!offset.IsEmpty()) {
         try {
             if (offset.ToCString()[0] == '-') { return fail("Negative appended offset"); }

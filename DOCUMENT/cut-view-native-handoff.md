@@ -675,3 +675,7 @@ VTK 9.5 XML 2.3 polyhedron 使用 native 路径；不完整/type-invalid 编码�
 ## N04.4 — 完整时间步 staging
 
 Each step now owns independent geometry/topology and matching fields in MeshData::SeriesSteps(). Finite strictly increasing manifest times override valid dataset TimeValue; role/component/name/tuple mismatches reject before publication. Stable geometry retains the existing multi-step field API; changing geometry exposes only initial fields on the initial Viewer mesh, with an explicit warning. Generic/empty cells survive merges. Focused ON 5/5 and OFF 4/4 each pass three times (5.96 / 0.84 seconds), including failed later-stage Viewer replacement and zero changed DRAW pixels. Logs: cut-n04-series-focused.log. Coordinated animation remains N06.
+
+## N04.5 — 畸形与二进制安全矩阵
+
+Strict typed ASCII values and base64 padding, inline trailing-byte rejection, original XML topology/field preflight before the VTK SDK, modern polyhedron face membership and duplicate/unknown topology rejection are verified. The matrix covers both byte orders, UInt32/UInt64 headers, inline/base64/raw appended storage, multiple zlib blocks, truncation, invalid types/offsets/tuples and reader reset. Focused ON 8/8, OFF 6/6 each pass three times (45.36 / 1.20 seconds), including the 48-cell native matrix and ordinary Viewer images. Logs: cut-n04-safety-focused.log. Pre-allocation budgets remain N04.6.

@@ -4,6 +4,7 @@
 #include <Standard_ArrayStreamBuffer.hxx>
 #include <cmath>
 #include <limits>
+#include <cerrno>
 
 namespace {
 template<typename T>
@@ -221,9 +222,16 @@ void VtkAsciiArray<T>::readFromIStream(const char* theData, int theLength)
     std::istream               aStream(&aStreamBuffer);
     aStream.imbue(std::locale::classic());
 
-    ET aValue;
-
-    while (aStream >> aValue) {
+    std::string token;
+    while (aStream >> token) {
+        size_t used = 0;
+        long double aValue;
+        if (std::numeric_limits<T>::is_signed) { aValue = std::stoll(token, &used); }
+        else {
+            if (token[0] == '-') { throw std::out_of_range("Negative unsigned VTK value"); }
+            aValue = std::stoull(token, &used);
+        }
+        if (used != token.size()) { throw std::invalid_argument("Invalid VTK ASCII integer token"); }
         const long double aNumber = static_cast<long double>(aValue);
         if (aNumber < std::numeric_limits<T>::lowest() || aNumber > std::numeric_limits<T>::max()) {
             throw std::out_of_range("VTK ASCII value exceeds declared type range");
@@ -250,9 +258,14 @@ void VtkAsciiArray<T>::readRealFromIStream(const char* theData, int theLength)
 
     while (aStream >> aCheckStr) {
         char* anEnd = nullptr;
+        errno = 0;
         const double aValue = Strtod(aCheckStr.ToCString(), &anEnd);
         if (anEnd == aCheckStr.ToCString() || *anEnd != '\0') {
             throw std::invalid_argument("Invalid VTK ASCII real token");
+        }
+        if ((errno == ERANGE && !std::isfinite(aValue))
+            || (std::isfinite(aValue) && std::abs(aValue) > std::numeric_limits<T>::max())) {
+            throw std::out_of_range("VTK ASCII real exceeds declared type range");
         }
         myData.Append(static_cast<T>(aValue));
     }

@@ -3,6 +3,7 @@ find_package (ZLIB REQUIRED)
 
 set (SRCFILES
   VtkLegacyReader.cpp
+  VtkValidationReader.cpp
   VtkBaseReader.cpp
   VtkBaseXMLReader.cpp
   VtkDataArray.cpp
@@ -14,6 +15,7 @@ set (SRCFILES
 )
 set (INCFILES
   VtkLegacyReader.h
+  VtkValidationReader.h
   VtkImportReport.h
   VtkBaseReader.h
   VtkBaseXMLReader.h

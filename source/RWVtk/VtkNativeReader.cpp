@@ -1,4 +1,5 @@
 #include <RWVtk/VtkNativeReader.h>
+#include <RWVtk/VtkValidationReader.h>
 #include <RWCae/MeshScalarProperty.h>
 
 #include <vtkCell.h>
@@ -85,6 +86,12 @@ bool VtkNativeReader::Perform(const TCollection_AsciiString& filename)
             if (!reader->GetExecutive()->Update()) { throw std::runtime_error("Native VTK legacy pipeline failed"); }
             data = vtkDataSet::SafeDownCast(reader->GetOutput());
         } else {
+            VtkValidationReader preflight(lowerPath.size() >= 4 && lowerPath.substr(lowerPath.size()-4) == ".vtp");
+            preflight.SetToReportMessages(false);
+            if (!preflight.Perform(filename)) {
+                myReport = preflight.Report();
+                return false;
+            }
             vtkNew<vtkXMLGenericDataObjectReader> reader;
             reader->AddObserver(vtkCommand::ErrorEvent,errors);
             reader->AddObserver(vtkCommand::WarningEvent,warnings);
