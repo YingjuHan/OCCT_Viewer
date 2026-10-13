@@ -62,6 +62,27 @@ Use the existing `VIEWDRAW` resource for all viewer commands, including cuts; no
 `CUTVIEW` resource is needed. The build's VS Code launch configuration loads it automatically.
 Restart an existing debug session after changing its environment or debugger setup.
 
+On Windows, `libViewDraw.dll` also needs the zlib runtime DLL directory on `PATH`.
+The generated launch configuration includes project/OCCT/compiler/zlib runtime
+directories and loads `VIEWDRAW` using `CSF_VIEWDRAWDefaults`. Existing launch files
+are preserved during ordinary CMake configuration. To refresh an older file:
+
+```powershell
+cmake -S . -B build/mingw -DOCCTV_USE_VSCODE=ON -DOCCTV_VSCODE_REFRESH_LAUNCH=ON
+```
+
+This writes a timestamped backup, regenerates `build/mingw/.vscode/launch.json`
+and resets the refresh flag to OFF. Restart debugging with `VIEWDRAW (gdb)`.
+`Could not open: libViewDraw.dll` can indicate a missing dependent DLL, even when
+the plugin itself exists. A debugger stop at `__cxa_throw` with `catch throw`
+enabled is an exception breakpoint; the subsequent DRAW error identifies the
+underlying load failure.
+The Windows fix was verified with the generated environment and arguments:
+plugin loading, opening the interactive manager and evaluating the demo section
+all pass, including a GDB run that exits normally. Build-local evidence is
+`build/viewdraw-launch-demo.log` and `build/viewdraw-launch-gdb.log`; an ordinary
+configure preserves the refreshed file and the previous file's backup.
+
 For an interactive demonstration, run this single command in DRAW:
 
 ```tcl
