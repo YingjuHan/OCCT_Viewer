@@ -121,10 +121,9 @@ include (CMakeDependentOption)
 # Build with/without draco option
 # 使用/不使用 draco 库的选项
 option (OCCTV_USE_DRACO "Use Draco library" ON)
-option (OCCTV_USE_VTK "Enable native VTK general-cell evaluation and import (VTK >= 9.5)" OFF)
-if (OCCTV_USE_VTK)
-  find_package (VTK 9.5 REQUIRED COMPONENTS CommonCore CommonDataModel IOXML IOLegacy)
-endif()
+# All VTK file processing is implemented in this repository. The historical
+# OCCTV_USE_VTK cache setting is deliberately unused; no external SDK is found.
+
 # 是否使用 Draco 库，开启状态
 
 # Option to build typescript web viewer

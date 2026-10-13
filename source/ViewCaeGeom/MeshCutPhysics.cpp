@@ -1,15 +1,12 @@
 #include <ViewCaeGeom/MeshCutPhysics.h>
 #include <ViewCaeGeom/MeshCutTrace.h>
 #include <RWCae/MeshAdaptorsIterator.h>
+#include <ViewCaeGeom/MeshCellKernel.h>
 #include <sstream>
 #include <iomanip>
 #include <cmath>
 #include <stdexcept>
 #include <algorithm>
-#ifdef OCCTV_USE_VTK
-#include <vtkGenericCell.h>
-#include <vtkSmartPointer.h>
-#endif
 
 namespace {
 using namespace ViewCaeGeom;
@@ -30,10 +27,8 @@ int dimension(const Handle(RWCae::MeshData)& source,Id e)
     }
     const int type=source->GenericCells().at(entry.Index).Type;
     if(type==3) { return 1; }
-#ifdef OCCTV_USE_VTK
-    auto cell=vtkSmartPointer<vtkCell>::Take(vtkGenericCell::InstantiateCell(type));
+    auto cell=MeshCellKernel::InstantiateCell(type);
     if(cell) { return cell->GetCellDimension(); }
-#endif
     throw std::invalid_argument("Unsupported physical source dimension");
 }
 void validate(const MeshCutResult& cut, const MeshCutPhysicsOptions& options)

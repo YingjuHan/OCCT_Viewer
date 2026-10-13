@@ -1,17 +1,8 @@
+#include "CellFixture.h"
 #include <ViewCaeGeom/MeshCutViewManager.h>
 #include <ViewCaeGeom/MeshCutIntegration.h>
 #include <RWCae/MeshScalarProperty.h>
 #include <RWVtk/VtkNativeReader.h>
-#include <vtkCell.h>
-#include <vtkGenericCell.h>
-#include <vtkCellData.h>
-#include <vtkDoubleArray.h>
-#include <vtkIntArray.h>
-#include <vtkNew.h>
-#include <vtkPoints.h>
-#include <vtkPointData.h>
-#include <vtkUnstructuredGrid.h>
-#include <vtkXMLUnstructuredGridWriter.h>
 #include <cmath>
 #include <fstream>
 #include <iostream>
@@ -44,22 +35,15 @@ Handle(RWCae::MeshData) fixture(int type, int requestedCount = 0,
         {41,5},{42,8},{68,3},{69,6},{70,9},{71,10},{72,27},{73,18},{75,3},{76,6},{77,9},{78,10},{79,27},{80,18}};
     const int count = requestedCount ? requestedCount : sizes.at(type);
     const std::vector<int> orders = requestedDegrees.empty() ? std::vector<int>{2,2,2} : requestedDegrees;
-    vtkNew<vtkGenericCell> cell; cell->SetCellType(type);
+    auto cell=std::make_shared<MeshCellKernel>(); cell->SetCellType(type);
     cell->GetPoints()->SetNumberOfPoints(count); cell->GetPointIds()->SetNumberOfIds(count);
     for (int n = 0; n < count; ++n) { cell->GetPointIds()->SetId(n,n); }
-    if (type >= 68) {
-        vtkNew<vtkUnstructuredGrid> grid; vtkNew<vtkPoints> points; points->SetNumberOfPoints(count);
-        grid->SetPoints(points);
-        std::vector<vtkIdType> ids(count); for (int n = 0; n < count; ++n) { ids[n] = n; }
-        grid->InsertNextCell(type,count,ids.data());
-        vtkNew<vtkIntArray> degrees; degrees->SetNumberOfComponents(3);
-        degrees->InsertNextTypedTuple(orders.data()); grid->GetCellData()->SetHigherOrderDegrees(degrees);
-        grid->GetCell(0,cell);
-    }
+    if(type>=68) {cell->SetOrder(orders);}
+
     Handle(RWCae::MeshData) mesh = new RWCae::MeshData();
     RWCae::MeshData::GenericCell topology; topology.Type = type;
     if (type >= 68) { topology.Degrees = orders; }
-    double* parametric = type == 42 || type == 41 ? nullptr : cell->GetParametricCoords();
+    const double* parametric = type == 42 || type == 41 ? nullptr : cell->GetParametricCoords();
     for (int n = 0; n < count; ++n) {
         Graphic3d_Vec3 p;
         if (type == 2) { p = Graphic3d_Vec3((float)n/2,0,0); }
@@ -99,34 +83,9 @@ Handle(RWCae::MeshNVecProperty) field(const Handle(RWCae::MeshData)& mesh, bool 
 }
 void writeFixture(const Handle(RWCae::MeshData)& mesh, int type, const std::string& stem = "", bool valid = true)
 {
-    vtkNew<vtkUnstructuredGrid> grid; vtkNew<vtkPoints> points; points->SetDataTypeToDouble();
-    for (const auto& p : mesh->Nodes()) { points->InsertNextPoint(p.x(),p.y(),p.z()); }
-    grid->SetPoints(points);
-    const auto& topology = mesh->GenericCells()[0];
-    std::vector<vtkIdType> ids(topology.Nodes.begin(),topology.Nodes.end());
-    if (type == 42) {
-        std::vector<vtkIdType> faces;
-        for (const auto& face : topology.Faces) { faces.push_back((vtkIdType)face.size()); faces.insert(faces.end(),face.begin(),face.end()); }
-        grid->InsertNextCell(type,(vtkIdType)ids.size(),ids.data(),(vtkIdType)topology.Faces.size(),faces.data());
-    } else { grid->InsertNextCell(type,(vtkIdType)ids.size(),ids.data()); }
-    vtkNew<vtkDoubleArray> values; values->SetName("temperature");
-    for (const auto& p : mesh->Nodes()) { values->InsertNextValue(p.x()+2*p.y()+3*p.z()); }
-    grid->GetPointData()->AddArray(values);
-    vtkNew<vtkDoubleArray> cellValues; cellValues->SetName("pressure"); cellValues->InsertNextValue(7);
-    grid->GetCellData()->AddArray(cellValues);
-    if (!topology.Degrees.empty()) {
-        vtkNew<vtkIntArray> degrees; degrees->SetName("HigherOrderDegrees"); degrees->SetNumberOfComponents(3);
-        degrees->InsertNextTypedTuple(topology.Degrees.data()); grid->GetCellData()->SetHigherOrderDegrees(degrees);
-    }
-    if (!topology.RationalWeights.empty()) {
-        vtkNew<vtkDoubleArray> weights; weights->SetName("RationalWeights");
-        for (double value : topology.RationalWeights) { weights->InsertNextValue(value); }
-        grid->GetPointData()->SetRationalWeights(weights);
-    }
-    std::filesystem::create_directories(VTK_CELL_FIXTURE_DIR);
-    const std::string path = std::string(VTK_CELL_FIXTURE_DIR)+"/"+(stem.empty() ? "cell_"+std::to_string(type) : stem)+".vtu";
-    vtkNew<vtkXMLUnstructuredGridWriter> writer; writer->SetFileName(path.c_str()); writer->SetInputData(grid);
-    writer->SetDataModeToAscii(); require(writer->Write() != 0,"Cannot write VTK-cell fixture");
+    const auto& topology=mesh->GenericCells()[0];
+    const std::string path=std::string(VTK_CELL_FIXTURE_DIR)+"/"+(stem.empty()?"cell_"+std::to_string(type):stem)+".vtu";
+    CellFixture::Write(mesh,path,{{"temperature",CellFixture::Values(mesh,[](const auto& p) {return p.x()+2*p.y()+3*p.z();})}},{{"pressure",{7}}});
     RWVtk::VtkNativeReader reader;
     const bool imported = reader.Perform(path.c_str());
     if (!valid) { require(!imported && reader.GetMeshData().IsNull() && !reader.Report().errors.empty(),"Malformed native VTK metadata was accepted"); return; }
@@ -225,6 +184,18 @@ void extended()
     bool rejected = false;
     try { MeshCutIntegration::HeatFlux(cut,{0,0,0}); } catch (const std::invalid_argument&) { rejected = true; }
     require(rejected,"Generic surface was integrated as a volume source");
+    Handle(RWCae::MeshData) open = new RWCae::MeshData();
+    for (const auto& p : volumeMesh->Nodes()) { open->AddNodePosition(p); }
+    auto openTopology = volumeMesh->GenericCells()[0]; openTopology.Faces.pop_back();
+    open->AddGenericCell(openTopology);
+    rejected = false;
+    try {
+        MeshCutViewManager invalid(open); invalid.AddPlane("cut",Graphic3d_Vec4d(1,0,0,-0.5));
+        invalid.Evaluate("cut");
+    } catch (const std::invalid_argument& error) {
+        rejected = std::string(error.what()).find("closed manifold") != std::string::npos;
+    }
+    require(rejected,"Open polyhedron boundary was cut silently");
     for (int type : {22,24,71}) {
         const auto mesh = fixture(type);
         auto polynomial = field(mesh,true);
@@ -267,8 +238,8 @@ void external(const std::string& path)
     MeshCutViewManager manager(mesh);
     gp_XYZ midpoint(0,0,0); Bnd_Box cellBounds;
     const auto& topology = *std::max_element(mesh->GenericCells().begin(),mesh->GenericCells().end(),[](const auto& a, const auto& b) {
-        auto ca = vtkSmartPointer<vtkCell>::Take(vtkGenericCell::InstantiateCell(a.Type));
-        auto cb = vtkSmartPointer<vtkCell>::Take(vtkGenericCell::InstantiateCell(b.Type));
+        auto ca = MeshCellKernel::InstantiateCell(a.Type);
+        auto cb = MeshCellKernel::InstantiateCell(b.Type);
         return ca->GetCellDimension() < cb->GetCellDimension();
     });
     for (auto id : topology.Nodes) {
@@ -329,9 +300,9 @@ int main(int argc, char** argv)
     const int selected = argc > 1 ? std::stoi(argv[1]) : -1;
     for (int type = 0; type < 82; ++type) {
         if (selected >= 0 && selected != type) { continue; }
-        auto cell = vtkSmartPointer<vtkCell>::Take(vtkGenericCell::InstantiateCell(type));
+        auto cell = MeshCellKernel::InstantiateCell(type);
         if (!cell) { continue; }
-        try { run(type); ++passed; std::cout << "VTK_CELL_PASS " << type << " " << cell->GetClassName() << '\n'; }
+        try { run(type); ++passed; std::cout << "VTK_CELL_PASS " << type << " " << "MeshCellKernel" << '\n'; }
         catch (const Standard_Failure& error) { ++failed; std::cerr << "VTK_CELL_FAIL " << type << " " << error.GetMessageString() << '\n'; }
         catch (const std::exception& error) { ++failed; std::cerr << "VTK_CELL_FAIL " << type << " " << error.what() << '\n'; }
     }

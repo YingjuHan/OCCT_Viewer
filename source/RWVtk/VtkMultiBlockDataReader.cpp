@@ -150,7 +150,6 @@ bool VtkMultiBlockDataReader::processDataSet(const TCollection_AsciiString& file
     for(const auto& error:report.errors) {myReport.errors.push_back(std::string("Child '")+filename.ToCString()+"': "+error);}
     for(const auto& warning:report.warnings) {warn(std::string("Child '")+filename.ToCString()+"': "+warning);}
     if(!report.errors.empty() || (tree->NodeMeshData.IsNull() && tree->SubNodes.empty())) {return false;}
-    if(report.backend=="native-vtk") {warn(std::string("Child '")+filename.ToCString()+"' imported using native-vtk");}
     myReport.points+=report.points;myReport.cells+=report.cells;myReport.fields+=report.fields;
     return true;
 }

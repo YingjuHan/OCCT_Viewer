@@ -96,6 +96,19 @@ void seriesTests(const fs::path& out,bool remesh)
 void tests()
 {
     digests(); const fs::path out=NATIVE_SESSION_OUTPUT_DIR; fs::create_directories(out);
+    {
+        // Captured with HEAD 047207f and VTK 9.5.2, before removal of the SDK.
+        // This mixed dataset includes a polyline, quad and Float32 vector/scalars.
+        const std::string source=NATIVE_CUT_FIXTURE_DIR "/sdk_session_general.vtu";
+        RWMeshConv::MeshLoader loader; const auto mesh=loader.OpenMesh(OSD_FileSystem::DefaultFileSystem(),source.c_str());
+        require(!mesh.IsNull() && mesh->GenericCells().size()==2,"v3 general source representation");
+        Viewer::NativeCutView owner(mesh); Viewer::NativeCutTimeline timeline(owner); Viewer::NativeCutSession session(owner,timeline);
+        const auto file=out/"sdk-general.json"; require(session.Save(file.string(),source),owner.LastError());
+        rapidjson::Document document; document.Parse(read(file).c_str());
+        require(std::string(document["source"]["meshDigest"].GetString())=="231807589d04ac6a8ace2311ad2bccf7576ae65d7fdcba22406f105ffc31b3e2",
+            "SDK v3 session fingerprint compatibility");
+        require(session.Load(file.string()),owner.LastError());
+    }
     RWMeshConv::MeshLoader loader; const std::string source=NATIVE_CUT_FIXTURE_DIR "/stress_heat.vtu";
     const auto mesh=loader.OpenMesh(OSD_FileSystem::DefaultFileSystem(),source.c_str()); require(!mesh.IsNull(),"source import");
     // A rejected numeric edit must restore the definition without preparing a

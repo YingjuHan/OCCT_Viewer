@@ -191,7 +191,6 @@ void ambiguous()
     MeshCutTraceOptions options; options.Policy = MeshCutTracePolicy::Negative;
     require(!manager.SetTraceOptions("cut",false,options),"Non-manifold trace selection accepted");
 }
-#ifdef OCCTV_USE_VTK
 void lines()
 {
     Handle(RWCae::MeshData) source = new RWCae::MeshData();
@@ -222,16 +221,6 @@ void lines()
         }
     }
 }
-#else
-void lines()
-{
-    Handle(RWCae::MeshData) source = new RWCae::MeshData();
-    source->AddNodePosition(Graphic3d_Vec3(-1,0,0)); source->AddNodePosition(Graphic3d_Vec3(1,0,0));
-    RWCae::MeshData::GenericCell cell; cell.Type = 3; cell.Nodes = {0,1}; source->AddGenericCell(cell);
-    MeshCutViewManager manager(source); manager.AddPlane("cut",Graphic3d_Vec4d(1,0,0,0));
-    rejects([&] { manager.Evaluate("cut"); },"OFF accepted VTK-only line topology");
-}
-#endif
 }
 int main()
 {

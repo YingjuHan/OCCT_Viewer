@@ -236,9 +236,13 @@ void MeshGeometryVtkIso::generateMeshData()
                 const auto first = std::min_element(face.begin(),face.end(),[](const Sample& a, const Sample& b) { return key(a.Q) < key(b.Q); });
                 std::rotate(face.begin(),first,face.end());
                 for (size_t a = 1; a+1 < face.size(); ++a) {
-                    const double measure = std::abs(determinant(face[0].P-middle.P,face[a].P-middle.P,face[a+1].P-middle.P))/6;
+                    const double signedMeasure = determinant(face[0].P-middle.P,face[a].P-middle.P,face[a+1].P-middle.P)/6;
+                    const double measure = std::abs(signedMeasure);
                     if (measure <= 1e-22) { continue; }
-                    const RWCae::MeshEntityId nodes[] = {addNode(middle),addNode(face[0]),addNode(face[a]),addNode(face[a+1])};
+                    RWCae::MeshEntityId nodes[] = {addNode(middle),addNode(face[0]),addNode(face[a]),addNode(face[a+1])};
+                    // A clipped face can have either winding. Keep every replacement
+                    // tetrahedron positive so its exposed faces have coherent normals.
+                    if (signedMeasure < 0) { std::swap(nodes[2],nodes[3]); }
                     budget();
                     output->AddElement(RWCae::MeshElementTetrahedron(nodes)); bind(RWCae::MeshElemType::Tetrahedron); volume += measure;
                 }

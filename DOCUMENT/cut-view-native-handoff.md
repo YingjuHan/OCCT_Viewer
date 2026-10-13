@@ -1,5 +1,14 @@
 # Cut View Manager 原生开发接续说明
 
+当前实现已将外部 VTK 依赖替换为仓库内解析器和 `MeshCellKernel`；
+读取、48 类具体单元、形函数/插值、逆映射和几何/等值面求交均走自研路径。
+旧 ON/OFF 记录与 VTK SDK 路径仅作为历史证据保留；当前构建不使用它们。
+最新验证、兼容性与限制见 [去除 VTK 依赖审计](vtk-independent-audit.md)。
+本次迁移最终验收：Viewer/DRAW/Tk **72/72**（345.43 秒），headless
+**25/25**（130.35 秒）；55/41 个本项目二进制产物无 VTK DLL 导入。
+真实多面体近面插值已修复，缺面拒绝与旧 v3 session 指纹兼容回归均通过。
+Web/Vue/WASM 未在本次迁移中验证，旧百万单元性能记录未重新测量。
+
 ## 1. 接续范围与当前停点
 
 用户已在 Windows 工作区发出继续开发指令。N02 已按文档范围闭环并提交；
@@ -64,7 +73,7 @@ N05 已按 [闭环审计](cut-view-n05-audit.md) 验收；N06 已按 [闭环审�
 | VTK CMake package | 上述 SDK 下 `lib/cmake/vtk-9.5` |
 | VTK 源码/构建 | `D:/workspace/VTK/vtk-9.5.2` / `build-9.5.2-mingw64` |
 | VTK 官方数据 | `D:/workspace/VTK/test-data-9.5.2`，六个 SHA512 校验文件 |
-| 本项目当前构建 | `build/mingw`，MinGW Debug，VTK ON，DRAW/visual ON，Web OFF |
+| 本项目当前构建 | `build/mingw`，MinGW Debug，自研单元内核，DRAW/visual ON，Web OFF |
 | 无 VTK 验证 | `build/mingw-no-vtk`，MinGW Debug，VTK OFF / visual OFF；N04.8 全量 22/22 各三次通过 |
 | 产物 | `build/mingw/bind/`、`build/mingw/libd/` |
 

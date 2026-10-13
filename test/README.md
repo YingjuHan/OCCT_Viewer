@@ -4,6 +4,10 @@ Current Windows configuration and SDK paths are recorded in
 [the native handoff](../DOCUMENT/cut-view-native-handoff.md). Linux examples and
 earlier milestone sections below retain their historical validation scope.
 Current N04 acceptance is tracked in [the N04 queue](../DOCUMENT/cut-view-n04-plan.md).
+Current processing uses the repository-owned reader and cell kernel; no VTK SDK
+is required. See [the VTK independence audit](../DOCUMENT/vtk-independent-audit.md)
+for current validation counts and binary dependency checks. ON/OFF and SDK build
+records below describe earlier milestone configurations.
 
 ## Build
 
@@ -106,8 +110,7 @@ Sphere/Cylinder creation, center coordinates, cylinder axis, numeric radius, hel
 motion and three-dimensional manipulation are available in the same manager. Curved cuts use
 OCCT boolean intersections, including enclosed intersections with same-sign original vertices;
 they are not field isosurfaces. The cylinder is infinite, and construction caps are excluded.
-Without `OCCTV_USE_VTK`, only linear triangles and tetrahedra are accepted for curved cuts.
-With VTK enabled, a common plane/sphere/cylinder backend evaluates original VTK shape functions;
+A repository-owned plane/sphere/cylinder backend evaluates original cell shape functions;
 see [cell support and limits](../DOCUMENT/vtk-cell-support.md).
 Generated portions are tessellated boundary meshes, not new volume cells. Nodal values use original
 FE weights (barycentric for linear triangles/tetrahedra); elemental values retain source provenance
@@ -145,17 +148,21 @@ rotation, manipulator toggles, copies and real save/load dialogs are included.
 
 ## General VTK Cells and External Fixtures
 
-The local optional SDK is under `build/deps/vtk/sdk/usr`. Configure a different SDK using
-`VTK_DIR`; the VTK source tree alone is not an installed SDK.
+The concrete-cell kernel and file parser are built unconditionally. No VTK SDK,
+`VTK_DIR` or VTK runtime is required. Official format fixtures are optional input data:
 
 ```bash
-cmake -S . -B build -DOCCTV_USE_VTK=ON \
-  -DVTK_DIR="$PWD/build/deps/vtk/sdk/usr/lib/x86_64-linux-gnu/cmake/vtk-9.5" \
-  -DCMAKE_PREFIX_PATH="$PWD/build/deps/vtk/sdk/usr" \
-  -DOCCTV_VTK_TEST_DATA=/home/hyj/Desktop/workspace/vtk/build/ExternalData/Testing/Data
-cmake --build build --target ViewDraw vtk_cell_cut_tests general_cut_cache_tests cut_view_tests quadric_cut_tests --parallel 8
+cmake -S . -B build -DOCCTV_BUILD_TESTS=ON \
+  -DOCCTV_VTK_TEST_DATA=/path/to/VTK/ExternalData/Testing/Data
+cmake --build build --parallel 8
 ctest --test-dir build --output-on-failure
 ```
+
+`cell_kernel` checks fixed-cell functions against immutable numerical references,
+high-order affine reproduction/cardinality and a degree-1024 Bernstein coefficient.
+`vtk_safety` additionally rejects malformed old/modern polyhedron arrays.
+`native_session` checks an immutable v3 fingerprint captured with the former SDK reader.
+See [the audit](../DOCUMENT/vtk-independent-audit.md).
 
 `vtk_cell_cut` generates the 48 concrete-cell fixtures and tests original-cell field weights,
 plane/sphere/cylinder intersections, import round trips, rational/anisotropic metadata,
@@ -341,15 +348,11 @@ ctest --test-dir build/mingw -R 'cut_recovery|draw_cut_view_recovery' --output-o
 ## Windows MinGW Native Configuration
 
 The current OCCT 7.7 SDK is `D:/workspace/OpenCASCADE/OCCT_private/install/mingw`.
-VTK 9.5.2 is installed at
-`D:/workspace/OpenCASCADE/3rdparty/mingw64/vtk-9.5.2-mingw64`; its source,
-minimal module configuration and required DLL export patch are documented in
-[vtk-9.5.2-mingw.md](../DOCUMENT/vtk-9.5.2-mingw.md).
+VTK is not a build or runtime dependency.
 
 ```powershell
 cmake -S . -B build/mingw -DOCCTV_BUILD_TESTS=ON -DOCCTV_BUILD_DRAW=ON `
-  -DOCCTV_BUILD_WEB_VIEWER=OFF -DOCCTV_USE_VTK=ON -DOCCTV_TEST_DRAW_VISUAL=ON `
-  -DVTK_DIR=D:/workspace/OpenCASCADE/3rdparty/mingw64/vtk-9.5.2-mingw64/lib/cmake/vtk-9.5 `
+  -DOCCTV_BUILD_WEB_VIEWER=OFF -DOCCTV_TEST_DRAW_VISUAL=ON `
   -DOCCTV_VTK_TEST_DATA=D:/workspace/VTK/test-data-9.5.2
 cmake --build build/mingw --parallel 6
 ctest --test-dir build/mingw --output-on-failure --repeat until-fail:3 -j 4 --timeout 300
@@ -370,7 +373,7 @@ fixtures. Current build/test results are recorded in
 
 ### N02 independent curved references
 
-With VTK enabled, `cut_reference` generates VTU source fixtures and verifies
+`cut_reference` generates VTU source fixtures and verifies
 independent polynomial/Bernstein reference measures, original nonlinear FE values,
 provenance, source reuse, degree-six/anisotropic charts, weight rescaling and
 unsupported-order/precision fallback. It also checks numerical convergence on

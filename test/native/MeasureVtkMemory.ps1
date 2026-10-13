@@ -12,8 +12,6 @@ foreach ($config in $Configurations) {
   $occtCmake = CacheValue $cache 'OpenCASCADE_DIR'
   $compiler = CacheValue $cache 'CMAKE_CXX_COMPILER'
   $paths = @((Join-Path (Split-Path $occtCmake -Parent) 'win64/gcc/bin'), (Split-Path $compiler -Parent))
-  $vtkCmake = CacheValue $cache 'VTK_DIR'
-  if ($vtkCmake) { $paths += Join-Path (Split-Path (Split-Path (Split-Path $vtkCmake -Parent) -Parent) -Parent) 'bin' }
   $zlib = CacheValue $cache 'ZLIB_LIBRARY_RELEASE'
   if ($zlib) { $paths += Join-Path (Split-Path (Split-Path $zlib -Parent) -Parent) 'bin' }
   $env:PATH = ($paths -join ';') + ';' + $env:PATH

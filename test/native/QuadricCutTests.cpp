@@ -253,13 +253,9 @@ void deformationAndDiagnostics()
     const auto original = mesh();
     for (const auto& p : original->Nodes()) { unsupported->AddNodePosition(p); }
     const RWCae::MeshEntityId nodes[] = {0,1,2,3};
-#ifdef OCCTV_USE_VTK
     RWCae::MeshData::GenericCell unavailable;
     unavailable.Type = 255; unavailable.Nodes.assign(nodes,nodes+4);
     unsupported->AddGenericCell(unavailable);
-#else
-    unsupported->AddElement(RWCae::MeshElementQuad(nodes));
-#endif
     MeshCutViewManager other(unsupported);
     require(!other.AddSphere("bad",Graphic3d_Vec3d(0),1) && !other.AddCylinder("bad",Graphic3d_Vec3d(0),
         Graphic3d_Vec3d(0,0,1),1) && other.Definitions().empty(),"Unsupported cell silently linearized");

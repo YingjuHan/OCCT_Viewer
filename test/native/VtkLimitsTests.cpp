@@ -2,9 +2,7 @@
 #include <RWVtk/VtkLegacyReader.h>
 #include <RWVtk/VtkSeriesReader.h>
 #include <RWMeshConv/MeshLoader.h>
-#ifdef OCCTV_USE_VTK
 #include <RWVtk/VtkNativeReader.h>
-#endif
 #include <filesystem>
 #include <fstream>
 #include <sstream>
@@ -85,10 +83,8 @@ void tests()
     std::istringstream bomb("<VTKFile type=\"UnstructuredGrid\" byte_order=\"LittleEndian\" header_type=\"UInt64\" compressor=\"vtkZLibDataCompressor\">"
         "<UnstructuredGrid><DataArray type=\"Int32\" format=\"appended\" offset=\"0\"/></UnstructuredGrid><AppendedData encoding=\"raw\">_"+header+"x</AppendedData></VTKFile>");
     require(!probe.PerformStream(bomb,"bomb.vtu")&&!probe.Report().errors.empty(),"Compression declaration allocated beyond budget");
-#ifdef OCCTV_USE_VTK
     RWVtk::VtkNativeReader native;limit=RWVtk::VtkResourceLimits();limit.MaxNodes=3;native.SetResourceLimits(limit);
     require(!native.Perform(tetra.c_str())&&native.GetMeshData().IsNull(),"Native SDK bypassed preflight node budget");
-#endif
     memory(4);
 }
 }

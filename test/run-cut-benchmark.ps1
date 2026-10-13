@@ -2,8 +2,7 @@ param(
     [string]$BuildDirectory = 'build/mingw-release',
     [int]$Grid = 100,
     [int]$Frames = 60,
-    [string]$OcctDirectory = 'D:/workspace/OpenCASCADE/OCCT_private/install/mingw',
-    [string]$VtkDirectory = 'D:/workspace/OpenCASCADE/3rdparty/mingw64/vtk-9.5.2-mingw64'
+    [string]$OcctDirectory = 'D:/workspace/OpenCASCADE/OCCT_private/install/mingw'
 )
 $ErrorActionPreference = 'Stop'
 $repositoryDirectory = Split-Path -Parent $PSScriptRoot
@@ -11,7 +10,7 @@ $resolvedBuild = (Resolve-Path -LiteralPath (Join-Path $repositoryDirectory $Bui
 $runtimeDirectory = Join-Path $resolvedBuild 'bin'
 if (!(Test-Path -LiteralPath $runtimeDirectory)) { $runtimeDirectory = Join-Path $resolvedBuild 'bind' }
 Copy-Item -LiteralPath "$OcctDirectory/win64/gcc/bin/DRAWEXE.exe" -Destination (Join-Path $runtimeDirectory 'DRAWEXE.exe') -Force
-$env:PATH = "$runtimeDirectory;$OcctDirectory/win64/gcc/bin;$VtkDirectory/bin;D:/workspace/OpenCASCADE/3rdparty/mingw64/zlib-1.3.1-mingw-64/bin;C:/mingw64/bin;" + $env:PATH
+$env:PATH = "$runtimeDirectory;$OcctDirectory/win64/gcc/bin;D:/workspace/OpenCASCADE/3rdparty/mingw64/zlib-1.3.1-mingw-64/bin;C:/mingw64/bin;" + $env:PATH
 $env:CSF_OCCTResourcePath = "$OcctDirectory/src"
 $env:CSF_ShadersDirectory = "$OcctDirectory/src/Shaders"
 $env:CSF_DrawPluginDefaults = "$OcctDirectory/src/DrawResources"

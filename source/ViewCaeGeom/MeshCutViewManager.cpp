@@ -8,13 +8,12 @@
 #include <ViewCaeGeom/MeshGeometryDeformed.h>
 #include <ViewCaeGeom/MeshGeometryTools.h>
 #include <ViewCaeGeom/MeshGeometryQuadric.h>
-#ifdef OCCTV_USE_VTK
 #include <ViewCaeGeom/MeshGeometryVtkCut.h>
 #include <ViewCaeGeom/MeshGeometryVtkIso.h>
 #include <ViewCaeGeom/MeshVtkCutSource.h>
 #include <ViewCaeGeom/MeshVtkCell.h>
-#endif
 #include <RWCae/MeshAdaptorsIterator.h>
+#include <ViewCaeGeom/MeshCellKernel.h>
 
 #include <cmath>
 #include <limits>
@@ -295,29 +294,18 @@ bool MeshCutViewManager::EnsureDefaultPlanes()
 
 bool MeshCutViewManager::validIsoField(const Handle(RWCae::MeshNVecProperty)& field, int component) const
 {
-#ifndef OCCTV_USE_VTK
-    if (myMesh->NbElems(RWCae::MeshElemType::Generic) != 0) { return false; }
-#else
     // These cells have world-coordinate interpolation or disconnected strips,
     // rather than the single FE parameter chart used by this numerical backend.
     for (const auto& cell : myMesh->GenericCells()) {
         if (cell.Type < 3 || cell.Type == 4 || cell.Type == 6 || cell.Type == 7
             || cell.Type == 36 || cell.Type == 41 || cell.Type == 42
-            || !vtkSmartPointer<vtkCell>::Take(vtkGenericCell::InstantiateCell(cell.Type))) { return false; }
+            || !MeshCellKernel::InstantiateCell(cell.Type)) { return false; }
     }
     if (needsGeneralIso() && (myMesh->NbElems(RWCae::MeshElemType::Polyhedron)
         || myMesh->NbElems(RWCae::MeshElemType::Polygon) || myMesh->NbElems(RWCae::MeshElemType::Elem0d))) { return false; }
-#endif
     if (field.IsNull() || !field->IsInitialized() || !field->HasScalarComponents()
         || (!field->IsNodal() && !field->IsElemental()) || field->Name().IsEmpty()
         || component < 0 || component >= field->NbRawComponents()) { return false; }
-#ifndef OCCTV_USE_VTK
-    for (auto type : {RWCae::MeshElemType::Triangle2nd, RWCae::MeshElemType::Quad2nd,
-                     RWCae::MeshElemType::Tetrahedron2nd, RWCae::MeshElemType::Pyramid2nd,
-                     RWCae::MeshElemType::Prism2nd, RWCae::MeshElemType::Hexahedron2nd}) {
-        if (myMesh->NbElems(type) > 0) { return false; }
-    }
-#endif
     const auto values = field->GetRawComponent(component);
     const size_t count = field->IsNodal() ? myMesh->NbNodes() : myMesh->NbIndexedElems();
     if (count == 0 || count > (size_t)std::numeric_limits<int>::max()
@@ -434,25 +422,15 @@ bool MeshCutViewManager::IsoRange(const std::string& id, double& minimum, double
 bool MeshCutViewManager::validQuadricMesh() const
 {
     if (myMesh->NbIndexedElems() == 0) { return false; }
-#ifdef OCCTV_USE_VTK
     for (const auto& cell : myMesh->GenericCells()) {
-        auto concrete = vtkSmartPointer<vtkCell>::Take(vtkGenericCell::InstantiateCell(cell.Type));
+        auto concrete = MeshCellKernel::InstantiateCell(cell.Type);
         if (!concrete) { return false; }
     }
     return true;
-#else
-    for (int t = 0; t < RWCae::MeshElemNbTypes; ++t) {
-        const auto type = (RWCae::MeshElemType)t;
-        if (type != RWCae::MeshElemType::Triangle && type != RWCae::MeshElemType::Tetrahedron
-            && myMesh->NbElems(type) != 0) { return false; }
-    }
-    return true;
-#endif
 }
 
 bool MeshCutViewManager::needsGeneralPlane() const
 {
-#ifdef OCCTV_USE_VTK
     if (myMesh->NbElems(RWCae::MeshElemType::Elem0d) > 0) { return true; }
     if (myGeometryOptions.Mode == MeshCutGeometryMode::AnalyticRequired) {
         for (auto type : {RWCae::MeshElemType::Quad,RWCae::MeshElemType::Hexahedron,RWCae::MeshElemType::Prism,
@@ -460,7 +438,6 @@ bool MeshCutViewManager::needsGeneralPlane() const
             if (myMesh->NbElems(type) > 0) { return true; }
         }
     }
-#endif
     for (auto type : {RWCae::MeshElemType::Generic,RWCae::MeshElemType::Triangle2nd,RWCae::MeshElemType::Quad2nd,
         RWCae::MeshElemType::Tetrahedron2nd,RWCae::MeshElemType::Hexahedron2nd,RWCae::MeshElemType::Prism2nd,
         RWCae::MeshElemType::Pyramid2nd}) {
@@ -950,11 +927,9 @@ Handle(MeshGeometry) MeshCutViewManager::makeSourceGeometry(bool boundary)
         deformed->SetDeformedProperty(myDeformationField);
         deformed->SetDeformedScaleCoeff(myDeformationScale);
     }
-#ifdef OCCTV_USE_VTK
     if (boundary && needsGeneralPlane()) {
         root->Append(new MeshGeometryVtkCut(myBvh,MeshCutDefinition(),MeshCutPortion::Negative,generalSource(),true));
     }
-#endif
     return root;
 }
 
@@ -990,7 +965,6 @@ void MeshCutViewManager::initialize(Entry& theEntry)
     for (size_t i = 0; i < theEntry.Roots.size(); ++i) {
         theEntry.Roots[i] = makeSourceGeometry(isoValues.IsNull());
         theEntry.Roots[i]->RetainCacheLease(theEntry.Lease);
-#ifdef OCCTV_USE_VTK
         bool nonSimplex = false;
         for (int t = 0; t < RWCae::MeshElemNbTypes; ++t) {
             const auto type = (RWCae::MeshElemType)t;
@@ -1002,9 +976,6 @@ void MeshCutViewManager::initialize(Entry& theEntry)
         } else if (!isoValues.IsNull() && needsGeneralIso()) {
             theEntry.Portions[i] = new MeshGeometryVtkIso(myBvh,theEntry.Definition,(MeshCutPortion)i,isoValues,myGeometryOptions,myIsoOptions);
         } else
-#else
-        if (myMesh->NbElems(RWCae::MeshElemType::Generic) > 0) { throw std::invalid_argument("Generic VTK cells require OCCTV_USE_VTK"); }
-#endif
         if (theEntry.Definition.Shape == MeshCutShape::Sphere || theEntry.Definition.Shape == MeshCutShape::Cylinder) {
             theEntry.Portions[i] = new MeshGeometryQuadric(myBvh,theEntry.Definition,(MeshCutPortion)i,myGeometryOptions);
         } else if (!isoValues.IsNull()) {
@@ -1133,7 +1104,6 @@ MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
             aResult.Volumes[i] = quadric->Volume(); aResult.Areas[i] = quadric->Area();
             aResult.BoundaryMesh = true;
         }
-#ifdef OCCTV_USE_VTK
         if (auto iso = dynamic_cast<MeshGeometryVtkIso*>(aResult.Portions[i].get())) {
             aResult.Volumes[i] = iso->Volume; aResult.Areas[i] = iso->Area; aResult.SourceApproximate = true;
             aResult.IsoFieldTolerance = std::max(aResult.IsoFieldTolerance,iso->FieldTolerance);
@@ -1146,15 +1116,12 @@ MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
             aResult.Volumes[i] = general->Volume(); aResult.Areas[i] = general->Area(); aResult.BoundaryMesh = true;
             aResult.SourceApproximate = generalSource()->Work.NumericalCells > 0;
         }
-#endif
         anEntry->CachedMask |= 1u << i;
         if (i == 1) {
             if (anEntry->TraceSection.IsNull() || anEntry->TraceRevision != anEntry->Revision) {
                 if (!myTraceSource) {
                     myTraceSource = std::make_shared<MeshCutTraceSource>(myMesh,makeSourceGeometry(false),myGeometryOptions
-#ifdef OCCTV_USE_VTK
                         ,myGeneralSource
-#endif
                     );
                     myTimings.SourceMs+=elapsed(); checkRequest(request);
                 }
@@ -1243,15 +1210,11 @@ std::shared_ptr<MeshCutPresentation> MeshCutViewManager::EvaluatePresentation(co
     auto source = makeSourceGeometry(false);
     if (!myTraceSource) {
         myTraceSource = std::make_shared<MeshCutTraceSource>(myMesh,source,myGeometryOptions
-#ifdef OCCTV_USE_VTK
             ,myGeneralSource
-#endif
         );
     }
     return BuildCutPresentationUnion(myMesh,source,myBvh,cuts,myGeometryOptions,myTraceSource
-#ifdef OCCTV_USE_VTK
         ,myGeneralSource
-#endif
     );
 }
 
@@ -1271,9 +1234,7 @@ void MeshCutViewManager::InvalidateFields()
 void MeshCutViewManager::InvalidateGeometry()
 {
     myTraceSource.reset();
-#ifdef OCCTV_USE_VTK
     myGeneralSource.reset();
-#endif
     ++mySourceEpoch;
     if (!mySourceGeometry.IsNull()) { mySourceGeometry->RemoveChildren(); mySourceGeometry.Nullify(); }
     for (auto& anEntry : myEntries) {
@@ -1289,9 +1250,7 @@ void MeshCutViewManager::Clear()
 {
     CancelRequest();
     myTraceSource.reset();
-#ifdef OCCTV_USE_VTK
     myGeneralSource.reset();
-#endif
     ++mySourceEpoch;
     if (!mySourceGeometry.IsNull()) { mySourceGeometry->RemoveChildren(); mySourceGeometry.Nullify(); }
     for (auto& anEntry : myEntries) { release(*anEntry.second); }
@@ -1322,11 +1281,9 @@ uint64_t MeshCutViewManager::EstimatedSourceBytes() const
     for(int t=0;t<RWCae::MeshElemNbTypes;++t) { const auto type=(RWCae::MeshElemType)t; using T=RWCae::MeshElemType;
         if(myMesh->NbElems(type)>0 && type!=T::Elem0d&&type!=T::Triangle&&type!=T::Quad&&type!=T::Tetrahedron&&type!=T::Pyramid&&type!=T::Prism&&type!=T::Hexahedron) { compact=false; }
     }
-    #ifdef OCCTV_USE_VTK
     bool nonSimplex=false;
     for(int t=0;t<RWCae::MeshElemNbTypes;++t) { const auto type=(RWCae::MeshElemType)t; nonSimplex|=myMesh->NbElems(type)>0 && type!=RWCae::MeshElemType::Triangle && type!=RWCae::MeshElemType::Tetrahedron; }
     if(nonSimplex) { for(const auto& entry:myEntries) { if(entry.second->Definition.Shape==MeshCutShape::Sphere || entry.second->Definition.Shape==MeshCutShape::Cylinder) { compact=false; } } }
-#endif
     return 65536 + (uint64_t)myMesh->NbNodes()*128 + (uint64_t)myMesh->NbIndexedElems()*(compact?128:65536)
         + (compact?std::min<uint64_t>((uint64_t)myMesh->NbIndexedElems()+2,8194)*65536+std::min<uint64_t>(myMesh->NbIndexedElems(),100000)*512:myGeometryOptions.MaxSourcePrimitives*512);
 }
@@ -1393,19 +1350,15 @@ void MeshCutViewManager::checkRequest(uint64_t generation) const
     if(generation!=myRequestGeneration || (myCancellation&&myCancellation->Cancelled.load())) { throw std::runtime_error("Cut frame cancelled or superseded before publication"); }
 }
 
-#ifdef OCCTV_USE_VTK
 std::shared_ptr<MeshVtkCutSource> MeshCutViewManager::generalSource()
 {
     if (!myGeneralSource) { myGeneralSource = std::make_shared<MeshVtkCutSource>(mySourceEpoch,myGeometryOptions); }
     return myGeneralSource;
 }
-#endif
 
 MeshCutStatistics MeshCutViewManager::Statistics() const
 {
-#ifdef OCCTV_USE_VTK
     if (myGeneralSource) { return myGeneralSource->Work; }
-#endif
     MeshCutStatistics result; result.SourceEpoch = mySourceEpoch; return result;
 }
 
@@ -1426,15 +1379,6 @@ double MeshCutGeometryOptions::Tolerance(double scale) const
 bool MeshCutViewManager::SetGeometryOptions(const MeshCutGeometryOptions& options)
 {
     if (!options.IsValid()) { return false; }
-#ifndef OCCTV_USE_VTK
-    if (options.Mode == MeshCutGeometryMode::AnalyticRequired) {
-        for (int t = 0; t < RWCae::MeshElemNbTypes; ++t) {
-            const auto type = (RWCae::MeshElemType)t;
-            if (type != RWCae::MeshElemType::Triangle && type != RWCae::MeshElemType::Tetrahedron
-                && type != RWCae::MeshElemType::Elem0d && myMesh->NbElems(type) > 0) { return false; }
-        }
-    }
-#endif
     if (options.Mode == myGeometryOptions.Mode && options.AbsoluteTolerance == myGeometryOptions.AbsoluteTolerance
         && options.RelativeTolerance == myGeometryOptions.RelativeTolerance
         && options.FaceSubdivisionLimit == myGeometryOptions.FaceSubdivisionLimit

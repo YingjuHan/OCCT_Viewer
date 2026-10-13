@@ -1,15 +1,7 @@
+#include "CellFixture.h"
 #include <ViewCaeGeom/MeshCutViewManager.h>
 #include <ViewCaeGeom/MeshGeometryVtkCut.h>
 #include <RWCae/MeshScalarProperty.h>
-#include <vtkCellData.h>
-#include <vtkDoubleArray.h>
-#include <vtkGenericCell.h>
-#include <vtkIntArray.h>
-#include <vtkNew.h>
-#include <vtkPoints.h>
-#include <vtkPointData.h>
-#include <vtkUnstructuredGrid.h>
-#include <vtkXMLUnstructuredGridWriter.h>
 #include <cmath>
 #include <filesystem>
 #include <iostream>
@@ -42,16 +34,10 @@ template<class Callback> void rejects(Callback callback, const char* message)
 Handle(RWCae::MeshData) warped(int count, bool translated, float scale = 1, float shift = 0, int type = 25, bool rational = false)
 {
     const int size = type == 25 ? 20 : 27;
-    vtkNew<vtkGenericCell> cell; cell->SetCellType(type);
+    auto cell=std::make_shared<MeshCellKernel>(); cell->SetCellType(type);
     cell->GetPoints()->SetNumberOfPoints(size); cell->GetPointIds()->SetNumberOfIds(size);
     for (int n = 0; n < size; ++n) { cell->GetPointIds()->SetId(n,n); }
-    if (type >= 68) {
-        vtkNew<vtkUnstructuredGrid> grid; vtkNew<vtkPoints> points; points->SetNumberOfPoints(size); grid->SetPoints(points);
-        std::vector<vtkIdType> ids(size); for (int n = 0; n < size; ++n) { ids[n] = n; }
-        grid->InsertNextCell(type,size,ids.data());
-        vtkNew<vtkIntArray> degrees; degrees->SetNumberOfComponents(3); const int order[] = {2,2,2};
-        degrees->InsertNextTypedTuple(order); grid->GetCellData()->SetHigherOrderDegrees(degrees); grid->GetCell(0,cell);
-    }
+    if (type >= 68) {cell->SetOrder({2,2,2});}
     const auto q = cell->GetParametricCoords();
     Handle(RWCae::MeshData) mesh = new RWCae::MeshData();
     std::map<std::tuple<float,float,float>,RWCae::MeshEntityId> shared;
@@ -184,20 +170,8 @@ void curvedLine()
 }
 void writeFixture()
 {
-    const auto mesh = warped(2,true); vtkNew<vtkUnstructuredGrid> grid; vtkNew<vtkPoints> points; points->SetDataTypeToDouble();
-    for (const auto& p : mesh->Nodes()) { points->InsertNextPoint(p.x(),p.y(),p.z()); }
-    grid->SetPoints(points);
-    for (const auto& cell : mesh->GenericCells()) {
-        std::vector<vtkIdType> ids(cell.Nodes.begin(),cell.Nodes.end()); grid->InsertNextCell(cell.Type,ids.size(),ids.data());
-    }
-    vtkNew<vtkDoubleArray> field; field->SetName("temperature");
-    for (const auto& p : mesh->Nodes()) { field->InsertNextValue(p.x()+2*p.y()+3*p.z()); }
-    grid->GetPointData()->AddArray(field);
-    vtkNew<vtkDoubleArray> cell; cell->SetName("pressure"); cell->InsertNextValue(7); cell->InsertNextValue(9); grid->GetCellData()->AddArray(cell);
-    std::filesystem::create_directories(CUT_GEOMETRY_FIXTURE_DIR);
-    const std::string path = std::string(CUT_GEOMETRY_FIXTURE_DIR)+"/joined_curved_hex.vtu";
-    vtkNew<vtkXMLUnstructuredGridWriter> writer; writer->SetFileName(path.c_str()); writer->SetInputData(grid); writer->SetDataModeToAscii();
-    require(writer->Write(),"Cannot create curved DRAW fixture");
+    const auto mesh=warped(2,true);
+    CellFixture::Write(mesh,std::string(CUT_GEOMETRY_FIXTURE_DIR)+"/joined_curved_hex.vtu",{{"temperature",CellFixture::Values(mesh,[](const auto& p) {return p.x()+2*p.y()+3*p.z();})}},{{"pressure",{7,9}}});
 }
 }
 int main()

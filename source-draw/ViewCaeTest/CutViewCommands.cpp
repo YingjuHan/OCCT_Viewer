@@ -727,13 +727,13 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             const Graphic3d_Vec3d center(cutReal(argv[4]),cutReal(argv[5]),cutReal(argv[6]));
             ok = action == "sphereadd" ? cuts.AddSphere(argv[3],center,cutReal(argv[7]))
                 : cuts.SetSphere(argv[3],center,cutReal(argv[7]));
-            if (!ok) { throw std::invalid_argument("Sphere requires a positive radius and supported mesh topology; check id and center (general cells need OCCTV_USE_VTK)"); }
+            if (!ok) { throw std::invalid_argument("Sphere requires a positive radius and supported mesh topology; check id and center"); }
         } else if ((action == "cylinderadd" || action == "cylindermove") && argc == 11) {
             const Graphic3d_Vec3d center(cutReal(argv[4]),cutReal(argv[5]),cutReal(argv[6]));
             const Graphic3d_Vec3d axis(cutReal(argv[7]),cutReal(argv[8]),cutReal(argv[9]));
             ok = action == "cylinderadd" ? cuts.AddCylinder(argv[3],center,axis,cutReal(argv[10]))
                 : cuts.SetCylinder(argv[3],center,axis,cutReal(argv[10]));
-            if (!ok) { throw std::invalid_argument("Cylinder requires a positive radius, nonzero axis and supported mesh topology; check id and center (general cells need OCCTV_USE_VTK)"); }
+            if (!ok) { throw std::invalid_argument("Cylinder requires a positive radius, nonzero axis and supported mesh topology; check id and center"); }
         } else if (action == "radius" && argc == 5) {
             for (const auto& cut : cuts.Definitions()) {
                 if (cut.Id != argv[3]) { continue; }

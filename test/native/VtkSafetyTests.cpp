@@ -106,10 +106,45 @@ void matrix()
     RWVtk::VtkValidationReader validation; validation.SetToReportMessages(false); std::istringstream invalidModern(piece(modern));
     require(!validation.PerformStream(invalidModern,"invalid.vtu"),"Modern polyhedron invalid face point accepted");
 }
+void polyhedronLayouts()
+{
+    auto data=[](const std::string& name,const std::string& values) {return array(values,"Int32","Name=\""+name+"\"");};
+    const std::string points="<Points>"+array("0 0 0 1 0 0 0 1 0 0 0 1","Float64","NumberOfComponents=\"3\"")+"</Points>";
+    auto document=[&](const std::string& faces) {
+        return xml("<Piece NumberOfPoints=\"4\" NumberOfCells=\"3\">"+points+"<Cells>"
+            +data("connectivity","0 1 2 3 0 1 2 3 0 1 2 3")+data("offsets","4 8 12")
+            +array("42 10 42","UInt8","Name=\"types\"")+faces+"</Cells></Piece>");
+    };
+    auto modern=[&](const std::string& connectivity,const std::string& ends,const std::string& refs,const std::string& poly) {
+        return data("face_connectivity",connectivity)+data("face_offsets",ends)+data("polyhedron_to_faces",refs)+data("polyhedron_offsets",poly);
+    };
+    const std::string conn="0 2 1 0 1 3 1 2 3 2 0 3", ends="3 6 9 12", refs="0 1 2 3 0 1 2 3";
+    auto readGrid=[&](const std::string& text) {
+        RWVtk::VtkUnstructuredGridReader reader; reader.SetToReportMessages(false); std::istringstream stream(text);
+        return reader.PerformStream(stream,"polyhedron.vtu");
+    };
+    require(readGrid(document(modern(conn,ends,refs,"4 4 8"))),"Shared XML 2.3 faces rejected");
+    const std::string oldStream="4 3 0 2 1 3 0 1 3 3 1 2 3 3 2 0 3";
+    const auto legacy=data("faces",oldStream+" "+oldStream)+data("faceoffsets","17 -1 34");
+    require(readGrid(document(legacy)),"Mixed old polyhedron face cursor");
+    for (const auto& faces : {
+        modern(conn,"3 2 9 12",refs,"4 4 8"),
+        modern(conn,ends,refs,"4 5 8"),
+        modern(conn,ends,refs,"4 4 7"),
+        modern(conn+" 0",ends,refs,"4 4 8"),
+        modern(conn,ends,refs+" 0","4 4 8"),
+        modern(conn+" 0 1 2",ends+" 15",refs,"4 4 8"),
+        modern(conn,ends,"0 1 2 9 0 1 2 3","4 4 8"),
+        data("face_connectivity",conn),
+        modern(conn,ends,refs,"4 4 8")+legacy,
+        data("faces",oldStream+" "+oldStream)+data("faceoffsets","17 17 34")}) {
+        require(!readGrid(document(faces)),"Malformed/unused polyhedron face arrays accepted");
+    }
+}
 }
 int main()
 {
-    try {matrix();std::cout<<"VTK_SAFETY_PASS\n";return 0;}
+    try {matrix();polyhedronLayouts();std::cout<<"VTK_SAFETY_PASS\n";return 0;}
     catch(const Standard_Failure& e) {std::cerr<<e.GetMessageString()<<'\n';}
     catch(const std::exception& e) {std::cerr<<e.what()<<'\n';}
     return 1;

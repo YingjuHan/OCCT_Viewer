@@ -1,15 +1,7 @@
+#include "CellFixture.h"
 #include <ViewCaeGeom/MeshCutViewManager.h>
 #include <ViewCaeGeom/MeshGeometryVtkCut.h>
 #include <RWCae/MeshScalarProperty.h>
-#include <vtkGenericCell.h>
-#include <vtkCellData.h>
-#include <vtkDoubleArray.h>
-#include <vtkIntArray.h>
-#include <vtkNew.h>
-#include <vtkPoints.h>
-#include <vtkPointData.h>
-#include <vtkUnstructuredGrid.h>
-#include <vtkXMLUnstructuredGridWriter.h>
 #include <cmath>
 #include <filesystem>
 #include <functional>
@@ -34,16 +26,10 @@ void near(double actual, double expected, double tolerance, const char* message)
 Handle(RWCae::MeshData) fixture(int type, bool rational = false, int count = 0)
 {
     const int size = count ? count : type == 24 ? 10 : type == 25 ? 20 : type == 33 ? 24 : type == 21 ? 3 : 27;
-    vtkNew<vtkGenericCell> cell; cell->SetCellType(type);
+    auto cell=std::make_shared<MeshCellKernel>(); cell->SetCellType(type);
     cell->GetPoints()->SetNumberOfPoints(size); cell->GetPointIds()->SetNumberOfIds(size);
     for (int n = 0; n < size; ++n) { cell->GetPointIds()->SetId(n,n); }
-    if (type == 72 || type == 79) {
-        vtkNew<vtkUnstructuredGrid> grid; vtkNew<vtkPoints> points; points->SetNumberOfPoints(size); grid->SetPoints(points);
-        std::vector<vtkIdType> ids(size); for (int n = 0; n < size; ++n) { ids[n] = n; }
-        grid->InsertNextCell(type,size,ids.data());
-        vtkNew<vtkIntArray> degrees; degrees->SetNumberOfComponents(3); const int order[] = {2,2,2};
-        degrees->InsertNextTypedTuple(order); grid->GetCellData()->SetHigherOrderDegrees(degrees); grid->GetCell(0,cell);
-    }
+    if (type == 72 || type == 79) {cell->SetOrder({2,2,2});}
     const auto coordinates = cell->GetParametricCoords();
     Handle(RWCae::MeshData) mesh = new RWCae::MeshData(); RWCae::MeshData::GenericCell topology; topology.Type = type;
     if (type == 72 || type == 79) { topology.Degrees = {2,2,2}; }
@@ -186,15 +172,10 @@ double simpson(const std::function<double(double)>& function, double end)
 void wedge(int type, bool rational = false)
 {
     const int count = type == 26 ? 15 : type == 31 ? 12 : 18;
-    vtkNew<vtkGenericCell> cell; cell->SetCellType(type);
+    auto cell=std::make_shared<MeshCellKernel>(); cell->SetCellType(type);
     cell->GetPoints()->SetNumberOfPoints(count); cell->GetPointIds()->SetNumberOfIds(count);
     for (int n = 0; n < count; ++n) { cell->GetPointIds()->SetId(n,n); }
-    if (type == 73 || type == 80) {
-        vtkNew<vtkUnstructuredGrid> grid; vtkNew<vtkPoints> points; points->SetNumberOfPoints(count); grid->SetPoints(points);
-        std::vector<vtkIdType> ids(count); for (int n = 0; n < count; ++n) { ids[n] = n; }
-        grid->InsertNextCell(type,count,ids.data()); vtkNew<vtkIntArray> degrees; degrees->SetNumberOfComponents(3);
-        const int orders[] = {2,2,2}; degrees->InsertNextTypedTuple(orders); grid->GetCellData()->SetHigherOrderDegrees(degrees); grid->GetCell(0,cell);
-    }
+    if (type == 73 || type == 80) {cell->SetOrder({2,2,2});}
     auto coordinates = cell->GetParametricCoords(); Handle(RWCae::MeshData) mesh = new RWCae::MeshData();
     RWCae::MeshData::GenericCell topology; topology.Type = type;
     if (type == 73 || type == 80) { topology.Degrees = {2,2,2}; }
@@ -228,7 +209,7 @@ void wedge(int type, bool rational = false)
 void pyramid(int type)
 {
     const int count = type == 27 ? 13 : 19;
-    vtkNew<vtkGenericCell> cell; cell->SetCellType(type); cell->GetPoints()->SetNumberOfPoints(count);
+    auto cell=std::make_shared<MeshCellKernel>(); cell->SetCellType(type); cell->GetPoints()->SetNumberOfPoints(count);
     cell->GetPointIds()->SetNumberOfIds(count);
     for (int n = 0; n < count; ++n) { cell->GetPointIds()->SetId(n,n); }
     const double canonical[][3] = {{0,0,0},{1,0,0},{1,1,0},{0,1,0},{0.5,0.5,1},
@@ -265,32 +246,9 @@ void pyramid(int type)
 }
 void writeFixture(const Handle(RWCae::MeshData)& mesh, const std::string& name, bool polynomial)
 {
-    vtkNew<vtkUnstructuredGrid> grid; vtkNew<vtkPoints> points; points->SetDataTypeToDouble();
-    for (const auto& p : mesh->Nodes()) { points->InsertNextPoint(p.x(),p.y(),p.z()); }
-    grid->SetPoints(points); std::vector<vtkIdType> ids(mesh->GenericCells()[0].Nodes.begin(),mesh->GenericCells()[0].Nodes.end());
-    const auto& cell = mesh->GenericCells()[0]; grid->InsertNextCell(cell.Type,ids.size(),ids.data());
-    if (!cell.Degrees.empty()) {
-        vtkNew<vtkIntArray> degrees; degrees->SetNumberOfComponents(3); degrees->InsertNextTypedTuple(cell.Degrees.data());
-        grid->GetCellData()->SetHigherOrderDegrees(degrees);
-    }
-    if (!cell.RationalWeights.empty()) {
-        vtkNew<vtkDoubleArray> weights; weights->SetName("RationalWeights");
-        for (double weight : cell.RationalWeights) { weights->InsertNextValue(weight); }
-        grid->GetPointData()->SetRationalWeights(weights);
-    }
-    for (int component = 0; component <= (polynomial ? 1 : 0); ++component) {
-        const auto values = field(mesh,component == 1); vtkNew<vtkDoubleArray> array; array->SetName(component == 1 ? "quadratic" : "temperature");
-        for (RWCae::MeshEntityId n = 0; n < mesh->NbNodes(); ++n) { array->InsertNextValue(values->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(n))); }
-        grid->GetPointData()->AddArray(array);
-    }
-    vtkNew<vtkDoubleArray> squared; squared->SetName("z_squared");
-    for (const auto& p : mesh->Nodes()) { squared->InsertNextValue((double)p.z()*p.z()); }
-    grid->GetPointData()->AddArray(squared);
-    vtkNew<vtkDoubleArray> pressure; pressure->SetName("pressure"); pressure->InsertNextValue(7); grid->GetCellData()->AddArray(pressure);
-    std::filesystem::create_directories(CUT_ANALYTIC_FIXTURE_DIR);
-    const std::string path = std::string(CUT_ANALYTIC_FIXTURE_DIR)+"/"+name+".vtu";
-    vtkNew<vtkXMLUnstructuredGridWriter> writer; writer->SetFileName(path.c_str()); writer->SetInputData(grid); writer->SetDataModeToAscii();
-    require(writer->Write(),"Cannot generate analytic DRAW fixture");
+    CellFixture::Fields fields={{"temperature",CellFixture::Values(field(mesh,false))},{"z_squared",CellFixture::Values(mesh,[](const auto& p) {return (double)p.z()*p.z();})}};
+    if(polynomial) {fields.emplace("quadratic",CellFixture::Values(field(mesh,true)));}
+    CellFixture::Write(mesh,std::string(CUT_ANALYTIC_FIXTURE_DIR)+"/"+name+".vtu",fields,{{"pressure",{7}}});
 }
 }
 int main()

@@ -354,6 +354,7 @@ bool VtkLegacyReader::PerformStream(std::istream& rawInput, const TCollection_As
         // Reuse the XML reader's cell ordering and field association validation.
         if (volume) {
             VtkUnstructuredGridReader reader;
+            reader.SetPreserveCellTypes(myPreserveCellTypes);
             reader.SetToReportMessages(myToReportMessages);
             reader.SetResourceBudget(myBudget);
             reader.SetMappingInfo(myMappingInfo);
@@ -365,6 +366,7 @@ bool VtkLegacyReader::PerformStream(std::istream& rawInput, const TCollection_As
             return ok;
         }
         VtkPolyDataReader reader;
+        reader.SetPreserveCellTypes(myPreserveCellTypes);
         reader.SetToReportMessages(myToReportMessages);
             reader.SetResourceBudget(myBudget);
         reader.SetMappingInfo(myMappingInfo);

@@ -11,9 +11,6 @@
 #include <RWVtk/VtkLegacyReader.h>
 #include <RWVtk/VtkDatasetReader.h>
 #include <RWVtk/VtkReferenceStager.h>
-#ifdef OCCTV_USE_VTK
-#include <RWVtk/VtkNativeReader.h>
-#endif
 
 #include <BinTools.hxx>
 #include <BRep_Builder.hxx>
@@ -339,7 +336,7 @@ Handle(RWCae::MeshData) MeshLoader::openVtkMesh(const TCollection_AsciiString& t
     myVtkReport.source = theFilePath.ToCString();
     myVtkReport.format = theFormat;
     Handle(RWCae::MeshData) aMesh;
-    bool canUseNativeCells = false;
+
     TCollection_AsciiString inputPath=theFilePath;
     if(!myVtkStagingDirectory.IsEmpty()) {
         RWVtk::VtkReferenceStager stager;
@@ -357,15 +354,6 @@ Handle(RWCae::MeshData) MeshLoader::openVtkMesh(const TCollection_AsciiString& t
         if (!theSucceeded && anAttempt.errors.empty()) { anAttempt.errors.push_back("Reader returned no mesh"); }
         myVtkReport.errors = anAttempt.errors;
         myVtkReport.warnings = anAttempt.warnings;
-        if (std::string(theBackend) == "native-vtk") {
-            for (const auto& attempt : myVtkReport.attempts) {
-                for (const auto& warning : attempt.warnings) {
-                    if (std::find(myVtkReport.warnings.begin(), myVtkReport.warnings.end(), warning) == myVtkReport.warnings.end()) {
-                        myVtkReport.warnings.push_back(warning);
-                    }
-                }
-            }
-        }
         myVtkReport.backend = theBackend;
     };
     auto read = [&](auto& theReader, auto theGetMesh) {
@@ -386,9 +374,7 @@ Handle(RWCae::MeshData) MeshLoader::openVtkMesh(const TCollection_AsciiString& t
             aReport.errors.push_back(anError.what());
         }
         record(aReport, "portable", isRead && !aMesh.IsNull() && aReport.errors.empty());
-        // A concrete-cell implementation gap permits fallback. Syntax, arrays,
-        // unsupported sections and validation failures must not be bypassed.
-        canUseNativeCells = RWVtk::CanUseNativeTopology(aReport);
+        // Parse or validation failures cannot publish a partial mesh.
         if (!myVtkReport.attempts.back().succeeded) { aMesh.Nullify(); }
     };
     if (theFormat == "VTK") {
@@ -407,17 +393,7 @@ Handle(RWCae::MeshData) MeshLoader::openVtkMesh(const TCollection_AsciiString& t
         RWVtk::VtkSeriesReader aReader;
         read(aReader, [&]() { return aReader.GetMergedMeshData(); });
     }
-#ifdef OCCTV_USE_VTK
-    // Native fallback does not implement mappings or composite/time-series semantics.
-    if (aMesh.IsNull() && canUseNativeCells && theMappingFilePath.IsEmpty()
-        && (theFormat == "VTK" || theFormat == "VTU" || theFormat == "VTP")) {
-        RWVtk::VtkNativeReader aReader;
-        aReader.SetResourceLimits(myVtkLimits);
-        const bool isRead = aReader.Perform(inputPath);
-        record(aReader.Report(), "native-vtk", isRead);
-        if (isRead) { aMesh = aReader.GetMeshData(); }
-    }
-#endif
+
     myVtkReport.succeeded = !aMesh.IsNull();
     if (myVtkReport.succeeded) {
         // Counts describe the published mesh, not a rejected partial attempt.

@@ -1,16 +1,8 @@
+#include "CellFixture.h"
 #include <ViewCaeGeom/MeshCutViewManager.h>
 #include <ViewCaeGeom/MeshGeometryVtkCut.h>
 #include <RWCae/MeshScalarProperty.h>
 #include <RWVtk/VtkNativeReader.h>
-#include <vtkGenericCell.h>
-#include <vtkCellData.h>
-#include <vtkIntArray.h>
-#include <vtkDoubleArray.h>
-#include <vtkPointData.h>
-#include <vtkNew.h>
-#include <vtkPoints.h>
-#include <vtkUnstructuredGrid.h>
-#include <vtkXMLUnstructuredGridWriter.h>
 #include <chrono>
 #include <cmath>
 #include <filesystem>
@@ -36,17 +28,10 @@ void near(double actual, double expected, const char* message, double tolerance 
 Handle(RWCae::MeshData) grid(int type, int count, bool connected = true)
 {
     const int sizes = type == 25 ? 20 : type == 72 ? 27 : 8;
-    vtkNew<vtkGenericCell> cell; cell->SetCellType(type == 42 ? 12 : type);
+    auto cell=std::make_shared<MeshCellKernel>(); cell->SetCellType(type == 42 ? 12 : type);
     cell->GetPoints()->SetNumberOfPoints(sizes); cell->GetPointIds()->SetNumberOfIds(sizes);
     for (int n = 0; n < sizes; ++n) { cell->GetPointIds()->SetId(n,n); }
-    if (type == 72) {
-        vtkNew<vtkUnstructuredGrid> source; vtkNew<vtkPoints> points; points->SetNumberOfPoints(27);
-        source->SetPoints(points); std::vector<vtkIdType> nodes(27);
-        for (int n = 0; n < 27; ++n) { nodes[n] = n; }
-        source->InsertNextCell(72,27,nodes.data());
-        vtkNew<vtkIntArray> degrees; degrees->SetNumberOfComponents(3); const int order[] = {2,2,2};
-        degrees->InsertNextTypedTuple(order); source->GetCellData()->SetHigherOrderDegrees(degrees); source->GetCell(0,cell);
-    }
+    if (type == 72) {cell->SetOrder({2,2,2});}
     const auto parameters = cell->GetParametricCoords();
     Handle(RWCae::MeshData) mesh = new RWCae::MeshData();
     std::map<std::tuple<float,float,float>,RWCae::MeshEntityId> shared;
@@ -183,24 +168,8 @@ void disconnected()
 }
 void writeFixture()
 {
-    const auto mesh = grid(72,2); vtkNew<vtkUnstructuredGrid> source; vtkNew<vtkPoints> points;
-    for (const auto& p : mesh->Nodes()) { points->InsertNextPoint(p.x(),p.y(),p.z()); }
-    source->SetPoints(points);
-    for (const auto& cell : mesh->GenericCells()) {
-        std::vector<vtkIdType> ids(cell.Nodes.begin(),cell.Nodes.end()); source->InsertNextCell(cell.Type,ids.size(),ids.data());
-    }
-    vtkNew<vtkIntArray> degrees; degrees->SetName("HigherOrderDegrees"); degrees->SetNumberOfComponents(3);
-    const int order[] = {2,2,2}; degrees->InsertNextTypedTuple(order); degrees->InsertNextTypedTuple(order);
-    source->GetCellData()->SetHigherOrderDegrees(degrees);
-    vtkNew<vtkDoubleArray> temperatures; temperatures->SetName("temperature");
-    for (const auto& p : mesh->Nodes()) { temperatures->InsertNextValue(p.x()+2*p.y()+3*p.z()); }
-    source->GetPointData()->AddArray(temperatures);
-    vtkNew<vtkDoubleArray> pressures; pressures->SetName("pressure"); pressures->InsertNextValue(7); pressures->InsertNextValue(9);
-    source->GetCellData()->AddArray(pressures);
-    std::filesystem::create_directories(GENERAL_CACHE_FIXTURE_DIR);
-    const std::string path = std::string(GENERAL_CACHE_FIXTURE_DIR)+"/two_lagrange_hex.vtu";
-    vtkNew<vtkXMLUnstructuredGridWriter> writer; writer->SetFileName(path.c_str()); writer->SetInputData(source); writer->SetDataModeToAscii();
-    require(writer->Write(),"Cannot write adjacent-cell DRAW fixture");
+    const auto mesh=grid(72,2);
+    CellFixture::Write(mesh,std::string(GENERAL_CACHE_FIXTURE_DIR)+"/two_lagrange_hex.vtu",{{"temperature",CellFixture::Values(mesh,[](const auto& p) {return p.x()+2*p.y()+3*p.z();})}},{{"pressure",{7,9}}});
 }
 }
 int main()

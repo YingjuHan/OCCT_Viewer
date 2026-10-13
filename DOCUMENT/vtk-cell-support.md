@@ -2,11 +2,11 @@
 
 ## Scope
 
-Enable `OCCTV_USE_VTK=ON` with VTK 9.5 or newer for original VTK topology,
-shape-function interpolation, and geometric plane/sphere/infinite-cylinder cuts.
-The current native SDK is VTK 9.5.2. Its 48 instantiable cell types are listed below.
-Reserved IDs and abstract or unimplemented higher-order placeholder types are
-rejected explicitly; they are not counted as concrete cells.
+All 48 concrete file-format cell IDs below use `MeshCellKernel`, implemented in
+this repository. Parsing, topology, interpolation, inverse mapping and geometric
+cuts require no VTK SDK. Reserved/abstract cell IDs reject explicitly. The previous
+`OCCTV_USE_VTK` option has been removed; old cache values have no effect.
+See [the migration and validation audit](vtk-independent-audit.md).
 
 | Family | Concrete VTK IDs | Acceptance |
 | --- | --- | --- |
@@ -14,7 +14,7 @@ rejected explicitly; they are not counted as concrete cells.
 | Line, polyline | 3, 4 | Section points and clipped/source contour lines |
 | Triangle, strip, polygon, pixel, quad | 5, 6, 7, 8, 9 | Geometric surface sections and clipped surfaces |
 | Tetra, voxel, hexahedron, wedge, pyramid | 10, 11, 12, 13, 14 | Three portions and original-cell interpolation |
-| Pentagonal and hexagonal prism | 15, 16 | Three portions; bounded affine correction for ID 15 |
+| Pentagonal and hexagonal prism | 15, 16 | Three portions; original FE maps, exact Wachspress basis for pentagonal prisms |
 | Quadratic edge/triangle/quad/tetra/hex/wedge/pyramid | 21, 22, 23, 24, 25, 26, 27 | Original shape functions, not corner-only interpolation |
 | Biquadratic/triquadratic/mixed-order cells | 28, 29, 30, 31, 32, 33, 34, 37 | Three portions and source provenance |
 | Cubic line, quadratic polygon | 35, 36 | Curve sampling; quadratic-polygon world-coordinate MVC |
@@ -43,7 +43,10 @@ directory. External fixtures remain untouched. Registered cases are:
 - `nonplanar_quad.vtk` and `Disc_BiQuadraticQuads_0_0.vtu`.
 - `cube.vtu`.
 - `BoxIncorrectConnectivity.vtp`: import must fail without retaining a mesh.
-- `nonWatertightPolyhedron.vtu`: cutting must report invalid topology.
+- `nonWatertightPolyhedron.vtu`: despite the filename, this grid is watertight
+  (as documented by upstream `TestPolyhedron4.cxx`); plane/sphere/cylinder cuts
+  must succeed with affine FE mapping. A separate cube with a missing face must
+  reject as an open manifold, in both the kernel and cut pipeline.
 
 Valid fixture probes must produce nonempty plane, sphere and cylinder sections.
 FE-map residuals and field interpolation are checked separately from faceting.
@@ -66,7 +69,7 @@ Off-grid map checks guard the conversion, and positive-weight control hulls
 supplement tessellated BVH bounds. Exact source shapes are cached lazily; displayed
 output is still tessellated and stored as floats. Planar quadratic polygons use
 their exact quadratic boundary curves; boundary values use the original edge
-functions, while interior values retain VTK's world-coordinate MVC convention.
+functions, while interior values use world-coordinate mean-value coordinates.
 Unsupported representations use the identified numerical fallback in preferred
 mode and fail explicitly in required mode. Nonplanar quadratic polygons and
 orders beyond the conversion limit are not labelled analytic.
@@ -100,35 +103,39 @@ hex/voxel/quadratic-hex/Lagrange-hex/polyhedron tests cover this rule. Disconnec
 coincident nodes and ambiguous topology are not welded. N02 additionally matches
 canonical tessellations and opposite interior points for conforming curved interfaces;
 joined quadratic/triquadratic/Lagrange/rational-Bezier hex cases test this foundation.
-Mismatching/nonconforming interfaces remain visible and multi-cut union/deduplication
-remains open. Invalid sewn solids fail
+Mismatching/nonconforming interfaces remain visible. Multi-cut presentation OR is
+verified by the N03/N09 regressions. Invalid sewn solids fail
 explicitly instead of silently returning empty contours. A coincident verified
 interface section uses the lowest original element index once; configurable
-physical/material trace policies remain pending.
+physical/material trace policies are covered by the N03/N07 regressions.
 
 The general backend shares prepared original-cell evaluators, geometric bounds
 and an OCCT BVH across cuts, portions and drag revisions. Candidate OCCT shapes
 are built lazily and reused. `scvcutview model stats` reports cumulative work in
 the current source epoch without triggering a cut. Geometry/deformation edits
 invalidate it; cut motion and field-only edits retain it. Evaluators remain
-single-threaded and retained for the epoch, without hard memory budgets or
-eviction. There is no full-frame performance guarantee.
+single-threaded and retained for the epoch under the shared source/result budget
+and eviction policy from N08. There is no general-cell full-frame performance guarantee.
 
 A direct generic-backend run on `hexa.vtk`
 (10,648 cells) exceeded a 90-second diagnostic budget before broad-phase work;
 after cell-box rejection it completes nonempty plane/sphere/cylinder numerical
 probes within that budget. Million-cell/full-frame performance is not accepted.
 
-Native import preserves cell types, arbitrary-length connectivity, polyhedron
+The self-reader preserves cell types, arbitrary-length connectivity, polyhedron
 faces, degrees, rational weights and numeric PointData/CellData. Composite/time
-series native fallback, requested mapping files, portable/WASM equivalent
-coverage, ordinary non-cut viewer presentation, and general topology export
-remain incomplete. MDB export rejects generic topology before opening output
-files to prevent silent data loss. Generic field isosurfaces remain unsupported.
-The portable reader currently prints unsupported-cell diagnostics before a successful
-native fallback; final diagnostic routing is tracked under B01.
+series, mappings, ordinary Viewer display and original-FE chart isosurfaces are
+supported at the documented native scope. General topology MDB export still
+rejects before opening output files. Web/WASM builds have not been verified.
+Enriched 7/15/21-node elements are Lagrange elements; Bezier elements require the
+standard Bernstein cardinality. Positive rational weights apply to Bezier charts.
+The 1024-order Bezier curve has an independent finite-coefficient regression;
+arbitrary high-order intersection remains subject to numerical/primitive budgets.
 
-## Recorded Result
+## Historical Recorded Results
+
+These ON/OFF counts describe milestones before the SDK removal; current
+validation is in [the implementation audit](vtk-independent-audit.md).
 
 N01's recorded 25-case native/DRAW suite passed three consecutive runs per case,
 including the 48-cell matrix and external acceptance above. The VTK-disabled

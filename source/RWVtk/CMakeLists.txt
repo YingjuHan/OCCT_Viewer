@@ -41,12 +41,8 @@ set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER "Libraries")
 
 # internal dependencies
 target_link_libraries (${PROJECT_NAME} PUBLIC RWCae PRIVATE ZLIB::ZLIB)
-if (OCCTV_USE_VTK)
-  target_sources (${PROJECT_NAME} PRIVATE VtkNativeReader.cpp)
-  target_link_libraries (${PROJECT_NAME} PUBLIC VTK::CommonCore VTK::CommonDataModel VTK::IOXML VTK::IOLegacy)
-  target_compile_definitions (${PROJECT_NAME} PUBLIC OCCTV_USE_VTK)
-  list (APPEND INCFILES VtkNativeReader.h)
-endif()
+target_sources (${PROJECT_NAME} PRIVATE VtkNativeReader.cpp)
+list (APPEND INCFILES VtkNativeReader.h)
 
 # OCCT libraries
 target_link_libraries (${PROJECT_NAME} PUBLIC

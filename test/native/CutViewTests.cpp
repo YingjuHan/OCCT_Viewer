@@ -572,15 +572,10 @@ static void isosurfaceBoundaryAndQuadratic()
     const RWCae::MeshEntityId nodes[] = {0,1,2,3,4,5};
     quadratic->AddElement(RWCae::MeshElementTriangle2nd(nodes));
     MeshCutViewManager highOrder(quadratic);
-#ifdef OCCTV_USE_VTK
     require(highOrder.AddIsosurface("quadratic", field("x", true, {0,1,0,0.5,0.5,0}), 0, 0.25), "Quadratic iso rejected");
     auto section = Handle(MeshGeometrySlice)::DownCast(highOrder.Evaluate("quadratic").Portions[1]);
     require(!section->Lines().empty(), "Quadratic iso line missing");
     for (const auto& p : section->GetMeshData()->Nodes()) { near(p.x(),0.25,"Quadratic iso wrong parameter"); }
-#else
-    require(!highOrder.AddIsosurface("unsupported", field("x", true, {0,1,0,0.5,0.5,0}), 0, 0.25)
-        && highOrder.Definitions().empty(), "Quadratic iso silently used linear interpolation");
-#endif
 }
 
 static void defaultPlanes()

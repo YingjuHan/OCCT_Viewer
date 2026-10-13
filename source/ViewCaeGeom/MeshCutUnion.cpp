@@ -29,9 +29,7 @@
 #include <TopoDS.hxx>
 #include <TopTools_MapOfShape.hxx>
 #include <TopTools_IndexedMapOfShape.hxx>
-#ifdef OCCTV_USE_VTK
 #include <ViewCaeGeom/MeshVtkCutSource.h>
-#endif
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -202,15 +200,11 @@ struct CellEvaluator {
     std::vector<Vec> Positions;
     RWCae::MeshElemType Type = RWCae::MeshElemType::Elem0d;
     int Dimension = 0;
-#ifdef OCCTV_USE_VTK
     std::unique_ptr<MeshVtkCell> Owned;
     MeshVtkCell* Vtk = nullptr;
-#endif
     MeshInterpolatedNode origin(const Vec& p) const
     {
-#ifdef OCCTV_USE_VTK
         if (Dimension) { return Vtk->Origin(p); }
-#endif
         MeshInterpolatedNode result;
         if (!Dimension) {
             if (!Nodes.empty()) {
@@ -502,7 +496,6 @@ std::shared_ptr<MeshCutPresentation> BuildCutPresentationUnion(
         for (auto n : cell.Nodes) { auto p = mesh->Nodes()[n]; source->ModifyNode(n,p); cell.Positions.emplace_back(p); bounds.Add(point(Vec(p))); }
     }
     const double tolerance = options.Tolerance(bounds.IsVoid() ? 0 : (bounds.CornerMax().XYZ()-bounds.CornerMin().XYZ()).Modulus());
-#ifdef OCCTV_USE_VTK
     auto sourceShapes = prepared ? prepared : std::make_shared<MeshVtkCutSource>(1,options);
     const bool needsSourceShapes = std::any_of(cuts.begin(),cuts.end(),[](const auto& cut) {
         const auto shape = cut.Definition.Shape;
@@ -510,18 +503,11 @@ std::shared_ptr<MeshCutPresentation> BuildCutPresentationUnion(
             && ((cut.Definition.Visibility&5) || shape == MeshCutShape::Sphere || shape == MeshCutShape::Cylinder);
     });
     if (needsSourceShapes) { sourceShapes->Prepare(mesh,source.get()); }
-#else
-    (void)prepared;
-#endif
     for (RWCae::MeshEntityId e = 0; e < mesh->NbIndexedElems(); ++e) {
         auto& cell = cells[e];
-#ifdef OCCTV_USE_VTK
         if (sourceShapes->Work.PreparedCells == mesh->NbIndexedElems()) { cell.Vtk = sourceShapes->GetCell(e).Geometry.get(); }
         else { cell.Owned.reset(new MeshVtkCell(mesh,e,source.get(),tolerance,options,0,false)); cell.Vtk = cell.Owned.get(); }
         cell.Dimension = cell.Vtk->Dimension();
-#else
-        cell.Dimension = cell.Type == RWCae::MeshElemType::Elem0d ? 0 : (int)cell.Type >= RWCae::MeshElem3dLowerType ? 3 : 2;
-#endif
     }
     std::vector<TopoDS_Shape> bodies(cells.size());
     auto body = [&](RWCae::MeshEntityId e) -> const TopoDS_Shape& {
@@ -531,10 +517,8 @@ std::shared_ptr<MeshCutPresentation> BuildCutPresentationUnion(
                 for (const auto& p : cells[e].Positions) { vertices.push_back(BRepBuilderAPI_MakeVertex(point(p)).Vertex()); }
                 bodies[e] = compound(vertices); return bodies[e];
             }
-#ifdef OCCTV_USE_VTK
             if (sourceShapes->Work.PreparedCells == mesh->NbIndexedElems()) { bodies[e] = sourceShapes->Shape(e); }
             else
-#endif
             { bodies[e] = nativeShape(mesh,e,source); }
         }
         return bodies[e];

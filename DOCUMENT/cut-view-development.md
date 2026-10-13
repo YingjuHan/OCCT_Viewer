@@ -14,6 +14,13 @@
 - Native verification first; WASM integration requires an Emscripten/OCCT WASM SDK.
 - Native target: one million volume cells at 15 fps, measuring geometry, fields, and display together.
 
+VTK file parsing, concrete-cell topology, shape functions, inverse mapping and
+cutting now use the repository-owned implementation. No external VTK headers,
+libraries or runtime are required. See [the implementation audit](vtk-independent-audit.md).
+Migration verification: native Viewer/DRAW/Tk **72/72**, headless **25/25**;
+55 complete-build and 41 headless binary artifacts have no VTK DLL imports.
+Earlier ON/OFF and performance numbers below retain their original milestone scope.
+
 Current execution is native only: Web/Vue/TypeScript and WASM tasks are excluded,
 not completed. Project/session persistence below maps to the native session API.
 
@@ -68,7 +75,7 @@ for SDK paths, logs, missing historical external fixtures and remaining work.
 - [x] Pre-release plane-drag checks for completed presentation synchronization and changing pixels,
   all eight masks, constant/projected CellData and deformed meshes beyond original bounds.
 - [x] Native defaults/model replacement/close lifecycle, including active-drag cancellation.
-- [x] Optional native VTK-cell backend: 48 concrete cell types, geometric planes/spheres/cylinders,
+- [x] Repository-owned VTK-cell backend: 48 concrete cell types, geometric planes/spheres/cylinders,
   original shape functions, rational/anisotropic metadata and arbitrary-length connectivity.
   See [the support matrix](vtk-cell-support.md) for tested scope and geometry limitations.
 - [x] N01 shared source epochs, lazy OCCT shapes/BVH, planar adjacency and held-drag cache checks.

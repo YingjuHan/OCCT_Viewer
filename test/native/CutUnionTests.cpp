@@ -1,3 +1,4 @@
+#include "CellFixture.h"
 #include <ViewCaeGeom/MeshCutUnion.h>
 #include <ViewCaeGeom/MeshCutIntegration.h>
 #include <ViewCae/InteractiveCaeCutView.h>
@@ -6,12 +7,6 @@
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
-#ifdef OCCTV_USE_VTK
-#include <vtkGenericCell.h>
-#include <vtkNew.h>
-#include <vtkPoints.h>
-#include <vtkIdList.h>
-#endif
 #ifdef near
 #undef near
 #endif
@@ -232,14 +227,7 @@ static void warmSphereMasks()
 {
     // Warm the independent source/section meshes before OR presentation, as
     // the interactive viewer does when changing an already displayed cut.
-#ifdef OCCTV_USE_VTK
     const auto mesh = cube(); const double radius = 0.15, center = 0.25, sourceVolume = 1, sourceArea = 6;
-#else
-    Handle(RWCae::MeshData) mesh = new RWCae::MeshData();
-    for (const auto& p : {Graphic3d_Vec3(0,0,0),Graphic3d_Vec3(1,0,0),Graphic3d_Vec3(0,1,0),Graphic3d_Vec3(0,0,1)}) { mesh->AddNodePosition(p); }
-    const RWCae::MeshEntityId nodes[] = {0,1,2,3}; mesh->AddElement(RWCae::MeshElementTetrahedron(nodes));
-    const double radius = 0.08, center = 0.2, sourceVolume = 1.0/6, sourceArea = 1.5+std::sqrt(3.0)/2;
-#endif
     MeshCutViewManager manager(mesh);
     require(manager.AddSphere("sphere",Graphic3d_Vec3d(center),radius),"Add warm sphere");
     const double sphereVolume = 4*std::acos(-1.0)*std::pow(radius,3)/3;
@@ -262,10 +250,9 @@ static void warmSphereMasks()
     manager.SetSphere("z_duplicate",Graphic3d_Vec3d(center+radius,center,center),radius);
     near(manager.EvaluatePresentation()->Area,2*sphereArea,"Intersecting On-only sphere sheet area");
 }
-#ifdef OCCTV_USE_VTK
 static void chartCells()
 {
-    vtkNew<vtkGenericCell> cell; cell->SetCellType(25); cell->GetPoints()->SetNumberOfPoints(20); cell->GetPointIds()->SetNumberOfIds(20);
+    auto cell=std::make_shared<MeshCellKernel>(); cell->SetCellType(25); cell->GetPoints()->SetNumberOfPoints(20); cell->GetPointIds()->SetNumberOfIds(20);
     Handle(RWCae::MeshData) mesh = new RWCae::MeshData(); RWCae::MeshData::GenericCell topology; topology.Type = 25;
     const auto parameters = cell->GetParametricCoords();
     for (int n = 0; n < 20; ++n) { topology.Nodes.push_back(mesh->AddNodePosition(Graphic3d_Vec3((float)parameters[3*n],(float)parameters[3*n+1],(float)parameters[3*n+2]))); }
@@ -311,14 +298,11 @@ static void chartCells()
     if (points != 3) { std::cerr << "Point OR count: " << points << '\n'; }
     require(points == 3,"Point OR duplicates or empty-cell handling");
 }
-#endif
 int main()
 {
     try {
         basic(); masks(); adjacent(true); adjacent(false); fieldsAndDeformation(); surfacesAndQuadrics(); warmSphereMasks();
-#ifdef OCCTV_USE_VTK
         chartCells();
-#endif
         std::cout << "CUT_UNION_PASS\n"; return 0;
     }
     catch (const Standard_Failure& e) { std::cerr << "CUT_UNION_FAIL: " << e.GetMessageString() << '\n'; return 1; }

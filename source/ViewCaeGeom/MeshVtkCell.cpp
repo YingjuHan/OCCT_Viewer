@@ -1,22 +1,9 @@
 #include <ViewCaeGeom/MeshVtkCell.h>
 #include <ViewCaeGeom/MeshVtkAnalytic.h>
 #include <RWCae/MeshAdaptorsIterator.h>
-#include <vtkCellData.h>
-#include <vtkBezierQuadrilateral.h>
-#include <vtkBezierTriangle.h>
-#include <vtkDoubleArray.h>
-#include <vtkIdList.h>
-#include <vtkIntArray.h>
-#include <vtkNew.h>
-#include <vtkPointData.h>
-#include <vtkPoints.h>
-#include <vtkPolygon.h>
-#include <vtkMeanValueCoordinatesInterpolator.h>
-#include <vtkTriangle.h>
 #include <math_Gauss.hxx>
 #include <GeomAPI_ProjectPointOnCurve.hxx>
 #include <gp_Pln.hxx>
-#include <vtkUnstructuredGrid.h>
 
 #include <algorithm>
 #include <cmath>
@@ -27,7 +14,7 @@
 namespace ViewCaeGeom {
 MeshVtkCell::MeshVtkCell(const Handle(RWCae::MeshData)& mesh, RWCae::MeshEntityId index,
     MeshGeometry* source, double tolerance, const MeshCutGeometryOptions& options, int minimumDepth, bool prepareBoundary)
-    : myCell(vtkSmartPointer<vtkGenericCell>::New()), myTolerance(tolerance), myOptions(options), myMinimumDepth(minimumDepth)
+    : myTolerance(tolerance), myOptions(options), myMinimumDepth(minimumDepth)
 {
     const auto& indexed = mesh->IndexedElements()[index];
     RWCae::MeshData::GenericCell topology;
@@ -53,137 +40,31 @@ MeshVtkCell::MeshVtkCell(const Handle(RWCae::MeshData)& mesh, RWCae::MeshEntityI
         }
     }
     myNodes = topology.Nodes;
-    auto concrete = vtkSmartPointer<vtkCell>::Take(vtkGenericCell::InstantiateCell(topology.Type));
-    if (!concrete) { throw std::invalid_argument("VTK cell type "+std::to_string(topology.Type)+" is not concrete in the installed SDK"); }
-    vtkNew<vtkUnstructuredGrid> grid;
-    vtkNew<vtkPoints> points; points->SetDataTypeToDouble();
-    std::map<RWCae::MeshEntityId,vtkIdType> local;
-    std::vector<vtkIdType> ids;
-    for (auto node : myNodes) {
-        auto p = mesh->Nodes()[node]; source->ModifyNode(node,p);
-        for (int a = 0; a < 3; ++a) { if (!std::isfinite(p[a])) { throw std::invalid_argument("Nonfinite cell coordinates"); } }
-        ids.push_back(points->InsertNextPoint(p.x(),p.y(),p.z())); local[node] = ids.back();
+    myCell=std::make_shared<MeshCellKernel>(topology.Type,(int)myNodes.size(),topology.Degrees,topology.RationalWeights);
+    std::map<RWCae::MeshEntityId,int> local;
+    for(size_t n=0;n<myNodes.size();++n) {
+        auto p=mesh->Nodes()[myNodes[n]];source->ModifyNode(myNodes[n],p);
+        for(int a=0;a<3;++a) {if(!std::isfinite(p[a])) {throw std::invalid_argument("Nonfinite cell coordinates");}}
+        myCell->GetPoints()->SetPoint((int)n,p.x(),p.y(),p.z());local[myNodes[n]]=(int)n;
     }
-    grid->SetPoints(points);
-    if (topology.Type == 42) {
-        std::vector<vtkIdType> faces;
-        for (const auto& face : topology.Faces) {
-            faces.push_back((vtkIdType)face.size());
-            for (auto node : face) { faces.push_back(local.at(node)); }
-        }
-        grid->InsertNextCell(42,(vtkIdType)ids.size(),ids.data(),(vtkIdType)topology.Faces.size(),faces.data());
-    } else { grid->InsertNextCell(topology.Type,(vtkIdType)ids.size(),ids.data()); }
-    if (!topology.Degrees.empty()) {
-        vtkNew<vtkIntArray> degrees; degrees->SetNumberOfComponents(3);
-        degrees->InsertNextTypedTuple(topology.Degrees.data()); grid->GetCellData()->SetHigherOrderDegrees(degrees);
+    if(topology.Type==42) {
+        std::vector<std::vector<int>> faces;
+        for(const auto& face:topology.Faces) {std::vector<int> ids;for(auto node:face) {ids.push_back(local.at(node));}faces.push_back(std::move(ids));}
+        myCell->SetFaces(faces);
     }
-    if (!topology.RationalWeights.empty()) {
-        vtkNew<vtkDoubleArray> weights;
-        for (double weight : topology.RationalWeights) { weights->InsertNextValue(weight); }
-        grid->GetPointData()->SetRationalWeights(weights);
-    }
-    grid->GetCell(0,myCell);
-    if (topology.Type == 42) {
-        // Triangular MVC cages reproduce affine fields on concave polygonal faces too.
-        myMvcFaces = vtkSmartPointer<vtkIdList>::New();
-        vtkNew<vtkIdList> triangles;
-        std::vector<std::array<vtkIdType,3>> cage;
-        for (int f = 0; f < myCell->GetNumberOfFaces(); ++f) {
-            auto face = myCell->GetFace(f);
-            if (!face->TriangulateLocalIds(0,triangles)) { throw std::runtime_error("Cannot triangulate polyhedron MVC cage"); }
-            for (vtkIdType t = 0; t < triangles->GetNumberOfIds(); t += 3) {
-                cage.push_back({{face->GetPointId(triangles->GetId(t)),
-                    face->GetPointId(triangles->GetId(t+1)),face->GetPointId(triangles->GetId(t+2))}});
-            }
-        }
-        // VTK face triangulation does not guarantee consistent triangle winding.
-        using Edge = std::pair<vtkIdType,vtkIdType>;
-        std::map<Edge,std::vector<std::pair<size_t,int>>> edges;
-        for (size_t t = 0; t < cage.size(); ++t) {
-            for (int a = 0; a < 3; ++a) {
-                const auto u = cage[t][a], v = cage[t][(a+1)%3];
-                edges[std::minmax(u,v)].push_back({t,u < v ? 1 : -1});
-            }
-        }
-        for (const auto& edge : edges) {
-            if (edge.second.size() != 2) { throw std::runtime_error("Polyhedron boundary is not a closed manifold"); }
-        }
-        std::vector<int> orientation(cage.size(),0);
-        for (size_t seed = 0; seed < cage.size(); ++seed) {
-            if (orientation[seed]) { continue; }
-            orientation[seed] = 1;
-            std::vector<size_t> pending = {seed};
-            while (!pending.empty()) {
-                const auto t = pending.back(); pending.pop_back();
-                for (int a = 0; a < 3; ++a) {
-                    const auto u = cage[t][a], v = cage[t][(a+1)%3];
-                    const auto& pair = edges.at(std::minmax(u,v));
-                    const auto& neighbor = pair[pair[0].first == t ? 1 : 0];
-                    const int expected = -orientation[t]*(u < v ? 1 : -1)*neighbor.second;
-                    if (!orientation[neighbor.first]) { orientation[neighbor.first] = expected; pending.push_back(neighbor.first); }
-                    else if (orientation[neighbor.first] != expected) { throw std::runtime_error("Polyhedron boundary is not orientable"); }
-                }
-            }
-        }
-        for (size_t t = 0; t < cage.size(); ++t) {
-            if (orientation[t] < 0) { std::swap(cage[t][1],cage[t][2]); }
-            for (auto id : cage[t]) { myMvcFaces->InsertNextId(id); }
-        }
-    }
-    if (auto polygon = vtkPolygon::SafeDownCast(myCell->GetRepresentativeCell())) { polygon->SetUseMVCInterpolation(true); }
     if (!prepareBoundary) { return; }
     if (Dimension() == 3) {
-        if (topology.Type == 41) {
-            // ConvexPointSet exposes tetrahedralization, but no GetFace() boundary.
-            vtkNew<vtkIdList> tetrahedra;
-            if (!myCell->TriangulateLocalIds(0,tetrahedra) || tetrahedra->GetNumberOfIds()%4) {
-                throw std::runtime_error("Cannot tetrahedralize convex point set");
-            }
-            std::map<std::array<vtkIdType,3>,std::pair<int,std::array<vtkIdType,3>>> faces;
-            const int indices[4][3] = {{0,2,1},{0,1,3},{1,2,3},{2,0,3}};
-            for (vtkIdType t = 0; t < tetrahedra->GetNumberOfIds(); t += 4) {
-                for (const auto& face : indices) {
-                    std::array<vtkIdType,3> triangleIds = {{tetrahedra->GetId(t+face[0]),tetrahedra->GetId(t+face[1]),tetrahedra->GetId(t+face[2])}};
-                    auto key = triangleIds; std::sort(key.begin(),key.end());
-                    auto& entry = faces[key]; ++entry.first; entry.second = triangleIds;
-                }
-            }
-            for (const auto& face : faces) {
-                if (face.second.first != 1) { continue; }
-                std::array<Graphic3d_Vec3d,3> triangle;
-                for (int a = 0; a < 3; ++a) {
-                    const auto p = myCell->GetPoints()->GetPoint(face.second.second[a]); triangle[a] = Graphic3d_Vec3d(p[0],p[1],p[2]);
-                }
-                Face record; record.Type = 5; record.FirstTriangle = Triangles.size(); record.NbTriangles = 1;
-                for (auto id : face.second.second) { record.Nodes.push_back(myNodes[(size_t)id]); }
-                for (int a = 0; a < 3; ++a) { record.Edges.push_back({record.Nodes[a],record.Nodes[(a+1)%3]}); }
-                Faces.push_back(std::move(record));
-                Triangles.push_back(triangle);
-            }
-        } else {
             for (int f = 0; f < myCell->GetNumberOfFaces(); ++f) {
                 auto face = myCell->GetFace(f);
-                if (!topology.RationalWeights.empty()) {
-                    vtkDoubleArray* weights = nullptr;
-                    if (auto quad = vtkBezierQuadrilateral::SafeDownCast(face)) { weights = quad->GetRationalWeights(); }
-                    if (auto triangle = vtkBezierTriangle::SafeDownCast(face)) { weights = triangle->GetRationalWeights(); }
-                    if (weights) {
-                        // Some VTK wedge versions write faceId instead of the local face-node index.
-                        weights->SetNumberOfValues(face->GetNumberOfPoints());
-                        for (vtkIdType n = 0; n < face->GetNumberOfPoints(); ++n) {
-                            weights->SetValue(n,topology.RationalWeights.at((size_t)face->GetPointId(n)));
-                        }
-                    }
-                }
                 Face record; record.Type = face->GetCellType(); record.FirstTriangle = Triangles.size();
-                for (vtkIdType n = 0; n < face->GetNumberOfPoints(); ++n) { record.Nodes.push_back(myNodes.at((size_t)face->GetPointId(n))); }
+                for (int n = 0; n < face->GetNumberOfPoints(); ++n) { record.Nodes.push_back(myNodes.at((size_t)face->GetPointId(n))); }
                 for (int e = 0; e < face->GetNumberOfEdges(); ++e) {
                     auto edge = face->GetEdge(e);
                     std::vector<RWCae::MeshEntityId> nodes;
                     double p[3], q[3]; edge->GetPoints()->GetPoint(0,p); edge->GetPoints()->GetPoint(1,q);
                     const Graphic3d_Vec3d direction(q[0]-p[0],q[1]-p[1],q[2]-p[2]);
                     const double length = direction.Modulus(), epsilon = std::max(1e-7,tolerance*1e-5);
-                    for (vtkIdType n = 0; n < edge->GetNumberOfPoints(); ++n) {
+                    for (int n = 0; n < edge->GetNumberOfPoints(); ++n) {
                         nodes.push_back(myNodes.at((size_t)edge->GetPointId(n)));
                         const auto r = edge->GetPoints()->GetPoint(n);
                         const Graphic3d_Vec3d d(r[0]-p[0],r[1]-p[1],r[2]-p[2]);
@@ -201,9 +82,8 @@ MeshVtkCell::MeshVtkCell(const Handle(RWCae::MeshData)& mesh, RWCae::MeshEntityI
                 tessellate(face,tolerance); record.NbTriangles = Triangles.size()-record.FirstTriangle;
                 Faces.push_back(std::move(record));
             }
-        }
     } else if (Dimension() == 0) {
-        for (vtkIdType n = 0; n < myCell->GetNumberOfPoints(); ++n) {
+        for (int n = 0; n < myCell->GetNumberOfPoints(); ++n) {
             const double* p = myCell->GetPoints()->GetPoint(n); Points.emplace_back(p[0],p[1],p[2]);
         }
     } else if (topology.Type == 36) {
@@ -230,14 +110,14 @@ MeshVtkCell::MeshVtkCell(const Handle(RWCae::MeshData)& mesh, RWCae::MeshEntityI
         }
         // Quadratic polygons have world-coordinate MVC interpolation, not a parametric chart.
         for (int e = 0; e < myCell->GetNumberOfEdges(); ++e) { tessellate(myCell->GetEdge(e),tolerance); }
-        vtkNew<vtkPolygon> polygon;
+        auto polygon=std::make_unique<MeshCellKernel>(7,0);
         polygon->GetPoints()->SetDataTypeToDouble();
         for (const auto& segment : Segments) {
             const auto& p = segment[0];
             const auto id = polygon->GetPoints()->InsertNextPoint(p.x(),p.y(),p.z());
             polygon->GetPointIds()->InsertNextId(id);
         }
-        Segments.clear(); tessellate(polygon,tolerance);
+        Segments.clear(); tessellate(polygon.get(),tolerance);
     } else {
         if (myOptions.Mode != MeshCutGeometryMode::Numerical) {
             if (Dimension() == 1) { Curve = VtkAnalyticCurve(myCell->GetRepresentativeCell(),AnalyticBounds,AnalyticResidual); }
@@ -245,7 +125,7 @@ MeshVtkCell::MeshVtkCell(const Handle(RWCae::MeshData)& mesh, RWCae::MeshEntityI
         }
         SourceApproximate = Curve.IsNull() && Surface.IsNull()
             && (!myCell->IsLinear() || topology.Type == 9);
-        tessellate(myCell,tolerance);
+        tessellate(myCell.get(),tolerance);
     }
     if (SourceApproximate && Dimension() == 3) {
         // Do not mix exact and faceted sides of the same curved boundary.
@@ -259,6 +139,11 @@ MeshVtkCell::MeshVtkCell(const Handle(RWCae::MeshData)& mesh, RWCae::MeshEntityI
 
 Graphic3d_Vec3d MeshVtkCell::InteriorPoint() const
 {
+    const int type=myCell->GetCellType();
+    if(type==2 || type==4 || type==6 || type==7 || type==36 || type==41 || type==42) {
+        Graphic3d_Vec3d p(0);for(int n=0;n<myCell->GetNumberOfPoints();++n) {const auto q=myCell->GetPoints()->GetPoint(n);p+=Graphic3d_Vec3d(q[0],q[1],q[2]);}
+        return myCell->GetNumberOfPoints() ? p/myCell->GetNumberOfPoints() : p;
+    }
     double q[3], p[3];
     int sub = myCell->GetParametricCenter(q);
     std::vector<double> weights(myNodes.size());
@@ -280,7 +165,7 @@ std::vector<std::vector<RWCae::MeshEntityId>> MeshVtkCell::BoundaryNodes() const
             for (int i = 0; i < count; ++i) {
                 auto boundary = dimension == 3 ? myCell->GetFace(i) : myCell->GetEdge(i);
                 std::vector<RWCae::MeshEntityId> nodes;
-                for (vtkIdType n = 0; n < boundary->GetNumberOfPoints(); ++n) {
+                for (int n = 0; n < boundary->GetNumberOfPoints(); ++n) {
                     nodes.push_back(myNodes.at((size_t)boundary->GetPointId(n)));
                 }
                 result.push_back(std::move(nodes));
@@ -293,7 +178,7 @@ std::vector<std::vector<RWCae::MeshEntityId>> MeshVtkCell::BoundaryNodes() const
 std::vector<std::array<Graphic3d_Vec3d,4>> MeshVtkCell::ParameterSimplices() const
 {
     const int type = myCell->GetCellType();
-    if (type == 14 || type == 27 || type == 37 || type == 33) {
+    if (type == 14 || type == 27 || type == 33) {
         // VTK pyramid FE maps use a cube chart collapsed at z=1. Its nodal
         // triangulation is a physical pyramid and does not cover this chart.
         // Type 33 also inherits a triangulation containing virtual local IDs.
@@ -304,16 +189,16 @@ std::vector<std::array<Graphic3d_Vec3d,4>> MeshVtkCell::ParameterSimplices() con
     }
     const auto coordinates = myCell->GetParametricCoords();
     const int count = Dimension()+1;
-    vtkNew<vtkIdList> ids;
-    if (!coordinates || !myCell->TriangulateLocalIds(0,ids) || ids->GetNumberOfIds()%count) {
+    auto ids=std::make_unique<CellIndexArray>();
+    if (!coordinates || !myCell->TriangulateLocalIds(0,ids.get()) || ids->GetNumberOfIds()%count) {
         throw std::invalid_argument("Isosurface cell has no simplex parameter chart");
     }
     std::vector<std::array<Graphic3d_Vec3d,4>> result;
-    for (vtkIdType n = 0; n < ids->GetNumberOfIds(); n += count) {
+    for (int n = 0; n < ids->GetNumberOfIds(); n += count) {
         std::array<Graphic3d_Vec3d,4> simplex;
         for (int a = 0; a < count; ++a) {
             const auto id = ids->GetId(n+a);
-            if (id < 0 || id >= (vtkIdType)myNodes.size()) { throw std::invalid_argument("Invalid isosurface chart triangulation"); }
+            if (id < 0 || id >= (int)myNodes.size()) { throw std::invalid_argument("Invalid isosurface chart triangulation"); }
             simplex[a] = Graphic3d_Vec3d(coordinates[3*id],coordinates[3*id+1],coordinates[3*id+2]);
         }
         result.push_back(simplex);
@@ -360,30 +245,13 @@ MeshInterpolatedNode MeshVtkCell::Origin(const Graphic3d_Vec3d& position) const
             }
         }
     } else { inside = myCell->EvaluatePosition(p,closest,sub,parametric,distance,weights.data()); }
-    if (myMvcFaces) {
-        // MVC is ill-conditioned on cage edges; use the containing boundary triangle there.
-        bool onBoundary = false;
-        vtkNew<vtkTriangle> triangle;
-        for (vtkIdType t = 0; t < myMvcFaces->GetNumberOfIds(); t += 3) {
-            for (int a = 0; a < 3; ++a) { triangle->GetPoints()->SetPoint(a,myCell->GetPoints()->GetPoint(myMvcFaces->GetId(t+a))); }
-            double barycentric[3], cp[3], q[3], squared;
-            int localSub = 0;
-            const int location = triangle->EvaluatePosition(p,cp,localSub,q,squared,barycentric);
-            if (location >= 0 && squared <= 1e-14) {
-                std::fill(weights.begin(),weights.end(),0.0);
-                for (int a = 0; a < 3; ++a) { weights[(size_t)myMvcFaces->GetId(t+a)] = barycentric[a]; }
-                inside = 1; distance = 0; onBoundary = true; break;
-            }
-        }
-        if (!onBoundary) { vtkMeanValueCoordinatesInterpolator::ComputeInterpolationWeights(p,myCell->GetPoints(),myMvcFaces,weights.data()); }
-    }
     const bool refine = type != 7 && type != 36 && type != 41 && type != 42 && type != 4 && type != 6 && Dimension() > 0;
     if (!refine && (inside == -1 || !std::isfinite(distance) || (inside == 0 && distance > myTolerance*myTolerance*4))) {
         throw std::runtime_error("VTK shape-function evaluation failed for source cell "+std::to_string(myCell->GetCellType()));
     }
     if (refine) {
         if (inside == -1 || !std::isfinite(distance)) { sub = myCell->GetParametricCenter(parametric); }
-        // Refine VTK's inverse-map seed: several quadratic cells stop at rendering-level precision.
+        // Refine the kernel seed to the original FE-map tolerance used by cuts.
         const int dimension = Dimension(), count = (int)myNodes.size();
         std::vector<double> derivatives((size_t)count*3);
         for (int iteration = 0; iteration < 24; ++iteration) {
@@ -434,30 +302,6 @@ MeshInterpolatedNode MeshVtkCell::Origin(const Graphic3d_Vec3d& position) const
         if (!std::isfinite(weight)) { throw std::runtime_error("Nonfinite VTK interpolation weight"); }
         sum += weight;
     }
-    if (type == 15) {
-        // VTK's legacy pentagonal-prism coefficients are rounded; restore affine precision.
-        math_Matrix gram(1,4,1,4,0.0);
-        math_Vector residual(1,4), correction(1,4);
-        const double target[] = {1.0,p[0],p[1],p[2]};
-        for (int a = 0; a < 4; ++a) { residual(a+1) = target[a]; }
-        for (size_t n = 0; n < weights.size(); ++n) {
-            const auto q = myCell->GetPoints()->GetPoint((vtkIdType)n);
-            const double basis[] = {1.0,q[0],q[1],q[2]};
-            for (int a = 0; a < 4; ++a) {
-                residual(a+1) -= weights[n]*basis[a];
-                for (int b = 0; b < 4; ++b) { gram(a+1,b+1) += basis[a]*basis[b]; }
-            }
-        }
-        math_Gauss solve(gram,1e-20);
-        if (!solve.IsDone()) { throw std::runtime_error("Degenerate pentagonal prism"); }
-        solve.Solve(residual,correction); sum = 0;
-        for (size_t n = 0; n < weights.size(); ++n) {
-            const auto q = myCell->GetPoints()->GetPoint((vtkIdType)n);
-            const double delta = correction(1)+q[0]*correction(2)+q[1]*correction(3)+q[2]*correction(4);
-            if (std::abs(delta) > 1e-4) { throw std::runtime_error("Pentagonal-prism shape function residual exceeds correction budget"); }
-            weights[n] += delta; sum += weights[n];
-        }
-    }
     if (std::abs(sum-1) > 1e-5) { throw std::runtime_error("VTK interpolation does not form a partition of unity"); }
     for (size_t n = 0; n < weights.size(); ++n) {
         if (std::abs(weights[n]) > 1e-14) { result.AddBaseNode(myNodes[n],weights[n]/sum); }
@@ -465,7 +309,7 @@ MeshInterpolatedNode MeshVtkCell::Origin(const Graphic3d_Vec3d& position) const
     return result;
 }
 
-void MeshVtkCell::tessellate(vtkCell* cell, double tolerance)
+void MeshVtkCell::tessellate(MeshCellKernel* cell, double tolerance)
 {
     if (cell && cell->GetCellDimension() == 2 && !cell->IsLinear()
         && (cell->GetNumberOfEdges() == 3 || cell->GetNumberOfEdges() == 4)) {
@@ -477,7 +321,7 @@ void MeshVtkCell::tessellate(vtkCell* cell, double tolerance)
         bool flat = normal.Modulus() > 1e-15;
         if (flat) { normal /= normal.Modulus(); }
         const double epsilon = std::max(1e-9,tolerance*1e-5);
-        for (vtkIdType n = 0; flat && n < cell->GetNumberOfPoints(); ++n) {
+        for (int n = 0; flat && n < cell->GetNumberOfPoints(); ++n) {
             const auto p = cell->GetPoints()->GetPoint(n);
             flat = std::abs(Graphic3d_Vec3d(p[0]-a[0],p[1]-a[1],p[2]-a[2]).Dot(normal)) <= epsilon;
         }
@@ -487,7 +331,7 @@ void MeshVtkCell::tessellate(vtkCell* cell, double tolerance)
             const Graphic3d_Vec3d start(p[0],p[1],p[2]), direction(q[0]-p[0],q[1]-p[1],q[2]-p[2]);
             const double length = direction.Modulus();
             if (length < epsilon) { flat = false; break; }
-            for (vtkIdType n = 0; flat && n < edge->GetNumberOfPoints(); ++n) {
+            for (int n = 0; flat && n < edge->GetNumberOfPoints(); ++n) {
                 const auto r = edge->GetPoints()->GetPoint(n);
                 const Graphic3d_Vec3d d(r[0]-p[0],r[1]-p[1],r[2]-p[2]);
                 const double t = d.Dot(direction)/(length*length);
@@ -495,19 +339,19 @@ void MeshVtkCell::tessellate(vtkCell* cell, double tolerance)
             }
         }
         if (flat) {
-            vtkNew<vtkPolygon> polygon; polygon->GetPoints()->SetDataTypeToDouble();
+            auto polygon=std::make_unique<MeshCellKernel>(7,0); polygon->GetPoints()->SetDataTypeToDouble();
             for (int n = 0; n < cell->GetNumberOfEdges(); ++n) {
                 polygon->GetPoints()->InsertNextPoint(cell->GetPoints()->GetPoint(n)); polygon->GetPointIds()->InsertNextId(n);
             }
-            tessellate(polygon,tolerance); return;
+            tessellate(polygon.get(),tolerance); return;
         }
     }
-    vtkNew<vtkIdList> simplices;
-    if (!cell || !cell->TriangulateLocalIds(0,simplices)) {
+    auto simplices=std::make_unique<CellIndexArray>();
+    if (!cell || !cell->TriangulateLocalIds(0,simplices.get())) {
         throw std::runtime_error("VTK cell boundary cannot be triangulated");
     }
     const bool parametric = !cell->IsLinear() || cell->GetCellType() == 9 || cell->GetCellType() == 8;
-    double* coordinates = parametric ? cell->GetParametricCoords() : nullptr;
+    const double* coordinates = parametric ? cell->GetParametricCoords() : nullptr;
     if (parametric && !coordinates) { throw std::runtime_error("VTK cell lacks parametric coordinates for controlled tessellation"); }
     auto evaluate = [&](const Graphic3d_Vec3d& q) {
         double input[] = {q.x(),q.y(),q.z()}, output[3]; int sub = 0;
@@ -516,7 +360,7 @@ void MeshVtkCell::tessellate(vtkCell* cell, double tolerance)
         for (double value : output) { if (!std::isfinite(value)) { throw std::runtime_error("Nonfinite VTK parametric map"); } }
         return Graphic3d_Vec3d(output[0],output[1],output[2]);
     };
-    auto sample = [&](vtkIdType id) {
+    auto sample = [&](int id) {
         const double* p = coordinates ? coordinates+3*id : cell->GetPoints()->GetPoint(id);
         return Graphic3d_Vec3d(p[0],p[1],p[2]);
     };
@@ -588,7 +432,7 @@ void MeshVtkCell::tessellate(vtkCell* cell, double tolerance)
     const int size = cell->GetCellDimension()+1;
     if (size < 2 || size > 3 || simplices->GetNumberOfIds()%size != 0) { throw std::runtime_error("Invalid VTK boundary simplices"); }
     if (size == 2) {
-        for (vtkIdType n = 0; n < simplices->GetNumberOfIds(); n += 2) { line(sample(simplices->GetId(n)),sample(simplices->GetId(n+1)),0); }
+        for (int n = 0; n < simplices->GetNumberOfIds(); n += 2) { line(sample(simplices->GetId(n)),sample(simplices->GetId(n+1)),0); }
         return;
     }
     std::vector<Triangle> seeds;
@@ -607,7 +451,7 @@ void MeshVtkCell::tessellate(vtkCell* cell, double tolerance)
             seeds.push_back({{sample(a),sample(b),sample(c)}}); seeds.push_back({{sample(a),sample(c),sample(d)}});
         }
     } else {
-        for (vtkIdType n = 0; n < simplices->GetNumberOfIds(); n += 3) {
+        for (int n = 0; n < simplices->GetNumberOfIds(); n += 3) {
             seeds.push_back({{sample(simplices->GetId(n)),sample(simplices->GetId(n+1)),sample(simplices->GetId(n+2))}});
         }
     }

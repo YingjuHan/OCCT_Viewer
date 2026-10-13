@@ -21,7 +21,7 @@ struct VtkImportReport {
     std::vector<std::string> errors;
     std::vector<std::string> warnings;
 
-    //! Populated by MeshLoader for the overall import, including successful fallback.
+    //! Populated by MeshLoader for the overall repository-owned import.
     std::string source;
     std::string stagedSource;
     std::string format;

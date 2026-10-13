@@ -3,15 +3,13 @@
 
 #include <ViewCaeGeom/MeshGeometry.h>
 #include <ViewCaeGeom/MeshCutViewManager.h>
-#include <vtkGenericCell.h>
-#include <vtkIdList.h>
-#include <vtkSmartPointer.h>
 #include <Geom_BezierSurface.hxx>
 #include <Geom_BezierCurve.hxx>
 #include <array>
+#include <ViewCaeGeom/MeshCellKernel.h>
 
 namespace ViewCaeGeom {
-//! Original VTK shape functions, with explicit bounded geometric tessellation.
+//! Repository-owned shape functions for VTK file cells, with explicit bounded geometric tessellation.
 class MeshVtkCell {
 public:
     struct Face {
@@ -48,9 +46,8 @@ public:
     double AnalyticResidual = 0;
     bool SourceApproximate = false;
 private:
-    void tessellate(vtkCell* theCell, double theTolerance);
-    vtkSmartPointer<vtkGenericCell> myCell;
-    vtkSmartPointer<vtkIdList> myMvcFaces;
+    void tessellate(MeshCellKernel* theCell, double theTolerance);
+    std::shared_ptr<MeshCellKernel> myCell;
     std::vector<RWCae::MeshEntityId> myNodes;
     double myTolerance;
     MeshCutGeometryOptions myOptions;

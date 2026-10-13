@@ -167,16 +167,12 @@ void tests()
     require(load(loader, "src/root.vtm").IsNull() && contains(loader.VtkReport().errors, "staging"), "Invalid staging destination accepted");
     loader.SetVtkStagingDirectory("");
     const auto general = load(loader, "src/general.vtm");
-#ifdef OCCTV_USE_VTK
     require(!general.IsNull() && general->NbNodes() == 4 && general->NbIndexedElems() == 3
         && general->GenericCells().size() == 3 && general->GenericCells()[1].Nodes == std::vector<RWCae::MeshEntityId>({2,3})
         && general->GenericCells()[2].Type == 0, "Original generic composite topology lost");
     require(field(general, "pressure")->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(0)) == 7
         && field(general, "pressure")->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(1)) == 11
         && field(general, "pressure")->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(2)) == 19, "Generic original CellData offsets lost");
-#else
-    require(general.IsNull() && contains(loader.VtkReport().errors, "Unsupported VTK cell type"), "OFF generic composite silently accepted");
-#endif
     for (const auto* numeric : {"Int64", "UInt64"}) {
         std::string xml = dataset(0, numeric);
         const auto pos = xml.find("1.123456789"); xml.replace(pos, 11, "9007199254740993");

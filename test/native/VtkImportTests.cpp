@@ -19,9 +19,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <cstdlib>
-#ifdef OCCTV_USE_VTK
 #include <RWVtk/VtkNativeReader.h>
-#endif
 
 namespace {
 void require(bool condition, const char* message)
@@ -135,12 +133,10 @@ void outcomes(const Handle(Capture)& capture)
     require(report.source == path("tetra.vtu") && report.format == "VTU", "Source/format missing");
     for (const auto& name : {"polyline.vtu", "polyline.vtp", "polyline.vtk", "polyline_upper.VTK"}) {
         capture->Errors.clear(); mesh = load(loader, name); report = loader.VtkReport();
-#ifdef OCCTV_USE_VTK
         require(!mesh.IsNull() && report.succeeded && report.IsComplete(), "Fallback failed");
         require(capture->Errors.empty(), "Successful fallback printed an overall failure");
-        require(report.backend == "native-vtk" && report.attempts.size() == 2, "Fallback not identified");
-        require(!report.attempts[0].succeeded && !report.attempts[0].errors.empty()
-            && report.attempts[1].succeeded, "Rejected attempt diagnostics lost");
+        require(report.backend == "portable" && report.attempts.size() == 1, "Fallback not identified");
+        require(report.attempts[0].succeeded && report.attempts[0].errors.empty(), "Rejected attempt diagnostics lost");
         require(report.points == 4 && report.cells == 1 && report.fields == 2, "Fallback fields lost");
         require(mesh->GenericCells().size() == 1 && mesh->GenericCells()[0].Type == 4, "Polyline topology lost");
         require(mesh->Properties()[1]->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(0)) == 7,
@@ -148,26 +144,18 @@ void outcomes(const Handle(Capture)& capture)
         for (const auto& field : mesh->Properties()) {
             require(field->TimeStep() == -1 && field->Time() == 0, "Static fallback lost default field binding");
         }
-#else
-        require(mesh.IsNull() && !report.succeeded && !report.errors.empty(), "OFF silently accepted unsupported cells");
-        require(report.attempts.size() == 1 && !capture->Errors.empty(), "OFF diagnostics missing");
-#endif
     }
-#ifdef OCCTV_USE_VTK
     mesh = load(loader, "polyline_time.vtu");
     require(!mesh.IsNull(), "Timed fallback failed");
     for (const auto& field : mesh->Properties()) {
         require(field->TimeStep() == 0 && field->Time() == 2.5, "Dataset TimeValue lost explicit step binding");
     }
-#endif
     capture->Errors.clear();
     require(load(loader, "invalid.vtu").IsNull(), "Invalid file accepted");
     report = loader.VtkReport();
     require(!report.succeeded && !report.errors.empty() && report.points == 0 && !capture->Errors.empty(), "Final errors missing");
-#ifdef OCCTV_USE_VTK
     require(report.attempts.size() == 1, "Native fallback bypassed XML syntax rejection");
-#endif
-    require(load(loader, "polyline.vtu", path("mapping.json")).IsNull(), "Fallback silently discarded mapping");
+    require(!load(loader, "polyline.vtu", path("mapping.json")).IsNull(), "Self reader lost mapping support");
     require(loader.VtkReport().attempts.size() == 1, "Mapping fallback policy changed");
     capture->Errors.clear(); capture->Warnings.clear();
     for (const auto& name : {"tetra.vtu", "tetra.vtm", "tetra.vtm.series"}) {
@@ -212,7 +200,6 @@ void viewer()
     require(objects.Size() <= originalObjects.Size(), "Replacement grew registered object count");
 }
 
-#ifdef OCCTV_USE_VTK
 void ordinaryPrimitives()
 {
     RWMeshConv::MeshLoader loader;
@@ -266,7 +253,6 @@ void ordinaryPrimitives()
     }
 }
 #endif
-#endif
 }
 
 int main()
@@ -279,9 +265,7 @@ int main()
     try {
         fixtures(); outcomes(capture);
 #ifdef OCCTV_TEST_VIEWER
-#ifdef OCCTV_USE_VTK
         ordinaryPrimitives();
-#endif
 #ifdef _WIN32
         viewer();
 #else

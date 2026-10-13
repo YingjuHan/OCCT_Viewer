@@ -1,9 +1,7 @@
 #include <ViewCae/MeshPartGeneralCells.h>
 #include <ViewCae/MeshPresentationScalar.h>
 #include <ViewCae/CaeMeshTools.h>
-#ifdef OCCTV_USE_VTK
 #include <ViewCaeGeom/MeshVtkCutSource.h>
-#endif
 #include <Graphic3d_Group.hxx>
 #include <Image_SupportedFormats.hxx>
 #include <algorithm>
@@ -14,7 +12,6 @@ std::vector<MeshPartGeneralCells::Primitive> MeshPartGeneralCells::BuildPrimitiv
     const Handle(ViewCaeGeom::MeshGeometry)& geometry)
 {
     std::vector<Primitive> result;
-#ifdef OCCTV_USE_VTK
     const auto source = geometry->GetLastNotModifierChild();
     const auto mesh = source->GetMeshData();
     if (mesh.IsNull() || mesh->GenericCells().empty()) { return result; }
@@ -47,9 +44,6 @@ std::vector<MeshPartGeneralCells::Primitive> MeshPartGeneralCells::BuildPrimitiv
         for (const auto& segment : cell.Geometry->Segments) { add(segment); }
         for (const auto& point : cell.Geometry->Points) { add(std::array<Graphic3d_Vec3d, 1>{point}); }
     }
-#else
-    (void)geometry;
-#endif
     return result;
 }
 

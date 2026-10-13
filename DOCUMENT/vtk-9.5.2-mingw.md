@@ -53,7 +53,10 @@ MinGW runtime 和 zlib 的 DLL 搜索路径。
 `D:/workspace/VTK/test-data-9.5.2` 包含按该 tag 的 `Testing/Data/*.sha512`
 校验的六个原始文件：`quadraticTetra01.vtu`、`onePolyhedron.vtu`、
 `concavePolyhedron.vtu`、`Disc_BiQuadraticQuads_0_0.vtu`、`cube.vtu`、
-`nonWatertightPolyhedron.vtu`。最后一个用于安全拒绝验收。
+`nonWatertightPolyhedron.vtu`。历史验收曾将最后一个作为拒绝样例；
+去除外部 VTK 时已根据官方 `TestPolyhedron4.cxx` 纠正：该网格实际闭合，
+现在要求求交成功，另用真正缺面的多面体验证拒绝路径。
+当前项目无需此 SDK；见 [自研 VTK 处理审计](vtk-independent-audit.md)。
 
 数据根据 SHA512 从 Kitware Data API 或 VTK ExternalData 下载，未修改。
 历史 Linux 环境另外使用的 `nonplanar_quad.vtk` 和 `BoxIncorrectConnectivity.vtp`

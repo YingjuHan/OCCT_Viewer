@@ -140,7 +140,7 @@ public:
         const Handle(RWCae::MeshNVecProperty)& theField, int theComponent, double theValue);
     Standard_EXPORT bool SetIsoValue(const std::string& theId, double theValue);
     Standard_EXPORT bool IsoRange(const std::string& theId, double& theMinimum, double& theMaximum);
-    //! General cells require OCCTV_USE_VTK; otherwise only linear triangles/tetrahedra.
+    //! General cells use the repository-owned finite-element kernel.
     //! Radius is in model units.
     Standard_EXPORT bool AddSphere(const std::string& theId, const Graphic3d_Vec3d& theCenter, double theRadius);
     Standard_EXPORT bool SetSphere(const std::string& theId, const Graphic3d_Vec3d& theCenter, double theRadius);
@@ -227,10 +227,8 @@ private:
     bool needsGeneralIso() const;
     bool setQuadric(Entry& theEntry, MeshCutShape theShape, const Graphic3d_Vec3d& theCenter,
         const Graphic3d_Vec3d& theAxis, double theRadius);
-#ifdef OCCTV_USE_VTK
     std::shared_ptr<MeshVtkCutSource> generalSource();
     std::shared_ptr<MeshVtkCutSource> myGeneralSource;
-#endif
     uint64_t mySourceEpoch = 1;
     MeshCutGeometryOptions myGeometryOptions;
     MeshCutRecoveryOptions myRecoveryOptions;

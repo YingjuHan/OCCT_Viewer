@@ -1,9 +1,6 @@
 #include <ViewCaeGeom/MeshCutIntegration.h>
 #include <RWCae/MeshAdaptorsIterator.h>
-#ifdef OCCTV_USE_VTK
-#include <vtkGenericCell.h>
-#include <vtkSmartPointer.h>
-#endif
+#include <ViewCaeGeom/MeshCellKernel.h>
 
 #include <cmath>
 #include <stdexcept>
@@ -13,12 +10,8 @@ bool isVolume(const Handle(RWCae::MeshData)& mesh, RWCae::MeshEntityId index)
 {
     const auto& cell = mesh->IndexedElements()[index];
     if (cell.Type == RWCae::MeshElemType::Generic) {
-#ifdef OCCTV_USE_VTK
-        auto concrete = vtkSmartPointer<vtkCell>::Take(vtkGenericCell::InstantiateCell(mesh->GenericCells().at(cell.Index).Type));
+        auto concrete = ViewCaeGeom::MeshCellKernel::InstantiateCell(mesh->GenericCells().at(cell.Index).Type);
         return concrete && concrete->GetCellDimension() == 3;
-#else
-        return false;
-#endif
     }
     return (int)cell.Type >= RWCae::MeshElem3dLowerType && (int)cell.Type <= RWCae::MeshElem3dUpperType;
 }

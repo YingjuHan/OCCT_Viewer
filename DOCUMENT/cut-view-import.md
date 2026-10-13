@@ -8,32 +8,29 @@ and local reference staging. Acceptance evidence is tracked in [the N04 queue](c
 
 - `succeeded` identifies the overall outcome; `source` and `format` identify the input.
 - `stagedSource` identifies the rewritten local entry point when explicit reference staging is enabled.
-- `backend` identifies the last attempted backend (`portable` or `native-vtk`).
+- `backend` identifies the repository-owned reader (`portable` for dataset leaves).
 - `points`, `cells`, `fields` count the published mesh; failed imports publish zero counts.
-- `errors` and `warnings` describe the final outcome. Successful native fallback has
-  no overall errors; rejected portable errors remain in `attempts` for diagnosis.
+- `errors` and `warnings` describe the final outcome; successful imports have no overall errors.
 - Each attempt records its backend, success, errors and warnings. `IsComplete()`
   means no errors **and no warnings**; use `succeeded` to distinguish success from failure.
 
 Metadata and attempt fields are populated by MeshLoader. The standalone RWVtk
 readers continue exposing their own count/error/warning reports.
 
-VTK legacy, VTU and VTP first use the portable reader. With `OCCTV_USE_VTK=ON`,
-an unsuccessful unmapped import can try the native concrete-cell backend. Mapping
-requests never fall back to an implementation that would discard the mapping.
-VTM and `.vtm.series` use their composite/series readers. Each VTU/VTP/Legacy leaf
-uses the same restricted portable/native topology policy, including the mapping
-restriction. The manifest itself never falls back to a single-dataset SDK reader.
-Uppercase `.VTK` filenames use the legacy native backend correctly.
+VTK legacy, VTU and VTP use the repository-owned dataset reader, including all
+48 supported concrete cell IDs, mappings, higher-order metadata and XML 2.3 faces.
+VTM and `.vtm.series` route every leaf through that same implementation. Uppercase
+suffixes are supported. There is one attempt per dataset leaf and no SDK fallback.
+`VtkNativeReader` remains a source-compatible adapter to this parser.
 
-Portable reader attempts collect diagnostics before MeshLoader prints the final
-outcome. Legacy's normalized XML reader and composite/series children inherit the
-message policy. Mapping warnings survive successful and unsuccessful child reads.
-`SetToReportMessages(false)` controls this OCCT report emission; external mapping
-reader informational messages and VTK SDK parser logging remain separate.
-Native VTK pipeline failure and outputs with neither points nor cells are rejected
-instead of publishing a failed pipeline's empty output. A valid `vtkEmptyCell`
-remains supported even though its connectivity has no nodes.
+Reader attempts collect diagnostics before MeshLoader prints the final outcome.
+Normalized Legacy and composite/series children inherit the message policy.
+Mapping warnings survive child reads. `SetToReportMessages(false)` controls OCCT
+report emission; mapping-reader informational messages remain separate.
+Empty cells and empty XML datasets are accepted when their counts/arrays are valid.
+General leaves preserve the former whole-dataset Generic topology and Double field
+schema so existing v3 sessions keep their source fingerprints. Ordinary supported
+leaves keep their existing typed representation. See [the audit](vtk-independent-audit.md).
 
 `Viewer::InteractiveCaeMeshManager::OpenMesh(..., options, &report)` optionally
 returns the same VTK report. A reader failure leaves the old AIS object, mesh and
@@ -53,8 +50,8 @@ lists. Failed `replace` keeps the previous generation and its report. Paths and
 messages are Tcl list elements, including paths containing spaces.
 
 Acceptance is in `vtk_import`, `draw_vtk_import` and `draw_vtk_import_visual`.
-The native checks cover portable success, VTU/VTP/legacy fallback, original
-Polyline connectivity/CellData, uppercase suffixes, rejected mappings, malformed
+The native checks cover self-reader success, VTU/VTP/legacy general cells, original
+Polyline connectivity/CellData, uppercase suffixes, mapping requests, malformed
 XML, missing composite children, warning propagation, report reset and native
 Viewer replacement. The visual case displays an ordinary Viewer tetrahedron and
 requires **zero changed pixels** after missing-file, malformed-file and missing-child
@@ -74,12 +71,12 @@ complemented by the later format, series, safety, limits and reference gates.
 
 | Format | Supported data | Boundary |
 | --- | --- | --- |
-| Legacy `.vtk` | UNSTRUCTURED_GRID / POLYDATA; ASCII and big-endian binary; POINTS, CELLS/CELL_TYPES, VERTICES/LINES/POLYGONS/TRIANGLE_STRIPS | Structured datasets and unknown sections reject before fallback |
+| Legacy `.vtk` | UNSTRUCTURED_GRID / POLYDATA; ASCII and big-endian binary; POINTS, CELLS/CELL_TYPES, VERTICES/LINES/POLYGONS/TRIANGLE_STRIPS | Structured datasets and unknown sections reject before publication |
 | Legacy attributes | SCALARS, VECTORS, NORMALS, TENSORS, FIELD, TEXTURE_COORDINATES (1–3), COLOR_SCALARS (1–4) | Numeric fields retain original association and values; ASCII colors are 0..1, binary colors are raw 0..255 bytes |
 | Legacy lookup/metadata | Validated custom RGBA LOOKUP_TABLE and dataset FIELD | Named warnings: tables are not applied to the Viewer and dataset metadata is not exposed as nodal/elemental fields |
 | XML VTU/VTP | Multiple Pieces, ASCII, inline binary, appended base64/raw, zlib; scalar/vector/tensor roles | Unsupported Piece sections, missing/duplicate field names and malformed arrays reject |
-| XML polyhedra | Legacy faces/faceoffsets; XML 2.3 face_connectivity/face_offsets/polyhedron_to_faces/polyhedron_offsets | XML 2.3 uses native VTK ON; incomplete/type-invalid arrays reject |
-| VTM / `.vtm.series` | Nested VTM and VTU/VTP/Legacy leaves; ordered hierarchical blocks; independent moving/remeshed snapshots and fractional times | General cells require native VTK ON; unsupported composite sections and duplicate block names reject; coordinated animation remains N06 |
+| XML polyhedra | Legacy faces/faceoffsets; XML 2.3 face_connectivity/face_offsets/polyhedron_to_faces/polyhedron_offsets | Both layouts use the self-reader; incomplete, ambiguous, malformed and unused arrays reject |
+| VTM / `.vtm.series` | Nested VTM and VTU/VTP/Legacy leaves; ordered hierarchical blocks; independent moving/remeshed snapshots and fractional times | General cells are always available; unsupported composite sections and duplicate block names reject; coordinated animation remains N06 |
 
 Legacy numeric types are float/double, signed/unsigned 8/16/32-bit integer names,
 `vtkTypeInt32`, `long_long`, `vtkTypeInt64` and `unsigned_long_long`. Ambiguous

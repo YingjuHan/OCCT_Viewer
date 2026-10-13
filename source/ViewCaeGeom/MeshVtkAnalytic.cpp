@@ -1,11 +1,4 @@
 #include <ViewCaeGeom/MeshVtkAnalytic.h>
-#include <vtkBezierCurve.h>
-#include <vtkBezierQuadrilateral.h>
-#include <vtkBezierTriangle.h>
-#include <vtkDoubleArray.h>
-#include <vtkHigherOrderCurve.h>
-#include <vtkHigherOrderQuadrilateral.h>
-#include <vtkHigherOrderTriangle.h>
 #include <TColgp_Array1OfPnt.hxx>
 #include <TColgp_Array2OfPnt.hxx>
 #include <TColStd_Array1OfReal.hxx>
@@ -19,6 +12,7 @@
 #include <vector>
 
 namespace {
+using ViewCaeGeom::MeshCellKernel;
 using HPoint = std::array<double,4>;
 double choose(int n, int k)
 {
@@ -49,14 +43,14 @@ std::vector<HPoint> controls(const std::vector<HPoint>& samples)
     return result;
 }
 struct Map {
-    vtkCell* Cell;
+    MeshCellKernel* Cell;
     int U = 0;
     int V = 0;
     bool Triangle = false;
-    vtkDoubleArray* Weights = nullptr;
+    const std::vector<double>* Weights = nullptr;
     double WeightScale = 1;
     double Tolerance = 0;
-    explicit Map(vtkCell* cell) : Cell(cell)
+    explicit Map(MeshCellKernel* cell) : Cell(cell)
     {
         const int type = cell->GetCellType();
         switch (type) {
@@ -68,26 +62,23 @@ struct Map {
             case 22: U = V = 2; Triangle = true; break;
             case 23: case 28: case 30: U = V = 2; break;
             case 34: U = V = 3; Triangle = true; break;
-            case 68: case 75: U = vtkHigherOrderCurve::SafeDownCast(cell)->GetOrder(0); break;
+            case 68: case 75: U = cell->GetOrder(0); break;
             case 69: case 76:
-                U = V = (int)vtkHigherOrderTriangle::SafeDownCast(cell)->GetOrder(); Triangle = true; break;
+                U = V = cell->GetOrder(); Triangle = true; break;
             case 70: case 77: {
-                const auto quad = vtkHigherOrderQuadrilateral::SafeDownCast(cell);
+                const auto quad = cell;
                 U = quad->GetOrder(0); V = quad->GetOrder(1); break;
             }
             default: return;
         }
         if (U < 1 || U > 6 || V > 6) { U = V = 0; return; }
-        if (auto curve = vtkBezierCurve::SafeDownCast(cell)) { Weights = curve->GetRationalWeights(); }
-        if (auto quad = vtkBezierQuadrilateral::SafeDownCast(cell)) { Weights = quad->GetRationalWeights(); }
-        if (auto triangle = vtkBezierTriangle::SafeDownCast(cell)) { Weights = triangle->GetRationalWeights(); }
-        if (Weights && Weights->GetNumberOfValues() == 0) { Weights = nullptr; }
+        if (type>=75 && !cell->RationalWeights().empty()) { Weights=&cell->RationalWeights(); }
         if (Weights) {
-            if (Weights->GetNumberOfValues() != cell->GetNumberOfPoints()) { U = V = 0; return; }
+            if (Weights->size() != cell->GetNumberOfPoints()) { U = V = 0; return; }
             WeightScale = 0;
             double minimum = std::numeric_limits<double>::infinity();
-            for (vtkIdType n = 0; n < Weights->GetNumberOfValues(); ++n) {
-                const double weight = Weights->GetValue(n);
+            for (size_t n = 0; n < Weights->size(); ++n) {
+                const double weight = Weights->at(n);
                 if (!std::isfinite(weight) || weight <= 0) {
                     throw std::invalid_argument("VTK analytic weights must be finite and positive");
                 }
@@ -116,12 +107,12 @@ struct Map {
         if (Weights) {
             denominator = 0;
             const auto coordinates = Cell->GetParametricCoords();
-            for (vtkIdType n = 0; n < Cell->GetNumberOfPoints(); ++n) {
+            for (size_t n = 0; n < Cell->GetNumberOfPoints(); ++n) {
                 const int i = (int)std::llround(coordinates[3*n]*U);
                 const int j = V ? (int)std::llround(coordinates[3*n+1]*V) : 0;
                 const double b = Triangle ? choose(U,i)*choose(U-i,j)*std::pow(q[0],i)*std::pow(q[1],j)*std::pow(1-q[0]-q[1],U-i-j)
                     : bernstein(U,i,q[0])*(V ? bernstein(V,j,q[1]) : 1);
-                denominator += b*(Weights->GetValue(n)/WeightScale);
+                denominator += b*(Weights->at(n)/WeightScale);
             }
         }
         HPoint result = {{p[0]*denominator,p[1]*denominator,p[2]*denominator,denominator}};
@@ -137,7 +128,7 @@ struct Map {
 }
 
 namespace ViewCaeGeom {
-Handle(Geom_BezierSurface) VtkAnalyticSurface(vtkCell* cell, Bnd_Box& bounds, double& residual)
+Handle(Geom_BezierSurface) VtkAnalyticSurface(MeshCellKernel* cell, Bnd_Box& bounds, double& residual)
 {
     Map map(cell); if (!map.U || !map.V) { return nullptr; }
     std::vector<std::vector<HPoint>> net((size_t)map.U+1,std::vector<HPoint>((size_t)map.V+1));
@@ -166,7 +157,7 @@ Handle(Geom_BezierSurface) VtkAnalyticSurface(vtkCell* cell, Bnd_Box& bounds, do
     residual = std::max(residual,error); bounds.Add(hull); return result;
 }
 
-Handle(Geom_BezierCurve) VtkAnalyticCurve(vtkCell* cell, Bnd_Box& bounds, double& residual)
+Handle(Geom_BezierCurve) VtkAnalyticCurve(MeshCellKernel* cell, Bnd_Box& bounds, double& residual)
 {
     Map map(cell); if (!map.U || map.V) { return nullptr; }
     std::vector<HPoint> samples;

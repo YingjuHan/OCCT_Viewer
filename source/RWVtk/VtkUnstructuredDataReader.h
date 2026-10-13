@@ -13,6 +13,7 @@
 #include <LDOMParser.hxx>
 
 #include <vector>
+#include <map>
 
 namespace RWVtk {
 //! Base reader class for unstructured VTK data stored in XML format.
@@ -23,6 +24,8 @@ public:
 
     //! Destructor.
     Standard_EXPORT virtual ~VtkUnstructuredDataReader();
+
+    void SetPreserveCellTypes(bool enabled) { myPreserveCellTypes = enabled; }
 
     //! Return mesh data.
     const Handle(RWCae::MeshData)& GetMeshData() const { return myMeshData; }
@@ -55,6 +58,7 @@ public:
         DataArray Types;
         DataArray Faces;
         DataArray FaceOffsets;
+        DataArray FaceConnectivity, FaceEnds, PolyhedronFaces, PolyhedronEnds;
     };
 
     //! Struct for mapped property.
@@ -138,6 +142,13 @@ protected:
                                     int                             theElemIndex);
 
 protected:
+    bool myPreserveCellTypes = false;
+    bool myGeneralLayout = false;
+    //! Preserve the schema formerly produced by the SDK fallback (v3 sessions).
+    bool myCompatibilityFields = false;
+    std::vector<DataArray> myPieceTypes;
+    DataArray myDegrees, myWeights;
+    std::map<std::string, DataArray> myTopologyAttributes;
     Handle(RWCae::MeshData) myMeshData;
     int                       myNbNodes            = 0;
     int                       myNodesOffset        = 0;

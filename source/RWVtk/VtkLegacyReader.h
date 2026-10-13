@@ -7,6 +7,7 @@
 namespace RWVtk {
 class VtkLegacyReader : public VtkBaseReader {
 public:
+    void SetPreserveCellTypes(bool enabled) { myPreserveCellTypes=enabled; }
     void SetValidationOnly(bool enabled) { myValidationOnly = enabled; }
     Standard_EXPORT VtkLegacyReader();
     Standard_EXPORT ~VtkLegacyReader() override;
@@ -15,6 +16,7 @@ public:
 private:
     Handle(RWCae::MeshData) myMeshData;
     bool myValidationOnly = false;
+    bool myPreserveCellTypes = false;
 };
 }
 #endif

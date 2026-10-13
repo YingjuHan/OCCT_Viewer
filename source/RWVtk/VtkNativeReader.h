@@ -5,8 +5,7 @@
 #include <RWCae/MeshData.h>
 
 namespace RWVtk {
-//! Native VTK import preserving concrete cell types, orders and rational weights.
-//! This backend is enabled by OCCTV_USE_VTK, independently of the portable readers.
+//! Compatibility adapter for the repository-owned parser; no VTK SDK is used.
 class VtkNativeReader {
 public:
     Standard_EXPORT bool Perform(const TCollection_AsciiString& theFileName);

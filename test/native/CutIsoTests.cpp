@@ -1,14 +1,7 @@
+#include "CellFixture.h"
 #include <ViewCaeGeom/MeshCutViewManager.h>
 #include <ViewCae/InteractiveCaeCutView.h>
 #include <RWCae/MeshScalarProperty.h>
-#include <vtkGenericCell.h>
-#include <vtkUnstructuredGrid.h>
-#include <vtkPointData.h>
-#include <vtkCellData.h>
-#include <vtkDoubleArray.h>
-#include <vtkIntArray.h>
-#include <vtkNew.h>
-#include <vtkXMLUnstructuredGridWriter.h>
 #include <cmath>
 #include <filesystem>
 #include <functional>
@@ -33,13 +26,8 @@ Handle(RWCae::MeshData) fixture(int type, bool rational = false)
         {21,3},{22,6},{23,8},{24,10},{25,20},{26,15},{27,13},{28,9},{29,27},{30,6},
         {31,12},{32,18},{33,24},{34,7},{35,4},{37,19},{68,3},{69,6},{70,9},{71,10},
         {72,27},{73,18},{75,3},{76,6},{77,9},{78,10},{79,27},{80,18}};
-    const int count = sizes.at(type); vtkNew<vtkUnstructuredGrid> grid; vtkNew<vtkPoints> points;
-    points->SetNumberOfPoints(count); grid->SetPoints(points); std::vector<vtkIdType> ids(count);
-    for (int n = 0; n < count; ++n) { ids[n] = n; }
-    grid->InsertNextCell(type,count,ids.data());
-    const int order[] = {2,2,2};
-    if (type >= 68) { vtkNew<vtkIntArray> degrees; degrees->SetNumberOfComponents(3); degrees->InsertNextTypedTuple(order); grid->GetCellData()->SetHigherOrderDegrees(degrees); }
-    vtkNew<vtkGenericCell> cell; grid->GetCell(0,cell); const auto q = cell->GetParametricCoords(); require(q,"Missing fixture chart");
+    const int count=sizes.at(type);auto cell=std::make_shared<MeshCellKernel>(type,count,type>=68?std::vector<int>{2,2,2}:std::vector<int>{});
+    const auto q=cell->GetParametricCoords();require(q,"Missing fixture chart");
     Handle(RWCae::MeshData) mesh = new RWCae::MeshData(); RWCae::MeshData::GenericCell topology; topology.Type = type;
     if (type >= 68) { topology.Degrees = {2,2,2}; }
     for (int n = 0; n < count; ++n) {
@@ -64,18 +52,8 @@ MeshCutIsoOptions options(double tolerance = 0.004)
 }
 void write(const Handle(RWCae::MeshData)& mesh, const Handle(RWCae::MeshNVecProperty)& cut)
 {
-    const auto& cell = mesh->GenericCells()[0]; vtkNew<vtkUnstructuredGrid> grid; vtkNew<vtkPoints> points;
-    std::vector<vtkIdType> ids; for (const auto& p : mesh->Nodes()) { ids.push_back(points->InsertNextPoint(p.x(),p.y(),p.z())); }
-    grid->SetPoints(points); grid->InsertNextCell(cell.Type,ids.size(),ids.data());
-    if (!cell.Degrees.empty()) { vtkNew<vtkIntArray> degrees; degrees->SetNumberOfComponents(3); degrees->InsertNextTypedTuple(cell.Degrees.data()); grid->GetCellData()->SetHigherOrderDegrees(degrees); }
-    for (const char* name : {"cut","temperature"}) {
-        vtkNew<vtkDoubleArray> array; array->SetName(name);
-        for (int n = 0; n < (int)mesh->NbNodes(); ++n) { const auto p = mesh->Nodes()[n]; array->InsertNextValue(std::string(name) == "cut" ? cut->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(n)) : p.x()+2*p.y()+3*p.z()); }
-        grid->GetPointData()->AddArray(array);
-    }
-    vtkNew<vtkDoubleArray> pressure; pressure->SetName("pressure"); pressure->InsertNextValue(7); grid->GetCellData()->AddArray(pressure);
-    std::filesystem::create_directories(CUT_ISO_FIXTURE_DIR); const auto path = std::string(CUT_ISO_FIXTURE_DIR)+"/nonmonotone.vtu";
-    vtkNew<vtkXMLUnstructuredGridWriter> writer; writer->SetFileName(path.c_str()); writer->SetInputData(grid); writer->SetDataModeToAscii(); require(writer->Write(),"Cannot write iso fixture");
+    CellFixture::Write(mesh,std::string(CUT_ISO_FIXTURE_DIR)+"/nonmonotone.vtu",{{"cut",CellFixture::Values(cut)},
+        {"temperature",CellFixture::Values(mesh,[](const auto& p) {return p.x()+2*p.y()+3*p.z();})}},{{"pressure",{7}}});
 }
 void checkFields(const MeshCutResult& cut, double threshold)
 {
@@ -87,8 +65,14 @@ void checkFields(const MeshCutResult& cut, double threshold)
             double sum = 0; for (const auto& base : origin.BaseNodes()) { sum += base.second; } near(sum,1,1e-9,"Iso partition of unity");
             if (part == 1 && !cut.Fields[part].IsNull()) { near(cut.Fields[part]->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(n)),threshold,cut.IsoFieldTolerance*0.01,"Iso original FE root"); }
         }
-        for (const auto& element : mesh->IndexedElements()) {
+        for (RWCae::MeshEntityId e = 0; e < mesh->NbIndexedElems(); ++e) {
+            const auto& element = mesh->IndexedElements()[e];
             RWCae::MeshEntityId source; require(cut.Portions[part]->OriginElement(MeshGeomElem(element.Index,element.Type,false),source) && source == 0,"Iso source element lost");
+            if (element.Type == RWCae::MeshElemType::Tetrahedron) {
+                std::vector<RWCae::MeshEntityId> nodes; mesh->ElementNodes(e,nodes);
+                const Graphic3d_Vec3d a(mesh->Nodes()[nodes[0]]), b(mesh->Nodes()[nodes[1]]), c(mesh->Nodes()[nodes[2]]), d(mesh->Nodes()[nodes[3]]);
+                require((b-a).Dot(Graphic3d_Vec3d::Cross(c-a,d-a)) > 0,"Iso replacement tetrahedron winding");
+            }
         }
     }
 }

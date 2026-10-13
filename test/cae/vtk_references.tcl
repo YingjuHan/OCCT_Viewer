@@ -15,11 +15,7 @@ if {[catch {
         reference_assert {[scvmeshinfo reference] eq $before} "DRAW staging failure mutated old mesh"
     }
     scvreadmesh times [file join $fixtures src remesh.vtm.series] -vtkstaging $stage
-    if {$::env(VTK_REFERENCE_HAS_NATIVE)} {
         scvreadmesh general [file join $fixtures src general.vtm] -vtkstaging $stage
-    } else {
-        reference_assert {[catch {scvreadmesh general [file join $fixtures src general.vtm] -vtkstaging $stage}]} "OFF DRAW accepted general composite"
-    }
     if {[info exists ::env(VTK_REFERENCE_VISUAL)]} {
         set output $::env(VTK_REFERENCE_OUTPUT)
         file mkdir $output
@@ -44,7 +40,6 @@ if {[catch {
         vrepaint
         vdump [file join $output series-initial.png]
         reference_assert {[dict get [scvcutimagestats [file join $output series-initial.png]] visible] > 500} "Staged series initial image blank"
-        if {$::env(VTK_REFERENCE_HAS_NATIVE)} {
             verase times
             scvreadmesh general [file join $fixtures src general.vtm] -vtkstaging $stage -display 1
             vfit
@@ -55,7 +50,6 @@ if {[catch {
             vrepaint
             vdump [file join $output general-cell.png]
             reference_assert {[dict get [scvcutimagecompare [file join $output general.png] [file join $output general-cell.png]] changed] > 50} "General composite CellData display unchanged"
-        }
     }
 } reason]} {
     puts "VTK_REFERENCE_DRAW_FAIL: $reason"

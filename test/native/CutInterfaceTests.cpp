@@ -1,13 +1,9 @@
+#include "CellFixture.h"
 #include <ViewCaeGeom/MeshVtkCutSource.h>
 #include <ViewCaeGeom/MeshCutIntegration.h>
 #include <ViewCaeGeom/MeshCutTrace.h>
 #include <RWCae/MeshScalarProperty.h>
 #include <RWCae/MeshNodeVecProperty.h>
-#include <vtkCellData.h>
-#include <vtkIntArray.h>
-#include <vtkNew.h>
-#include <vtkPoints.h>
-#include <vtkUnstructuredGrid.h>
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -39,17 +35,10 @@ template<class F> void rejects(F operation, const char* message)
 Handle(RWCae::MeshData) grid(int type, bool connected = true, double bend = 0)
 {
     const int count = type == 25 ? 20 : type == 72 ? 27 : 8;
-    vtkNew<vtkGenericCell> cell; cell->SetCellType(type == 42 ? 12 : type);
+    auto cell=std::make_shared<MeshCellKernel>(); cell->SetCellType(type == 42 ? 12 : type);
     cell->GetPoints()->SetNumberOfPoints(count); cell->GetPointIds()->SetNumberOfIds(count);
     for (int n = 0; n < count; ++n) { cell->GetPointIds()->SetId(n,n); }
-    if (type == 72) {
-        vtkNew<vtkUnstructuredGrid> source; vtkNew<vtkPoints> points; points->SetNumberOfPoints(count);
-        source->SetPoints(points); std::vector<vtkIdType> nodes(count);
-        for (int n = 0; n < count; ++n) { nodes[n] = n; }
-        source->InsertNextCell(type,count,nodes.data());
-        vtkNew<vtkIntArray> degrees; degrees->SetNumberOfComponents(3); const int order[] = {2,2,2};
-        degrees->InsertNextTypedTuple(order); source->GetCellData()->SetHigherOrderDegrees(degrees); source->GetCell(0,cell);
-    }
+    if (type == 72) {cell->SetOrder({2,2,2});}
     const auto parameters = cell->GetParametricCoords();
     Handle(RWCae::MeshData) mesh = new RWCae::MeshData();
     std::map<std::tuple<float,float,float>,RWCae::MeshEntityId> shared;

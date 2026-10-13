@@ -18,16 +18,15 @@ if {[catch {
     import_assert {[scvcutview imported info] eq $before && [scvcutview imported importreport] eq $report} "Failed cut replacement mutated live model/report"
     import_assert {[catch {scvcutview imported replace [file join $fixtures unsupported_section.vtk]}]} "Legacy unsupported section accepted"
     import_assert {[scvcutview imported info] eq $before} "Unsupported section mutated live model"
-    if {$::env(VTK_IMPORT_HAS_NATIVE)} {
         set copied [file join $fixtures {polyline with spaces.vtp}]
         file copy -force [file join $fixtures polyline.vtp] $copied
         scvcutview lines read $copied
         set fallback [scvcutview lines importreport]
         import_assert {[dict get $fallback source] eq $copied} "DRAW report source quoting"
-        import_assert {[dict get $fallback succeeded] && [dict get $fallback backend] eq "native-vtk"} "Native DRAW outcome"
-        import_assert {[dict get $fallback errors] eq {} && [llength [dict get $fallback attempts]] == 2} "Native DRAW attempts"
+        import_assert {[dict get $fallback succeeded] && [dict get $fallback backend] eq "portable"} "Self-contained DRAW outcome"
+        import_assert {[dict get $fallback errors] eq {} && [llength [dict get $fallback attempts]] == 1} "Self-contained DRAW attempts"
         set first [lindex [dict get $fallback attempts] 0]
-        import_assert {![dict get $first succeeded] && [llength [dict get $first errors]] > 0} "Rejected DRAW attempt lost"
+        import_assert {[dict get $first succeeded] && [dict get $first errors] eq {}} "Self-contained DRAW attempt failed"
         scvcutview lines field point temperature 0
         foreach field [scvcutview lines fields] {
             import_assert {[dict get $field step] == -1} "Static fallback default field step changed"
@@ -37,9 +36,6 @@ if {[catch {
         foreach field [scvcutview timed fields] {
             import_assert {[dict get $field step] == 0} "TimeValue explicit field step changed"
         }
-    } else {
-        import_assert {[catch {scvcutview lines read [file join $fixtures polyline.vtp]}]} "OFF DRAW silently accepted Lines"
-    }
     if {[info exists ::env(VTK_IMPORT_VISUAL)]} {
         set output $::env(VTK_IMPORT_OUTPUT)
         file mkdir $output
@@ -62,7 +58,6 @@ if {[catch {
         scvreadmesh live [file join $fixtures tetra.vtu] -display 1
         vrepaint
         vdump [file join $output replaced.png]
-        if {$::env(VTK_IMPORT_HAS_NATIVE)} {
             verase live
             foreach file {polyline.vtk polyline.vtu polyline.vtp mixed.vtu curved_line.vtu polyvertex.vtu voxel.vtu} {
                 scvreadmesh ordinary [file join $fixtures $file] -display 1
@@ -82,7 +77,6 @@ if {[catch {
                 set difference [scvcutimagecompare [file join $output ordinary-$file-nodal.png] [file join $output ordinary-$file-cell.png]]
                 import_assert {[dict get $difference changed] > $minimum / 2} "Ordinary Viewer CellData contour does not change pixels"
             }
-        }
     }
 } reason]} {
     puts "VTK_IMPORT_DRAW_FAIL: $reason"

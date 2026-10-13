@@ -11,9 +11,6 @@
 #include <TopExp_Explorer.hxx>
 #include <TopoDS.hxx>
 #include <GeomAPI_ProjectPointOnSurf.hxx>
-#include <vtkNew.h>
-#include <vtkPoints.h>
-#include <vtkTriangle.h>
 #include <algorithm>
 #include <cmath>
 #include <map>
@@ -232,7 +229,7 @@ std::array<MeshVtkCutSource::InterfaceTrace,2> MeshVtkCutSource::InterfaceTraces
         GeomAPI_ProjectPointOnSurf projection(point(position),topology.Surface,0,1,0,1);
         onFace = projection.NbPoints() && projection.LowerDistance() <= tolerance;
     } else {
-        vtkNew<vtkTriangle> triangle;
+        auto triangle=std::make_unique<MeshCellKernel>(5);
         const double p[] = {position.x(),position.y(),position.z()};
         for (size_t t = topology.FirstTriangle; !onFace && t < topology.FirstTriangle+topology.NbTriangles; ++t) {
             for (int n = 0; n < 3; ++n) {

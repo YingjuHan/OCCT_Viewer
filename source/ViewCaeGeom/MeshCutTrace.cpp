@@ -4,9 +4,7 @@
 #include <RWCae/MeshScalarProperty.h>
 #include <RWCae/MeshNodeVecProperty.h>
 #include "MeshCutFieldTools.h"
-#ifdef OCCTV_USE_VTK
 #include <ViewCaeGeom/MeshVtkCutSource.h>
-#endif
 #include <algorithm>
 #include <set>
 #include <tuple>
@@ -34,10 +32,8 @@ struct MeshCutTraceSource::Data {
         Graphic3d_Vec3d Interior = Graphic3d_Vec3d(0);
         MeshInterpolatedNode InteriorWeights;
         std::vector<size_t> Boundaries;
-#ifdef OCCTV_USE_VTK
         std::unique_ptr<MeshVtkCell> Owned;
         MeshVtkCell* Geometry = nullptr;
-#endif
     };
     Handle(RWCae::MeshData) Mesh;
     Handle(MeshGeometry) Source;
@@ -79,17 +75,11 @@ struct MeshCutTraceSource::Data {
         }
         return faces;
     }
-    MeshInterpolatedNode NativeOrigin(RWCae::MeshEntityId e,const Graphic3d_Vec3d& p,const MeshInterpolatedNode& weight,const std::vector<RWCae::MeshEntityId>& face) const
+    MeshInterpolatedNode NativeOrigin(RWCae::MeshEntityId e,const Graphic3d_Vec3d& p) const
     {
-#ifdef OCCTV_USE_VTK
         auto& cell=NativeCells.at(e);
         if(!cell.Owned) { cell.Owned.reset(new MeshVtkCell(Mesh,e,Source.get(),Options.Tolerance((Mesh->BoundingBox().CornerMax().XYZ()-Mesh->BoundingBox().CornerMin().XYZ()).Modulus()),Options,0,false)); }
         return cell.Owned->Origin(p);
-#else
-        (void)e; (void)p; double total=0; for(const auto& w:weight.BaseNodes()) { if(std::binary_search(face.begin(),face.end(),w.first)) { total+=w.second; } }
-        if(!std::isfinite(total)||std::abs(total)<=1e-12) { throw std::runtime_error("Invalid native interface partition"); }
-        MeshInterpolatedNode result; for(const auto& w:weight.BaseNodes()) { if(std::binary_search(face.begin(),face.end(),w.first)) { result.AddBaseNode(w.first,w.second/total); } } return result;
-#endif
     }
 };
 
@@ -116,15 +106,10 @@ MeshCutTraceSource::MeshCutTraceSource(const Handle(RWCae::MeshData)& mesh,
     data.Cells.resize(mesh->NbIndexedElems());
     using Key = std::pair<int,std::vector<RWCae::MeshEntityId>>;
     std::map<Key,size_t> keys;
-#ifdef OCCTV_USE_VTK
     const double tolerance = options.Tolerance(mesh->BoundingBox().IsVoid() ? 0
         : (mesh->BoundingBox().CornerMax().XYZ()-mesh->BoundingBox().CornerMin().XYZ()).Modulus());
-#else
-    (void)options;
-#endif
     for (RWCae::MeshEntityId e = 0; e < mesh->NbIndexedElems(); ++e) {
         auto& cell = data.Cells[e]; std::vector<std::vector<RWCae::MeshEntityId>> boundaries;
-#ifdef OCCTV_USE_VTK
         if (prepared && prepared->Work.PreparedCells == mesh->NbIndexedElems()) { cell.Geometry = prepared->GetCell(e).Geometry.get(); }
         else {
             cell.Owned.reset(new MeshVtkCell(mesh,e,source.get(),tolerance,options,0,false)); cell.Geometry = cell.Owned.get();
@@ -136,33 +121,6 @@ MeshCutTraceSource::MeshCutTraceSource(const Handle(RWCae::MeshData)& mesh,
             for (auto n : nodes) { cell.InteriorWeights.AddBaseNode(n,1.0/nodes.size()); }
         } else { cell.InteriorWeights = cell.Geometry->Origin(cell.Interior); }
         boundaries = cell.Geometry->BoundaryNodes();
-#else
-        const auto& indexed = mesh->IndexedElements()[e];
-        if (indexed.Type == RWCae::MeshElemType::Generic) { throw std::invalid_argument("Generic trace topology requires VTK"); }
-        std::vector<RWCae::MeshEntityId> nodes; mesh->ElementNodes(e,nodes);
-        for (auto n : nodes) { auto p = mesh->Nodes()[n]; source->ModifyNode(n,p); cell.Interior += Graphic3d_Vec3d(p); }
-        if (!nodes.empty()) { cell.Interior /= (double)nodes.size(); }
-        for (auto n : nodes) { cell.InteriorWeights.AddBaseNode(n,1.0/nodes.size()); }
-        cell.Dimension = indexed.Type == RWCae::MeshElemType::Elem0d ? 0 : (int)indexed.Type >= RWCae::MeshElem3dLowerType ? 3 : 2;
-        if (cell.Dimension == 3) {
-            RWCae::MeshAdaptorsIterator3dElems::Switch(indexed.Type,[&](const auto& adaptor) {
-                const auto& element = adaptor.GetElement(indexed.Index);
-                for (RWCae::MeshElemEntityId f = 0; f < adaptor.NbFaces(element); ++f) {
-                    std::vector<RWCae::MeshEntityId> face; RWCae::MeshElemType type;
-                    adaptor.FaceNodes(element,f,face,type); boundaries.push_back(std::move(face));
-                }
-                return true;
-            },mesh);
-        } else if (cell.Dimension == 2) {
-            const int corners = indexed.Type == RWCae::MeshElemType::Triangle2nd ? 3
-                : indexed.Type == RWCae::MeshElemType::Quad2nd ? 4 : (int)nodes.size();
-            for (int n = 0; n < corners; ++n) {
-                std::vector<RWCae::MeshEntityId> edge = {nodes[n],nodes[(n+1)%corners]};
-                if ((int)nodes.size() == 2*corners) { edge.push_back(nodes[corners+n]); }
-                boundaries.push_back(std::move(edge));
-            }
-        }
-#endif
         for (auto& boundaryNodes : boundaries) {
             std::sort(boundaryNodes.begin(),boundaryNodes.end()); const Key key(cell.Dimension,boundaryNodes);
             auto found = keys.find(key);
@@ -178,7 +136,6 @@ MeshCutTraceSource::MeshCutTraceSource(const Handle(RWCae::MeshData)& mesh,
         if (owners.size() != 2 || owners[0] == owners[1]) { continue; }
         const auto& a = data.Cells[owners[0]]; const auto& b = data.Cells[owners[1]];
         if (a.Dimension == 3) {
-#ifdef OCCTV_USE_VTK
             if (prepared && prepared->Work.PreparedCells == mesh->NbIndexedElems()) {
                 const auto& faces = prepared->GetCell(owners[0]).Faces;
                 for (size_t f = 0; f < a.Geometry->Faces.size(); ++f) {
@@ -187,7 +144,6 @@ MeshCutTraceSource::MeshCutTraceSource(const Handle(RWCae::MeshData)& mesh,
                 }
                 continue;
             }
-#endif
             if (boundary.Nodes.size() < 3) { continue; }
             Graphic3d_Vec3d points[3];
             for (int n = 0; n < 3; ++n) { auto p = mesh->Nodes()[boundary.Nodes[n]]; source->ModifyNode(boundary.Nodes[n],p); points[n] = Graphic3d_Vec3d(p); }
@@ -271,7 +227,7 @@ std::vector<MeshCutPrimitiveTrace> MeshCutTraceSource::Traces(RWCae::MeshEntityI
             if(!trusted) { result[0].Ambiguous=true; continue; }
             MeshCutPrimitiveTrace other; other.Element=neighbor; other.Interior=adjacent.Interior; other.InteriorWeights=adjacent.InteriorWeights;
             other.Weights.reserve(weights.size());
-            for(size_t n=0;n<weights.size();++n) { other.Weights.emplace(sampleNodes ? sampleNodes->at(n) : (RWCae::MeshEntityId)n,data.NativeOrigin(neighbor,positions[n],weights[n],face)); }
+            for(size_t n=0;n<weights.size();++n) { other.Weights.emplace(sampleNodes ? sampleNodes->at(n) : (RWCae::MeshEntityId)n,data.NativeOrigin(neighbor,positions[n])); }
             result.push_back(std::move(other)); break;
         }
         std::sort(result.begin(),result.end(),[](const auto& a,const auto& b) { return a.Element<b.Element; }); return result;
@@ -285,23 +241,7 @@ std::vector<MeshCutPrimitiveTrace> MeshCutTraceSource::Traces(RWCae::MeshEntityI
         other.Weights.reserve(weights.size());
         other.InteriorWeights = data.Cells[neighbor].InteriorWeights;
         for (size_t n = 0; n < weights.size(); ++n) {
-#ifdef OCCTV_USE_VTK
             other.Weights.emplace(sampleNodes ? sampleNodes->at(n) : (RWCae::MeshEntityId)n,data.Cells[neighbor].Geometry->Origin(positions[n]));
-#else
-            // A native inverse may leave tiny off-face weights. Those nodes do
-            // not belong to the neighboring element-node tuple. Restrict the
-            // trace to this trusted topology face and preserve its partition.
-            double total = 0;
-            for (const auto& w : weights[n].BaseNodes()) {
-                if (std::binary_search(boundary.Nodes.begin(),boundary.Nodes.end(),w.first)) { total += w.second; }
-            }
-            if (!std::isfinite(total) || std::abs(total) <= 1e-12) { throw std::runtime_error("Invalid native interface FE partition"); }
-            MeshInterpolatedNode mapped;
-            for (const auto& w : weights[n].BaseNodes()) {
-                if (std::binary_search(boundary.Nodes.begin(),boundary.Nodes.end(),w.first)) { mapped.AddBaseNode(w.first,w.second/total); }
-            }
-            other.Weights.emplace(sampleNodes ? sampleNodes->at(n) : (RWCae::MeshEntityId)n,mapped);
-#endif
         }
         result.push_back(std::move(other)); break;
     }

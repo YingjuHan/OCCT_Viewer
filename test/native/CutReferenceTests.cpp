@@ -1,14 +1,6 @@
+#include "CellFixture.h"
 #include <ViewCaeGeom/MeshCutViewManager.h>
 #include <RWCae/MeshScalarProperty.h>
-#include <vtkCellData.h>
-#include <vtkDoubleArray.h>
-#include <vtkGenericCell.h>
-#include <vtkIntArray.h>
-#include <vtkNew.h>
-#include <vtkPointData.h>
-#include <vtkPoints.h>
-#include <vtkUnstructuredGrid.h>
-#include <vtkXMLUnstructuredGridWriter.h>
 #include <cmath>
 #include <filesystem>
 #include <functional>
@@ -101,18 +93,10 @@ Handle(RWCae::MeshData) fixture(int type, bool rational = false, int count = 0,
     const std::map<int,int> sizes = {{21,3},{35,4},{68,3},{75,3},{22,6},{23,8},{28,9},
         {30,6},{34,7},{69,6},{70,9},{76,6},{77,9},{71,10},{78,10}};
     const int size = count ? count : sizes.at(type);
-    vtkNew<vtkGenericCell> cell; cell->SetCellType(type);
+    auto cell=std::make_shared<MeshCellKernel>(); cell->SetCellType(type);
     cell->GetPoints()->SetNumberOfPoints(size); cell->GetPointIds()->SetNumberOfIds(size);
     for (int n = 0; n < size; ++n) { cell->GetPointIds()->SetId(n,n); }
-    if (type >= 68) {
-        vtkNew<vtkUnstructuredGrid> grid; vtkNew<vtkPoints> points;
-        points->SetNumberOfPoints(size); grid->SetPoints(points);
-        std::vector<vtkIdType> ids(size); for (int n = 0; n < size; ++n) { ids[n] = n; }
-        grid->InsertNextCell(type,size,ids.data());
-        vtkNew<vtkIntArray> degrees; degrees->SetNumberOfComponents(3);
-        degrees->InsertNextTypedTuple(orders.data()); grid->GetCellData()->SetHigherOrderDegrees(degrees);
-        grid->GetCell(0,cell);
-    }
+    if (type >= 68) {cell->SetOrder(orders);}
     const auto q = cell->GetParametricCoords(); require(q != nullptr,"Reference cell has no parameter chart");
     Handle(RWCae::MeshData) mesh = new RWCae::MeshData(); RWCae::MeshData::GenericCell topology;
     topology.Type = type;
@@ -141,32 +125,7 @@ Handle(RWCae::MeshNVecProperty) field(const Handle(RWCae::MeshData)& mesh, bool 
 }
 void writeFixture(const Handle(RWCae::MeshData)& mesh, const std::string& name)
 {
-    vtkNew<vtkUnstructuredGrid> grid; vtkNew<vtkPoints> points; points->SetDataTypeToDouble();
-    for (const auto& p : mesh->Nodes()) { points->InsertNextPoint(p.x(),p.y(),p.z()); }
-    grid->SetPoints(points); const auto& topology = mesh->GenericCells()[0];
-    std::vector<vtkIdType> ids(topology.Nodes.begin(),topology.Nodes.end());
-    grid->InsertNextCell(topology.Type,ids.size(),ids.data());
-    if (!topology.Degrees.empty()) {
-        vtkNew<vtkIntArray> degrees; degrees->SetNumberOfComponents(3); degrees->InsertNextTypedTuple(topology.Degrees.data());
-        grid->GetCellData()->SetHigherOrderDegrees(degrees);
-    }
-    if (!topology.RationalWeights.empty()) {
-        vtkNew<vtkDoubleArray> weights; weights->SetName("RationalWeights");
-        for (double weight : topology.RationalWeights) { weights->InsertNextValue(weight); }
-        grid->GetPointData()->SetRationalWeights(weights);
-    }
-    for (bool squared : {false,true}) {
-        const auto values = field(mesh,squared); vtkNew<vtkDoubleArray> array; array->SetName(values->Name().ToCString());
-        for (RWCae::MeshEntityId n = 0; n < mesh->NbNodes(); ++n) {
-            array->InsertNextValue(values->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(n)));
-        }
-        grid->GetPointData()->AddArray(array);
-    }
-    vtkNew<vtkDoubleArray> pressure; pressure->SetName("pressure"); pressure->InsertNextValue(7); grid->GetCellData()->AddArray(pressure);
-    std::filesystem::create_directories(CUT_REFERENCE_FIXTURE_DIR);
-    const std::string path = std::string(CUT_REFERENCE_FIXTURE_DIR)+"/"+name+".vtu";
-    vtkNew<vtkXMLUnstructuredGridWriter> writer; writer->SetFileName(path.c_str()); writer->SetInputData(grid); writer->SetDataModeToAscii();
-    require(writer->Write(),"Cannot write curved-reference fixture");
+    CellFixture::Write(mesh,std::string(CUT_REFERENCE_FIXTURE_DIR)+"/"+name+".vtu",{{"temperature",CellFixture::Values(field(mesh,false))},{"u_squared",CellFixture::Values(field(mesh,true))}},{{"pressure",{7}}});
 }
 MeshCutGeometryOptions options()
 {
