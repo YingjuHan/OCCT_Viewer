@@ -1,8 +1,7 @@
 # Interactive demo: replace only this demo's model and keep DRAW running.
 set cut_view_demo_dir [file dirname [file normalize [info script]]]
 if {[llength [info commands ::CutViewManager::close]]} { ::CutViewManager::close }
-set ::env(CSF_VIEWDRAWDefaults) [file normalize [file join $cut_view_demo_dir .. .. source-draw ViewDraw]]
-pload -VIEWDRAW
+source [file join $cut_view_demo_dir viewdraw_runtime.tcl]
 vinit CutView -width 800 -height 600
 vsetbg -color WHITE
 catch {scvcutview cut_view_demo clear}

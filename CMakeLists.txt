@@ -488,6 +488,11 @@ if (OCCTV_BUILD_WEB_VIEWER)
   # 添加 SCwebviewer-ts 子目录
 endif()
 
+if (WIN32 AND TARGET ViewDraw)
+  include (draw_runtime)
+  occtviewer_generate_draw_runtime()
+endif()
+
 # Workspace files for VSCode
 # ==========================
 # VSCode 的工作区文件

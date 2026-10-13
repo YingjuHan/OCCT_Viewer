@@ -1,7 +1,6 @@
 # Interactive general-cell demo; run vtk_cell_cut_tests once to generate its fixture.
 set vtk_demo_dir [file dirname [file normalize [info script]]]
-set ::env(CSF_VIEWDRAWDefaults) [file normalize [file join $vtk_demo_dir .. .. source-draw ViewDraw]]
-pload -VIEWDRAW
+source [file join $vtk_demo_dir viewdraw_runtime.tcl]
 source [file join $vtk_demo_dir cut_view_manager.tcl]
 set vtk_demo_file [file normalize [file join $vtk_demo_dir .. .. build test native vtk-cell-fixtures cell_79.vtu]]
 if {[info exists ::vtk_cut_demo_file]} { set vtk_demo_file $::vtk_cut_demo_file }

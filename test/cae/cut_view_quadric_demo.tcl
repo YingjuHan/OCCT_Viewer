@@ -1,8 +1,7 @@
 # Native analytic curved-cut demo; keeps DRAW running and can be sourced again.
 set curved_demo_dir [file dirname [file normalize [info script]]]
 if {[llength [info commands ::CutViewManager::close]]} { ::CutViewManager::close }
-set ::env(CSF_VIEWDRAWDefaults) [file normalize [file join $curved_demo_dir .. .. source-draw ViewDraw]]
-pload -VIEWDRAW
+source [file join $curved_demo_dir viewdraw_runtime.tcl]
 vinit CurvedCutView -width 800 -height 600
 vsetbg -color WHITE
 catch {scvcutview cut_view_curved_demo clear}

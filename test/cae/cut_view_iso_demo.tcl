@@ -1,8 +1,7 @@
 # Interactive independent-field isosurface demo; keeps DRAW running.
 set cut_view_iso_demo_dir [file dirname [file normalize [info script]]]
 if {[llength [info commands ::CutViewManager::close]]} { ::CutViewManager::close }
-set ::env(CSF_VIEWDRAWDefaults) [file normalize [file join $cut_view_iso_demo_dir .. .. source-draw ViewDraw]]
-pload -VIEWDRAW
+source [file join $cut_view_iso_demo_dir viewdraw_runtime.tcl]
 vinit IsoCutView -width 800 -height 600
 vsetbg -color WHITE
 catch {scvcutview cut_view_iso_demo clear}

@@ -86,8 +86,34 @@ configure preserves the refreshed file and the previous file's backup.
 For an interactive demonstration, run this single command in DRAW:
 
 ```tcl
-source /home/hyj/Desktop/workspace/OCCT_Viewer/test/cae/cut_view_demo.tcl
+source D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_demo.tcl
 ```
+
+The four interactive demos now initialize the Windows DLL search path in the
+current DRAW session before loading the plugin. CMake generates
+`viewdraw-runtime.tcl` beside `ViewDraw` with the actual project/OCCT/compiler/zlib
+runtime directories, even with `OCCTV_USE_VSCODE=OFF`. Configure an existing
+build once to create it (`cmake -S . -B build/mingw`). The helper first checks
+the working directory and existing PATH, then `build/mingw/{bind,bin}` and
+`build/{bind,bin}`. For another build, select its generated file explicitly:
+
+```tcl
+set ::env(OCCTV_DRAW_RUNTIME) D:/my-build/bind/viewdraw-runtime.tcl
+source D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_demo.tcl
+```
+
+An existing DRAW session can retry `source` after a failed `pload`; the helper
+updates its PATH without requiring a debugger restart. It preserves an already
+loaded plugin and leaves DRAW running. A fully configured environment can still
+load the plugin without a generated runtime file. Other platforms retain their
+existing loader environment requirements.
+
+Verified from a deliberately incomplete Windows PATH: the original load error
+is reproduced both without project DLLs and without zlib. After initialization,
+the manager opens, the x=0.25 section has area 0.28125, and repeated source keeps
+PATH unchanged. Loading after an earlier failure in the same process, all four
+demos, explicit runtime selection and the missing-file diagnostic also pass.
+Evidence is in `build/viewdraw-source-*.log`.
 
 The demo resolves fixture paths relative to the script, can be sourced repeatedly, and leaves DRAW
 running. It opens a Cut View Manager and nodal contours at x=0.25. Select a row without activating it;

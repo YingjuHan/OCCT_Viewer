@@ -9,6 +9,14 @@
 真实多面体近面插值已修复，缺面拒绝与旧 v3 session 指纹兼容回归均通过。
 Web/Vue/WASM 未在本次迁移中验证，旧百万单元性能记录未重新测量。
 
+Windows DRAW 启动入口已补齐：四个交互 demo 在当前会话中读取 CMake 生成的
+`viewdraw-runtime.tcl`，将项目、OCCT、编译器和 zlib 的实际 DLL 目录加入 PATH。
+此前仅修复 VS Code launch 环境，从其他入口直接 source 仍可能加载失败。
+现已复现缺少项目路径/缺少 zlib 的原错误，并验证修复后管理器打开、截面面积
+0.28125、重复 source 和同一进程失败后重试。自定义构建目录通过
+`::env(OCCTV_DRAW_RUNTIME)` 选择；具体命令与构建本地日志见
+[DRAW 使用说明](../test/README.md#run-draw-directly)。
+
 ## 1. 接续范围与当前停点
 
 用户已在 Windows 工作区发出继续开发指令。N02 已按文档范围闭环并提交；
