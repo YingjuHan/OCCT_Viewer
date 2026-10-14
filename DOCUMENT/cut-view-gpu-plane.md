@@ -42,10 +42,12 @@ shader therefore clips fragments explicitly. The section is a group on the AIS
 parent; the body is the single persistent child. Hidden-body masks disconnect
 that child without deleting its structures or VBOs.
 
-Warm plane edits update plane uniforms and the section's active attribute/index
-ranges. The source body arrays do not change. Section buffers reserve capacity
-and grow when needed; empty sections also invalidate one reserved entry so OCCT
-updates its draw count. Geometry/deformation changes rebuild the source once.
+Warm plane edits update plane uniforms and the section's active attribute range.
+Identity indices are initialized once per capacity; stable counts upload no
+indices. Count changes invalidate one reserved index so OCCT updates its draw
+count, including empty sections. The source body arrays do not change. Section
+buffers reserve capacity and grow when needed. Geometry/deformation changes
+rebuild the source once.
 Field changes preserve source positions/normals/indices and invalidate only the
 contiguous UV attribute range in the deinterleaved body buffer.
 
@@ -56,12 +58,16 @@ for timing. It requires the configured Debug OCCT SDK and its matching source.
 
 ```powershell
 ./test/run-cut-upload-capture.ps1 -BuildDirectory build/mingw
+./test/run-cut-upload-capture.ps1 -BuildDirectory build/mingw -Grid 110
 ```
 
-The capture writes `cut-upload-capture.json` and `.log` under the build directory.
+The capture writes `cut-upload-capture.json` and `.log` under the build directory
+(with a grid suffix for non-default fixtures). The 6^3 and 110^3 fixtures cover
+16-bit and 32-bit section indices respectively.
 Its stable-capacity fixture requires zero warm body uploads, zero warm section
-VBO initializations, only UV body uploads on a field edit, and zero body render
-calls while displaying the section alone. Native refresh and plane mouse edits
+VBO initializations, zero stable-count section index uploads, one-index updates
+on count changes/empty frames, only UV body uploads on a field edit, and zero
+body render calls while displaying the section alone. Native refresh and plane mouse edits
 use `AIS_InteractiveContext::Update` for the GPU path; `Redisplay` always marks
 the parent dirty and would recreate the section primitive despite mutable arrays.
 Group, structure, and layer bounds are refreshed when section positions change,
@@ -276,3 +282,76 @@ path. These are open follow-ups; this audit closes the resident-body behavior,
 bounded precision fixtures and large-file functional verification, not a
 universal multi-million-cell frame-rate requirement. Browser/WASM remains
 outside this native change.
+
+## Plane drag preparation update (2026-10-14)
+
+`de8bc05` batches interleaved section vertices after checking the OCCT buffer
+layout, computes nodal/constant-element color coordinates once per entity,
+reserves triangle staging capacity, and prepares large-section double positions
+and nodal colors with four workers. Source geometry/fields are materialized on
+the viewer thread before workers read them. FE position reconstruction is
+unchanged. Bounds are computed during staging, avoiding an OCCT vertex readback
+scan. Identity indices are initialized once per capacity; stable counts submit
+only attributes, and count changes submit one index to refresh OCCT draw counts.
+For the 150^3 crossing fixture this reduces a warm submitted section range from
+4,860,000 to 4,320,000 bytes. These are invalidation counters, not driver traffic.
+
+The user's `build/mingw/Release` (`-O3 -DNDEBUG`) is the measured build. Same
+hardware/viewport/fields as above; one 60-frame baseline process and three
+60-frame post-change processes per scenario, On-only. Builds, CTest, GDB capture
+and requested index refreshes are outside these timing runs. Other desktop
+activity was not suspended. AIS/primitive preparation includes presentation
+setup and cannot be interpreted as just GPU buffer copying.
+
+| Scenario | Baseline FPS / p95 ms | Updated FPS range / p95 range ms | Baseline preparation mean / updated range ms |
+| --- | ---: | ---: | ---: |
+| Crossing | 26.51 / 82.57 | 25.45–33.57 / 77.09–105.66 | 14.11 / 6.08–7.62 |
+| Rotating | 11.56 / 109.30 | 12.05–12.45 / 96.23–105.84 | 14.89 / 6.75–7.02 |
+| Fixed deformation | 10.23 / 124.75 | 10.25–11.57 / 118.84–144.34 | 20.20 / 8.95–10.77 |
+
+Preparation cost consistently fell, while total frames still vary with CPU
+slice/trace/field cost. The first updated crossing run was slower overall despite
+lower preparation cost; no universal frame-rate gain or joint target pass is
+claimed. All nine updated scenarios pass original-FE sampling and residency.
+Logs/CSVs are under `build/mingw/Release`, with labels `drag-before` and
+`drag-after-isolated-r{1,2,3}`. The earlier `drag-after` run overlapped a Debug
+build and is excluded from these comparisons.
+
+The repeatable `-MouseDrag` benchmark loads the same 3,375,000-cell VTU in the
+actual Tk Manager, picks the plane and sends held mouse events through
+AIS_ViewController. Each timed move includes `glFinish` and a Manager refresh.
+Refresh is tested every frame, more often than normal 150 ms polling; assertions
+and screenshots are outside timing. This is event-processing throughput, not a
+recording of human input or a native OS message backlog. Release/abort, changed
+pixels, one synchronization per move, no poll-triggered synchronization and
+zero warm body submissions are required. Original-FE sampling remains in the
+separate file benchmark and bounded interaction regression.
+
+| Mask | Frames | FPS | p50 ms | p95 ms | Mean Manager refresh ms |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 2 | 60 | 23.38 | 26.02 | 84.01 | 0.94 |
+| 3 | 60 | 21.57 | 29.19 | 89.74 | 0.98 |
+| 7 | 60 | 21.49 | 31.04 | 101.49 | 0.98 |
+
+Evidence is `cut-full-frame-hex_150.vtu-{2,3,7}-auto-pointer-after-r1.log` and the
+corresponding `drag.csv`, first/last PNGs under `test/native/draw-benchmark-*` in
+that build. The mask-3 CSV separates section/FE/presentation phases. For example,
+a layer-crossing frame spends 66.12 ms in slice plus trace versus 6.14 ms in FE
+and 5.80 ms in presentation preparation. First/last mask-3 PNGs were inspected.
+Manager polling is not the remaining primary bottleneck.
+
+Debug affected regression: 7/7 (28.89 s), covering native/display, real pointer
+commit/abort, Tk controls, cap/body offset/deformation/mask raster fixtures and
+large binary-format smoke. Evidence: `build/mingw/drag-regression.log`.
+The GDB capture passes on both 6^3 and 110^3 fixtures (1,331,000 source cells
+in the latter). Warm stable-count frames upload no section indices. Changed
+counts, the empty frame and restoration upload exactly two bytes per update
+for 16-bit indices and four bytes for 32-bit indices, without section VBO
+reinitialization. Evidence: `build/mingw/cut-upload-capture{,-110}.json` and `.log`;
+these captures are kept separate from frame timing.
+
+Remaining work is CPU native slice construction when crossing source vertices
+or changing the normal, compact trace/provenance staging and FE mapping. Any
+further optimization must retain interface classification, independent physical
+trace policies and paired body/cap publication. The multi-million-cell joint
+>=15 FPS / p95 <=67 ms gate remains open.

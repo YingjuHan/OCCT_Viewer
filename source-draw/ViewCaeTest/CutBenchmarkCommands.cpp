@@ -20,6 +20,15 @@
 #endif
 
 namespace {
+int frameWait(Draw_Interpretor& di,int argc,const char**)
+{
+    if (argc != 1 || ViewerTest::CurrentView().IsNull() || glGetString(GL_VERSION) == nullptr) {
+        di << "Error: scvcutframewait requires a current native OpenGL viewport";
+        return 1;
+    }
+    glFinish();
+    return 0;
+}
 int memory(Draw_Interpretor& di,int argc,const char**)
 {
     if(argc!=1) { return 1; }
@@ -135,4 +144,4 @@ int benchmark(Draw_Interpretor& di,int argc,const char** argv)
     catch(const std::exception& e) { di<<"Error: "<<e.what(); } return 1;
 }
 }
-namespace ViewCaeTest { void RegisterCutBenchmarkCommands(Draw_Interpretor& di) { di.Add("scvcutbenchmark","Full native contour/primitive/redraw benchmark",__FILE__,benchmark,"SC Viewer CAE Prs"); di.Add("scvcutfilebenchmark","File import and full-frame benchmark for generate-large-vtk.py grids",__FILE__,benchmark,"SC Viewer CAE Prs"); di.Add("scvcutmemory","Native process resource sample",__FILE__,memory,"SC Viewer CAE Prs"); } }
+namespace ViewCaeTest { void RegisterCutBenchmarkCommands(Draw_Interpretor& di) { di.Add("scvcutbenchmark","Full native contour/primitive/redraw benchmark",__FILE__,benchmark,"SC Viewer CAE Prs"); di.Add("scvcutfilebenchmark","File import and full-frame benchmark for generate-large-vtk.py grids",__FILE__,benchmark,"SC Viewer CAE Prs"); di.Add("scvcutmemory","Native process resource sample",__FILE__,memory,"SC Viewer CAE Prs"); di.Add("scvcutframewait","Wait for current viewport GPU work without another redraw (benchmarking)",__FILE__,frameWait,"SC Viewer CAE Prs"); } }

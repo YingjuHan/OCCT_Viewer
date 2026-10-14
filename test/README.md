@@ -758,6 +758,8 @@ python test/generate-large-vtk.py --grids 128 150 --deformation --output build/l
 ./test/run-cut-benchmark.ps1 -InputFile build/large-vtk/hex_128.vtu -Mask 3 -Frames 60 -RunLabel large-vtu
 ./test/run-cut-benchmark.ps1 -InputFile build/large-vtk/hex_150.vtk -Mask 2 -Frames 60 -Scenarios rotating -RunLabel large-vtk
 ./test/run-cut-upload-capture.ps1
+./test/run-cut-upload-capture.ps1 -Grid 110
+./test/run-cut-benchmark.ps1 -BuildDirectory build/mingw/Release -InputFile build/large-vtk/hex_150.vtu -Mask 2 -Frames 60 -MouseDrag -RunLabel pointer
 ctest --test-dir build/mingw -R '^(generate_large_vtk_smoke|draw_large_vtk_smoke|draw_cut_view_gpu_plane)$' --output-on-failure
 ```
 
@@ -768,3 +770,12 @@ display combinations and real redraw are tested. Large files/logs stay in build/
 The GDB upload capture runs separately from performance measurements and checks
 OCCT's actual VBO creation and `glBufferSubData` call sites. Submission counters
 in `renderinfo` alone are not GPU upload measurements.
+
+`-MouseDrag` opens the actual Tk Manager, picks the plane and routes held mouse
+movement through AIS_ViewController. It measures each event and `glFinish`, plus
+a Manager refresh on every frame (more frequent than ordinary 150 ms polling),
+and verifies one synchronization per move, zero body uploads, release/abort and
+changed framebuffer pixels. CSV phase columns report section/FE/presentation
+costs; they do not include section numerical validation. The separate file
+benchmark validates original-FE interpolation. Masks 2, 3 and 7 are supported.
+Run timing separately from builds, tests, GDB capture and index refreshes.

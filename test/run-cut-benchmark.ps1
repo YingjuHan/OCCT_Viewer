@@ -6,6 +6,7 @@ param(
     [ValidateSet('auto','cpu')][string]$Backend = 'auto',
     [string]$RunLabel = 'run',
     [string]$InputFile = '',
+    [switch]$MouseDrag,
     [ValidateSet('crossing','rotating','deformed')][string[]]$Scenarios = @('crossing','rotating','deformed'),
     [string]$OcctDirectory = 'D:/workspace/OpenCASCADE/OCCT_private/install/mingw'
 )
@@ -33,8 +34,15 @@ if ($InputFile) {
 } else { Remove-Item Env:CUTVIEW_BENCHMARK_FILE -ErrorAction SilentlyContinue }
 $env:CUTVIEW_OUTPUT_DIR = Join-Path $resolvedBuild "test/native/draw-benchmark-$caseLabel-$Mask-$Backend-$RunLabel"
 $benchmarkLog = Join-Path $resolvedBuild "cut-full-frame-$caseLabel-$Mask-$Backend-$RunLabel.log"
-& (Join-Path $runtimeDirectory 'DRAWEXE.exe') -b -f (Join-Path $PSScriptRoot 'cae/cut_view_benchmark.tcl') *> $benchmarkLog
+if ($MouseDrag) {
+    if (!$InputFile -or $Backend -ne 'auto' -or $Mask -notin @(2,3,7)) { throw 'MouseDrag requires InputFile, auto backend and mask 2, 3 or 7' }
+    & (Join-Path $runtimeDirectory 'DRAWEXE.exe') -i -f (Join-Path $PSScriptRoot 'cae/cut_view_drag_benchmark.tcl') *> $benchmarkLog
+    $passMarker = 'CUT_DRAG_BENCHMARK_PASS'
+} else {
+    & (Join-Path $runtimeDirectory 'DRAWEXE.exe') -b -f (Join-Path $PSScriptRoot 'cae/cut_view_benchmark.tcl') *> $benchmarkLog
+    $passMarker = 'CUT_BENCHMARK_PASS'
+}
 $benchmarkExit = $LASTEXITCODE
 Get-Content -LiteralPath $benchmarkLog
-if ($benchmarkExit -ne 0 -or !(Select-String -LiteralPath $benchmarkLog -SimpleMatch 'CUT_BENCHMARK_PASS' -Quiet)) { exit 1 }
+if ($benchmarkExit -ne 0 -or !(Select-String -LiteralPath $benchmarkLog -SimpleMatch $passMarker -Quiet)) { exit 1 }
 exit 0

@@ -236,6 +236,12 @@ Its current performance gate is partial: native million-cell fixed-deformation
 p95 is not consistently <=67 ms, and multi-million-cell rotation/deformation
 still needs CPU section/trace optimization. These limits are separate from the
 historical N08 measurements below.
+The 2026-10-14 drag update reduces measured section presentation preparation
+from 14–20 ms to 6–11 ms, retains identity indices on GPU, and adds an actual
+Manager/AIS pointer benchmark. Three 60-frame 3,375,000-cell drag cases pass
+single synchronization, residency and release/abort checks. Layer-crossing
+CPU slice/trace long frames and the joint performance gate remain open; see
+the GPU plane audit for all retained run ranges and validation limits.
 
 Release, one million native first-order regular hexahedra, one On-only plane,
 nodal field, 60 frames per scenario in each of three complete measured processes:

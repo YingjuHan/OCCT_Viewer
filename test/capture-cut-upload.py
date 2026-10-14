@@ -80,6 +80,8 @@ def finished(event):
     count_updates = [e for e in events if e["role"] == "slice" and e["kind"] == "indices" and e["phase"] == 4]
     if not count_updates or any(e["start"] != 0 or e["bytes"] not in (2, 4) for e in count_updates):
         failures.append("Changed slice count did not upload a single reserved index")
+    if not any(e["vertices"] == 0 for e in count_updates):
+        failures.append("No empty slice draw-count update observed")
     if any(e["role"] == "slice" and e["kind"] == "init" and e["phase"] in (1, 2, 3, 4) for e in events):
         failures.append("Section VBO was recreated within its reserved capacity")
     field = [e for e in events if e["role"] == "body" and e["phase"] == 2 and e["kind"] != "render"]
