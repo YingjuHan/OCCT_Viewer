@@ -658,6 +658,40 @@ static void gpuPlanePrimitives()
     bool rejected = false; try { view->Synchronize(); } catch (const std::exception&) { rejected = true; }
     require(rejected && generation == view->SynchronizationCount() && presentations == view->Presentations(),"Cancelled frame published");
     cuts.BeginRequest(nullptr);
+    cuts.SetVisibility("x",3); view->SetField(field("next",true,{1,2,3,4})); view->Synchronize();
+    require(view->RenderStatistics().BodyBuilds == builds && view->RenderStatistics().SubmittedBodyBytes > 0,
+        "Field edit rebuilt source geometry or missed attribute submission");
+    cuts.SetVisibility("x",2); view->Synchronize();
+    cuts.InvalidateGeometry(); view->Synchronize();
+    cuts.SetVisibility("x",3); view->Synchronize();
+    require(view->RenderStatistics().BodyBuilds == builds+1,"Geometry invalidation while slice-only left stale body");
+    Handle(ViewCae::MeshCutPickOwner) owner = new ViewCae::MeshCutPickOwner(view,"x",0,0,true,cuts.Statistics().SourceEpoch);
+    owner->Source = true;
+    near(view->Probe(owner).Values[0],1,"Resident source pick lost current field");
+    cuts.SetVisibility("x",2); view->Synchronize();
+    rejected = false; try { view->Probe(owner); } catch (const std::invalid_argument&) { rejected = true; }
+    require(rejected,"Hidden resident source owner still probes");
+    cuts.SetVisibility("x",3); cuts.InvalidateGeometry(); view->Synchronize();
+    rejected = false; try { view->Probe(owner); } catch (const std::invalid_argument&) { rejected = true; }
+    require(rejected,"Geometry update retained a stale source pick");
+    Handle(RWCae::MeshNVecProperty) displacement = new RWCae::MeshNVecProperty("displacement",3,
+        RWCae::MeshPropertyBase::MappingType::Nodal,RWCae::MeshNVecPropertyType::Vector);
+    displacement->Init<RWCae::MeshScalarProperty>();
+    for (int c = 0; c < 3; ++c) {
+        auto component = Handle(RWCae::MeshScalarProperty)::DownCast(displacement->GetComponent(c)); component->Init(4);
+        for (int n = 0; n < 4; ++n) { component->SetValue(RWCae::MeshPropertyEntityInfo(n),c == 0 ? 1 : 0); }
+    }
+    displacement->UpdateComponents();
+    require(cuts.SetDeformation(displacement,.1),"GPU deformation rejected");
+    cuts.SetPlane("x",Graphic3d_Vec4d(1,0,0,-.5)); view->Synchronize();
+    owner = new ViewCae::MeshCutPickOwner(view,"x",0,0,true,cuts.Statistics().SourceEpoch); owner->Source = true;
+    near(view->Probe(owner).Position.x(),cuts.EffectiveDeformationScale(),"Resident probe ignores deformation");
+    near(view->Probe(owner).Values[0],1,"Deformed resident probe changed original field");
+    auto style = view->Style(MeshCutPortion::On); style.Transparency = .5f;
+    view->SetStyle(MeshCutPortion::On,style); view->Synchronize();
+    require(!view->RenderStatistics().GpuPlane && view->RenderStatistics().FallbackReason == "transparent_style",
+        "Transparent style did not retain CPU rendering");
+    style.Transparency = 0; view->SetStyle(MeshCutPortion::On,style); view->Synchronize();
     view->SetRenderBackend(ViewCae::MeshCutRenderBackend::Cpu); view->Synchronize();
     require(!view->RenderStatistics().GpuPlane && view->RenderStatistics().FallbackReason == "requested_cpu","CPU override ignored");
     view->SetRenderBackend(ViewCae::MeshCutRenderBackend::Auto); view->Synchronize();

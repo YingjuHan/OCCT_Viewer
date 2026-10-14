@@ -203,10 +203,11 @@ Standard_Integer imageCompare(Draw_Interpretor& di, Standard_Integer argc, const
         || reference.SizeY() != actual.SizeY() || reference.IsEmpty()) {
         di << "Images require matching non-empty dimensions"; return 1;
     }
-    uint64_t changed = 0, sum = 0; int maximum = 0;
+    uint64_t changed = 0, sum = 0, silhouette = 0; int maximum = 0;
     for (size_t y = 0; y < reference.SizeY(); ++y) { for (size_t x = 0; x < reference.SizeX(); ++x) {
         const auto a = reference.PixelColor((int)x,(int)y).GetRGB(), b = actual.PixelColor((int)x,(int)y).GetRGB();
         const double av[] = {a.Red(),a.Green(),a.Blue()}, bv[] = {b.Red(),b.Green(),b.Blue()};
+        silhouette += (std::min({av[0],av[1],av[2]}) < 0.96) != (std::min({bv[0],bv[1],bv[2]}) < 0.96);
         bool different = false;
         for (int c = 0; c < 3; ++c) {
             const int delta = std::abs((int)std::lround(av[c]*255)-(int)std::lround(bv[c]*255));
@@ -215,7 +216,7 @@ Standard_Integer imageCompare(Draw_Interpretor& di, Standard_Integer argc, const
         changed += different;
     } }
     di << "changed " << std::to_string(changed).c_str() << " mean " << (double)sum/(reference.SizeX()*reference.SizeY()*3)
-       << " maximum " << maximum;
+       << " maximum " << maximum << " silhouette " << (double)silhouette;
     return 0;
 }
 

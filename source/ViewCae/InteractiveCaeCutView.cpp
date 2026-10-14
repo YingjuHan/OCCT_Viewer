@@ -131,7 +131,11 @@ std::string InteractiveCaeCutView::planeFallback(const std::vector<ViewCaeGeom::
     }
     if (!volume || other) { return "non_volume_mesh"; }
     for (int i = 0; i < 3; ++i) {
-        if (EffectiveStyle(plane->Id,(ViewCaeGeom::MeshCutPortion)i).Mode != InteractiveCaeMeshPrsMode::FlatShaded) {
+        const auto style = EffectiveStyle(plane->Id,(ViewCaeGeom::MeshCutPortion)i);
+        // Connected OCCT instances do not reproduce the CPU union's transparent
+        // surface ordering. Preserve that display contract on the existing path.
+        if (style.Transparency > 0) { return "transparent_style"; }
+        if (style.Mode != InteractiveCaeMeshPrsMode::FlatShaded) {
             return "display_mode";
         }
     }
@@ -267,7 +271,8 @@ MeshCutProbe InteractiveCaeCutView::probeResult(const ViewCaeGeom::MeshCutResult
     if (node) {
         ViewCaeGeom::MeshInterpolatedNode origin;
         if (!geometry->OriginNode(entity,origin)) { throw std::runtime_error("Missing original node provenance"); }
-        result.SourceNodes = origin.BaseNodes(); result.Position = Graphic3d_Vec3d(mesh->Nodes()[entity]);
+        auto position = mesh->Nodes()[entity]; geometry->ModifyNode(entity,position);
+        result.SourceNodes = origin.BaseNodes(); result.Position = Graphic3d_Vec3d(position);
         // A discontinuous node needs an owning element; choose lowest section element deterministically.
         bool found = false;
         auto process = [&](const auto& adaptor) {
@@ -315,7 +320,8 @@ MeshCutProbe InteractiveCaeCutView::probeResult(const ViewCaeGeom::MeshCutResult
                 if ((RWCae::MeshEntityId)element.GlobalIndex() != entity) { continue; }
                 result.Values.resize(field->NbRawComponents(),0.0);
                 for (int n = 0; n < element.NbNodes(); ++n) {
-                    result.Position += Graphic3d_Vec3d(mesh->Nodes()[element[n]])/element.NbNodes();
+                    auto position = mesh->Nodes()[element[n]]; geometry->ModifyNode(element[n],position);
+                    result.Position += Graphic3d_Vec3d(position)/element.NbNodes();
                     for (int c = 0; c < field->NbRawComponents(); ++c) {
                         result.Values[c] += field->GetRawComponent(c)->Value(RWCae::MeshPropertyEntityInfo(
                             field->IsNodal() ? element[n] : entity,field->HasNodeVecComponents() ? (int)element[n] : -1))/element.NbNodes();
@@ -365,6 +371,9 @@ MeshCutProbe InteractiveCaeCutView::Probe(const Handle(MeshCutPickOwner)& owner)
     if (!owner.IsNull() && owner->SelectablePointer() == this && owner->Source) {
         if (!myRenderStatistics.GpuPlane || owner->Generation != myBodySourceEpoch) { throw std::invalid_argument("Stale source pick owner"); }
         const auto probe = probeResult(myBodyPickResult,0,owner->Entity,owner->Node);
+        if (!myGpuPresentation || !myGpuPresentation->AcceptBodyPoint(gp_Pnt(probe.Position.x(),probe.Position.y(),probe.Position.z()))) {
+            throw std::invalid_argument("Source pick is hidden by the current plane");
+        }
         return probe;
     }
     if (owner.IsNull() || owner->SelectablePointer() != this || owner->Generation != mySynchronizationCount) {
@@ -412,7 +421,7 @@ void InteractiveCaeCutView::Synchronize()
                 auto body = gpuSection;
                 body.Roots = {}; body.Portions = {}; body.Fields = {}; body.PhysicalFields = {};
                 body.PhysicalProvenance = {}; body.LineField.Nullify(); body.PhysicalLineField.Nullify();
-                body.Roots[0] = myCuts.SourceGeometry(); body.Portions[0] = body.Roots[0]->GetLastChild();
+                body.Roots[0] = myCuts.SourceGeometry(); body.Portions[0] = body.Roots[0]->GetLastNotModifierChild();
                 body.Portions[0]->GetMeshData();
                 results.push_back(body);
                 bodyPickResult = body;
@@ -439,7 +448,7 @@ void InteractiveCaeCutView::Synchronize()
         result.TensorDerived = !myField.IsNull() && myField->Type() == RWCae::MeshNVecPropertyType::Tensor
             && myCuts.RecoveryOptions().Tensor.Measure != ViewCaeGeom::MeshCutTensorMeasure::Components;
         if (result.TensorDerived) { result.SourceField = ViewCaeGeom::DeriveCutTensorField(myField,myCuts.RecoveryOptions().Tensor); }
-        result.Roots[0] = myCuts.SourceGeometry(); result.Portions[0] = result.Roots[0]->GetLastChild();
+        result.Roots[0] = myCuts.SourceGeometry(); result.Portions[0] = result.Roots[0]->GetLastNotModifierChild();
         result.Portions[0]->GetMeshData();
         auto slice = Handle(ViewCaeGeom::MeshGeometrySlice)::DownCast(result.Portions[0]);
         if (!slice.IsNull()) { result.LineField = slice->CalculateLineProperty(result.SourceField); }
@@ -582,8 +591,11 @@ void InteractiveCaeCutView::Synchronize()
         myGpuPresentation->Update(bodyPresentation,gpuSection,gpuDefinition,styles,frameTexture,
             gpuSection.TensorDerived ? 0 : myComponent,myCuts,statistics);
         statistics.SliceEvaluations += gpuDefinition.Visibility != 0 && gpuDefinition.Visibility != 5 ? 1 : 0;
-        myBodyPresentation = bodyPresentation; myBodySourceEpoch = myCuts.Statistics().SourceEpoch;
-        myBodyFieldEpoch = myCuts.FieldEpoch(); myBodyComponent = myComponent; myBodyCellMode = gpuDefinition.CellMode;
+        myBodyPresentation = bodyPresentation;
+        if ((gpuDefinition.Visibility & 5) != 0) {
+            myBodySourceEpoch = myCuts.Statistics().SourceEpoch; myBodyFieldEpoch = myCuts.FieldEpoch();
+            myBodyComponent = myComponent; myBodyCellMode = gpuDefinition.CellMode;
+        }
         myBodyPickResult = bodyPickResult;
     } else {
         myGpuPresentation.reset(); myBodyPresentation.Nullify();

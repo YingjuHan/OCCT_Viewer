@@ -26,6 +26,11 @@ public:
 private:
     void updateStructures();
     Handle(MeshPresentationScalar) myBody;
+    std::vector<Handle(Graphic3d_ArrayOfTriangles)> myBodyArrays;
+    Graphic3d_Vec3d myOrigin = Graphic3d_Vec3d(0);
+    uint64_t mySourceEpoch = 0;
+    uint64_t myBodyEpoch = 0;
+    Bnd_Box myBounds;
     Handle(Graphic3d_ArrayOfTriangles) mySlice;
     Handle(Graphic3d_AspectFillArea3d) myBodyAspect, mySliceAspect;
     Handle(Graphic3d_ShaderProgram) myBodyShader, mySliceShader;
@@ -35,6 +40,7 @@ private:
     Handle(Graphic3d_ClipPlane) myClip;
     bool myBodyChanged = false, mySliceChanged = false;
     bool myShowBody = false, myShowSlice = false;
+    bool myBodyConnected = false;
     Graphic3d_Vec4d myPlane;
     unsigned myMask = 0;
     std::shared_ptr<void> myBodyLease, mySliceLease;
