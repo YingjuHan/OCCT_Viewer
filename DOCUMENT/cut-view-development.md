@@ -227,6 +227,16 @@ explicit element normals. Nonplanar shell adapters and beam/composite heat are r
 
 ## Performance Evidence
 
+The single-plane GPU clip / CPU slice optimization and self-contained large
+VTK/VTU workloads are documented in [the GPU plane audit](cut-view-gpu-plane.md).
+The following N08 numbers are historical baseline measurements, predating the
+resident-body backend; use the new audit for current measurements and fallback limits.
+The resident-plane display, gap fixtures and actual VBO upload checks pass.
+Its current performance gate is partial: native million-cell fixed-deformation
+p95 is not consistently <=67 ms, and multi-million-cell rotation/deformation
+still needs CPU section/trace optimization. These limits are separate from the
+historical N08 measurements below.
+
 Release, one million native first-order regular hexahedra, one On-only plane,
 nodal field, 60 frames per scenario in each of three complete measured processes:
 
