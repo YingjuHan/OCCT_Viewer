@@ -355,3 +355,66 @@ or changing the normal, compact trace/provenance staging and FE mapping. Any
 further optimization must retain interface classification, independent physical
 trace policies and paired body/cap publication. The multi-million-cell joint
 >=15 FPS / p95 <=67 ms gate remains open.
+
+## 2026-10-14 large-data CPU pipeline verification
+
+Only the existing 150^3 grids were used for the following new measurements:
+3,375,000 hexahedra and 3,442,951 points. Release build `build/mingw-release`,
+60 frames per case, actual OpenGL completion, sequential runs without compilation
+or graph indexing during timing. Import and cold setup are outside frame timing.
+
+| Actual Manager mouse drag | FPS | p50 ms | p95 ms | Prior p95 ms |
+| --- | ---: | ---: | ---: | ---: |
+| VTU mask 2, section only | 31.35 | 22.37 | 57.86 | 84.01 |
+| VTU mask 3, one side plus section | 29.62 | 24.36 | 65.29 | 89.74 |
+| VTU mask 7, both sides plus section | 29.65 | 24.19 | 64.83 | 101.49 |
+| Legacy VTK mask 2 | 31.93 | 22.66 | 58.32 | — |
+
+All four runs pass one synchronization per move, paired frames, zero warm body
+uploads and mouse release/abort. Mean Manager refresh is 0.99–1.04 ms. Mask 3's
+final framebuffer was inspected. Evidence is the `cpu-large-pointer-r6` logs and
+`drag.csv`, `drag-first.png`, `drag-last.png` under this build's benchmark folders.
+The live legacy VTK process was checked: ViewDraw and ViewCaeGeom were loaded
+from `build/mingw-release/bin`.
+
+| Full-frame VTU mask 2 | FPS | p50 ms | p95 ms | P0 serial p95 ms |
+| --- | ---: | ---: | ---: | ---: |
+| Translation crossing layers | 45.25 | 18.81 | 52.32 | 75.67 |
+| Rotation | 18.20 | 55.16 | 60.22 | 98.39 |
+| Fixed-deformation translation | 17.76 | 60.23 | 73.86 | 122.48 |
+| Fixed-deformation repeat | 18.20 | 59.32 | 71.66 | 122.48 |
+
+Evidence: labels `cpu-large-r6` and `cpu-large-r7`. Each run passes original-FE
+sampling and resident-body checks. The `PASS` marker verifies correctness;
+the result's `target` field separately records the 15 FPS / 67 ms gate.
+Deformation has `target 0`; no complete performance closure is claimed.
+These full-frame CSVs contain detailed trace phases but lack the newly added
+cumulative cache columns; pointer CSVs include those columns. Their phase data
+must not be presented as cache-counter evidence.
+
+After rebuilding the benchmark command object explicitly, `cpu-large-r8`
+contains the cumulative cache columns. Its crossing/rotation/deformation results
+are 43.60/17.73/17.68 FPS and 51.49/63.85/84.84 ms p95. This repeat confirms
+rotation/crossing improvement and exposes deformation variability; retain all
+runs rather than selecting the best one. No geometry algorithm changed between
+these runs. The usual `build/mingw/Release` runtime was also rebuilt and verified
+with the same 3,375,000-cell VTU: actual mouse drag mask 2, 30.99 FPS, 23.47 ms
+p50, 65.23 ms p95, paired frames, zero body uploads and release/abort passed.
+Evidence label: `cpu-large-runtime-r8` in that build.
+
+In the r6 deformed long frames, coordinate snapshot preparation costs roughly
+14–19 ms, deterministic merge 10–16 ms, pure intersection around 2 ms, and trace
+work 14–21 ms. FE interpolation is approximately 3–4 ms. A 192 ms outlier is
+retained in the CSV. BVH candidate culling is already in use; increasing the
+intersection worker count alone will not remove these remaining costs.
+
+Implemented P0–P3 follow-up: direct original-root provenance, undeformed worker
+preparation, touched-node deformation cache, sparse fallback sharing, generation
+map pools, persistent origin scratch, native interior preparation, bounded partial
+cache eviction and exact parallel projection sorting/union. Source IDs and FE
+weights retain deterministic publication; near-node/general cells retain fallback.
+P4 is still pending: shared mutable Manager caches cannot safely be moved onto
+a worker without snapshot isolation and Viewer-thread paired publication.
+
+Earlier-started correctness regression completed 69/69 in 275.15 s before the
+large-data-only testing instruction. No new small-data tests were started after it.

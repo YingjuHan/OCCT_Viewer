@@ -263,6 +263,28 @@ below the 32 MiB gate. See [N08](cut-view-n08-audit.md) for logs and limits.
 
 See `test/README.md` for commands, Tcl coverage, screenshots, and native API usage.
 
+## 2026-10-14 CPU drag optimization status
+
+P0 profiling, P1 four-worker native hex intersections, P2 compact trace preparation
+and working-set retention, and P3 nodal FE interpolation are implemented. Follow-up
+work removes root provenance walks, pools rebuilt maps, reuses origin buffers,
+uses sparse fallback edge sharing, evicts only enough inactive cached interiors,
+and prepares exact translation projection intervals in parallel. Other cut
+algorithms retain their existing paths. No external VTK library is introduced.
+
+Acceptance now uses the existing 3,375,000-cell VTK/VTU files, not small grids.
+The latest actual Manager drag tests pass for masks 2, 3 and 7 with p95
+57.86, 65.29 and 64.83 ms respectively. Large legacy VTK mask 2 gives 58.32 ms.
+All four runs retain paired publication, zero warm body uploads and release/abort.
+Full-frame VTU rotation passes at 60.22 ms p95. Fixed-deformation translation
+remains open (71.66–84.84 ms p95 across repeats); therefore the combined performance gate is
+still partial. P4 background computation/latest-request coalescing is not
+implemented. See [the GPU plane audit](cut-view-gpu-plane.md) for evidence.
+
+Next priority is deformed coordinate preparation and deterministic node/map
+publication. Any background design must use isolated snapshots and publish the
+matching body plane/cap on the Viewer thread, preserving release/abort semantics.
+
 ## Baseline
 
 The existing native RWVtk, ViewCaeGeom, and Viewer targets build successfully.
