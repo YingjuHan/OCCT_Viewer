@@ -4,13 +4,14 @@
 #include <stdexcept>
 #include <ViewCaeGeom/MeshGeometrySlice.h>
 #include <ViewCaeGeom/MeshCutTrace.h>
+#include <RWCae/MeshScalarProperty.h>
 
 // Exceeds the native staging threshold and the compact trace threshold.
 // Verify analytic geometry and original FE identities, not thread scheduling.
 static void largePlaneSection()
 {
     using namespace ViewCaeGeom;
-    const int n=48;
+    const int n=64;
     Handle(RWCae::MeshData) source=new RWCae::MeshData();
     const auto id=[&](int x,int y,int z) { return (RWCae::MeshEntityId)(x+(n+1)*(y+(n+1)*z)); };
     for(int z=0;z<=n;++z) { for(int y=0;y<=n;++y) { for(int x=0;x<=n;++x) { source->AddNodePosition(Graphic3d_Vec3(x,y,z)); } } }
@@ -19,10 +20,20 @@ static void largePlaneSection()
         source->AddElement(RWCae::MeshElementHexahedron(nodes));
     } } }
     MeshCutViewManager manager(source); manager.AddPlane("large",Graphic3d_Vec4d(1,0,0,-24.25));
+    Handle(RWCae::MeshNVecProperty) field=new RWCae::MeshNVecProperty("linear",1,RWCae::MeshPropertyBase::MappingType::Nodal);
+    field->Init<RWCae::MeshScalarProperty>();
+    const auto component=Handle(RWCae::MeshScalarProperty)::DownCast(field->GetComponent(0)); component->Init(source->NbNodes());
+    for(RWCae::MeshEntityId node=0;node<source->NbNodes();++node) { const auto& p=source->Nodes()[node]; component->SetValue(RWCae::MeshPropertyEntityInfo(node),p.x()+2*p.y()+3*p.z()); }
+    field->UpdateComponents();
     for(double offset:{24.25,24.75,25.25,25.0}) {
         manager.SetPlane("large",Graphic3d_Vec4d(1,0,0,-offset));
-        const auto result=manager.EvaluateSectionForDisplay("large");
+        const auto result=manager.EvaluateSectionForDisplay("large",field);
         const auto section=result.Portions[1]; const auto mesh=section->GetMeshData();
+        const auto values=result.Fields[1]->GetComponent(0);
+        double minimum=0,maximum=0;
+        if(!values->ValueRange().GetBounds(minimum,maximum)) { throw std::runtime_error("Parallel nodal field range is empty"); }
+        // Generated components retain the source range for a stable color scale.
+        if(std::abs(minimum)>1e-9 || std::abs(maximum-6*n)>1e-9) { throw std::runtime_error("Parallel nodal field source range mismatch"); }
         if(mesh->NbIndexedElems()!=n*n || mesh->NbNodes()!=(n+1)*(n+1)) { throw std::runtime_error("Large section has duplicate/missing faces or shared nodes"); }
         double area=0;
         for(RWCae::MeshEntityId e=0;e<mesh->NbIndexedElems();++e) {
@@ -40,6 +51,7 @@ static void largePlaneSection()
             double sum=0; Graphic3d_Vec3d position(0);
             for(const auto& base:origin.BaseNodes()) { sum+=base.second; position+=Graphic3d_Vec3d(source->Nodes()[base.first])*base.second; }
             if(std::abs(sum-1)>1e-12 || std::abs(position.x()-offset)>1e-9 || (position-Graphic3d_Vec3d(mesh->Nodes()[node])).Modulus()>1e-8) { throw std::runtime_error("Large section FE reconstruction mismatch"); }
+            if(std::abs(values->Value(RWCae::MeshPropertyEntityInfo(node))-(position.x()+2*position.y()+3*position.z()))>1e-9) { throw std::runtime_error("Parallel nodal field interpolation mismatch"); }
         }
     }
 }

@@ -422,7 +422,7 @@ void MeshGeometryTraceSection::Refresh(const Handle(MeshGeometrySlice)& section,
             MeshInterpolatedNode origin; if(!section->OriginNode(n,origin)) { throw std::runtime_error("Missing refreshed section FE provenance"); }
             myNodesMap.ChangeFind(n).second=origin; myMeshData->SetNodePosition(n,input->Nodes()[n]);
         }
-        auto update=[&](auto& records) { for(auto& traces:records) { for(auto& weight:traces.front().Weights) { weight.second=myNodesMap.Find(weight.first).second; } } };
+        auto update=[&](auto& records) { sectionWork((int)records.size(),[&](int,int e) { for(auto& weight:records[e].front().Weights) { weight.second=myNodesMap.Find(weight.first).second; } }); };
         update(myElementTraces); update(myLineTraces); return;
     }
     MeshGeometryTraceSection next(myBvhData,section,mySource,topology);
@@ -487,8 +487,24 @@ Handle(RWCae::MeshNVecProperty) MeshGeometryTraceSection::mapTraces(
             return sum;
         };
         if (field->IsNodal()) {
-            for (int n = 0; n < count; ++n) {
-                to->SetValue(RWCae::MeshPropertyEntityInfo(n),value(MeshCutPrimitiveTrace(),*nodalWeights[n]));
+            const auto scalar=Handle(RWCae::MeshScalarProperty)::DownCast(to);
+            if(count>=4096 && !scalar.IsNull() && !Handle(RWCae::MeshScalarProperty)::DownCast(from).IsNull()) {
+                // Initialized scalar slots are disjoint. Workers do not mutate
+                // the shared value range; each block reduces its own range.
+                const int blockSize=1024,blocks=(count+blockSize-1)/blockSize;
+                std::vector<Bnd_Range> ranges(blocks);
+                OSD_ThreadPool::Launcher launcher(*OSD_ThreadPool::DefaultPool(),4);
+                launcher.Perform(0,blocks,[&](int,int block) {
+                    auto& range=ranges[block];
+                    for(int n=block*blockSize;n<std::min(count,(block+1)*blockSize);++n) {
+                        const double v=value(MeshCutPrimitiveTrace(),*nodalWeights[n]);
+                        scalar->SetValue(RWCae::MeshPropertyEntityInfo(n),v,false);
+                        if(!std::isnan(v)) { range.Add(v); }
+                    }
+                });
+                Bnd_Range range; for(const auto& block:ranges) { range.Add(block); } scalar->SetValueRange(range);
+            } else {
+                for(int n=0;n<count;++n) { to->SetValue(RWCae::MeshPropertyEntityInfo(n),value(MeshCutPrimitiveTrace(),*nodalWeights[n])); }
             }
         }
         auto apply = [&](const auto& traces) {
