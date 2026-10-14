@@ -225,6 +225,17 @@ if (TARGET ViewDraw)
     set_tests_properties (draw_cut_view_recovery PROPERTIES ENVIRONMENT "${DRAW_TEST_ENV}"
       PASS_REGULAR_EXPRESSION "CUT_VIEW_RECOVERY_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" TIMEOUT 90)
     if (OCCTV_TEST_DRAW_VISUAL)
+      find_package (Python3 COMPONENTS Interpreter QUIET)
+      if (Python3_Interpreter_FOUND)
+        add_test (NAME generate_large_vtk_smoke COMMAND "${Python3_EXECUTABLE}"
+          "${PROJECT_SOURCE_DIR}/test/generate-large-vtk.py" --grids 6 --deformation --output "${CMAKE_CURRENT_BINARY_DIR}/large-vtk-smoke")
+        set_tests_properties (generate_large_vtk_smoke PROPERTIES FIXTURES_SETUP large_vtk_smoke TIMEOUT 30)
+        add_test (NAME draw_large_vtk_smoke COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/large_vtk.tcl")
+        set_tests_properties (draw_large_vtk_smoke PROPERTIES
+          ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_LARGE_VTK_DIR=${CMAKE_CURRENT_BINARY_DIR}/large-vtk-smoke;CUTVIEW_LARGE_VTK_GRID=6;CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-large-vtk-smoke"
+          FIXTURES_REQUIRED large_vtk_smoke RUN_SERIAL TRUE TIMEOUT 120
+          PASS_REGULAR_EXPRESSION "LARGE_VTK_PASS" FAIL_REGULAR_EXPRESSION "LARGE_VTK_FAIL")
+      endif()
       add_test (NAME draw_cut_view_session COMMAND "${OCCTV_DRAWEXE}" -i -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_session_test.tcl")
       set_tests_properties (draw_cut_view_session PROPERTIES
         ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-session"

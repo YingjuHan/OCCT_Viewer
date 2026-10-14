@@ -734,3 +734,25 @@ each case three times. Gates and exact durations are in the N08/N09 audits;
 build-local fixture/output directories are retained and excluded from Git.
 Million-cell measurements run separately with builds, tests and indexing stopped.
 Native N05–N09 is closed at these support contracts; browser/WASM is excluded.
+
+## Resident plane display and large binary fixtures
+
+The native Auto path uses GPU clipping plus a mutable CPU slice for one opaque
+FlatShaded volume plane. Other styles/shapes use the existing CPU path.
+See [the current contract and precision investigation](../DOCUMENT/cut-view-gpu-plane.md).
+
+```powershell
+python test/generate-large-vtk.py --grids 128 150 --deformation --output build/large-vtk
+./test/run-cut-benchmark.ps1 -InputFile build/large-vtk/hex_128.vtu -Mask 3 -Frames 60 -RunLabel large-vtu
+./test/run-cut-benchmark.ps1 -InputFile build/large-vtk/hex_150.vtk -Mask 2 -Frames 60 -Scenarios rotating -RunLabel large-vtk
+./test/run-cut-upload-capture.ps1
+ctest --test-dir build/mingw -R '^(generate_large_vtk_smoke|draw_large_vtk_smoke|draw_cut_view_gpu_plane)$' --output-on-failure
+```
+
+Files contain 2,097,152 and 3,375,000 regular hex cells, analytic nodal temperature,
+element pressure, and affine displacement. Generation streams layers and needs
+no Python packages or VTK SDK. Actual file import, counts, FE values, all relevant
+display combinations and real redraw are tested. Large files/logs stay in build/.
+The GDB upload capture runs separately from performance measurements and checks
+OCCT's actual VBO creation and `glBufferSubData` call sites. Submission counters
+in `renderinfo` alone are not GPU upload measurements.

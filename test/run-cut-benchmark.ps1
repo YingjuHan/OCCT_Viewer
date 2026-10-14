@@ -2,6 +2,11 @@ param(
     [string]$BuildDirectory = 'build/mingw-release',
     [int]$Grid = 100,
     [int]$Frames = 60,
+    [ValidateRange(0,7)][int]$Mask = 2,
+    [ValidateSet('auto','cpu')][string]$Backend = 'auto',
+    [string]$RunLabel = 'run',
+    [string]$InputFile = '',
+    [ValidateSet('crossing','rotating','deformed')][string[]]$Scenarios = @('crossing','rotating','deformed'),
     [string]$OcctDirectory = 'D:/workspace/OpenCASCADE/OCCT_private/install/mingw'
 )
 $ErrorActionPreference = 'Stop'
@@ -18,8 +23,16 @@ $env:DRAWHOME = "$OcctDirectory/src/DrawResources"
 $env:DRAWDEFAULT = "$OcctDirectory/src/DrawResources/DrawDefault"
 $env:CUTVIEW_BENCHMARK_GRID = $Grid.ToString()
 $env:CUTVIEW_BENCHMARK_FRAMES = $Frames.ToString()
-$env:CUTVIEW_OUTPUT_DIR = Join-Path $resolvedBuild "test/native/draw-benchmark-$Grid"
-$benchmarkLog = Join-Path $resolvedBuild "cut-full-frame-$Grid.log"
+$env:CUTVIEW_BENCHMARK_MASK = $Mask.ToString()
+$env:CUTVIEW_BENCHMARK_BACKEND = $Backend
+$env:CUTVIEW_BENCHMARK_SCENARIOS = $Scenarios -join ' '
+$caseLabel = $Grid.ToString()
+if ($InputFile) {
+    $env:CUTVIEW_BENCHMARK_FILE = (Resolve-Path -LiteralPath $InputFile).Path
+    $caseLabel = [System.IO.Path]::GetFileName($InputFile)
+} else { Remove-Item Env:CUTVIEW_BENCHMARK_FILE -ErrorAction SilentlyContinue }
+$env:CUTVIEW_OUTPUT_DIR = Join-Path $resolvedBuild "test/native/draw-benchmark-$caseLabel-$Mask-$Backend-$RunLabel"
+$benchmarkLog = Join-Path $resolvedBuild "cut-full-frame-$caseLabel-$Mask-$Backend-$RunLabel.log"
 & (Join-Path $runtimeDirectory 'DRAWEXE.exe') -b -f (Join-Path $PSScriptRoot 'cae/cut_view_benchmark.tcl') *> $benchmarkLog
 $benchmarkExit = $LASTEXITCODE
 Get-Content -LiteralPath $benchmarkLog

@@ -16,11 +16,20 @@ if {[catch {
         puts "CUT_LIFECYCLE_MEMORY baseline $baseline peak $maximum cycles 60 frames 300"
     }
     set failures {}
-    foreach mode {crossing rotating deformed} {
-        set result [scvcutbenchmark $::env(CUTVIEW_BENCHMARK_GRID) $::env(CUTVIEW_BENCHMARK_FRAMES) $mode $::env(CUTVIEW_OUTPUT_DIR)]
+    set mask 2; set backend auto
+    if {[info exists ::env(CUTVIEW_BENCHMARK_MASK)]} { set mask $::env(CUTVIEW_BENCHMARK_MASK) }
+    if {[info exists ::env(CUTVIEW_BENCHMARK_BACKEND)]} { set backend $::env(CUTVIEW_BENCHMARK_BACKEND) }
+    set scenarios {crossing rotating deformed}
+    if {[info exists ::env(CUTVIEW_BENCHMARK_SCENARIOS)]} { set scenarios $::env(CUTVIEW_BENCHMARK_SCENARIOS) }
+    foreach mode $scenarios {
+        if {[info exists ::env(CUTVIEW_BENCHMARK_FILE)]} {
+            set result [scvcutfilebenchmark $::env(CUTVIEW_BENCHMARK_FILE) $::env(CUTVIEW_BENCHMARK_FRAMES) $mode $::env(CUTVIEW_OUTPUT_DIR) $mask $backend]
+        } else {
+            set result [scvcutbenchmark $::env(CUTVIEW_BENCHMARK_GRID) $::env(CUTVIEW_BENCHMARK_FRAMES) $mode $::env(CUTVIEW_OUTPUT_DIR) $mask $backend]
+        }
         puts "CUT_BENCHMARK_RESULT $result"
         if {![dict get $result actual_redraw] || ![dict get $result original_FE]} { error "Missing full-frame measurement" }
-        if {$::env(CUTVIEW_BENCHMARK_GRID)>=100 && ![dict get $result target]} { lappend failures $result }
+        if {$::env(CUTVIEW_BENCHMARK_GRID)>=100 && ![info exists ::env(CUTVIEW_BENCHMARK_FILE)] && ![dict get $result target]} { lappend failures $result }
     }
     if {[llength $failures]} { error "Million-cell full-frame target failed: $failures" }
 } message options]} { puts stderr "CUT_BENCHMARK_FAIL $message\n[dict get $options -errorinfo]"; exit 1 }
