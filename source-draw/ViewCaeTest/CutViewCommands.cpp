@@ -1029,7 +1029,7 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
         refreshHandle(model);
         if (!ViewerTest::GetAISContext().IsNull() && ViewerTest::GetAISContext()->IsDisplayed(model.View)) {
             if (!model.Native->Refresh(false)) { throw std::runtime_error(model.Native->LastError()); }
-            ViewerTest::GetAISContext()->Redisplay(model.View, true);
+            ViewerTest::GetAISContext()->UpdateCurrentViewer();
         }
         return 0;
     } catch (const Standard_Failure& error) { di << "Error: " << error.GetMessageString(); }

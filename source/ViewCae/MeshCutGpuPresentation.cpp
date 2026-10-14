@@ -286,6 +286,7 @@ void MeshCutGpuPresentation::updateStructures()
             }
         }
         myBodyChanged = false;
+        myBodyStructure->CalculateBoundBox();
     }
     for (int i = 1; i <= myBodyStructure->NumberOfGroups(); ++i) {
         myBodyStructure->Groups().Value(i)->SetGroupPrimitivesAspect(myBodyAspect);
@@ -324,6 +325,9 @@ void MeshCutGpuPresentation::updateStructures()
             mySliceGroup->SetMinMaxValues(minimum.X(),minimum.Y(),minimum.Z(),maximum.X(),maximum.Y(),maximum.Z());
         }
     }
+    // SetMinMaxValues changes only the group's box. Refresh the structure and
+    // layer BVH too, otherwise FitAll/culling still use the previous section.
+    if (!myParent.IsNull()) { myParent->CalculateBoundBox(); myManager->Update(myParent->GetZLayer()); }
 }
 
 void MeshCutGpuPresentation::Attach(const Handle(Prs3d_Presentation)& parent,const Handle(Graphic3d_StructureManager)& manager)

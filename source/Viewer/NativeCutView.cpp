@@ -234,7 +234,11 @@ bool NativeCutView::Refresh(bool redraw)
         if (!myViewport.IsNull() && myViewport->View()->IsRemoved()) { Detach(); throw std::invalid_argument("Native viewport has been removed"); }
         myDisplay->Synchronize();
         if (myContext.IsNull()) { return; }
-        myContext->Display(myDisplay,false); myContext->Redisplay(myDisplay,false);
+        myContext->Display(myDisplay,false);
+        // Redisplay unconditionally marks every presentation dirty. Mutable
+        // GPU sections already changed their buffers and need only an Update.
+        if (myDisplay->RenderStatistics().GpuPlane) { myContext->Update(myDisplay,false); }
+        else { myContext->Redisplay(myDisplay,false); }
         if (myDisplay->ContourOptions().ShowLegend) {
             myContext->Display(myDisplay->Legend(),false); myContext->Redisplay(myDisplay->Legend(),false);
         } else { myContext->Erase(myDisplay->Legend(),false); }

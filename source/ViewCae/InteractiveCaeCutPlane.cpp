@@ -68,7 +68,10 @@ bool InteractiveCaeCutPlane::updateCut(const gp_Pln& thePlane)
     thePlane.Coefficients(a, b, c, d);
     if (!myCutView->Cuts().SetPlane(myId, Graphic3d_Vec4d(a,b,c,d))) { return false; }
     myCutView->Synchronize();
-    if (!GetContext().IsNull()) { GetContext()->Redisplay(myCutView, false); }
+    if (!GetContext().IsNull()) {
+        if (myCutView->RenderStatistics().GpuPlane) { GetContext()->Update(myCutView, false); }
+        else { GetContext()->Redisplay(myCutView, false); }
+    }
     ++myDragUpdates;
     return true;
 }
