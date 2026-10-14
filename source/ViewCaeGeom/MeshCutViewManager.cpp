@@ -1065,8 +1065,14 @@ MeshCutResult MeshCutViewManager::EvaluatePhysical(const std::string& theId,
     return evaluate(theId,theField,false);
 }
 
+MeshCutResult MeshCutViewManager::EvaluateSectionForDisplay(const std::string& theId,
+    const Handle(RWCae::MeshNVecProperty)& theField)
+{
+    return evaluate(theId,theField,true,2);
+}
+
 MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
-    const Handle(RWCae::MeshNVecProperty)& theField, bool display)
+    const Handle(RWCae::MeshNVecProperty)& theField, bool display, unsigned requestedMask)
 {
     Entry* anEntry = find(theId);
     if (anEntry == nullptr) { throw std::invalid_argument("Unknown cut id: " + theId); }
@@ -1074,7 +1080,8 @@ MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
     MeshCutResult aResult;
     aResult.Definition = anEntry->Definition;
     aResult.Revision = anEntry->Revision;
-    if (!anEntry->Definition.Enabled || anEntry->Definition.Visibility == 0) { return aResult; }
+    const unsigned mask = requestedMask == 8 ? anEntry->Definition.Visibility : requestedMask;
+    if (!anEntry->Definition.Enabled || mask == 0) { return aResult; }
     prepareCache(*anEntry,theField);
     if (!theField.IsNull()) { CutFieldTools::Validate(myMesh,theField); }
     using Clock=std::chrono::steady_clock;
@@ -1093,7 +1100,7 @@ MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
     aResult.DisplayRecovered = aResult.SourceField != theField;
     myTimings.FieldsMs+=elapsed();
     for (size_t i = 0; i < anEntry->Portions.size(); ++i) {
-        if ((anEntry->Definition.Visibility & (1u << i)) == 0) { continue; }
+        if ((mask & (1u << i)) == 0) { continue; }
         aResult.Roots[i] = anEntry->Roots[i];
         aResult.Portions[i] = anEntry->Portions[i];
         const auto cancellable=Handle(MeshGeometrySlice)::DownCast(aResult.Portions[i]);

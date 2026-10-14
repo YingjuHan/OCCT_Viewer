@@ -169,6 +169,10 @@ public:
     //! Computes only enabled portions, sharing source mesh storage and cached BVHs.
     Standard_EXPORT MeshCutResult Evaluate(const std::string& theId,
         const Handle(RWCae::MeshNVecProperty)& theField = nullptr);
+    //! Display section only, regardless of the visibility mask. Does not edit
+    //! definitions/revisions or evaluate either retained volume/OR boundary.
+    Standard_EXPORT MeshCutResult EvaluateSectionForDisplay(const std::string& theId,
+        const Handle(RWCae::MeshNVecProperty)& theField = nullptr);
     //! Map only original physical components, independent of display recovery/measures.
     Standard_EXPORT MeshCutResult EvaluatePhysical(const std::string& theId,
         const Handle(RWCae::MeshNVecProperty)& theField);
@@ -209,7 +213,8 @@ public:
     const MeshCutFrameTimings& LastTimings() const { return myTimings; }
 
 private:
-    MeshCutResult evaluate(const std::string& theId, const Handle(RWCae::MeshNVecProperty)& theField, bool theDisplay);
+    MeshCutResult evaluate(const std::string& theId, const Handle(RWCae::MeshNVecProperty)& theField,
+        bool theDisplay, unsigned theRequestedMask = 8);
     struct Entry;
     Entry* find(const std::string& theId);
     void release(Entry& theEntry);

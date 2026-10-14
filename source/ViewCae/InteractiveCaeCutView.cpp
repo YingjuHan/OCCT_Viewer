@@ -340,6 +340,17 @@ void InteractiveCaeCutView::Synchronize()
     const bool hasActiveCut = std::any_of(definitions.begin(), definitions.end(), [](const auto& cut) { return cut.Enabled; });
     auto cutPresentation = hasActiveCut ? myCuts.EvaluatePresentation(myField) : nullptr;
     auto results = cutPresentation ? cutPresentation->Branches : std::vector<ViewCaeGeom::MeshCutResult>();
+    // Displaying both sides keeps the full body; On is an independent display
+    // layer for one plane. Numerical OR/integration retain their old contract.
+    const auto activeCount = std::count_if(definitions.begin(),definitions.end(),[](const auto& d) { return d.Enabled; });
+    if (activeCount == 1 && results.size() == 1 && results[0].Definition.Shape == ViewCaeGeom::MeshCutShape::Plane
+        && results[0].Definition.Visibility == 7) {
+        const auto section = myCuts.EvaluateSectionForDisplay(results[0].Definition.Id,myField);
+        results[0].Roots[1] = section.Roots[1]; results[0].Portions[1] = section.Portions[1];
+        results[0].Fields[1] = section.Fields[1]; results[0].PhysicalFields[1] = section.PhysicalFields[1];
+        results[0].PhysicalProvenance = section.PhysicalProvenance;
+        results[0].LineField = section.LineField; results[0].PhysicalLineField = section.PhysicalLineField;
+    }
     if (!hasActiveCut) {
         ViewCaeGeom::MeshCutResult result;
         result.Definition.Id = "uncut_source"; result.SourceField = myField;

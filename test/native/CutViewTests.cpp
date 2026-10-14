@@ -215,8 +215,8 @@ static void displayPrimitives()
         auto triangles = ViewCae::CaeMeshTools::CreateShadedMesh(prs->GetMeshGeometry(), prs->GetGeomScalarProps(), false,
             ViewCae::MeshShadedType::FACES, 1.0f);
         if (i == 1) {
-            require(prs->GetMeshGeometry()->GetLastChild()->GetMeshData()->NbIndexedElems() == 0,
-                "OR retained an internal section");
+            require(prs->GetMeshGeometry()->GetLastChild()->GetMeshData()->NbIndexedElems() == 1,
+                "Single-plane display lost independent section");
             continue;
         }
         require(!triangles.IsNull() && triangles->VertexNumber() > 0 && triangles->HasVertexTexels(),
@@ -600,6 +600,33 @@ static void defaultPlanes()
     require(!emptyManager.EnsureDefaultPlanes() && emptyManager.Definitions().empty(), "Empty mesh produced invalid planes");
 }
 
+static void displaySectionOnly()
+{
+    MeshCutViewManager manager(tetra());
+    manager.AddPlane("x",Graphic3d_Vec4d(1,0,0,-0.25));
+    const auto values = field("x",true,{0,1,0,0});
+    for (unsigned mask = 0; mask < 8; ++mask) {
+        manager.SetVisibility("x",mask);
+        const auto before = manager.DumpDefinitionsJson();
+        const auto section = manager.EvaluateSectionForDisplay("x",values);
+        require(section.Definition.Visibility == mask && section.Roots[0].IsNull() && section.Roots[2].IsNull(),
+            "Display section evaluated retained sides or changed mask");
+        require(section.Portions[1]->GetMeshData()->NbIndexedElems() == 1 && section.PhysicalProvenance,
+            "Display section lost original FE mapping");
+        near(section.Fields[1]->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(0)),0.25,"Display section interpolation");
+        const auto numerical = manager.Evaluate("x",values);
+        require(numerical.Revision == section.Revision && manager.DumpDefinitionsJson() == before,
+            "Display section changed revision/definition");
+        for (unsigned i = 0; i < 3; ++i) {
+            require(numerical.Portions[i].IsNull() == ((mask & (1u<<i)) == 0),"Section API changed numerical visibility");
+        }
+    }
+    manager.SetCellMode("x",MeshCutCellMode::Projected);
+    const auto projected = manager.EvaluateSectionForDisplay("x",field("cell",false,{9}));
+    require(projected.DisplayRecovered && projected.SourceField->IsNodal(),"Section API skipped display recovery");
+    near(projected.Fields[1]->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(0)),9,"Recovered section");
+}
+
 int main()
 {
     try {
@@ -614,6 +641,7 @@ int main()
         isosurfaceStepsAndDeformation();
         isosurfaceBoundaryAndQuadratic();
         defaultPlanes();
+        displaySectionOnly();
         std::cout << "Cut view numerical tests passed\n";
         return 0;
     } catch (const std::exception& error) {
