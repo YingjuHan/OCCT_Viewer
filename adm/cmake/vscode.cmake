@@ -53,6 +53,7 @@ if (NOT EXISTS "${VSCODE_LAUNCH_FILE}" OR OCCTV_VSCODE_REFRESH_LAUNCH)
 
   # Binary path and environment for launching DRAWEXE from the build tree
   set (VSCODE_LAUNCH_EXECUTABLE "${OpenCASCADE_BINARY_DIR}/DRAWEXE${CMAKE_EXECUTABLE_SUFFIX}")
+  set (VSCODE_DRAW_RUNTIME "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/viewdraw-runtime.tcl")
   include (draw_runtime)
   occtviewer_draw_runtime_dirs (_launch_runtime_dirs "${CMAKE_BUILD_TYPE}")
   set (_launch_runtime_dirs "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}" ${_launch_runtime_dirs})

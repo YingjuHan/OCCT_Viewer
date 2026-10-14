@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "@VSCODE_LAUNCH_EXECUTABLE@",
-            "args": ["-i", "-c", "pload -VIEWDRAW"],
+            "args": ["-i", "-c", "source {@CMAKE_SOURCE_DIR@/test/cae/viewdraw_runtime.tcl}"],
             "stopAtEntry": false,
             "cwd": "@CMAKE_LIBRARY_OUTPUT_DIRECTORY@",
             "environment": [
@@ -21,6 +21,7 @@
                 {"name": "DRAWHOME", "value": "@OpenCASCADE_RESOURCE_DIR@/DrawResources"},
                 {"name": "DRAWDEFAULT", "value": "@OpenCASCADE_RESOURCE_DIR@/DrawResources/DrawDefault"},
                 {"name": "CSF_VIEWDRAWDefaults", "value": "@CMAKE_SOURCE_DIR@/source-draw/ViewDraw"},
+                {"name": "OCCTV_DRAW_RUNTIME", "value": "@VSCODE_DRAW_RUNTIME@"},
                 {"name": "CSF_TestScriptsPath", "value": "@CMAKE_SOURCE_DIR@/test"},
                 {"name": "CSF_TestDataPath", "value": "@CMAKE_SOURCE_DIR@/resources"}
             ],

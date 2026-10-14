@@ -61,6 +61,18 @@ Use the desktop session's X authorization, not a hardcoded session-specific cook
 Use the existing `VIEWDRAW` resource for all viewer commands, including cuts; no separate
 `CUTVIEW` resource is needed. The build's VS Code launch configuration loads it automatically.
 Restart an existing debug session after changing its environment or debugger setup.
+The generated startup command sources `test/cae/viewdraw_runtime.tcl` with an
+explicit build-local `OCCTV_DRAW_RUNTIME`. This initializes DRAW's own DLL path
+before plugin loading, including when the debugger's configured PATH did not
+reach the inferior process. A current-session missing-module error can be retried:
+
+```tcl
+set ::env(OCCTV_DRAW_RUNTIME) D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw/Release/bin/viewdraw-runtime.tcl
+source D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/viewdraw_runtime.tcl
+```
+
+Use the runtime file from the build being debugged. Changing PATH or selecting
+another runtime cannot switch project DLLs that were already loaded in a process.
 
 On Windows, `libViewDraw.dll` also needs the zlib runtime DLL directory on `PATH`.
 The generated launch configuration includes project/OCCT/compiler/zlib runtime
