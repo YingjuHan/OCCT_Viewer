@@ -31,6 +31,7 @@ private:
     uint64_t mySourceEpoch = 0;
     uint64_t myBodyEpoch = 0;
     Bnd_Box myBounds;
+    Bnd_Box mySliceBounds;
     Handle(Graphic3d_ArrayOfTriangles) mySlice;
     Handle(Graphic3d_AspectFillArea3d) myBodyAspect, mySliceAspect;
     Handle(Graphic3d_ShaderProgram) myBodyShader, mySliceShader;

@@ -67,7 +67,7 @@ def finished(event):
     failures = []
     if getattr(event, "exit_code", -1) != 0:
         failures.append("DRAW did not exit successfully")
-    if phase != 4:
+    if phase != 5:
         failures.append("Missing capture phase markers")
     if not any(e["kind"] == "init" and e["role"] == "body" and e["phase"] == 0 for e in events):
         failures.append("No cold body VBO initialization observed")
@@ -75,7 +75,12 @@ def finished(event):
         failures.append("Warm motion or slice-only frame uploaded body data")
     if not any(e["role"] == "slice" and e["kind"] == "attributes" and e["phase"] == 1 for e in events):
         failures.append("No warm slice attribute uploads observed")
-    if any(e["role"] == "slice" and e["kind"] == "init" and e["phase"] in (1, 2, 3) for e in events):
+    if any(e["role"] == "slice" and e["kind"] == "indices" and e["phase"] == 1 for e in events):
+        failures.append("Stable slice topology uploaded identity indices")
+    count_updates = [e for e in events if e["role"] == "slice" and e["kind"] == "indices" and e["phase"] == 4]
+    if not count_updates or any(e["start"] != 0 or e["bytes"] not in (2, 4) for e in count_updates):
+        failures.append("Changed slice count did not upload a single reserved index")
+    if any(e["role"] == "slice" and e["kind"] == "init" and e["phase"] in (1, 2, 3, 4) for e in events):
         failures.append("Section VBO was recreated within its reserved capacity")
     field = [e for e in events if e["role"] == "body" and e["phase"] == 2 and e["kind"] != "render"]
     if not field or any(e["kind"] != "attributes" or e["start"] != e["vertices"]*24

@@ -17,6 +17,10 @@ scvcutview upload field cell pressure 0
 puts "UPLOAD_PHASE slice_only [scvcutmemory]"
 scvcutview upload visibility p 2
 scvcutview upload move p 1 0 0 -3.5
+puts "UPLOAD_PHASE count_changes [scvcutmemory]"
+scvcutview upload move p 1 1 0 -6.65
+scvcutview upload move p 1 0 0 -20
+scvcutview upload move p 1 0 0 -3.5
 puts "UPLOAD_PHASE complete [scvcutmemory]"
 scvcutview upload clear
 exit 0

@@ -5,8 +5,12 @@
 #include <Graphic3d_MutableIndexBuffer.hxx>
 #include <Graphic3d_ShaderObject.hxx>
 #include <Graphic3d_TextureSetBits.hxx>
+#include <OSD_ThreadPool.hxx>
+#include <cstddef>
+#include <cstring>
 #include <limits>
 #include <stdexcept>
+#include <type_traits>
 
 namespace {
 Handle(Graphic3d_ShaderProgram) planeShader()
@@ -71,6 +75,17 @@ void setUniforms(const Handle(Graphic3d_ShaderProgram)& shader,const Graphic3d_V
     shader->PushVariableInt("CutMode",mode);
 }
 struct SliceVertex { Graphic3d_Vec3 Position, Normal; Graphic3d_Vec2 UV; };
+static_assert(std::is_trivially_copyable<SliceVertex>::value, "Slice vertices must be copyable as buffer bytes");
+bool hasSliceLayout(const Handle(Graphic3d_Buffer)& buffer)
+{
+    return buffer->IsInterleaved() && buffer->NbAttributes == 3 && buffer->Stride == sizeof(SliceVertex)
+        && buffer->Attribute(0).Id == Graphic3d_TOA_POS && buffer->Attribute(0).DataType == Graphic3d_TOD_VEC3
+        && buffer->Attribute(1).Id == Graphic3d_TOA_NORM && buffer->Attribute(1).DataType == Graphic3d_TOD_VEC3
+        && buffer->Attribute(2).Id == Graphic3d_TOA_UV && buffer->Attribute(2).DataType == Graphic3d_TOD_VEC2
+        && buffer->AttributeOffset(0) == offsetof(SliceVertex,Position)
+        && buffer->AttributeOffset(1) == offsetof(SliceVertex,Normal)
+        && buffer->AttributeOffset(2) == offsetof(SliceVertex,UV);
+}
 }
 
 namespace ViewCae {
@@ -152,13 +167,20 @@ void MeshCutGpuPresentation::Update(const Handle(MeshPresentationScalar)& body,
         }
     }
     std::vector<SliceVertex> vertices;
+    Bnd_Box sliceBounds;
     if (showSlice && !section.Portions[1].IsNull()) {
         const auto mesh = section.Portions[1]->GetMeshData();
         const auto field = section.Fields[1];
         const auto source = cuts.SourceGeometry();
         const auto sourceMesh = source->GetMeshData();
+        const auto values = field.IsNull() ? Handle(RWCae::MeshScalarPropertyBase)() : field->GetRawComponent(component);
+        const bool nodal = !field.IsNull() && field->IsNodal();
+        const bool nodeVector = !field.IsNull() && field->HasNodeVecComponents();
+        double minimum = 0, maximum = 1;
+        if (!section.SourceField.IsNull()) { section.SourceField->GetRawComponent(component)->ValueRange().GetBounds(minimum,maximum); }
         std::vector<Graphic3d_Vec3> localPositions(mesh->NbNodes());
-        for (RWCae::MeshEntityId node = 0; node < mesh->NbNodes(); ++node) {
+        std::vector<Graphic3d_Vec2> nodeUVs(nodal ? mesh->NbNodes() : 0);
+        const auto prepareNode = [&](int, int node) {
             Graphic3d_Vec3d position(mesh->Nodes()[node]);
             ViewCaeGeom::MeshInterpolatedNode weights;
             if (section.Portions[1]->OriginNode(node,weights)) {
@@ -169,23 +191,44 @@ void MeshCutGpuPresentation::Update(const Handle(MeshPresentationScalar)& body,
                 }
             }
             localPositions[node] = Graphic3d_Vec3(position-origin);
+            if (nodal) {
+                const double value = values->Value(RWCae::MeshPropertyEntityInfo(node,nodeVector ? node : -1));
+                nodeUVs[node] = CaeMeshTools::GetUVCoords(value,minimum,maximum,CaeMeshTools::NbColorscaleColors);
+            }
+        };
+        // Geometry and field data are materialized above. Workers only read
+        // provenance/modifiers and write their own positions and color entries.
+        if (mesh->NbNodes() >= 4096) {
+            OSD_ThreadPool::Launcher launcher(*OSD_ThreadPool::DefaultPool(),4);
+            launcher.Perform(0,(int)mesh->NbNodes(),prepareNode);
+        } else {
+            for (RWCae::MeshEntityId node = 0; node < mesh->NbNodes(); ++node) { prepareNode(0,(int)node); }
         }
-        double minimum = 0, maximum = 1;
-        if (!section.SourceField.IsNull()) { section.SourceField->GetRawComponent(component)->ValueRange().GetBounds(minimum,maximum); }
+        vertices.reserve((size_t)mesh->NbElems2d()*6);
+        Graphic3d_Vec3 lower(std::numeric_limits<float>::max()), upper(std::numeric_limits<float>::lowest());
         Graphic3d_Vec3 normal((float)definition.Plane.x(),(float)definition.Plane.y(),(float)definition.Plane.z());
         if ((mask & 5) == 4) { normal = -normal; }
         auto process = [&](const auto& adaptor) {
             for (RWCae::MeshEntityId e = 0; e < adaptor.NbElements(); ++e) {
                 const auto& element = adaptor.GetElement(e);
+                Graphic3d_Vec2 elementUV(0);
+                if (!values.IsNull() && !nodal && !nodeVector) {
+                    elementUV = CaeMeshTools::GetUVCoords(values->Value(RWCae::MeshPropertyEntityInfo(element.GlobalIndex())),
+                        minimum,maximum,CaeMeshTools::NbColorscaleColors);
+                }
                 auto add = [&](int index) {
                     const auto node = element[index];
                     // Reconstruct original FE position in double before storing
                     // in the shared local GPU frame. Physical data stay unchanged.
                     SliceVertex vertex{localPositions[node],normal,Graphic3d_Vec2(0)};
-                    if (!field.IsNull()) {
-                        const double value = field->GetRawComponent(component)->Value(RWCae::MeshPropertyEntityInfo(
-                            field->IsNodal() ? node : element.GlobalIndex(),field->HasNodeVecComponents() ? (int)node : -1));
+                    if (nodal) { vertex.UV = nodeUVs[node]; }
+                    else if (nodeVector) {
+                        const double value = values->Value(RWCae::MeshPropertyEntityInfo(element.GlobalIndex(),(int)node));
                         vertex.UV = Graphic3d_Vec2(CaeMeshTools::GetUVCoords(value,minimum,maximum,CaeMeshTools::NbColorscaleColors));
+                    } else { vertex.UV = elementUV; }
+                    for (int axis = 0; axis < 3; ++axis) {
+                        lower[axis] = std::min(lower[axis],vertex.Position[axis]);
+                        upper[axis] = std::max(upper[axis],vertex.Position[axis]);
                     }
                     vertices.push_back(vertex);
                 };
@@ -193,6 +236,10 @@ void MeshCutGpuPresentation::Update(const Handle(MeshPresentationScalar)& body,
             }
         };
         RWCae::MeshAdaptorsIterator2dElems::For(process,mesh);
+        if (!vertices.empty()) {
+            sliceBounds.Update(lower.x()+origin.x(),lower.y()+origin.y(),lower.z()+origin.z(),
+                upper.x()+origin.x(),upper.y()+origin.y(),upper.z()+origin.z());
+        }
     }
     if (vertices.size() > (size_t)std::numeric_limits<int>::max()/2) { throw std::length_error("Display slice exceeds buffer capacity"); }
     auto slice = mySlice;
@@ -205,7 +252,12 @@ void MeshCutGpuPresentation::Update(const Handle(MeshPresentationScalar)& body,
         slice = new Graphic3d_ArrayOfTriangles(capacity,capacity,
             Graphic3d_ArrayFlags_VertexNormal | Graphic3d_ArrayFlags_VertexTexel
             | Graphic3d_ArrayFlags_AttribsMutable | Graphic3d_ArrayFlags_IndexesMutable);
+        // Identity indices never change within this capacity. Initialize the
+        // reserved tail too so growth only updates OCCT's active draw count.
+        for (int i = 0; i < capacity; ++i) { slice->Indices()->SetIndex(i,i); }
     }
+    if (!slice.IsNull() && !hasSliceLayout(slice->Attributes())) { throw std::runtime_error("Unexpected slice vertex buffer layout"); }
+    const bool sliceCountChanged = !slice.IsNull() && slice->VertexNumber() != (int)vertices.size();
     auto bodyShader = myBodyShader.IsNull() ? planeShader() : myBodyShader;
     auto sliceShader = mySliceShader.IsNull() ? planeShader() : mySliceShader;
     Handle(Graphic3d_AspectFillArea3d) bodyAspect = new Graphic3d_AspectFillArea3d();
@@ -237,17 +289,12 @@ void MeshCutGpuPresentation::Update(const Handle(MeshPresentationScalar)& body,
     if (!slice.IsNull()) {
         slice->Attributes()->NbElements = (int)vertices.size();
         slice->Indices()->NbElements = (int)vertices.size();
-        for (size_t i = 0; i < vertices.size(); ++i) {
-            slice->SetVertice((int)i+1,vertices[i].Position.x(),vertices[i].Position.y(),vertices[i].Position.z());
-            slice->SetVertexNormal((int)i+1,vertices[i].Normal.x(),vertices[i].Normal.y(),vertices[i].Normal.z());
-            slice->SetVertexTexel((int)i+1,vertices[i].UV.x(),vertices[i].UV.y());
-            slice->Indices()->SetIndex((int)i,(int)i);
-        }
+        if (!vertices.empty()) { std::memcpy(slice->Attributes()->ChangeData(),vertices.data(),vertices.size()*sizeof(SliceVertex)); }
         // Invalidate one reserved entry for an empty frame too: OCCT updates
         // draw counts only when consuming an invalidated mutable buffer range.
         const int last = (int)std::max<size_t>(1,vertices.size())-1;
         Handle(Graphic3d_AttribBuffer)::DownCast(slice->Attributes())->Invalidate(0,last);
-        Handle(Graphic3d_MutableIndexBuffer)::DownCast(slice->Indices())->Invalidate(0,last);
+        if (sliceCountChanged) { Handle(Graphic3d_MutableIndexBuffer)::DownCast(slice->Indices())->Invalidate(0,0); }
     }
     auto localPlane = definition.Plane;
     localPlane.w() += localPlane.x()*origin.x()+localPlane.y()*origin.y()+localPlane.z()*origin.z();
@@ -261,13 +308,14 @@ void MeshCutGpuPresentation::Update(const Handle(MeshPresentationScalar)& body,
     if (bodyChanged) { myBodyEpoch = mySourceEpoch; }
     myBodyAspect = bodyAspect; mySliceAspect = sliceAspect;
     myBodyShader = bodyShader; mySliceShader = sliceShader;
-    mySlice = slice; myBodyLease = bodyLease; mySliceLease = sliceLease;
+    mySlice = slice; mySliceBounds = sliceBounds; myBodyLease = bodyLease; mySliceLease = sliceLease;
     myShowBody = showBody; myShowSlice = showSlice && !vertices.empty();
     myPlane = definition.Plane; myMask = mask;
     statistics.BodyBuilds += geometryBuild ? 1 : 0;
     statistics.SliceReallocations += realloc ? 1 : 0;
     statistics.SubmittedBodyBytes = bodyBytes;
-    statistics.SubmittedSliceBytes = slice.IsNull() ? 0 : std::max<size_t>(1,vertices.size())*(sizeof(SliceVertex)+slice->Indices()->Stride);
+    statistics.SubmittedSliceBytes = slice.IsNull() ? 0 : std::max<size_t>(1,vertices.size())*sizeof(SliceVertex)
+        + (sliceCountChanged ? slice->Indices()->Stride : 0);
     updateStructures();
 }
 
@@ -316,13 +364,9 @@ void MeshCutGpuPresentation::updateStructures()
     if (!mySliceGroup.IsNull()) {
         mySliceGroup->SetGroupPrimitivesAspect(mySliceAspect);
         // Mutating vertices must refresh bounds as well as invalidate VBO data.
-        if (mySlice->VertexNumber() > 0) {
-            Bnd_Box bounds;
-            for (int i = 1; i <= mySlice->VertexNumber(); ++i) { bounds.Add(mySlice->Vertice(i)); }
-            const auto a = bounds.CornerMin(), b = bounds.CornerMax();
-            const gp_Pnt minimum(a.X()+myOrigin.x(),a.Y()+myOrigin.y(),a.Z()+myOrigin.z());
-            const gp_Pnt maximum(b.X()+myOrigin.x(),b.Y()+myOrigin.y(),b.Z()+myOrigin.z());
-            mySliceGroup->SetMinMaxValues(minimum.X(),minimum.Y(),minimum.Z(),maximum.X(),maximum.Y(),maximum.Z());
+        if (!mySliceBounds.IsVoid()) {
+            const auto a = mySliceBounds.CornerMin(), b = mySliceBounds.CornerMax();
+            mySliceGroup->SetMinMaxValues(a.X(),a.Y(),a.Z(),b.X(),b.Y(),b.Z());
         }
     }
     // SetMinMaxValues changes only the group's box. Refresh the structure and
