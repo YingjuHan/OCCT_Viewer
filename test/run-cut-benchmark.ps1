@@ -7,6 +7,7 @@ param(
     [string]$RunLabel = 'run',
     [string]$InputFile = '',
     [switch]$MouseDrag,
+    [ValidateSet('none','fps','extended')][string]$PerfCounters = 'none',
     [ValidateSet('crossing','rotating','deformed')][string[]]$Scenarios = @('crossing','rotating','deformed'),
     [string]$OcctDirectory = 'D:/workspace/OpenCASCADE/OCCT_private/install/mingw'
 )
@@ -25,6 +26,7 @@ $env:DRAWDEFAULT = "$OcctDirectory/src/DrawResources/DrawDefault"
 $env:CUTVIEW_BENCHMARK_GRID = $Grid.ToString()
 $env:CUTVIEW_BENCHMARK_FRAMES = $Frames.ToString()
 $env:CUTVIEW_BENCHMARK_MASK = $Mask.ToString()
+$env:CUTVIEW_BENCHMARK_PERFCOUNTERS = $PerfCounters
 $env:CUTVIEW_BENCHMARK_BACKEND = $Backend
 $env:CUTVIEW_BENCHMARK_SCENARIOS = $Scenarios -join ' '
 $caseLabel = $Grid.ToString()

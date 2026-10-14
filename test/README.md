@@ -760,6 +760,7 @@ python test/generate-large-vtk.py --grids 128 150 --deformation --output build/l
 ./test/run-cut-upload-capture.ps1
 ./test/run-cut-upload-capture.ps1 -Grid 110
 ./test/run-cut-benchmark.ps1 -BuildDirectory build/mingw/Release -InputFile build/large-vtk/hex_150.vtu -Mask 2 -Frames 60 -MouseDrag -RunLabel pointer
+./test/run-cut-benchmark.ps1 -InputFile build/large-vtk/hex_150.vtu -Mask 3 -Frames 60 -MouseDrag -PerfCounters fps -RunLabel viewport-fps
 ctest --test-dir build/mingw -R '^(generate_large_vtk_smoke|draw_large_vtk_smoke|draw_cut_view_gpu_plane)$' --output-on-failure
 ```
 
@@ -779,3 +780,11 @@ changed framebuffer pixels. CSV phase columns report section/FE/presentation
 costs; they do not include section numerical validation. The separate file
 benchmark validates original-FE interpolation. Masks 2, 3 and 7 are supported.
 Run timing separately from builds, tests, GDB capture and index refreshes.
+
+For `-MouseDrag`, `-PerfCounters fps` or `extended` enables the viewport overlay
+and prints `CUT_DRAG_VIEWPORT_STATS` alongside measured event throughput. Default
+is `none`. OCCT's overlay counts frames over elapsed wall time, including idle
+time between redraws; a low idle value is not a drag latency measurement. For a
+live slowdown, capture `scvcutview cut_view_vtk_demo renderinfo`,
+`scvcutview cut_view_vtk_demo list` and `vstatprofiler -noredraw` immediately after
+continuous dragging. Check the loaded DLL paths and debugger state as well.

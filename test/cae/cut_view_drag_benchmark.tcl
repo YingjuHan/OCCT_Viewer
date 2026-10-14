@@ -22,6 +22,9 @@ if {[catch {
     set ::vtk_cut_demo_file $::env(CUTVIEW_BENCHMARK_FILE)
     source [file join $drag_dir cut_view_vtk_demo.tcl]
     set model cut_view_vtk_demo
+    if {[info exists ::env(CUTVIEW_BENCHMARK_PERFCOUNTERS)]} {
+        vrenderparams -perfCounters $::env(CUTVIEW_BENCHMARK_PERFCOUNTERS) -perfUpdateInterval 0.5
+    }
     file mkdir $::env(CUTVIEW_OUTPUT_DIR)
     update
     scvcutview $model visibility x $mask
@@ -85,6 +88,9 @@ if {[catch {
         drag_assert {abs($actual-$expected) < 1.0e-9} "Abort did not restore plane"
     }
     set timings [lsort -real $timings]
+    if {[info exists ::env(CUTVIEW_BENCHMARK_PERFCOUNTERS)] && $::env(CUTVIEW_BENCHMARK_PERFCOUNTERS) ne "none"} {
+        puts "CUT_DRAG_VIEWPORT_STATS [vstatprofiler -noredraw]"
+    }
     puts "CUT_DRAG_BENCHMARK_RESULT frames $frames mask $mask fps [expr {1000.0*$frames/$sum}] p50_ms [lindex $timings [expr {$frames/2}]] p95_ms [lindex $timings [expr {int(ceil(.95*$frames))-1}]] manager_mean_ms [expr {$managerSum/$frames}] paired_frames 1 body_uploads 0 release_abort 1"
     ::CutViewManager::close
     scvcutview $model clear
