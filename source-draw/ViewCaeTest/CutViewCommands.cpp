@@ -597,13 +597,17 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             ok = true;
         } else if (action == "renderinfo" && argc == 3) {
             const auto& stats = model.View->RenderStatistics();
+            const auto& phases = model.View->Cuts().LastTimings();
             di << "backend " << (stats.GpuPlane ? "gpu_plane" : "cpu") << " fallback";
             di.AppendElement(stats.FallbackReason.c_str());
             di << " body_builds " << (double)stats.BodyBuilds << " slice_reallocations " << (double)stats.SliceReallocations
                << " slice_evaluations " << (double)stats.SliceEvaluations
                << " submitted_body_bytes " << (double)stats.SubmittedBodyBytes << " submitted_slice_bytes " << (double)stats.SubmittedSliceBytes
                << " source_ms " << stats.SourceMs << " slice_ms " << stats.SliceMs << " fields_ms " << stats.FieldsMs
-               << " presentation_ms " << stats.PresentationMs;
+               << " presentation_ms " << stats.PresentationMs
+               << " bvh_ms " << phases.BvhMs << " node_prepare_ms " << phases.NodePrepareMs
+               << " cell_cut_ms " << phases.CellCutMs << " merge_ms " << phases.MergeMs
+               << " candidates " << (double)phases.Candidates << " fallbacks " << (double)phases.Fallbacks;
             return 0;
         } else if (action == "presentation" && argc == 4) {
             const auto& revisions = model.View->SynchronizedRevisions();

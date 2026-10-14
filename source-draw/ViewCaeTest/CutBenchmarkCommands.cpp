@@ -105,7 +105,7 @@ int benchmark(Draw_Interpretor& di,int argc,const char** argv)
         view->FitAll(); view->Redraw(); glFinish(); const double setupMs=ms(setup);
         const auto renderer=glGetString(GL_RENDERER); if(!renderer) { throw std::runtime_error("Benchmark has no current OpenGL rendering context"); }
         std::ofstream hardware(out/(mode+"-renderer.txt")); hardware<<renderer<<'\n'<<glGetString(GL_VERSION)<<'\n';
-        std::ofstream log(out/(mode+".csv")); log<<"frame,edit_ms,source_ms,intersection_ms,slice_ms,trace_ms,FE_ms,primitives_ms,actual_redraw_ms,total_ms,nodes,cells,body_builds,submitted_body_bytes,submitted_slice_bytes\n";
+        std::ofstream log(out/(mode+".csv")); log<<"frame,edit_ms,source_ms,intersection_ms,slice_ms,trace_ms,FE_ms,primitives_ms,actual_redraw_ms,total_ms,nodes,cells,body_builds,submitted_body_bytes,submitted_slice_bytes,bvh_ms,node_prepare_ms,cell_cut_ms,merge_ms,candidates,fallbacks\n";
         const auto initial = display->RenderStatistics();
         auto validateSection = [&]() {
             const auto result=cuts.EvaluateSectionForDisplay("benchmark",field); const auto data=result.Portions[1]->GetMeshData();
@@ -133,7 +133,7 @@ int benchmark(Draw_Interpretor& di,int argc,const char** argv)
             // section after timing all frames, so the next edit cannot include
             // cleanup of a section created solely by the benchmark assertion.
             const auto counts = mask == 5 ? std::pair<RWCae::MeshEntityId,RWCae::MeshEntityId>(0,0) : validateSection();
-            log<<i<<','<<edit<<','<<phases.SourceMs<<','<<phases.IntersectionMs<<','<<phases.SliceMs<<','<<phases.TraceMs<<','<<phases.FieldsMs<<','<<std::max(0.0,prepareMs-phases.SourceMs-phases.IntersectionMs-phases.FieldsMs)<<','<<redrawMs<<','<<total<<','<<counts.first<<','<<counts.second<<','<<stats.BodyBuilds<<','<<stats.SubmittedBodyBytes<<','<<stats.SubmittedSliceBytes<<'\n'; timings.push_back(total); sum+=total;
+            log<<i<<','<<edit<<','<<phases.SourceMs<<','<<phases.IntersectionMs<<','<<phases.SliceMs<<','<<phases.TraceMs<<','<<phases.FieldsMs<<','<<std::max(0.0,prepareMs-phases.SourceMs-phases.IntersectionMs-phases.FieldsMs)<<','<<redrawMs<<','<<total<<','<<counts.first<<','<<counts.second<<','<<stats.BodyBuilds<<','<<stats.SubmittedBodyBytes<<','<<stats.SubmittedSliceBytes<<','<<phases.BvhMs<<','<<phases.NodePrepareMs<<','<<phases.CellCutMs<<','<<phases.MergeMs<<','<<phases.Candidates<<','<<phases.Fallbacks<<'\n'; timings.push_back(total); sum+=total;
             if(i==0||i==frames-1) { if(!view->Dump((out/(mode+"-"+std::to_string(i)+".png")).string().c_str())) { throw std::runtime_error("Benchmark framebuffer capture failed"); } }
         }
         if (mask == 5) { validateSection(); }

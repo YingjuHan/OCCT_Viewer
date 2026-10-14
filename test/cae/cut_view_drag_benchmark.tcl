@@ -42,7 +42,7 @@ if {[catch {
     set previous [drag_plane]
     vdump [file join $::env(CUTVIEW_OUTPUT_DIR) drag-first.png]
     set csv [open [file join $::env(CUTVIEW_OUTPUT_DIR) drag.csv] w]
-    puts $csv "frame,event_ms,manager_ms,total_ms,source_ms,intersection_ms,FE_ms,presentation_ms,synchronizations,submitted_body_bytes,submitted_slice_bytes"
+    puts $csv "frame,event_ms,manager_ms,total_ms,source_ms,intersection_ms,FE_ms,presentation_ms,synchronizations,submitted_body_bytes,submitted_slice_bytes,bvh_ms,node_prepare_ms,cell_cut_ms,merge_ms,candidates,fallbacks"
     set timings {}; set sum 0; set managerSum 0
     for {set i 1} {$i <= $frames} {incr i} {
         set before [dict get [scvcutview $model presentation x] synchronizations]
@@ -62,7 +62,7 @@ if {[catch {
         set managerMs [expr {([clock microseconds]-$start)/1000.0}]
         drag_assert {[dict get [scvcutview $model presentation x] synchronizations] == $after} "Manager poll recomputed slice during held drag"
         set total [expr {$eventMs+$managerMs}]
-        puts $csv "$i,$eventMs,$managerMs,$total,[dict get $info source_ms],[dict get $info slice_ms],[dict get $info fields_ms],[dict get $info presentation_ms],[expr {$after-$before}],0,[dict get $info submitted_slice_bytes]"
+        puts $csv "$i,$eventMs,$managerMs,$total,[dict get $info source_ms],[dict get $info slice_ms],[dict get $info fields_ms],[dict get $info presentation_ms],[expr {$after-$before}],0,[dict get $info submitted_slice_bytes],[dict get $info bvh_ms],[dict get $info node_prepare_ms],[dict get $info cell_cut_ms],[dict get $info merge_ms],[dict get $info candidates],[dict get $info fallbacks]"
         lappend timings $total; set sum [expr {$sum+$total}]; set managerSum [expr {$managerSum+$managerMs}]
     }
     close $csv

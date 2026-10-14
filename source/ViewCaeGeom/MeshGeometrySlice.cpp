@@ -12,6 +12,8 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <chrono>
+#include <OSD_ThreadPool.hxx>
 
 namespace {
 static constexpr double CONFUSION = 1e-5;
@@ -54,6 +56,19 @@ public:
     }
 
 public:
+    void CollectCandidates(bool enabled) { myCollect=enabled; }
+    const std::vector<RWCae::MeshEntityId>& Candidates() const { return myCandidates; }
+    void ProcessCandidates(ViewCaeGeom::MeshSliceWork& work)
+    {
+        const auto start=std::chrono::steady_clock::now();
+        for(auto id:myCandidates) {
+            if(myCancellation && myCancellation->Cancelled.load()) { throw std::runtime_error("Native section request cancelled during intersection"); }
+            const auto& element=myMeshGeom->GetMeshData()->IndexedElements()[id];
+            if(element.Type==RWCae::MeshElemType::Hexahedron && affineHexSlice(element)) { continue; }
+            ++work.Fallbacks; processIndexedElement(element,id);
+        }
+        work.CutMs+=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();
+    }
     //! Defines the rules for node rejection by bounding box.
     virtual Standard_Boolean RejectNode(const BVH_Vec3f&  theCornerMin,
                                         const BVH_Vec3f&  theCornerMax,
@@ -78,6 +93,8 @@ public:
 
         RWCae::MeshEntityId anIndex = theBoxSet->Element(theIndex);
         if (!myMeshGeom->AcceptElement(anIndex)) { return false; }
+
+        if(myCollect) { myCandidates.push_back(anIndex); return true; }
 
         const RWCae::MeshData::IndexedElement& anElem = myMeshGeom->GetMeshData()->IndexedElements()[anIndex];
         if (anElem.Type == RWCae::MeshElemType::Hexahedron && affineHexSlice(anElem)) { return true; }
@@ -144,6 +161,8 @@ protected:
     size_t myVisited=0;
     Graphic3d_Vec4d myEquation;
     double myTolerance=0;
+    bool myCollect=false;
+    std::vector<RWCae::MeshEntityId> myCandidates;
 
 private:
     // Affine hexes have convex planar faces. Their section is the ordered set
@@ -272,6 +291,8 @@ MeshGeometrySlice::MeshGeometrySlice(const Handle(MeshBvhData)& theBvhData) : Me
 // =======================================================================
 void MeshGeometrySlice::generateMeshData()
 {
+    myLastWork={};
+    ++myWorkGeneration;
     myMeshData = new RWCae::MeshData();
     myNodesMap.Clear();
     myElementsMap.Clear();
@@ -283,7 +304,15 @@ void MeshGeometrySlice::generateMeshData()
             for (Graphic3d_SequenceOfHClipPlane::Iterator anIter(mySlicePlanes); anIter.More(); anIter.Next()) {
                 MeshSliceSelector aSelector(aParent, anIter.Value(), myMeshData, &myNodesMap, &myElementsMap, &myLines,myCancellation);
                 aSelector.SetBVHSet(myBvhData->BvhBoxSet(aParent).get());
+                const bool staged=mySlicePlanes.Size()==1 && aParentMeshData->NbIndexedElems()>=65536;
+                aSelector.CollectCandidates(staged);
+                const auto start=std::chrono::steady_clock::now();
                 aSelector.Select();
+                if(staged) {
+                    myLastWork.BvhMs+=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();
+                    myLastWork.Candidates+=aSelector.Candidates().size();
+                    aSelector.ProcessCandidates(myLastWork);
+                }
             }
         }
         if (!aParent->IsModifier()) {

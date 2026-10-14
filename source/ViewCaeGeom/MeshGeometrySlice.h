@@ -8,6 +8,11 @@
 
 namespace ViewCaeGeom {
 struct MeshCutCancellation;
+//! Wall times partition a rebuilt native single-plane section (not cache hits).
+struct MeshSliceWork {
+    double BvhMs=0, PrepareMs=0, CutMs=0, MergeMs=0;
+    size_t Candidates=0, Fallbacks=0;
+};
 //! Endpoints index the slice mesh nodes; source element indexes the original mesh.
 struct MeshSliceLine {
     std::array<RWCae::MeshEntityId, 2> Nodes;
@@ -23,6 +28,8 @@ public:
 
     Standard_EXPORT ~MeshGeometrySlice() override;
     void SetCancellation(const std::shared_ptr<MeshCutCancellation>& token) { myCancellation=token; }
+    const MeshSliceWork& LastWork() const { return myLastWork; }
+    size_t WorkGeneration() const { return myWorkGeneration; }
 
     //! Return geometry type.
     virtual MeshGeometryType Type() const override { return MeshGeometryType::Slice; }
@@ -71,6 +78,8 @@ protected:
     Graphic3d_SequenceOfHClipPlane mySlicePlanes;
     std::vector<MeshSliceLine> myLines;
     std::shared_ptr<MeshCutCancellation> myCancellation;
+    MeshSliceWork myLastWork;
+    size_t myWorkGeneration=0;
 };
 
 } // namespace

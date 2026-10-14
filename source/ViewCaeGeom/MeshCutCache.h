@@ -29,6 +29,10 @@ private:
     MeshCutCachePolicy myPolicy;
 };
 struct MeshCutCancellation { std::atomic<bool> Cancelled{false}; void Cancel() { Cancelled.store(true); } };
-struct MeshCutFrameTimings { double SourceMs=0,IntersectionMs=0,FieldsMs=0,SliceMs=0,TraceMs=0; };
+struct MeshCutFrameTimings {
+    double SourceMs=0,IntersectionMs=0,FieldsMs=0,SliceMs=0,TraceMs=0;
+    double BvhMs=0,NodePrepareMs=0,CellCutMs=0,MergeMs=0;
+    uint64_t Candidates=0,Fallbacks=0;
+};
 }
 #endif

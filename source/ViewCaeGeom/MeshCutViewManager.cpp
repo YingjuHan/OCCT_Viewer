@@ -1112,7 +1112,14 @@ MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
         aResult.Portions[i] = anEntry->Portions[i];
         const auto cancellable=Handle(MeshGeometrySlice)::DownCast(aResult.Portions[i]);
         if(!cancellable.IsNull()) { cancellable->SetCancellation(myCancellation); }
+        const size_t workGeneration=cancellable.IsNull()?0:cancellable->WorkGeneration();
         aResult.Portions[i]->GetMeshData();
+        if(!cancellable.IsNull() && cancellable->WorkGeneration()!=workGeneration) {
+            const auto& work=cancellable->LastWork();
+            myTimings.BvhMs+=work.BvhMs; myTimings.NodePrepareMs+=work.PrepareMs;
+            myTimings.CellCutMs+=work.CutMs; myTimings.MergeMs+=work.MergeMs;
+            myTimings.Candidates+=work.Candidates; myTimings.Fallbacks+=work.Fallbacks;
+        }
         { const double time=elapsed(); myTimings.IntersectionMs+=time; myTimings.SliceMs+=time; } checkRequest(request);
         if (auto quadric = dynamic_cast<MeshGeometryQuadric*>(aResult.Portions[i].get())) {
             aResult.Volumes[i] = quadric->Volume(); aResult.Areas[i] = quadric->Area();
