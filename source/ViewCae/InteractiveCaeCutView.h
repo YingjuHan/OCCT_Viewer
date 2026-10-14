@@ -14,8 +14,21 @@
 #include <ViewCaeGeom/MeshCutFrame.h>
 #include <functional>
 #include <AIS_DragAction.hxx>
+#include <Select3D_SensitiveEntity.hxx>
 
 namespace ViewCae {
+class MeshCutGpuPresentation;
+enum class MeshCutRenderBackend { Auto, Cpu };
+struct MeshCutRenderStatistics {
+    bool GpuPlane = false;
+    std::string FallbackReason;
+    uint64_t BodyBuilds = 0;
+    uint64_t SliceReallocations = 0;
+    uint64_t SliceEvaluations = 0;
+    uint64_t SubmittedBodyBytes = 0;
+    uint64_t SubmittedSliceBytes = 0;
+    double SourceMs = 0, SliceMs = 0, FieldsMs = 0, PresentationMs = 0;
+};
 struct MeshCutDisplayStyle {
     Quantity_Color Color = Quantity_Color(Quantity_NOC_GRAY80);
     float Transparency = 0.0f;
@@ -51,6 +64,7 @@ public:
     uint64_t Generation;
     size_t Branch = 0;
     bool Line = false;
+    bool Source = false;
 };
 
 //! Native display object for enabled cut portions, or the uncut source when no cut is active.
@@ -59,6 +73,11 @@ class Standard_EXPORT InteractiveCaeCutView : public AIS_InteractiveObject {
     DEFINE_STANDARD_RTTIEXT(InteractiveCaeCutView, AIS_InteractiveObject)
 public:
     Standard_EXPORT explicit InteractiveCaeCutView(const Handle(RWCae::MeshData)& theMesh);
+    Standard_EXPORT ~InteractiveCaeCutView() override;
+    void SetRenderBackend(MeshCutRenderBackend backend) { myRenderBackend = backend; }
+    MeshCutRenderBackend RenderBackend() const { return myRenderBackend; }
+    const MeshCutRenderStatistics& RenderStatistics() const { return myRenderStatistics; }
+    Standard_EXPORT Handle(Graphic3d_ArrayOfTriangles) SliceArray() const;
     ViewCaeGeom::MeshCutViewManager& Cuts() { return myCuts; }
     Standard_EXPORT void SetField(const Handle(RWCae::MeshNVecProperty)& theField, int theRawComponent = 0);
     Standard_EXPORT void SetStyle(ViewCaeGeom::MeshCutPortion thePortion, const MeshCutDisplayStyle& theStyle);
@@ -107,6 +126,17 @@ protected:
     Standard_EXPORT void ComputeSelection(const Handle(SelectMgr_Selection)&, Standard_Integer) override;
 
 private:
+    std::string planeFallback(const std::vector<ViewCaeGeom::MeshCutDefinition>& definitions) const;
+    MeshCutRenderBackend myRenderBackend = MeshCutRenderBackend::Auto;
+    MeshCutRenderStatistics myRenderStatistics;
+    std::unique_ptr<MeshCutGpuPresentation> myGpuPresentation;
+    Handle(MeshPresentationScalar) myBodyPresentation;
+    uint64_t myBodySourceEpoch = 0, myBodyFieldEpoch = 0;
+    int myBodyComponent = -1;
+    ViewCaeGeom::MeshCutCellMode myBodyCellMode = ViewCaeGeom::MeshCutCellMode::Constant;
+    std::array<std::vector<Handle(Select3D_SensitiveEntity)>,2> myBodySelection;
+    uint64_t myBodySelectionEpoch = 0;
+    ViewCaeGeom::MeshCutResult myBodyPickResult;
     MeshCutProbe probeResult(const ViewCaeGeom::MeshCutResult& cut, int portion, RWCae::MeshEntityId entity, bool node);
     MeshCutProbe probeLineResult(const ViewCaeGeom::MeshCutResult& cut, size_t line, int endpoint);
     ViewCaeGeom::MeshCutViewManager myCuts;

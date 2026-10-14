@@ -43,6 +43,7 @@ class MeshPart : public Standard_Transient {
 public:
     //! Destructor.
     virtual ~MeshPart() {}
+    virtual Handle(Graphic3d_ArrayOfPrimitives) PrimitiveArray() const { return nullptr; }
 
     //! Check if part is needed to show and update.
     bool NeedToUpdate() const { return myToShow && !myIsUpdated; }
@@ -112,6 +113,7 @@ class MeshPartPrimArray : public MeshPart {
 public:
     //! Destructor.
     virtual ~MeshPartPrimArray() {}
+    Handle(Graphic3d_ArrayOfPrimitives) PrimitiveArray() const override { return myPrimArray; }
 
     //! Return type of mesh part.
     static MeshPartType Type() { return T; }

@@ -173,6 +173,9 @@ public:
     //! definitions/revisions or evaluate either retained volume/OR boundary.
     Standard_EXPORT MeshCutResult EvaluateSectionForDisplay(const std::string& theId,
         const Handle(RWCae::MeshNVecProperty)& theField = nullptr);
+    //! Display recovery/measure without intersections (e.g. both sides only).
+    Standard_EXPORT MeshCutResult EvaluateFieldForDisplay(const std::string& theId,
+        const Handle(RWCae::MeshNVecProperty)& theField = nullptr);
     //! Map only original physical components, independent of display recovery/measures.
     Standard_EXPORT MeshCutResult EvaluatePhysical(const std::string& theId,
         const Handle(RWCae::MeshNVecProperty)& theField);
@@ -186,6 +189,7 @@ public:
     //! Nodal bounds of the source after its current deformation modifier.
     Standard_EXPORT Bnd_Box SourceBounds();
     Standard_EXPORT void InvalidateFields();
+    uint64_t FieldEpoch() const { return myFieldEpoch; }
     Standard_EXPORT void InvalidateGeometry();
     Standard_EXPORT void Clear();
     //! Cumulative work in the current source epoch; field/cut edits retain source preparation.
@@ -202,6 +206,8 @@ public:
     bool SetCachePolicy(const MeshCutCachePolicy& policy) { return myCache.SetPolicy(policy); }
     MeshCutCachePolicy CachePolicy() const { return myCache.Policy(); }
     MeshCutCacheStatistics CacheStatistics() const { return myCache.Statistics(); }
+    //! Renderer buffers share the result budget and retain their own leases.
+    std::shared_ptr<void> ReserveDisplayBytes(uint64_t bytes) { return myCache.Reserve(bytes,false); }
     Standard_EXPORT uint64_t EstimatedSourceBytes() const;
     Standard_EXPORT uint64_t EstimatedResultBytes(const Handle(RWCae::MeshNVecProperty)& field=nullptr) const;
     //! New request invalidates every earlier request. Cancellation is thread safe;
@@ -235,6 +241,7 @@ private:
     std::shared_ptr<MeshVtkCutSource> generalSource();
     std::shared_ptr<MeshVtkCutSource> myGeneralSource;
     uint64_t mySourceEpoch = 1;
+    uint64_t myFieldEpoch = 1;
     MeshCutGeometryOptions myGeometryOptions;
     MeshCutRecoveryOptions myRecoveryOptions;
     MeshCutIsoOptions myIsoOptions;

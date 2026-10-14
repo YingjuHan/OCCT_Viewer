@@ -204,6 +204,7 @@ static void projectedCells()
 static void displayPrimitives()
 {
     Handle(ViewCae::InteractiveCaeCutView) view = new ViewCae::InteractiveCaeCutView(tetra());
+    view->SetRenderBackend(ViewCae::MeshCutRenderBackend::Cpu);
     view->Cuts().AddPlane("x", Graphic3d_Vec4d(1,0,0,-0.25));
     view->Cuts().SetVisibility("x", 7);
     view->SetField(field("temperature", true, {0,1,2,3}));
@@ -627,6 +628,43 @@ static void displaySectionOnly()
     near(projected.Fields[1]->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(0)),9,"Recovered section");
 }
 
+static void gpuPlanePrimitives()
+{
+    Handle(ViewCae::InteractiveCaeCutView) view = new ViewCae::InteractiveCaeCutView(tetra());
+    auto& cuts = view->Cuts(); cuts.AddPlane("x",Graphic3d_Vec4d(1,0,0,-0.25));
+    view->SetField(field("x",true,{0,1,0,0}));
+    cuts.SetVisibility("x",3); view->Synchronize();
+    require(view->RenderStatistics().GpuPlane && view->RenderStatistics().BodyBuilds == 1,"GPU plane body absent");
+    const auto array = view->SliceArray();
+    require(!array.IsNull() && array->VertexNumber() == 3 && array->Attributes()->IsMutable()
+        && !array->Indices().IsNull() && array->Indices()->IsMutable(),"Slice does not use mutable indexed buffers");
+    const auto builds = view->RenderStatistics().BodyBuilds;
+    for (unsigned mask = 0; mask < 8; ++mask) {
+        cuts.SetVisibility("x",mask); view->Synchronize();
+        require(view->RenderStatistics().GpuPlane && view->RenderStatistics().BodyBuilds == builds,"Mask rebuilt source body");
+        require(array == view->SliceArray(),"Mask reallocated slice capacity");
+        require(array->VertexNumber() == ((mask == 0 || mask == 5) ? 0 : 3),"GPU mask slice geometry wrong");
+        const auto evaluations = view->RenderStatistics().SliceEvaluations;
+        cuts.SetPlane("x",Graphic3d_Vec4d(1,0,0,-0.25-0.01*mask)); view->Synchronize();
+        require(view->RenderStatistics().SubmittedBodyBytes == 0 && view->RenderStatistics().BodyBuilds == builds,
+            "Warm plane edit submitted/rebuilt body");
+        require(view->RenderStatistics().SliceEvaluations == evaluations+((mask == 0 || mask == 5) ? 0 : 1),
+            "Both-only or hidden mask evaluated slice");
+    }
+    cuts.SetVisibility("x",2); cuts.SetPlane("x",Graphic3d_Vec4d(0.2,0.5,1,-0.25)); view->Synchronize();
+    require(view->SliceArray() == array && view->RenderStatistics().BodyBuilds == builds,"Rotation rebuilt source buffers");
+    const auto generation = view->SynchronizationCount(); const auto presentations = view->Presentations();
+    auto cancellation = std::make_shared<MeshCutCancellation>(); cuts.BeginRequest(cancellation); cancellation->Cancel();
+    bool rejected = false; try { view->Synchronize(); } catch (const std::exception&) { rejected = true; }
+    require(rejected && generation == view->SynchronizationCount() && presentations == view->Presentations(),"Cancelled frame published");
+    cuts.BeginRequest(nullptr);
+    view->SetRenderBackend(ViewCae::MeshCutRenderBackend::Cpu); view->Synchronize();
+    require(!view->RenderStatistics().GpuPlane && view->RenderStatistics().FallbackReason == "requested_cpu","CPU override ignored");
+    view->SetRenderBackend(ViewCae::MeshCutRenderBackend::Auto); view->Synchronize();
+    cuts.AddSphere("sphere",Graphic3d_Vec3d(0),.5); cuts.SetEnabled("x",false); view->Synchronize();
+    require(!view->RenderStatistics().GpuPlane && view->RenderStatistics().FallbackReason == "non_plane_cut","Sphere rendering changed");
+}
+
 int main()
 {
     try {
@@ -642,6 +680,7 @@ int main()
         isosurfaceBoundaryAndQuadratic();
         defaultPlanes();
         displaySectionOnly();
+        gpuPlanePrimitives();
         std::cout << "Cut view numerical tests passed\n";
         return 0;
     } catch (const std::exception& error) {

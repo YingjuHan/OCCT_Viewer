@@ -139,9 +139,11 @@ Standard_Integer imageStats(Draw_Interpretor& di, Standard_Integer argc, const c
     Image_AlienPixMap image;
     if (!image.Load(argv[1])) { di << "Cannot load screenshot"; return 1; }
     size_t visible = 0, colored = 0;
+    size_t interiorWhite = 0;
     uint64_t checksum = 14695981039346656037ull;
     std::set<unsigned> colors;
     for (size_t y = 0; y < image.SizeY(); ++y) {
+        int first = -1, last = -1;
         for (size_t x = 0; x < image.SizeX(); ++x) {
             auto color = image.PixelColor((int)x, (int)y).GetRGB();
             const unsigned r = (unsigned)std::lround(color.Red()*255);
@@ -149,11 +151,17 @@ Standard_Integer imageStats(Draw_Interpretor& di, Standard_Integer argc, const c
             const unsigned b = (unsigned)std::lround(color.Blue()*255);
             const unsigned min = std::min({r,g,b}), max = std::max({r,g,b});
             for (unsigned channel : {r,g,b}) { checksum = (checksum ^ channel) * 1099511628211ull; }
-            if (min < 245) { ++visible; colors.insert((r << 16) | (g << 8) | b); }
+            if (min < 245) { ++visible; colors.insert((r << 16) | (g << 8) | b); if (first < 0) { first = (int)x; } last = (int)x; }
             if (max - min > 30) { ++colored; }
         }
+        // Convex opaque fixture silhouettes must have no white interior holes.
+        // The two-pixel boundary margin excludes silhouette antialiasing.
+        for (int x = first+2; first >= 0 && x <= last-2; ++x) {
+            const auto c = image.PixelColor(x,(int)y).GetRGB();
+            if (std::min({c.Red(),c.Green(),c.Blue()}) > 0.98) { ++interiorWhite; }
+        }
     }
-    di << "visible " << (int)visible << " colored " << (int)colored << " colors " << (int)colors.size()
+    di << "visible " << (int)visible << " colored " << (int)colored << " colors " << (int)colors.size() << " interior_white " << (int)interiorWhite
        << " checksum " << std::to_string(checksum).c_str();
     return 0;
 }
@@ -580,6 +588,22 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             for (int mode = 0; mode < 3; ++mode) {
                 if (std::string(argv[3]) == modes[mode]) { options.Mode = (ViewCaeGeom::MeshCutGeometryMode)mode; ok = cuts.SetGeometryOptions(options); break; }
             }
+        } else if (action == "renderbackend" && (argc == 3 || argc == 4)) {
+            if (argc == 3) { di << (model.View->RenderBackend() == ViewCae::MeshCutRenderBackend::Auto ? "auto" : "cpu"); return 0; }
+            const std::string backend = argv[3];
+            if (backend != "auto" && backend != "cpu") { throw std::invalid_argument("Render backend must be auto or cpu"); }
+            model.View->SetRenderBackend(backend == "auto" ? ViewCae::MeshCutRenderBackend::Auto : ViewCae::MeshCutRenderBackend::Cpu);
+            ok = true;
+        } else if (action == "renderinfo" && argc == 3) {
+            const auto& stats = model.View->RenderStatistics();
+            di << "backend " << (stats.GpuPlane ? "gpu_plane" : "cpu") << " fallback";
+            di.AppendElement(stats.FallbackReason.c_str());
+            di << " body_builds " << (double)stats.BodyBuilds << " slice_reallocations " << (double)stats.SliceReallocations
+               << " slice_evaluations " << (double)stats.SliceEvaluations
+               << " submitted_body_bytes " << (double)stats.SubmittedBodyBytes << " submitted_slice_bytes " << (double)stats.SubmittedSliceBytes
+               << " source_ms " << stats.SourceMs << " slice_ms " << stats.SliceMs << " fields_ms " << stats.FieldsMs
+               << " presentation_ms " << stats.PresentationMs;
+            return 0;
         } else if (action == "presentation" && argc == 4) {
             const auto& revisions = model.View->SynchronizedRevisions();
             const auto revision = revisions.find(argv[3]);
@@ -1038,6 +1062,7 @@ void ViewCaeTest::CutViewCommands::Factory(Draw_Interpretor& di)
         "  | geometry [absoluteTolerance relativeTolerance faceLimit lineLimit maxSourcePrimitives]\n"
         "  | isooptions [fieldAbsoluteTolerance fieldRelativeTolerance minimumDepth limit maxPrimitives]\n"
         "  | geometrymode [numerical/preferred/required]\n"
+        "  | renderbackend [auto/cpu] | renderinfo (submitted bytes are not measured GPU traffic)\n"
         "  | handle id 0/1 [gizmo0/1] | handleinfo | fit | field none\n"
         "  | datum name originX originY originZ Xx Xy Xz Yx Yy Yz Zx Zy Zz\n"
         "  | timeinfo | step index | timeddeform name/none scale | play period/speed loop restart timestamps | pause | tick seconds\n"

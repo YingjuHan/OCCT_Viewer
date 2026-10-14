@@ -18,6 +18,7 @@ set (SRCFILES
   MeshAnnotations.cpp
   MeshColorMapper.cpp
   MeshColorScaleMapper.cpp
+  MeshCutGpuPresentation.cpp
   MeshPart.cpp
   MeshPartGeneralCells.cpp
   MeshPresentation.cpp
@@ -52,6 +53,7 @@ set (INCFILES
   MeshAnnotations.h
   MeshColorMapper.h
   MeshColorScaleMapper.h
+  MeshCutGpuPresentation.h
   MeshPart.h
   MeshPartGeneralCells.h
   MeshPresentation.h

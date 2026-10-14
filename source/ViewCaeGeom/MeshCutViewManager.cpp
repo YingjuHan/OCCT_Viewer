@@ -1071,6 +1071,12 @@ MeshCutResult MeshCutViewManager::EvaluateSectionForDisplay(const std::string& t
     return evaluate(theId,theField,true,2);
 }
 
+MeshCutResult MeshCutViewManager::EvaluateFieldForDisplay(const std::string& theId,
+    const Handle(RWCae::MeshNVecProperty)& theField)
+{
+    return evaluate(theId,theField,true,0);
+}
+
 MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
     const Handle(RWCae::MeshNVecProperty)& theField, bool display, unsigned requestedMask)
 {
@@ -1081,12 +1087,13 @@ MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
     aResult.Definition = anEntry->Definition;
     aResult.Revision = anEntry->Revision;
     const unsigned mask = requestedMask == 8 ? anEntry->Definition.Visibility : requestedMask;
-    if (!anEntry->Definition.Enabled || mask == 0) { return aResult; }
-    prepareCache(*anEntry,theField);
+    if (!anEntry->Definition.Enabled || (mask == 0 && requestedMask != 0)) { return aResult; }
+    if (mask != 0) { prepareCache(*anEntry,theField); }
     if (!theField.IsNull()) { CutFieldTools::Validate(myMesh,theField); }
     using Clock=std::chrono::steady_clock;
     auto phase=Clock::now(); auto elapsed=[&] { const auto end=Clock::now(); const double value=std::chrono::duration<double,std::milli>(end-phase).count(); phase=end; return value; };
-    initialize(*anEntry); myTimings.SourceMs+=elapsed(); checkRequest(request);
+    if (mask != 0) { initialize(*anEntry); }
+    myTimings.SourceMs+=elapsed(); checkRequest(request);
     const bool projected = display && !theField.IsNull() && theField->IsElemental()
         && anEntry->Definition.CellMode == MeshCutCellMode::Projected;
     aResult.TensorDerived = display && !theField.IsNull() && theField->Type() == RWCae::MeshNVecPropertyType::Tensor
@@ -1227,6 +1234,7 @@ std::shared_ptr<MeshCutPresentation> MeshCutViewManager::EvaluatePresentation(co
 
 void MeshCutViewManager::InvalidateFields()
 {
+    ++myFieldEpoch;
     myProjectedSource.Nullify();
     myProjectedField.Nullify();
     for (auto& anEntry : myEntries) {

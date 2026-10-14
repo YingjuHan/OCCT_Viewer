@@ -1,4 +1,5 @@
 #include <ViewCae/InteractiveCaeCutView.h>
+#include <ViewCae/MeshCutGpuPresentation.h>
 #include <ViewCaeGeom/MeshCutUnion.h>
 #include <ViewCaeGeom/MeshCutTrace.h>
 #include <ViewCae/CaeMeshTools.h>
@@ -12,18 +13,31 @@
 #include <stdexcept>
 #include <cmath>
 #include <algorithm>
+#include <chrono>
 #include <Select3D_SensitivePoint.hxx>
 #include <Select3D_SensitiveTriangle.hxx>
 #include <Select3D_SensitiveSegment.hxx>
 #include <SelectMgr_Selection.hxx>
 #include <RWCae/MeshAdaptorsIterator.h>
 #include <RWCae/MeshScalarProperty.h>
+#include <RWCae/MeshCellTopology.h>
 #include <Graphic3d_TransformPers.hxx>
 
 IMPLEMENT_STANDARD_RTTIEXT(ViewCae::InteractiveCaeCutView, AIS_InteractiveObject)
 IMPLEMENT_STANDARD_RTTIEXT(ViewCae::MeshCutPickOwner, SelectMgr_EntityOwner)
 
 namespace {
+template<class Sensitive> class CutBodySensitive : public Sensitive {
+public:
+    template<class... Args> CutBodySensitive(std::function<bool(const gp_Pnt&)> accept,Args&&... args)
+        : Sensitive(std::forward<Args>(args)...), myAccept(std::move(accept)) {}
+    Standard_Boolean Matches(SelectBasics_SelectingVolumeManager& manager,SelectBasics_PickResult& result) override {
+        if (!Sensitive::Matches(manager,result)) { return false; }
+        return myAccept(result.HasPickedPoint() ? result.PickedPoint() : Sensitive::CenterOfGeometry());
+    }
+private:
+    std::function<bool(const gp_Pnt&)> myAccept;
+};
 class CutRangeMapper : public ViewCae::MeshColorMapper {
 public:
     explicit CutRangeMapper(double minimum, double maximum, int intervals) : myRange(minimum,maximum), myIntervals(intervals) {}
@@ -87,6 +101,41 @@ InteractiveCaeCutView::InteractiveCaeCutView(const Handle(RWCae::MeshData)& theM
     myLegend->SetTransformPersistence(new Graphic3d_TransformPers(Graphic3d_TMF_2d,Aspect_TOTP_LEFT_LOWER,Graphic3d_Vec2i(16,16)));
     Handle(Graphic3d_SequenceOfHClipPlane) hudPlanes = new Graphic3d_SequenceOfHClipPlane();
     hudPlanes->SetOverrideGlobal(true); myLegend->SetClipPlanes(hudPlanes);
+}
+
+InteractiveCaeCutView::~InteractiveCaeCutView() = default;
+Handle(Graphic3d_ArrayOfTriangles) InteractiveCaeCutView::SliceArray() const
+{
+    return myGpuPresentation ? myGpuPresentation->SliceArray() : Handle(Graphic3d_ArrayOfTriangles)();
+}
+
+std::string InteractiveCaeCutView::planeFallback(const std::vector<ViewCaeGeom::MeshCutDefinition>& definitions) const
+{
+    if (myRenderBackend == MeshCutRenderBackend::Cpu) { return "requested_cpu"; }
+    const ViewCaeGeom::MeshCutDefinition* plane = nullptr;
+    for (const auto& definition : definitions) {
+        if (!definition.Enabled) { continue; }
+        if (plane != nullptr) { return "multiple_cuts"; }
+        plane = &definition;
+    }
+    if (plane == nullptr) { return "no_active_cut"; }
+    if (plane->Shape != ViewCaeGeom::MeshCutShape::Plane) { return "non_plane_cut"; }
+    if (!myVectorField.IsNull()) { return "vectors"; }
+    bool volume = false;
+    RWCae::MeshAdaptorsIterator3dElems::For([&](const auto& a) { volume |= a.NbElements() != 0; },myMesh);
+    bool other = myMesh->NbElems(RWCae::MeshElemType::Elem0d) != 0;
+    RWCae::MeshAdaptorsIterator2dElems::For([&](const auto& a) { other |= a.NbElements() != 0; },myMesh);
+    for (const auto& cell : myMesh->GenericCells()) {
+        const int dimension = RWCae::MeshCellTopology::Dimension(cell.Type);
+        volume |= dimension == 3; other |= dimension != 3;
+    }
+    if (!volume || other) { return "non_volume_mesh"; }
+    for (int i = 0; i < 3; ++i) {
+        if (EffectiveStyle(plane->Id,(ViewCaeGeom::MeshCutPortion)i).Mode != InteractiveCaeMeshPrsMode::FlatShaded) {
+            return "display_mode";
+        }
+    }
+    return "";
 }
 
 void InteractiveCaeCutView::SetField(const Handle(RWCae::MeshNVecProperty)& theField, int theRawComponent)
@@ -313,6 +362,11 @@ MeshCutProbe InteractiveCaeCutView::probeLineResult(const ViewCaeGeom::MeshCutRe
 }
 MeshCutProbe InteractiveCaeCutView::Probe(const Handle(MeshCutPickOwner)& owner)
 {
+    if (!owner.IsNull() && owner->SelectablePointer() == this && owner->Source) {
+        if (!myRenderStatistics.GpuPlane || owner->Generation != myBodySourceEpoch) { throw std::invalid_argument("Stale source pick owner"); }
+        const auto probe = probeResult(myBodyPickResult,0,owner->Entity,owner->Node);
+        return probe;
+    }
     if (owner.IsNull() || owner->SelectablePointer() != this || owner->Generation != mySynchronizationCount) {
         throw std::invalid_argument("Stale cut pick owner");
     }
@@ -323,6 +377,7 @@ MeshCutProbe InteractiveCaeCutView::Probe(const Handle(MeshCutPickOwner)& owner)
 
 void InteractiveCaeCutView::Synchronize()
 {
+    const auto frameStart = std::chrono::steady_clock::now();
     const auto request=myCuts.RequestGeneration();
     decltype(myPresentations) presentations;
     decltype(myVectorPresentations) vectorPresentations;
@@ -338,12 +393,39 @@ void InteractiveCaeCutView::Synchronize()
         } else { ++it; }
     }
     const bool hasActiveCut = std::any_of(definitions.begin(), definitions.end(), [](const auto& cut) { return cut.Enabled; });
-    auto cutPresentation = hasActiveCut ? myCuts.EvaluatePresentation(myField) : nullptr;
+    const auto fallback = planeFallback(definitions);
+    const bool gpuPlane = fallback.empty();
+    auto cutPresentation = hasActiveCut && !gpuPlane ? myCuts.EvaluatePresentation(myField) : nullptr;
     auto results = cutPresentation ? cutPresentation->Branches : std::vector<ViewCaeGeom::MeshCutResult>();
+    ViewCaeGeom::MeshCutResult gpuSection;
+    ViewCaeGeom::MeshCutDefinition gpuDefinition;
+    bool bodyChanged = false;
+    ViewCaeGeom::MeshCutResult bodyPickResult = myBodyPickResult;
+    Handle(MeshPresentationScalar) bodyPresentation = myBodyPresentation;
+    if (gpuPlane) {
+        gpuDefinition = *std::find_if(definitions.begin(),definitions.end(),[](const auto& d) { return d.Enabled; });
+        const auto mask = gpuDefinition.Visibility;
+        if (mask != 0) {
+            gpuSection = mask == 5 ? myCuts.EvaluateFieldForDisplay(gpuDefinition.Id,myField)
+                                  : myCuts.EvaluateSectionForDisplay(gpuDefinition.Id,myField);
+            if ((mask & 5) != 0) {
+                auto body = gpuSection;
+                body.Roots = {}; body.Portions = {}; body.Fields = {}; body.PhysicalFields = {};
+                body.PhysicalProvenance = {}; body.LineField.Nullify(); body.PhysicalLineField.Nullify();
+                body.Roots[0] = myCuts.SourceGeometry(); body.Portions[0] = body.Roots[0]->GetLastChild();
+                body.Portions[0]->GetMeshData();
+                results.push_back(body);
+                bodyPickResult = body;
+                bodyChanged = bodyPresentation.IsNull() || myBodySourceEpoch != myCuts.Statistics().SourceEpoch
+                    || myBodyFieldEpoch != myCuts.FieldEpoch() || myBodyComponent != myComponent || myBodyCellMode != gpuDefinition.CellMode;
+            }
+            if (mask != 5) { results.push_back(gpuSection); }
+        }
+    }
     // Displaying both sides keeps the full body; On is an independent display
     // layer for one plane. Numerical OR/integration retain their old contract.
     const auto activeCount = std::count_if(definitions.begin(),definitions.end(),[](const auto& d) { return d.Enabled; });
-    if (activeCount == 1 && results.size() == 1 && results[0].Definition.Shape == ViewCaeGeom::MeshCutShape::Plane
+    if (!gpuPlane && activeCount == 1 && results.size() == 1 && results[0].Definition.Shape == ViewCaeGeom::MeshCutShape::Plane
         && results[0].Definition.Visibility == 7) {
         const auto section = myCuts.EvaluateSectionForDisplay(results[0].Definition.Id,myField);
         results[0].Roots[1] = section.Roots[1]; results[0].Portions[1] = section.Portions[1];
@@ -384,6 +466,7 @@ void InteractiveCaeCutView::Synchronize()
     } else { minimum = 0; maximum = 1; }
     const double rangeMinimum = myContourOptions.AutomaticRange ? minimum : myContourOptions.Minimum;
     const double rangeMaximum = myContourOptions.AutomaticRange ? maximum : myContourOptions.Maximum;
+    Handle(Graphic3d_Texture2D) frameTexture;
     for (const auto& aResult : results) {
         const int component = aResult.TensorDerived ? 0 : myComponent;
         if (hasActiveCut) { revisions[aResult.Definition.Id] = aResult.Revision; }
@@ -394,10 +477,15 @@ void InteractiveCaeCutView::Synchronize()
             Handle(MeshColorMapper) mapper = new CutRangeMapper(rangeMinimum,rangeMaximum,myContourOptions.Intervals);
             mapper->SetMeshProperty(aResult.SourceField,component);
             aProps->SetColorMapper(mapper,aProps->Property(aPropIndex));
+            frameTexture = mapper->ColorTexture();
         }
         for (size_t i = 0; i < aResult.Portions.size(); ++i) {
             if (aResult.Portions[i].IsNull()) { continue; }
             const auto aStyle = EffectiveStyle(aResult.Definition.Id,(ViewCaeGeom::MeshCutPortion)i);
+            if (gpuPlane && i == 0 && !bodyChanged) {
+                presentations.push_back(bodyPresentation);
+                continue;
+            }
             Handle(MeshPresentationScalar) aPrs = new MeshPresentationScalar(aProps, aPropIndex,
                 aResult.Roots[i], TCollection_AsciiString(aResult.Definition.Id.c_str()) + "_" + (int)i);
             auto aDrawer = aPrs->HighlightDrawer(MeshHighlightingType::None);
@@ -439,6 +527,7 @@ void InteractiveCaeCutView::Synchronize()
                 pointAspects.push_back(marker);
             }
             presentations.push_back(aPrs);
+            if (gpuPlane && i == 0) { bodyPresentation = aPrs; }
             if (!myVectorField.IsNull()) {
                 Handle(MeshPresentationVector) vector = new MeshPresentationVector(aProps,aPropIndex,aResult.Roots[i],
                     TCollection_AsciiString(aResult.Definition.Id.c_str())+"_vector_"+(int)i);
@@ -483,6 +572,28 @@ void InteractiveCaeCutView::Synchronize()
         }
     }
     if(!myCuts.IsCurrentRequest(request)) { throw std::runtime_error("Cut frame cancelled or superseded before presentation publication"); }
+    auto statistics = myRenderStatistics;
+    statistics.GpuPlane = gpuPlane; statistics.FallbackReason = fallback;
+    statistics.SubmittedBodyBytes = 0; statistics.SubmittedSliceBytes = 0;
+    if (gpuPlane) {
+        if (!myGpuPresentation) { myGpuPresentation = std::make_unique<MeshCutGpuPresentation>(); }
+        std::array<MeshCutDisplayStyle,3> styles;
+        for (int i = 0; i < 3; ++i) { styles[i] = EffectiveStyle(gpuDefinition.Id,(ViewCaeGeom::MeshCutPortion)i); }
+        myGpuPresentation->Update(bodyPresentation,gpuSection,gpuDefinition,styles,frameTexture,
+            gpuSection.TensorDerived ? 0 : myComponent,myCuts,statistics);
+        statistics.SliceEvaluations += gpuDefinition.Visibility != 0 && gpuDefinition.Visibility != 5 ? 1 : 0;
+        myBodyPresentation = bodyPresentation; myBodySourceEpoch = myCuts.Statistics().SourceEpoch;
+        myBodyFieldEpoch = myCuts.FieldEpoch(); myBodyComponent = myComponent; myBodyCellMode = gpuDefinition.CellMode;
+        myBodyPickResult = bodyPickResult;
+    } else {
+        myGpuPresentation.reset(); myBodyPresentation.Nullify();
+        myBodySelection = {}; myBodySelectionEpoch = 0; myBodyPickResult = {};
+    }
+    const auto timing = myCuts.LastTimings();
+    statistics.SourceMs = timing.SourceMs; statistics.SliceMs = timing.IntersectionMs; statistics.FieldsMs = timing.FieldsMs;
+    statistics.PresentationMs = std::max(0.0,std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-frameStart).count()
+        -statistics.SourceMs-statistics.SliceMs-statistics.FieldsMs);
+    myRenderStatistics = statistics;
     myPresentations = std::move(presentations);
     myVectorPresentations = std::move(vectorPresentations);
     myLineArrays = std::move(lineArrays); myLineAspects = std::move(lineAspects);
@@ -503,7 +614,7 @@ void InteractiveCaeCutView::Synchronize()
             value < 0.5 ? 2*value : 2-2*value,value < 0.5 ? 1-2*value : 0,Quantity_TOC_RGB),i);
     }
     ++mySynchronizationCount;
-    SetToUpdate();
+    if (!gpuPlane || !myGpuPresentation->IsAttached()) { SetToUpdate(); }
     UpdateSelection();
     if (myOnSynchronize) { myOnSynchronize(); }
 }
@@ -512,11 +623,14 @@ void InteractiveCaeCutView::NotifyDrag(AIS_DragAction action)
     if (myOnDrag) { try { myOnDrag(action); } catch (...) {} }
 }
 
-void InteractiveCaeCutView::Compute(const Handle(PrsMgr_PresentationManager)&,
+void InteractiveCaeCutView::Compute(const Handle(PrsMgr_PresentationManager)& manager,
     const Handle(Prs3d_Presentation)& thePrs, Standard_Integer theMode)
 {
     if (theMode != 0) { return; }
+    thePrs->DisconnectAll(Graphic3d_TOC_DESCENDANT);
+    if (myRenderStatistics.GpuPlane) { myGpuPresentation->Attach(thePrs,manager->StructureManager()); }
     for (const auto& aPresentation : myPresentations) {
+        if (myRenderStatistics.GpuPlane) { break; }
         const auto& aParts = aPresentation->GetParts();
         for (int i = 0; i < MeshNbPartTypes; ++i) {
             aParts((MeshPartType)i)->Compute(InteractiveContext(), aPresentation->Drawer(), thePrs, thePrs, 1.0f);
@@ -551,9 +665,45 @@ void InteractiveCaeCutView::Compute(const Handle(PrsMgr_PresentationManager)&,
 void InteractiveCaeCutView::ComputeSelection(const Handle(SelectMgr_Selection)& selection, Standard_Integer mode)
 {
     if (mode != 1 && mode != 2) { return; }
+    if (myRenderStatistics.GpuPlane && !myBodyPickResult.Portions[0].IsNull()) {
+        if (myBodySelectionEpoch != myBodySourceEpoch) { myBodySelection = {}; myBodySelectionEpoch = myBodySourceEpoch; }
+        auto& cache = myBodySelection[mode-1];
+        if (cache.empty()) {
+            const auto geometry = myBodyPickResult.Portions[0];
+            const auto mesh = geometry->GetMeshData();
+            auto accept = [this](const gp_Pnt& p) { return myGpuPresentation && myGpuPresentation->AcceptBodyPoint(p); };
+            std::vector<bool> nodesSeen(mesh->NbNodes(),false);
+            auto process = [&](const auto& adaptor) {
+                for (RWCae::MeshEntityId e = 0; e < adaptor.NbElements(); ++e) {
+                    const auto& element = adaptor.GetElement(e);
+                    auto point = [&](int n) {
+                        auto p = mesh->Nodes()[element[n]]; geometry->ModifyNode(element[n],p);
+                        return gp_Pnt(p.x(),p.y(),p.z());
+                    };
+                    if (mode == 1) {
+                        for (int n = 0; n < element.NbNodes(); ++n) {
+                            const auto node = element[n]; if (nodesSeen[node]) { continue; } nodesSeen[node] = true;
+                            Handle(MeshCutPickOwner) owner = new MeshCutPickOwner(this,myBodyPickResult.Definition.Id,0,node,true,myBodySourceEpoch);
+                            owner->Source = true;
+                            cache.push_back(new CutBodySensitive<Select3D_SensitivePoint>(accept,owner,point(n)));
+                        }
+                    } else {
+                        Handle(MeshCutPickOwner) owner = new MeshCutPickOwner(this,myBodyPickResult.Definition.Id,0,element.GlobalIndex(),false,myBodySourceEpoch);
+                        owner->Source = true;
+                        for (int n = 1; n+1 < element.NbNodes(); ++n) {
+                            cache.push_back(new CutBodySensitive<Select3D_SensitiveTriangle>(accept,owner,point(0),point(n),point(n+1)));
+                        }
+                    }
+                }
+            };
+            RWCae::MeshAdaptorsIterator2dElems::For(process,mesh,mesh->NbElems3d() != 0);
+        }
+        for (const auto& sensitive : cache) { selection->Add(sensitive); }
+    }
     for (size_t branch = 0; branch < myPickResults.size(); ++branch) {
         const auto& cut = myPickResults[branch];
         for (int portion = 0; portion < 3; ++portion) {
+            if (myRenderStatistics.GpuPlane && portion != 1) { continue; }
             const auto geometry = cut.Portions[portion];
             if (geometry.IsNull()) { continue; }
             const auto mesh = geometry->GetMeshData();

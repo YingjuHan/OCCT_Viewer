@@ -312,6 +312,9 @@ if (TARGET ViewDraw)
       set_tests_properties (draw_cut_view_iso_visual PROPERTIES ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_ISO_VISUAL=1;CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-iso-images"
         PASS_REGULAR_EXPRESSION "CUT_VIEW_ISO_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" RUN_SERIAL TRUE TIMEOUT 60)
       add_test (NAME draw_cut_view_visual COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_visual.tcl")
+      add_test (NAME draw_cut_view_gpu_plane COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_gpu_plane.tcl")
+      set_tests_properties (draw_cut_view_gpu_plane PROPERTIES ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-gpu-plane"
+        PASS_REGULAR_EXPRESSION "CUT_GPU_PLANE_PASS" FAIL_REGULAR_EXPRESSION "CUT_GPU_PLANE_FAIL" RUN_SERIAL TRUE TIMEOUT 90)
       set_tests_properties (draw_cut_view_visual PROPERTIES ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-images"
         PASS_REGULAR_EXPRESSION "CUT_VIEW_VISUAL_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_.*FAIL" RUN_SERIAL TRUE)
       add_test (NAME draw_cut_view_interaction COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_interaction.tcl")
