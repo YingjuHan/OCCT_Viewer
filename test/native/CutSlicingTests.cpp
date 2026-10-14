@@ -2,6 +2,47 @@
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
+#include <ViewCaeGeom/MeshGeometrySlice.h>
+#include <ViewCaeGeom/MeshCutTrace.h>
+
+// Exceeds the native staging threshold and the compact trace threshold.
+// Verify analytic geometry and original FE identities, not thread scheduling.
+static void largePlaneSection()
+{
+    using namespace ViewCaeGeom;
+    const int n=48;
+    Handle(RWCae::MeshData) source=new RWCae::MeshData();
+    const auto id=[&](int x,int y,int z) { return (RWCae::MeshEntityId)(x+(n+1)*(y+(n+1)*z)); };
+    for(int z=0;z<=n;++z) { for(int y=0;y<=n;++y) { for(int x=0;x<=n;++x) { source->AddNodePosition(Graphic3d_Vec3(x,y,z)); } } }
+    for(int z=0;z<n;++z) { for(int y=0;y<n;++y) { for(int x=0;x<n;++x) {
+        const RWCae::MeshEntityId nodes[]={id(x,y,z),id(x+1,y,z),id(x+1,y+1,z),id(x,y+1,z),id(x,y,z+1),id(x+1,y,z+1),id(x+1,y+1,z+1),id(x,y+1,z+1)};
+        source->AddElement(RWCae::MeshElementHexahedron(nodes));
+    } } }
+    MeshCutViewManager manager(source); manager.AddPlane("large",Graphic3d_Vec4d(1,0,0,-24.25));
+    for(double offset:{24.25,24.75,25.25,25.0}) {
+        manager.SetPlane("large",Graphic3d_Vec4d(1,0,0,-offset));
+        const auto result=manager.EvaluateSectionForDisplay("large");
+        const auto section=result.Portions[1]; const auto mesh=section->GetMeshData();
+        if(mesh->NbIndexedElems()!=n*n || mesh->NbNodes()!=(n+1)*(n+1)) { throw std::runtime_error("Large section has duplicate/missing faces or shared nodes"); }
+        double area=0;
+        for(RWCae::MeshEntityId e=0;e<mesh->NbIndexedElems();++e) {
+            RWCae::MeshEntityId original; const auto& entry=mesh->IndexedElements()[e];
+            if(!section->OriginElement(MeshGeomElem(entry.Index,entry.Type,false),original) || original>=source->NbIndexedElems()) { throw std::runtime_error("Large section missing source element"); }
+            std::vector<RWCae::MeshEntityId> nodes; mesh->ElementNodes(e,nodes);
+            for(size_t i=1;i+1<nodes.size();++i) {
+                const Graphic3d_Vec3d a(mesh->Nodes()[nodes[0]]),b(mesh->Nodes()[nodes[i]]),c(mesh->Nodes()[nodes[i+1]]);
+                area+=Graphic3d_Vec3d::Cross(b-a,c-a).Modulus()*.5;
+            }
+        }
+        if(std::abs(area-n*n)>1e-8) { throw std::runtime_error("Large section area mismatch"); }
+        for(RWCae::MeshEntityId node=0;node<mesh->NbNodes();++node) {
+            MeshInterpolatedNode origin; if(!section->OriginNode(node,origin)) { throw std::runtime_error("Large section missing FE weights"); }
+            double sum=0; Graphic3d_Vec3d position(0);
+            for(const auto& base:origin.BaseNodes()) { sum+=base.second; position+=Graphic3d_Vec3d(source->Nodes()[base.first])*base.second; }
+            if(std::abs(sum-1)>1e-12 || std::abs(position.x()-offset)>1e-9 || (position-Graphic3d_Vec3d(mesh->Nodes()[node])).Modulus()>1e-8) { throw std::runtime_error("Large section FE reconstruction mismatch"); }
+        }
+    }
+}
 
 using namespace ViewCaeGeom;
 static void require(bool value, const char* message) { if (!value) { throw std::runtime_error(message); } }
@@ -15,6 +56,7 @@ template<class F> static void rejects(F action) { bool rejected = false; try { a
 int main()
 {
     try {
+        largePlaneSection();
         MeshCutDefinition plane; plane.Id = "slice"; plane.Plane = Graphic3d_Vec4d(2,0,0,-1);
         const auto regular = MeshCutSlicing::Regular(plane,0,0.25,5);
         require(regular.size() == 5,"Regular count");

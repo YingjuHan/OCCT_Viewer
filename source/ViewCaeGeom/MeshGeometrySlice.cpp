@@ -32,6 +32,9 @@ using AddedNodeMap       = ViewCaeGeom::MeshGeometryTools::AddedNodeMap;
 
 //! Selector for overlapped with slice plane mesh elements.
 struct MeshSliceSelector : public ViewCaeGeom::MeshHBvhBoxSetTraverse<ViewCaeGeom::MeshBvhData::MeshBvhBoxSet> {
+    struct Vertex { RWCae::MeshEntityId A,B,Node; double T,Angle; Graphic3d_Vec3d Point; };
+    struct HexInput { RWCae::MeshEntityId Ids[8]; Graphic3d_Vec3d Points[8]; bool Valid=false; };
+    struct HexSection { std::array<Vertex,12> Vertices; size_t Count=0; bool Valid=false; };
 public:
     //! Constructor
     explicit MeshSliceSelector(const Handle(ViewCaeGeom::MeshGeometry)& theMeshGeom,
@@ -60,14 +63,39 @@ public:
     const std::vector<RWCae::MeshEntityId>& Candidates() const { return myCandidates; }
     void ProcessCandidates(ViewCaeGeom::MeshSliceWork& work)
     {
-        const auto start=std::chrono::steady_clock::now();
-        for(auto id:myCandidates) {
-            if(myCancellation && myCancellation->Cancelled.load()) { throw std::runtime_error("Native section request cancelled during intersection"); }
-            const auto& element=myMeshGeom->GetMeshData()->IndexedElements()[id];
-            if(element.Type==RWCae::MeshElemType::Hexahedron && affineHexSlice(element)) { continue; }
-            ++work.Fallbacks; processIndexedElement(element,id);
+        using Clock=std::chrono::steady_clock;
+        const auto mesh=myMeshGeom->GetMeshData();
+        // Bound scratch independently of candidate count. Modifiers and lazy
+        // geometry are evaluated on the caller thread; workers only read snapshots.
+        const size_t blockSize=4096;
+        std::vector<HexInput> inputs(std::min(blockSize,myCandidates.size()));
+        std::vector<HexSection> sections(inputs.size());
+        OSD_ThreadPool::Launcher launcher(*OSD_ThreadPool::DefaultPool(),4);
+        for(size_t begin=0;begin<myCandidates.size();begin+=blockSize) {
+            const size_t count=std::min(blockSize,myCandidates.size()-begin);
+            auto start=Clock::now();
+            for(size_t i=0;i<count;++i) {
+                checkCancelled();
+                const auto& element=mesh->IndexedElements()[myCandidates[begin+i]];
+                inputs[i].Valid=element.Type==RWCae::MeshElemType::Hexahedron && prepareHex(element,inputs[i]);
+            }
+            work.PrepareMs+=std::chrono::duration<double,std::milli>(Clock::now()-start).count();
+            start=Clock::now();
+            const auto cut=[&](int,int i) {
+                checkCancelled(); sections[i].Count=0;
+                sections[i].Valid=inputs[i].Valid && computeHex(inputs[i],sections[i]);
+            };
+            if(count>=512) { launcher.Perform(0,(int)count,cut); }
+            else { for(size_t i=0;i<count;++i) { cut(0,(int)i); } }
+            work.CutMs+=std::chrono::duration<double,std::milli>(Clock::now()-start).count();
+            start=Clock::now();
+            for(size_t i=0;i<count;++i) {
+                checkCancelled(); const auto id=myCandidates[begin+i]; const auto& element=mesh->IndexedElements()[id];
+                if(sections[i].Valid) { appendHex(element,sections[i]); }
+                else { ++work.Fallbacks; processIndexedElement(element,id); }
+            }
+            work.MergeMs+=std::chrono::duration<double,std::milli>(Clock::now()-start).count();
         }
-        work.CutMs+=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();
     }
     //! Defines the rules for node rejection by bounding box.
     virtual Standard_Boolean RejectNode(const BVH_Vec3f&  theCornerMin,
@@ -165,26 +193,42 @@ protected:
     std::vector<RWCae::MeshEntityId> myCandidates;
 
 private:
+    void checkCancelled() const
+    {
+        if(myCancellation && myCancellation->Cancelled.load()) { throw std::runtime_error("Native section request cancelled during intersection"); }
+    }
     // Affine hexes have convex planar faces. Their section is the ordered set
     // of crossed original edges; retain the original edge FE weights exactly.
     // Warped, degenerate and near-node cases use the general contour cutter.
     bool affineHexSlice(const RWCae::MeshData::IndexedElement& element)
     {
+        HexInput input; HexSection section;
+        if(!prepareHex(element,input) || !computeHex(input,section)) { return false; }
+        appendHex(element,section); return true;
+    }
+    bool prepareHex(const RWCae::MeshData::IndexedElement& element,HexInput& input) const
+    {
         const auto mesh=myMeshGeom->GetMeshData(); const auto& elements=mesh->Elements(element.Type);
         RWCae::MeshElemEntityOffset begin,end; elements.GetElemNodesRange(element.Index,&begin,&end); if(end-begin!=8) { return false; }
-        RWCae::MeshEntityId ids[8]; for(int i=0;i<8;++i) { ids[i]=elements.Nodes()[(int)begin+i]; }
-        Graphic3d_Vec3d p[8]; double values[8],magnitude=1;
-        const auto plane=mySlicePlane->GetEquation();
-        for(int i=0;i<8;++i) { auto point=mesh->Nodes()[ids[i]]; myMeshGeom->ModifyNode(ids[i],point); p[i]=Graphic3d_Vec3d(point); magnitude=std::max(magnitude,p[i].Dot(p[i])); values[i]=plane.x()*p[i].x()+plane.y()*p[i].y()+plane.z()*p[i].z()+plane.w(); if(std::abs(values[i])<=CONFUSION) { return false; } }
+        for(int i=0;i<8;++i) { input.Ids[i]=elements.Nodes()[(int)begin+i]; auto point=mesh->Nodes()[input.Ids[i]]; myMeshGeom->ModifyNode(input.Ids[i],point); input.Points[i]=Graphic3d_Vec3d(point); }
+        return true;
+    }
+    bool computeHex(const HexInput& input,HexSection& section) const
+    {
+        const auto& p=input.Points; const auto& ids=input.Ids; double values[8],magnitude=1;
+        const auto& plane=myEquation;
+        for(int i=0;i<8;++i) { magnitude=std::max(magnitude,p[i].Dot(p[i])); values[i]=plane.x()*p[i].x()+plane.y()*p[i].y()+plane.z()*p[i].z()+plane.w(); if(std::abs(values[i])<=CONFUSION) { return false; } }
         const auto x=p[1]-p[0],y=p[3]-p[0],z=p[4]-p[0];
         const double tolerance=8*std::numeric_limits<float>::epsilon()*std::sqrt(magnitude);
         if((p[2]-p[0]-x-y).Modulus()>tolerance || (p[5]-p[0]-x-z).Modulus()>tolerance
             || (p[7]-p[0]-y-z).Modulus()>tolerance || (p[6]-p[0]-x-y-z).Modulus()>tolerance
             || std::abs(x.Dot(Graphic3d_Vec3d::Cross(y,z)))<=1e-12*x.Modulus()*y.Modulus()*z.Modulus()) { return false; }
         static constexpr int edges[12][2]={{0,1},{1,2},{2,3},{3,0},{4,5},{5,6},{6,7},{7,4},{0,4},{1,5},{2,6},{3,7}};
-        struct Vertex { RWCae::MeshEntityId A,B,Node; double T,Angle; Graphic3d_Vec3d Point; };
-        std::array<Vertex,12> vertices; size_t count=0; Graphic3d_Vec3d center(0);
-        for(const auto& edge:edges) { const int a=edge[0],b=edge[1]; if((values[a]>0)==(values[b]>0)) { continue; }
+        auto& vertices=section.Vertices; auto& count=section.Count; Graphic3d_Vec3d center(0);
+        for(const auto& edge:edges) { int a=edge[0],b=edge[1]; if((values[a]>0)==(values[b]>0)) { continue; }
+            // Canonical original-edge direction yields identical FE weights and
+            // positions in adjacent cells, independent of worker scheduling.
+            if(ids[a]>ids[b]) { std::swap(a,b); }
             const double t=values[a]/(values[a]-values[b]); if(t<=.001||t>=.999) { return false; }
             const auto point=p[a]*(1-t)+p[b]*t; vertices[count++]={ids[a],ids[b],0,t,0,point}; center+=point;
         }
@@ -193,6 +237,12 @@ private:
         auto u=Graphic3d_Vec3d::Cross(normal,std::abs(normal.x())<.8?Graphic3d_Vec3d(1,0,0):Graphic3d_Vec3d(0,1,0)); u/=u.Modulus(); const auto v=Graphic3d_Vec3d::Cross(normal,u);
         for(size_t i=0;i<count;++i) { auto& vertex=vertices[i]; vertex.Angle=std::atan2((vertex.Point-center).Dot(v),(vertex.Point-center).Dot(u)); }
         std::sort(vertices.begin(),vertices.begin()+count,[](const auto& a,const auto& b) { return a.Angle<b.Angle; });
+        return true;
+    }
+    void appendHex(const RWCae::MeshData::IndexedElement& element,HexSection& section)
+    {
+        auto& vertices=section.Vertices; const auto count=section.Count;
+        if(count<3) { return; }
         std::array<RWCae::MeshEntityId,12> nodes; size_t index=0;
         for(size_t i=0;i<count;++i) { auto& vertex=vertices[i]; const uint64_t key=((uint64_t)std::min(vertex.A,vertex.B)<<32)|std::max(vertex.A,vertex.B); const auto found=myAffineEdges.find(key);
             if(found!=myAffineEdges.end()) { vertex.Node=found->second; }
@@ -207,7 +257,6 @@ private:
         else { mySliceMeshData->AddElement(RWCae::MeshElementPolygon(nodes.data(),(RWCae::MeshElemEntityId)count)); }
         const auto& added=mySliceMeshData->IndexedElements()[mySliceMeshData->NbIndexedElems()-1];
         myGenElems->Bind(ViewCaeGeom::MeshGeomElem(added.Index,added.Type,false),std::make_pair(myMeshGeom.get(),ViewCaeGeom::MeshGeomElem(element.Index,element.Type,false)));
-        return true;
     }
     std::unordered_map<uint64_t,RWCae::MeshEntityId> myAffineEdges;
     //! Check and process a mesh element.
