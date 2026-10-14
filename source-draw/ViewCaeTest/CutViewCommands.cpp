@@ -598,6 +598,7 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
         } else if (action == "renderinfo" && argc == 3) {
             const auto& stats = model.View->RenderStatistics();
             const auto& phases = model.View->Cuts().LastTimings();
+            const auto cache = model.View->Cuts().TraceCacheStatistics();
             di << "backend " << (stats.GpuPlane ? "gpu_plane" : "cpu") << " fallback";
             di.AppendElement(stats.FallbackReason.c_str());
             di << " body_builds " << (double)stats.BodyBuilds << " slice_reallocations " << (double)stats.SliceReallocations
@@ -605,9 +606,15 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
                << " submitted_body_bytes " << (double)stats.SubmittedBodyBytes << " submitted_slice_bytes " << (double)stats.SubmittedSliceBytes
                << " source_ms " << stats.SourceMs << " slice_ms " << stats.SliceMs << " fields_ms " << stats.FieldsMs
                << " presentation_ms " << stats.PresentationMs
+               << " geometry_slice_ms " << phases.SliceMs << " trace_ms " << phases.TraceMs
                << " bvh_ms " << phases.BvhMs << " node_prepare_ms " << phases.NodePrepareMs
                << " cell_cut_ms " << phases.CellCutMs << " merge_ms " << phases.MergeMs
                << " candidates " << (double)phases.Candidates << " fallbacks " << (double)phases.Fallbacks;
+            di << " trace_origins_ms " << phases.TraceOriginsMs << " trace_classify_ms " << phases.TraceClassifyMs
+               << " trace_prepare_ms " << phases.TracePrepareMs << " trace_maps_ms " << phases.TraceMapsMs
+               << " trace_fill_ms " << phases.TraceFillMs << " trace_general_ms " << phases.TraceGeneralMs;
+            di << " interior_hits_total " << (double)cache.Hits << " interior_misses_total " << (double)cache.Misses
+               << " interior_evictions_total " << (double)cache.Evictions;
             return 0;
         } else if (action == "presentation" && argc == 4) {
             const auto& revisions = model.View->SynchronizedRevisions();

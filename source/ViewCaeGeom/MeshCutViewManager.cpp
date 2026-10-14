@@ -23,6 +23,8 @@
 #include <set>
 #include <type_traits>
 #include <chrono>
+#include <OSD_ThreadPool.hxx>
+#include <iterator>
 
 namespace {
 bool normalizePlane(const Graphic3d_Vec4d& thePlane, Graphic3d_Vec4d& theResult)
@@ -265,6 +267,11 @@ bool MeshCutViewManager::SetPlane(const std::string& theId, const Graphic3d_Vec4
         Handle(MeshGeometrySlice)::DownCast(anEntry->Portions[1])->SetSlicePlanes(aPlanes);
     }
     return true;
+}
+
+MeshCutTraceCacheStatistics MeshCutViewManager::TraceCacheStatistics() const
+{
+    return myTraceSource?myTraceSource->CacheStatistics():MeshCutTraceCacheStatistics();
 }
 
 bool MeshCutViewManager::EnsureDefaultPlanes()
@@ -522,9 +529,35 @@ bool MeshCutViewManager::moveCachedPlane(Entry& theEntry, const Graphic3d_Vec4d&
     };
     auto position=[&](RWCae::MeshEntityId n) { auto p=myMesh->Nodes()[n]; if(!myDeformationField.IsNull()) { theEntry.Roots[1]->ModifyNode(n,p); } return p; };
     if (theEntry.NodeProjections.empty()) {
-        theEntry.NodeProjections.reserve(myMesh->NbNodes());
-        for (RWCae::MeshEntityId n=0;n<myMesh->NbNodes();++n) { theEntry.NodeProjections.push_back(projection(position(n))); }
-        std::sort(theEntry.NodeProjections.begin(), theEntry.NodeProjections.end());
+        if(myMesh->NbNodes()>=65536) {
+            // Sorted unique projections define exactly the same topology
+            // intervals. Sort and merge bounded runs in parallel instead of
+            // sorting millions of repeated layer coordinates on the UI thread.
+            if(!myDeformationField.IsNull()) { theEntry.Roots[1]->GetMeshData(); }
+            const int blockSize=8192,blocks=(int)(((size_t)myMesh->NbNodes()+blockSize-1)/blockSize);
+            std::vector<std::vector<double>> runs(blocks);
+            OSD_ThreadPool::Launcher launcher(*OSD_ThreadPool::DefaultPool(),4);
+            launcher.Perform(0,blocks,[&](int,int block) {
+                auto& run=runs[block]; const size_t begin=(size_t)block*blockSize,end=std::min((size_t)myMesh->NbNodes(),begin+blockSize);
+                run.reserve(end-begin); for(size_t n=begin;n<end;++n) { run.push_back(projection(position((RWCae::MeshEntityId)n))); }
+                std::sort(run.begin(),run.end()); run.erase(std::unique(run.begin(),run.end()),run.end());
+            });
+            while(runs.size()>1) {
+                std::vector<std::vector<double>> next((runs.size()+1)/2);
+                launcher.Perform(0,(int)next.size(),[&](int,int i) {
+                    const auto& a=runs[2*i]; auto& result=next[i];
+                    if((size_t)(2*i+1)>=runs.size()) { result=a; return; }
+                    const auto& b=runs[2*i+1]; result.reserve(a.size()+b.size());
+                    std::set_union(a.begin(),a.end(),b.begin(),b.end(),std::back_inserter(result));
+                });
+                runs.swap(next);
+            }
+            theEntry.NodeProjections=std::move(runs.front());
+        } else {
+            theEntry.NodeProjections.reserve(myMesh->NbNodes());
+            for(RWCae::MeshEntityId n=0;n<myMesh->NbNodes();++n) { theEntry.NodeProjections.push_back(projection(position(n))); }
+            std::sort(theEntry.NodeProjections.begin(),theEntry.NodeProjections.end());
+        }
     }
     const auto upper = std::upper_bound(theEntry.NodeProjections.begin(), theEntry.NodeProjections.end(), -oldPlane.w());
     const double low = upper == theEntry.NodeProjections.begin() ? -std::numeric_limits<double>::infinity() : *(upper-1);
@@ -1154,6 +1187,10 @@ MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
                     anEntry->TraceRoot->RetainCacheLease(mySourceLease); anEntry->TraceSection->RetainCacheLease(mySourceLease);
                 } else { anEntry->TraceSection->Refresh(Handle(MeshGeometrySlice)::DownCast(anEntry->Portions[1]),myTraceSource); }
                 anEntry->TraceRevision = anEntry->Revision;
+                const auto& work=anEntry->TraceSection->TraceWork();
+                myTimings.TraceOriginsMs=work.OriginsMs; myTimings.TraceClassifyMs=work.ClassifyMs;
+                myTimings.TracePrepareMs=work.PrepareMs; myTimings.TraceMapsMs=work.MapsMs;
+                myTimings.TraceFillMs=work.FillMs; myTimings.TraceGeneralMs=work.GeneralMs;
                 { const double time=elapsed(); myTimings.IntersectionMs+=time; myTimings.TraceMs+=time; } checkRequest(request);
             }
             aResult.Roots[1] = anEntry->TraceRoot; aResult.Portions[1] = anEntry->TraceSection;

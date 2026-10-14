@@ -217,6 +217,7 @@ public:
     uint64_t RequestGeneration() const { return myRequestGeneration; }
     bool IsCurrentRequest(uint64_t generation) const { return generation==myRequestGeneration && (!myCancellation || !myCancellation->Cancelled.load()); }
     const MeshCutFrameTimings& LastTimings() const { return myTimings; }
+    Standard_EXPORT MeshCutTraceCacheStatistics TraceCacheStatistics() const;
 
 private:
     MeshCutResult evaluate(const std::string& theId, const Handle(RWCae::MeshNVecProperty)& theField,

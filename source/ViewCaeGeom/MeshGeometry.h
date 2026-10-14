@@ -228,6 +228,8 @@ public:
 
     //! Apply node modifiers of all children.
     Standard_EXPORT void ModifyNode(const RWCae::MeshEntityId theNodeIdx, Graphic3d_Vec3& theNode) const;
+    //! Query once before preparing immutable node snapshots.
+    Standard_EXPORT bool HasNodeModifiers() const;
 
     //! Apply accept modifiers of all children for mesh element.
     Standard_EXPORT bool AcceptElement(const RWCae::MeshEntityId theElemIdx) const;

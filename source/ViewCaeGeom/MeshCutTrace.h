@@ -2,6 +2,7 @@
 #define _MESHCUTTRACE_HEADERFILE
 #include <ViewCaeGeom/MeshGeometrySlice.h>
 #include <ViewCaeGeom/MeshCutTraceOptions.h>
+#include <ViewCaeGeom/MeshCutCache.h>
 #include <functional>
 #include <memory>
 #include <map>
@@ -11,6 +12,9 @@
 namespace ViewCaeGeom {
 class MeshVtkCutSource;
 struct MeshCutGeometryOptions;
+struct MeshTraceWork {
+    double OriginsMs=0,ClassifyMs=0,PrepareMs=0,MapsMs=0,FillMs=0,GeneralMs=0;
+};
 //! A primitive usually has 2–6 samples. Contiguous storage avoids a tree node
 //! allocation per sample; generated node IDs remain the lookup keys.
 class MeshCutTraceWeights {
@@ -42,6 +46,7 @@ public:
         const std::shared_ptr<MeshVtkCutSource>& prepared = nullptr);
     Standard_EXPORT ~MeshCutTraceSource();
     Standard_EXPORT bool IsCompact() const;
+    Standard_EXPORT MeshCutTraceCacheStatistics CacheStatistics() const;
     Standard_EXPORT void PrepareInteriors(const std::vector<RWCae::MeshEntityId>& elements);
     Standard_EXPORT void UpdateInteriorTrace(MeshCutPrimitiveTrace& trace,RWCae::MeshEntityId element,
         const std::vector<RWCae::MeshEntityId>& nodes,const MeshGeometry::NodesMap& origins) const;
@@ -63,6 +68,7 @@ public:
         const std::shared_ptr<MeshCutTraceSource>& topology);
     const std::vector<std::vector<MeshCutPrimitiveTrace>>& ElementTraces() const { return myElementTraces; }
     const std::vector<std::vector<MeshCutPrimitiveTrace>>& LineTraces() const { return myLineTraces; }
+    const MeshTraceWork& TraceWork() const { return myTraceWork; }
     using SignedValue = std::function<double(const MeshCutPrimitiveTrace&)>;
     Standard_EXPORT void SetDisplaySelection(const MeshCutTraceOptions& options,
         SignedValue signedValue, double tolerance);
@@ -90,6 +96,9 @@ private:
     MeshCutTraceOptions myDisplayOptions;
     SignedValue mySignedValue;
     double mySideTolerance = 0;
+    MeshTraceWork myTraceWork;
+    //! Reuse per-node FE vector capacity across large plane revisions.
+    std::vector<MeshInterpolatedNode> myOriginScratch;
 };
 }
 #endif

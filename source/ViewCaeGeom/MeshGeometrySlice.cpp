@@ -14,6 +14,7 @@
 #include <limits>
 #include <chrono>
 #include <OSD_ThreadPool.hxx>
+#include <NCollection_IncAllocator.hxx>
 
 namespace {
 static constexpr double CONFUSION = 1e-5;
@@ -52,6 +53,7 @@ public:
           myLines(theLines),myCancellation(cancellation)
     {
         myEquation=mySlicePlane->GetEquation();
+        myModifyNodes=myMeshGeom->HasNodeModifiers();
         myTolerance=CONFUSION*std::sqrt(myEquation.x()*myEquation.x()+myEquation.y()*myEquation.y()+myEquation.z()*myEquation.z());
         const int hint=(int)std::min<size_t>(myMeshGeom->GetMeshData()->NbNodes(),32768);
         myAddedNodes.ReSize(hint); myAffineEdges.reserve(hint);
@@ -59,7 +61,11 @@ public:
     }
 
 public:
-    void CollectCandidates(bool enabled) { myCollect=enabled; }
+    void CollectCandidates(bool enabled)
+    {
+        myCollect=enabled; myUseAddedNodes=!enabled;
+        if(enabled) { myNodePositions.reserve(32768); myAddedNodes.Clear(new NCollection_IncAllocator()); myAddedNodes.ReSize(32768); }
+    }
     const std::vector<RWCae::MeshEntityId>& Candidates() const { return myCandidates; }
     void ProcessCandidates(ViewCaeGeom::MeshSliceWork& work)
     {
@@ -72,17 +78,24 @@ public:
         std::vector<HexSection> sections(inputs.size());
         OSD_ThreadPool::Launcher launcher(*OSD_ThreadPool::DefaultPool(),4);
         for(size_t begin=0;begin<myCandidates.size();begin+=blockSize) {
+            if(myNodePositions.size()>32768) { myNodePositions.clear(); }
             const size_t count=std::min(blockSize,myCandidates.size()-begin);
             auto start=Clock::now();
-            for(size_t i=0;i<count;++i) {
-                checkCancelled();
-                const auto& element=mesh->IndexedElements()[myCandidates[begin+i]];
-                inputs[i].Valid=element.Type==RWCae::MeshElemType::Hexahedron && prepareHex(element,inputs[i]);
+            if(myModifyNodes) {
+                for(size_t i=0;i<count;++i) {
+                    checkCancelled();
+                    const auto& element=mesh->IndexedElements()[myCandidates[begin+i]];
+                    inputs[i].Valid=element.Type==RWCae::MeshElemType::Hexahedron && prepareHex(element,inputs[i]);
+                }
             }
             work.PrepareMs+=std::chrono::duration<double,std::milli>(Clock::now()-start).count();
             start=Clock::now();
             const auto cut=[&](int,int i) {
                 checkCancelled(); sections[i].Count=0;
+                if(!myModifyNodes) {
+                    const auto& element=mesh->IndexedElements()[myCandidates[begin+i]];
+                    inputs[i].Valid=element.Type==RWCae::MeshElemType::Hexahedron && prepareHex(element,inputs[i]);
+                }
                 sections[i].Valid=inputs[i].Valid && computeHex(inputs[i],sections[i]);
             };
             if(count>=512) { launcher.Perform(0,(int)count,cut); }
@@ -92,7 +105,19 @@ public:
             for(size_t i=0;i<count;++i) {
                 checkCancelled(); const auto id=myCandidates[begin+i]; const auto& element=mesh->IndexedElements()[id];
                 if(sections[i].Valid) { appendHex(element,sections[i]); }
-                else { ++work.Fallbacks; processIndexedElement(element,id); }
+                else {
+                    ++work.Fallbacks; prepareFallback(id);
+                    const auto first=mySliceMeshData->NbNodes(); processIndexedElement(element,id);
+                    if(!myUseAddedNodes) {
+                        for(auto node=first;node<mySliceMeshData->NbNodes();++node) {
+                            const auto& weights=myGenNodes->Find(node).second.BaseNodes();
+                            if(weights.size()==2 && std::abs(weights[0].second)>1e-12 && std::abs(weights[1].second)>1e-12) {
+                                const uint64_t key=((uint64_t)std::min(weights[0].first,weights[1].first)<<32)|std::max(weights[0].first,weights[1].first);
+                                myAffineEdges.emplace(key,node);
+                            }
+                        }
+                    }
+                }
             }
             work.MergeMs+=std::chrono::duration<double,std::milli>(Clock::now()-start).count();
         }
@@ -190,9 +215,33 @@ protected:
     Graphic3d_Vec4d myEquation;
     double myTolerance=0;
     bool myCollect=false;
+    bool myModifyNodes=true;
+    bool myUseAddedNodes=true;
     std::vector<RWCae::MeshEntityId> myCandidates;
+    mutable std::unordered_map<RWCae::MeshEntityId,Graphic3d_Vec3d> myNodePositions;
 
 private:
+    void prepareFallback(RWCae::MeshEntityId element)
+    {
+        if(myUseAddedNodes) { return; }
+        std::vector<RWCae::MeshEntityId> nodes; myMeshGeom->GetMeshData()->ElementNodes(element,nodes);
+        if(nodes.size()>32) { enableAddedNodes(); return; }
+        // Only affine edges incident to this fallback cell can be shared with
+        // its contours. Avoid duplicating every section origin into a transient
+        // weighted-key map for a handful of exceptional cells.
+        for(size_t a=0;a<nodes.size();++a) { for(size_t b=a+1;b<nodes.size();++b) {
+            const uint64_t key=((uint64_t)std::min(nodes[a],nodes[b])<<32)|std::max(nodes[a],nodes[b]);
+            const auto found=myAffineEdges.find(key); if(found==myAffineEdges.end()) { continue; }
+            const auto& origin=myGenNodes->Find(found->second).second;
+            if(!myAddedNodes.IsBound(origin)) { myAddedNodes.Bind(origin,found->second); }
+        } }
+    }
+    void enableAddedNodes()
+    {
+        if(myUseAddedNodes) { return; }
+        for(const auto& edge:myAffineEdges) { myAddedNodes.Bind(myGenNodes->Find(edge.second).second,edge.second); }
+        myUseAddedNodes=true;
+    }
     void checkCancelled() const
     {
         if(myCancellation && myCancellation->Cancelled.load()) { throw std::runtime_error("Native section request cancelled during intersection"); }
@@ -208,9 +257,17 @@ private:
     }
     bool prepareHex(const RWCae::MeshData::IndexedElement& element,HexInput& input) const
     {
-        const auto mesh=myMeshGeom->GetMeshData(); const auto& elements=mesh->Elements(element.Type);
+        const auto& mesh=myMeshGeom->GetMeshData(); const auto& elements=mesh->Elements(element.Type);
         RWCae::MeshElemEntityOffset begin,end; elements.GetElemNodesRange(element.Index,&begin,&end); if(end-begin!=8) { return false; }
-        for(int i=0;i<8;++i) { input.Ids[i]=elements.Nodes()[(int)begin+i]; auto point=mesh->Nodes()[input.Ids[i]]; myMeshGeom->ModifyNode(input.Ids[i],point); input.Points[i]=Graphic3d_Vec3d(point); }
+        for(int i=0;i<8;++i) {
+            const auto id=elements.Nodes()[(int)begin+i]; input.Ids[i]=id;
+            if(myCollect && myModifyNodes) {
+                const auto found=myNodePositions.find(id);
+                if(found!=myNodePositions.end()) { input.Points[i]=found->second; continue; }
+            }
+            auto point=mesh->Nodes()[id]; if(myModifyNodes) { myMeshGeom->ModifyNode(id,point); } input.Points[i]=Graphic3d_Vec3d(point);
+            if(myCollect && myModifyNodes) { myNodePositions.emplace(id,input.Points[i]); }
+        }
         return true;
     }
     bool computeHex(const HexInput& input,HexSection& section) const
@@ -248,7 +305,7 @@ private:
             if(found!=myAffineEdges.end()) { vertex.Node=found->second; }
             else { ViewCaeGeom::MeshInterpolatedNode origin; origin.AddBaseNode(vertex.A,1-vertex.T); origin.AddBaseNode(vertex.B,vertex.T);
                 // Share nodes with any neighboring cell routed through fallback.
-                if(!myAddedNodes.Find(origin,vertex.Node)) { vertex.Node=mySliceMeshData->AddNodePosition(Graphic3d_Vec3(vertex.Point)); myAddedNodes.Bind(origin,vertex.Node); myGenNodes->Bind(vertex.Node,std::make_pair(myMeshGeom.get(),origin)); }
+                if(!myUseAddedNodes || !myAddedNodes.Find(origin,vertex.Node)) { vertex.Node=mySliceMeshData->AddNodePosition(Graphic3d_Vec3(vertex.Point)); if(myUseAddedNodes) { myAddedNodes.Bind(origin,vertex.Node); } myGenNodes->Bind(vertex.Node,std::make_pair(myMeshGeom.get(),origin)); }
                 myAffineEdges.emplace(key,vertex.Node);
             } nodes[index++]=vertex.Node;
         }
@@ -343,8 +400,15 @@ void MeshGeometrySlice::generateMeshData()
     myLastWork={};
     ++myWorkGeneration;
     myMeshData = new RWCae::MeshData();
-    myNodesMap.Clear();
-    myElementsMap.Clear();
+    const auto parentMesh=myParentGeometry.IsNull()?Handle(RWCae::MeshData)():myParentGeometry->GetMeshData();
+    const bool pooled=mySlicePlanes.Size()==1 && !parentMesh.IsNull()
+        && parentMesh->NbIndexedElems()>=65536;
+    if(pooled) {
+        // Both maps are fully replaced on a rebuild. Their node storage can be
+        // freed in bulk with the old allocator, without accumulating generations.
+        myNodesMap.Clear(new NCollection_IncAllocator());
+        myElementsMap.Clear(new NCollection_IncAllocator());
+    } else { myNodesMap.Clear(); myElementsMap.Clear(); }
     myLines.clear();
 
     for (MeshGeometry* aParent : MeshGeomParents(myParentGeometry.get())) {

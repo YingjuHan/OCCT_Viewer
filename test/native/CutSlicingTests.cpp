@@ -54,6 +54,29 @@ static void largePlaneSection()
             if(std::abs(values->Value(RWCae::MeshPropertyEntityInfo(node))-(position.x()+2*position.y()+3*position.z()))>1e-9) { throw std::runtime_error("Parallel nodal field interpolation mismatch"); }
         }
     }
+    // Oblique cuts contain hex corner triangles with only four original
+    // supports. They are interior traces, while the axis-aligned face above
+    // must retain interface pairing/deduplication.
+    const double slope=.2137,offset=32.25;
+    manager.SetPlane("large",Graphic3d_Vec4d(1,slope,0,-offset));
+    const auto result=manager.EvaluateSectionForDisplay("large",field);
+    const auto section=Handle(MeshGeometryTraceSection)::DownCast(result.Portions[1]);
+    const auto mesh=section->GetMeshData();
+    std::vector<Graphic3d_Vec3d> positions(mesh->NbNodes());
+    for(RWCae::MeshEntityId node=0;node<mesh->NbNodes();++node) {
+        MeshInterpolatedNode origin; section->OriginNode(node,origin); positions[node]=Graphic3d_Vec3d(0);
+        for(const auto& base:origin.BaseNodes()) { positions[node]+=Graphic3d_Vec3d(source->Nodes()[base.first])*base.second; }
+        if(std::abs(positions[node].x()+slope*positions[node].y()-offset)>1e-9) { throw std::runtime_error("Oblique FE node is off plane"); }
+        const double value=result.Fields[1]->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(node));
+        if(std::abs(value-(positions[node].x()+2*positions[node].y()+3*positions[node].z()))>1e-9) { throw std::runtime_error("Oblique parallel FE interpolation mismatch"); }
+    }
+    double area=0;
+    for(RWCae::MeshEntityId e=0;e<mesh->NbIndexedElems();++e) {
+        if(section->ElementTraces()[e].size()!=1 || section->ElementTraces()[e][0].Ambiguous) { throw std::runtime_error("Hex corner misclassified as interface"); }
+        std::vector<RWCae::MeshEntityId> nodes; mesh->ElementNodes(e,nodes);
+        for(size_t i=1;i+1<nodes.size();++i) { area+=Graphic3d_Vec3d::Cross(positions[nodes[i]]-positions[nodes[0]],positions[nodes[i+1]]-positions[nodes[0]]).Modulus()*.5; }
+    }
+    if(std::abs(area-n*n*std::sqrt(1+slope*slope))>1e-7) { throw std::runtime_error("Oblique section has missing/duplicate area"); }
 }
 
 using namespace ViewCaeGeom;

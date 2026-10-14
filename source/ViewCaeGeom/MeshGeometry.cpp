@@ -273,15 +273,16 @@ void MeshGeometry::SetToUpdate()
 // =======================================================================
 void MeshGeometry::ModifyNode(const RWCae::MeshEntityId theNodeIdx, Graphic3d_Vec3& theNode) const
 {
-    bool canModifyNodes = false;
-    for (MeshGeometry* aChild : MeshGeomChildren(myChildGeometry.get())) {
-        if (aChild->myCanModifyNodes) {
-            canModifyNodes = true;
-            break;
-        }
+    if (!HasNodeModifiers()) {
+        return;
     }
 
-    if (!canModifyNodes) {
+    if(myParentGeometry.IsNull()) {
+        // Root node IDs already index original FE nodes. A unit provenance
+        // allocation/walk adds no information; modifiers support direct samples.
+        for(MeshGeometry* child:MeshGeomChildren(myChildGeometry.get())) {
+            if(child->IsModifier()) { child->modifyNode(theNodeIdx,nullptr,theNode); }
+        }
         return;
     }
 
@@ -294,6 +295,17 @@ void MeshGeometry::ModifyNode(const RWCae::MeshEntityId theNodeIdx, Graphic3d_Ve
             aChild->modifyNode(theNodeIdx, &aBaseNodes, theNode);
         }
     }
+}
+
+bool MeshGeometry::HasNodeModifiers() const
+{
+    for(MeshGeometry* child:MeshGeomChildren(myChildGeometry.get())) {
+        if(!child->myCanModifyNodes) { continue; }
+        const auto* deformation=dynamic_cast<const MeshGeometryDeformed*>(child);
+        if(deformation && (deformation->DeformedProperty().IsNull() || ::IsEqual(deformation->EffectiveScale(),0.0))) { continue; }
+        return true;
+    }
+    return false;
 }
 
 // =======================================================================
