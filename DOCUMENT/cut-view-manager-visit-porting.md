@@ -1,10 +1,19 @@
-# 将 Cut View Manager 迁移到定制 VisIt：CentOS 7.9 实施手册
+# 将 Cut View Manager 迁移到定制 VisIt：CentOS 7.9、完全不使用 OCCT
 
 ## 1. 范围与交付定义
 
 目标是 `D:\workspace\visit` 对应的、已大量修改的 CAE 后处理工具。用户确认其运行在 CentOS 7.9，已有交互式渲染，但处理管线仍偏静态。本轮只读核对目标源码，**没有修改、构建或部署目标工程**。
 
 本手册将“现有源码事实”“迁移建议”“需在部署机核对”分开。它与 [算法架构指南](cut-view-manager-migration-guide.md)、[OCCT 清单](cut-view-manager-occt-api-inventory.md) 一起，构成实施依据。
+
+**本次目标方案明确为：完全不使用 OCCT。** 迁移后继续使用目标已有的 VisIt / VTK / OpenGL 渲染和交互体系，将本项目的 cut 算法、数据契约、来源追踪、缓存及性能设计移植到独立模块。具体约束如下：
+
+- 目标 Cut 模块的头文件、源码和公开接口均不引用 OCCT；不保留 `Handle / Standard_* / gp_* / Graphic3d_* / AIS_* / BRep*` 类型。
+- 目标构建和安装不查找、不链接、不打包 OCCT；也不通过间接库、静态库、`dlopen` 或另一个进程调用 OCCT。
+- 单元 BVH、平面求交、FE 插值和分析使用自研代码或目标已有能力；曲面 / 高阶 / 布尔功能逐项替换，不能回退到 OCCT。
+- OCCT 附录用于理解**源项目中需要替代的职责**，不是目标 SDK 安装清单。源项目当前仍依赖 OCCT，不应把“学习源实现”解释成“原库直接链接即可”。
+
+本项目在 Linux 上的直接运行、GDB 调试和测试命令见 [Linux 运行与测试](cut-view-manager-linux-run-test.md)。那份命令操作当前 OCCTViewer 参考实现，依赖其现有 SDK；它不改变本手册对目标迁移产物的无 OCCT 约束。
 
 完整迁移的交付物应包含：独立计算模块、目标数据 adapter、空间加速、渲染 adapter、交互事务、物理来源、时间 / 会话集成、诊断工具和验收报告。第一阶段只完成单平面闭环，不应在产品中声明所有 cut 已迁移。
 
@@ -62,7 +71,7 @@ Clip 则构造 `vtkVisItClipper`，可能串接多平面，得到新的 unstruct
 
 源码确认了该风险，尚未通过生产二进制证明每次 plane 更新必然发生重建。应插桩记录 `BuildTime`、`GetMTime`、input / property MTime、`ReleaseGraphicsResources` 次数和显示列表创建次数。先让“平面参数变化”与“几何 dirty”分开，才有 GPU clip 的性能收益。
 
-## 4. 推荐架构：保留目标渲染，接入独立 Cut 服务
+## 4. 确定架构：保留目标渲染，接入无 OCCT 的 Cut 服务
 
 ```mermaid
 flowchart LR
@@ -81,13 +90,35 @@ flowchart LR
 
 图中模块名为**建议新增模块**，不是当前目标已存在的类。
 
-| 路线 | 优点 / 成本 | 建议 |
+| 保留 / 新增部分 | 实施要求 | 验收边界 |
 | --- | --- | --- |
-| 保留 VisIt renderer，复用 cut 计算与可选 OCCT 内核 | UI、camera、plot 体系保持；需数据 / renderer adapter | 默认路线，先单平面，不引入第二个 VTK |
-| 嵌入 OCCT 视口，迁移 AIS 显示门面 | 可更直接复用显示代码；需窗口、上下文、输入、拾取和 Qt 集成 | 目标计划整体更换视口时再考虑 |
-| 完全无 OCCT | 可控制依赖；需重做基础类型、BVH、曲面布尔、测量等 | 线性平面可先做，全功能成本远高于删依赖 |
+| 保留 VisIt / VTK renderer 和现有交互 | 接入 body / cap / guide；沿用目标已确认的 VTK SDK | 不嵌入 OCCT 视口，不新增另一套 VTK |
+| 新增自研 CutCore | 使用自有数学类型、STL、线程接口、FE 数据和来源结构 | 没有 OCCT include、类型或链接依赖 |
+| 新增 cell BVH | 自研连续内存 AABB tree，domain interval tree 作粗层筛选 | 不使用 OCCT BVH 模板或实现作为隐藏依赖 |
+| 移植显示 / 物理语义 | mask、trace、字段、变形、积分和 generation 分离 | 不是仅复制 UI 或替换几个类名 |
 
-即使选默认路线，也要决定：保留 `RWCae / ViewCaeGeom` 的 OCCT 类型，还是逐步提炼纯核心。建议先用单一编译工具链构建计算库，隐藏 OCCT 实现；确认收益后再替换基础容器。不要一次同时重写算法、换 renderer、升级 Qt / VTK 和改数据语义。
+`RWCae / ViewCaeGeom / ViewCae / Viewer` 当前都有 OCCT 依赖，不能把这些库原样链接进目标，再通过接口隐藏其实现。这里复用的是算法与契约，移植时应重写相应基础设施。先完成线性单平面，再扩展功能；每一阶段都必须满足无 OCCT 的构建和运行约束。
+
+### 4.1 OCCT 职责的强制替换表
+
+| 源项目能力 | 目标落地方式 | 必须验证 |
+| --- | --- | --- |
+| `Standard_Transient / Handle`、`NCollection_*` | 自有对象生命周期、`unique_ptr / shared_ptr`、连续数组和 STL 容器 | 引用、cache lease、线程和索引起点 |
+| `gp_* / Graphic3d_Vec* / Bnd_Box / math_Gauss` | 自研 double 向量 / 矩阵 / plane / bounds、带 pivot 的小型线性解算 | 平面归一化、奇异 / 退化、残差和坐标变换 |
+| `BVH_BoxSet / BVH_Traverse / LinearBuilder` | 自研 domain＋cell AABB tree | 保守 bounds、无漏检、重建 / refit 和 epoch |
+| `OSD_ThreadPool / Timer / Mutex` | 目标线程池或标准库线程、单调时钟和锁 | worker 独立暂存、取消、异常和确定性归并 |
+| `Poly_Triangulation` 及网格类继承 | 独立源 FE 拓扑与切面输出，边界通过 VTK adapter 连接 | 64 位 ID、完整单元连接、稀疏来源权重 |
+| BRep 平面 / 球 / 柱求交 | 自研原边 / 参数域求交；必要时使用目标已有 VTK 功能作兼容路径 | 几何与字段误差、共面 / 退化、结果维数 |
+| Bezier chart 与高阶曲面处理 | 自研形函数、参数图表、受预算约束的细分和逆映射 | 节点次序、rational 权重、残差和未知类型拒绝 |
+| `BRepGProp`、显示 OR / 布尔边界 | 自研截面 / 边界积分、拓扑去重与组合；可适配目标已验证的能力 | 面积 / 体积定义、owner、闭合性和近似误差 |
+| `Graphic3d / Prs3d / AIS / V3d` | 目标 mapper / actor / VBO / shader / camera / tool | 驻留 body、动态 cap、拾取过滤和 paired publish |
+| BRep CAD section / 会话 | 使用目标实际已有的 CAD 接口；若只有离散表面则提供明确标记的近似交线 | 不把离散切线声明为精确 CAD section；未实现时显式 unsupported |
+
+### 4.2 没有 BRep 内核时如何覆盖后续功能
+
+线性平面直接沿原单元边求交，并建立 FE 权重，不需要 BRep。对于曲边单元，先在参考单元上求形函数和 Jacobian，再对 `f(x(ξ))=0` 做有预算的数值细分 / 求根；节点场通过同一个 `N(ξ)` 插值。sphere / cylinder 使用解析隐式函数，iso 使用原 FE 字段函数，保持几何容差与字段容差分开。
+
+负 / 正侧真实体网格、可见区域 OR、任意非凸 polyhedron、曲面闭合和 CAD 交线比“画一个截面”要求更高。应分别实现和验收，保留现有 VisIt 非平面功能作为兼容路径；若目标已有功能不能满足原项目语义，则报告未实现或数值近似，不能暗中启用 OCCT。GPU clip 只负责显示，不替代真实体分割或物理积分。
 
 ## 5. 数据 Adapter：最先落地的工作
 
@@ -258,7 +289,7 @@ OnResult(result):
       RenderOnce()
 ```
 
-这是待实现算法。不要直接将现有 manager 的 `Evaluate` 放到任意线程：其惰性缓存、几何 handle、字段更新和 OCCT shape 可能写共享状态。一个 manager 由一个线程独占，worker 只使用独立 snapshot 或受控分块只读数据。
+这是待实现算法。不要直接将源项目 manager 的 `Evaluate` 放到任意线程：其惰性缓存、几何 handle、字段更新和 OCCT shape 可能写共享状态。目标应在无 OCCT 的计算实现中保留清晰的所有权：一个 manager 由一个线程独占，worker 只使用独立 snapshot 或受控分块只读数据。
 
 ### 9.2 paired 发布与低延迟的取舍
 
@@ -285,7 +316,7 @@ OnResult(result):
 
 VisIt 可能在 engine 持有体网格，在 viewer 只有渲染表示，或使用远程 / scalable rendering。`bypassEngine` 示例只能证明存在直接 mesh→mapper 的能力，不能证明生产所有场景都在一个进程。
 
-迁移启动时画出实际部署图并记录每个对象：reader、source mesh、operator、cut service、renderer、UI 分别在哪个进程 / MPI rank / 节点。禁止跨进程传 VTK / OCCT 裸指针。
+迁移启动时画出实际部署图并记录每个对象：reader、source mesh、operator、cut service、renderer、UI 分别在哪个进程 / MPI rank / 节点。禁止跨进程传 VTK 裸指针；目标本地及远程计算服务都不引入 OCCT。
 
 | 部署 | 建议 |
 | --- | --- |
@@ -322,7 +353,7 @@ readelf -d /path/to/viewer | grep -E 'NEEDED|RPATH|RUNPATH'
 ldd /path/to/viewer
 ```
 
-同时读取实际 `vtkVersion.h`、OCCT `Standard_Version.hxx`、CMakeCache、编译命令和启动脚本。`glxinfo` 只描述其连接的 X display，远程 / EGL / OSMesa / MPI rank 的实际 context 需在 renderer 内记录。
+同时读取实际 `vtkVersion.h`、CMakeCache、编译命令和启动脚本；目标无需安装 OCCT SDK 或读取 OCCT 版本头文件。`glxinfo` 只描述其连接的 X display，远程 / EGL / OSMesa / MPI rank 的实际 context 需在 renderer 内记录。
 
 ### 11.2 C++ 标准和双 ABI
 
@@ -332,7 +363,7 @@ ldd /path/to/viewer
 
 接口不要跨 ABI 传 STL、exception、RTTI 或所有权不明的对象。由分配库提供对应 release 函数。若旧 GCC 代码无法整体升级，可让 C++17 cut service 编成隐藏符号的共享库，或独立进程服务；后者还需测 IPC 对每帧切面数据的开销。
 
-### 11.3 glibc、libstdc++ 与 OCCT 构建闭包
+### 11.3 glibc、libstdc++ 与无 OCCT 的依赖闭包
 
 在兼容 CentOS 7.9 的环境构建交付产物，检查 `GLIBC_* / GLIBCXX_* / CXXABI_*` 需求。不要直接把较新发行版编出的 `.so` 放到旧系统后靠替换系统 libc 解决。
 
@@ -342,13 +373,13 @@ objdump -T /path/to/libCutCore.so | grep -E 'GLIBC_|GLIBCXX_|CXXABI_'
 ldd /path/to/libCutCore.so
 ```
 
-OCCT 计算路线先构建相同基线、最小需要的 SDK；不需要 AIS 视口时不把 Qt / DRAW / TKOpenGl 等无关显示模块硬塞进核心。`ViewCaeGeom` 当前链接仍需完整核对传递依赖，不能只拿几个头文件编译。
+目标 CutCore 只构建移植后的自有源码和经确认的基础依赖；禁止链接原项目 `ViewCaeGeom` 等带 OCCT 依赖的库。核心不依赖 Qt、DRAW 或渲染窗口，VTK 依赖放在目标 adapter 层。最终检查必须覆盖静态 / 动态库、传递依赖和运行时加载，不能只看到 CutCore 没有 `TK*` 的直接 NEEDED 就判定完成。
 
 Windows MinGW DLL 无法用于 Linux。此任务不需要 clone / 编译外部 VTK：源项目读取与处理已自研，目标则应继续使用自己确认的 VTK SDK。避免同进程加载两套不同版本 `vtk*` 符号。
 
 ### 11.4 构建草案
 
-下面为**建议新建独立提取工程**的 CMake 模式，不是本项目已存在的开关：
+下面为**建议新建无 OCCT 移植工程**的 CMake 模式，不是本项目已存在的开关；`${CUT_CORE_SOURCES}` 必须是完成依赖替换的源码：
 
 ```cmake
 cmake_minimum_required(VERSION 3.12)
@@ -356,17 +387,32 @@ project(CutPort LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+find_package(Threads REQUIRED)
 add_library(CutCore SHARED ${CUT_CORE_SOURCES})
-target_include_directories(CutCore PRIVATE ${OCCT_INCLUDE_DIR})
-target_link_libraries(CutCore PRIVATE ${CUT_OCCT_LIBRARIES})
+target_include_directories(CutCore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(CutCore PRIVATE Threads::Threads)
 set_target_properties(CutCore PROPERTIES CXX_VISIBILITY_PRESET hidden)
 ```
 
-填写实际 sources、导出宏、ABI 和 OCCT targets；不建议一次将目标顶层的最低 CMake 版本改成新版本。可独立构建后以 imported target / C ABI 接入旧工程。VTK adapter 编译时使用与目标完全一致的 VTK headers / definitions / libraries。
+填写实际 sources、自有导出宏和 ABI；不出现 `find_package(OpenCASCADE)`、OCCT include path 或 `TK*` 库。不建议一次将目标顶层的最低 CMake 版本改成新版本。可独立构建后以 imported target / C ABI 接入旧工程。VTK adapter 编译时使用与目标完全一致的 VTK headers / definitions / libraries。
 
-### 11.5 打包和运行验收
+### 11.5 无 OCCT 验收
 
-用项目私有 lib 目录与可控 RPATH / RUNPATH 或启动器加载依赖；用干净用户环境检查库来源。不得依赖开发机全局 `LD_LIBRARY_PATH` 恰好找到某个版本。保留 OCCT / VisIt / VTK 及引入组件的许可与版权材料。
+依赖验收至少包含：源码 / 构建图没有 OCCT include、类型、包查找、imported target；未定义符号与动态库闭包没有 OCCT；安装包不携带 OCCT；实际运行不会通过 `dlopen` 或外部服务加载 OCCT。检查 `TK*` 时需结合库真实来源判断，不能仅靠一个名称正则；静态链接也必须回溯 link command 和 archive 来源。
+
+```bash
+# 替换为实际的目标产物和运行进程；保存输出供依赖审查。
+readelf -d /path/to/libCutCore.so
+nm -D -C --undefined-only /path/to/libCutCore.so
+ldd /path/to/target-viewer
+cat /proc/RENDER_PID/maps
+```
+
+在没有 OCCT 安装和搜索路径的干净 CentOS 环境中构建、启动并运行完整验收矩阵。上述命令是审查输入，不能单凭空 grep 结果证明无依赖。
+
+### 11.6 打包和运行验收
+
+用项目私有 lib 目录与可控 RPATH / RUNPATH 或启动器加载依赖；用干净用户环境检查库来源。不得依赖开发机全局 `LD_LIBRARY_PATH` 恰好找到某个版本。保留实际复用源码、VisIt / VTK 及引入组件要求的许可与版权材料；安装包不包含 OCCT。
 
 OpenGL profile、最大纹理、shader 版本、显卡驱动、远程显示方式在启动诊断中记录。固定管线与新 shader 混用要恢复 GL 状态；切面离屏截图、多个窗口和远程 engine 都要验收。
 
@@ -384,9 +430,9 @@ OpenGL profile、最大纹理、shader 版本、显卡驱动、远程显示方�
 | P05 交互闭环 | Begin / Move / End / Abort、单次同步、成对 generation、诊断 UI | P04 | 松手不跳变、abort 恢复、关闭无悬空回调 |
 | P06 热点与后台化 | trace / field 分块、拓扑平移复用、预算、latest-request（需要时） | P05 | 百万单元 p50 / p95 / p99 达标，过期结果从不发布 |
 | P07 显示与物理 | display / physical trace 分离，恢复、tensor、力 / 力矩 / 热流 | P03,P05 | 解析积分、材料界面、法向反向、单位和坐标通过 |
-| P08 通用与曲面 | OCCT adapter 或替代后端、高阶 chart、sphere / cylinder / iso、预算诊断 | P03,P07 | 能力矩阵和误差契约逐项验收；非平面原功能保持 |
+| P08 通用与曲面 | 无 OCCT 的自研高阶 chart / 隐式曲面后端、sphere / cylinder / iso、预算诊断 | P03,P07 | 能力矩阵和误差契约逐项验收；非平面原功能保持 |
 | P09 业务闭环 | 时间、局部基、路径切片、session、CAD / annotation 按产品范围 | P05,P07,P08 | 跨步、重载、源身份失败、撤销和会话原子恢复通过 |
-| P10 发布 | CentOS 包、冷启动 / 多窗口 / 多域 / remote 验收、运维文档 | 约定功能包 | 干净机器可装可跑，功能 / 性能 / 已知限制签字 |
+| P10 发布 | 无 OCCT 的 CentOS 包、依赖审计、冷启动 / 多窗口 / 多域 / remote 验收、运维文档 | 约定功能包 | 未安装 OCCT 的机器可构建可运行，功能 / 性能 / 已知限制签字 |
 
 关键顺序：P01 / P02 是性能基础；P03 的 provenance 是 P07 的基础；P04 / P05 决定“真交互”；P08 不应阻塞线性平面的第一条可交付路径。
 
@@ -454,7 +500,7 @@ CentOS 上还要执行窗口关闭中计算、换模型中取消、内存预算�
 
 提交说明写清触发条件和结果、数据 / 显示 / 分析语义变化、支持单元、失败 / fallback、测试命令及数据规模。显示改动附固定视角截图和实际 backend；性能改动附 warm CSV 及 body 上传证据。
 
-结构改动后刷新 codebase-memory 索引并检查被依赖文件的覆盖，覆盖不足回源代码。生成 OCCT 清单后执行 `--check`。不要将缓存数据库、百万单元生成文件或驱动 trace 混入源代码提交。
+结构改动后刷新 codebase-memory 索引并检查被依赖文件的覆盖，覆盖不足回源代码。源项目 OCCT 清单用来追踪待替换职责，目标提交附无 OCCT 的构建 / 链接 / 运行依赖证据。不要将缓存数据库、百万单元生成文件或驱动 trace 混入源代码提交。
 
 最终交付需要一份能力矩阵：plane / iso / sphere / cylinder、linear / high-order、nodal / elemental、deformation、display / physical trace、GPU masks、MPI、session，各项分别列 supported / fallback / unsupported 与证据。只有整个约定范围的矩阵收敛，才可声明 Cut View Manager 完整迁移。
 

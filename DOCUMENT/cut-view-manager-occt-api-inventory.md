@@ -2,7 +2,9 @@
 
 ## 1. 清单边界与使用方法
 
-本附录说明 Cut View Manager 直接使用的 OCCT 职责，以及迁移到旧 VisIt 时需要保留或替换的能力。阅读前先看 [总体架构](cut-view-manager-migration-guide.md)。
+本附录说明源项目 Cut View Manager 直接使用的 OCCT 职责，以及迁移到旧 VisIt 时需要逐项替换的能力。阅读前先看 [总体架构](cut-view-manager-migration-guide.md)。
+
+**本次目标明确完全不使用 OCCT。** 本附录记录的是源项目依赖，目标必须逐项替换；文中其他方案讨论只用于解释源实现和一般替代成本，不构成本次目标保留 OCCT 的授权。具体替换表和无 OCCT 验收见 [迁移手册](cut-view-manager-visit-porting.md)。
 
 核对的本机 OCCT 安装版本为 7.7.0，源仓库为 `D:\workspace\OpenCASCADE\OCCT_private`，核对提交 `db3716c9f`。它是定制分支；版本字符串相同不保证标准发行版有完全相同的 `AIS_ClippingPlanes`、shader、mutable buffer 或交互接口。迁移前应对实际使用的头文件、导出符号及源码差异做功能探测。
 
@@ -31,7 +33,7 @@
 
 | API / 类型 | 使用方式和意义 | 目标替换建议 |
 | --- | --- | --- |
-| `Standard_Transient`、`Handle`、RTTI 宏 | 引用计数与 OCCT 类型系统；mesh、geometry、AIS 等跨层共享 | 边界内统一保留，或整体改为明确的 shared / unique ownership；勿混合两套删除规则 |
+| `Standard_Transient`、`Handle`、RTTI 宏 | 引用计数与 OCCT 类型系统；mesh、geometry、AIS 等跨层共享 | 目标改为明确的 shared / unique ownership 与自有类型；勿混合两套删除规则 |
 | `Standard_EXPORT`、`Standard_Macro`、`Standard_Type` | 导出、类型注册、平台宏 | 独立核心可换自己的导出宏，但 ABI 面必须稳定 |
 | `Standard_Mutex::Sentry` 等 | 队列和共享数据的作用域锁 | C++ mutex 或已有平台锁；保留锁范围 |
 | `NCollection_Vector / Array1 / DataMap / Map / IndexedMap / DoubleMap / List / Sequence` | packed 元素、节点 / 元素映射、缓存、去重、顺序存储 | STL 等价容器；单独核对迭代稳定性、索引起点与哈希 |
@@ -62,7 +64,7 @@
 
 `MeshHBvhBoxSet::Update` 将子集 bounds 放到上层，再按需构建下层。`MeshBvhData` 缓存原生空间及标量结构，`MeshVtkCutSource` 保存通用单元空间结构。BVH 依赖不要求创建 AIS 或 OpenGL context。
 
-替代方案：保留 OCCT BVH；或实现连续内存 AABB tree，并重写遍历接口。目标已有 `avtIntervalTree` 可先用于 domain 筛选，再增加 cell tree。构建器、并行、refit 与保守误差的责任需要单独验收。
+目标替代方案：实现连续内存 AABB tree，并重写遍历接口，不保留 OCCT BVH。目标已有 `avtIntervalTree` 可先用于 domain 筛选，再增加 cell tree。构建器、并行、refit 与保守误差的责任需要单独验收。
 
 证据：[MeshHBvhBoxSet.h](../source/ViewCaeGeom/MeshHBvhBoxSet.h)、[MeshBvhData.cpp](../source/ViewCaeGeom/MeshBvhData.cpp)、[MeshGeometrySlice.cpp](../source/ViewCaeGeom/MeshGeometrySlice.cpp)。
 
@@ -219,17 +221,17 @@ ldd /path/to/libCutCore.so > cutcore-libraries.txt
 
 符号表还需结合 static link、inline / template、virtual dispatch 和运行 trace 分析；它同样不单独证明所有执行路径。用于交接的最终清单应将“直接源依赖”“实际链接闭包”“运行中调用”分别归档。
 
-### 13.2 建议的探测程序
+### 13.2 源项目参考验证与目标替换验证
 
-迁移初期为每项编译一个最小 probe，而不是仅比较 `OCC_VERSION_HEX`：
+需要在 Linux 运行源项目作参考时，为以下 OCCT 能力编译最小 probe，而不是仅比较 `OCC_VERSION_HEX`：
 
 - 数学 / BVH：构造 box set，build，再 plane traverse，覆盖负侧、交叉、空盒。
 - 并行：Launcher 分块填充数组，校验异常和结果归并。
 - 几何：两个简单体做 Common / Cut；读 triangulation、location、orientation、面积体积。
 - 高阶：一个已支持 chart 的 Bezier 转换与残差。
-- 显示（仅选择 OCCT 视口路线时）：shader 编译、mutable buffer 范围更新、空图元计数、断连 / 重连、拾取、view 关闭清理。
+- 源项目显示：shader 编译、mutable buffer 范围更新、空图元计数、断连 / 重连、拾取、view 关闭清理。
 
-这些是迁移建议探测项，不是本次已新增或运行的测试。目标保留 VisIt renderer 时，显示 probes 应改测目标 mapper 与 OpenGL context。
+这些是源项目 SDK 的建议探测项，不是本次已新增或运行的测试。目标完全不使用 OCCT，应对自研 BVH、线程池、求交、测量和 FE 内核分别建立等价测试，显示 probes 则测目标 mapper 与 OpenGL context；不能把 OCCT probe 编进目标测试。
 
 ### 13.3 参考资料
 
