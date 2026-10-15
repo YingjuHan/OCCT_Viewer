@@ -1,5 +1,5 @@
 import {Camera} from './Camera.js';
-import type {IManager, IVec2, CameraOrientation, ColorString, IPromise, UnitManager} from './CommonTools.js';
+import type {IManager, IVec2, CameraOrientation, ColorString, IPromise, UnitManager, ObjectId} from './CommonTools.js';
 import {UnitManagerExtensions} from './CommonTools.js';
 import {InteractiveContextExtensions, SelectionManagerExtensions} from './InteractiveObject.js';
 import type {InteractiveAspectsManager, InteractiveContext, SelectionManager} from './InteractiveObject.js';
@@ -33,10 +33,16 @@ export * from './InteractiveTextLabel.js';
 export * from './InteractiveDimension.js';
 export * from './InteractiveViewCube.js';
 export * from './InteractiveSphericalAxes.js';
+export * from './SceneGraph.js';
+export * from './MeasurementStore.js';
+export * from './PmiStore.js';
+export * from './SavedViewStore.js';
+export * from './ProjectStore.js';
 export * from './ViewerEventManager.js';
 export * from './ViewerEventTarget.js';
 export * from './ViewManager.js';
 export * from './Subview.js';
+export {ViewerBuildConfig} from './ViewerBuildConfig.js';
 
 declare global {
   interface Window {
@@ -508,6 +514,26 @@ export class SCwebviewer {
    * @return {InteractiveViewCube} InteractiveViewCube object
    */
   public get viewCube(): InteractiveViewCube | null { return this._myViewCube; }
+
+  /**
+   * Get mass properties for specified shape as JSON string.
+   * @param {ObjectId} theObjId shape object id
+   * @return {string} JSON string or empty string if unavailable
+   */
+  public getMassPropsJson(theObjId: ObjectId): string {
+    return this._myInteractiveShapeManager?.getMassPropsJson(theObjId) ?? '';
+  }
+
+  /**
+   * Run interference check for a pair of shapes and return JSON string.
+   * @param {ObjectId} theObjId1 first object id
+   * @param {ObjectId} theObjId2 second object id
+   * @param {number} theTolerance tolerance (0 = auto)
+   * @return {string} JSON string or empty string if unavailable
+   */
+  public checkInterferenceJson(theObjId1: ObjectId, theObjId2: ObjectId, theTolerance: number): string {
+    return this._myInteractiveShapeManager?.checkInterferenceJson(theObjId1, theObjId2, theTolerance) ?? '';
+  }
 
   /** @internal generate screenshot (short-cut for diagnostics). */
   private get doScreenshot(): boolean { return this.makeScreenshot('viewer.png', -1, -1); }
@@ -1013,12 +1039,25 @@ export class SCwebviewer {
    */
   public printErr(theText: string): void { this.printMessage(theText, MessageGravity.Fail); }
 
+  private parseMessage(theText: string): { message: string; errorCode: string | null } {
+    if (!theText) {
+      return { message: '', errorCode: null };
+    }
+    const aMatch = /^\[([A-Z0-9_-]+)\]\s*(.*)$/.exec(theText);
+    if (!aMatch) {
+      return { message: theText, errorCode: null };
+    }
+    return { message: aMatch[2], errorCode: aMatch[1] };
+  }
+
   /**
    * C++ `Message::Send()` callback redirecting to Terminal.
    * @param {string} theText text to print
    * @param {number} theGravity message gravity within 0..4 range
    */
   public printMessage(theText: string, theGravity: MessageGravity): void {
+    const aParsed = this.parseMessage(theText);
+    this._myEventManager?.onViewerMessage(aParsed.message, theGravity, aParsed.errorCode, theText);
     if (theGravity.valueOf() < this._myTraceLevel) {
       return;
     }

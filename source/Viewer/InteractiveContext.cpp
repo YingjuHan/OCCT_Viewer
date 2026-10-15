@@ -3,6 +3,12 @@
 #include "WasmViewer.h"
 #include "Utils/ViewCorner.h"
 
+#include <algorithm>
+#include <iomanip>
+#include <unordered_set>
+#include <sstream>
+#include <vector>
+
 #include <ViewShape/InteractiveShape.h>
 
 #include <RWShapeConv/ShapeLoader.h>
@@ -172,6 +178,55 @@ void InteractiveContext::SetVisible(const ObjectId& theObjId, const bool theToSh
 
     myWebViewer->Invalidate2dObjects();
     invalidateViewer(anObj);
+}
+
+// ================================================================
+// Function : SetVisibleMany
+// ================================================================
+void InteractiveContext::SetVisibleMany(const std::string& theObjIds, const bool theToShow)
+{
+    if (theObjIds.empty()) {
+        return;
+    }
+
+    std::istringstream aStream(theObjIds);
+    std::string        anId;
+    while (std::getline(aStream, anId, THE_LIST_SEPARATOR)) {
+        if (anId.empty()) {
+            continue;
+        }
+        SetVisible(anId, theToShow);
+    }
+}
+
+// ================================================================
+// Function : SetVisibleOnly
+// ================================================================
+void InteractiveContext::SetVisibleOnly(const std::string& theObjIds)
+{
+    std::unordered_set<std::string> aVisibleIds;
+    if (!theObjIds.empty()) {
+        std::istringstream aStream(theObjIds);
+        std::string        anId;
+        while (std::getline(aStream, anId, THE_LIST_SEPARATOR)) {
+            if (!anId.empty()) {
+                aVisibleIds.insert(anId);
+            }
+        }
+    }
+
+    for (AIS_DataMapOfIOStatus::Iterator anObjIter = myWebViewer->GetContext()->ObjectIterator(); anObjIter.More();
+         anObjIter.Next()) {
+        const Handle(AIS_InteractiveObject)& anObj = anObjIter.Key();
+        if (const ViewBase::InteractiveOwner* anId = dynamic_cast<ViewBase::InteractiveOwner*>(
+                anObj->GetOwner().get())) {
+            if (anId->Id().IsEmpty()) {
+                continue;
+            }
+            const std::string aStrId = anId->Id().ToCString();
+            SetVisible(aStrId, aVisibleIds.find(aStrId) != aVisibleIds.end());
+        }
+    }
 }
 
 // ================================================================
@@ -554,6 +609,102 @@ std::string InteractiveContext::GetObjectsInside(const std::string& theIdPrefix)
     return aList;
 }
 
+namespace {
+std::string jsonEscape(const std::string& theStr)
+{
+    std::ostringstream aRes;
+    for (const unsigned char aCh : theStr) {
+        switch (aCh) {
+            case '\\': aRes << "\\\\"; break;
+            case '"': aRes << "\\\""; break;
+            case '\b': aRes << "\\b"; break;
+            case '\f': aRes << "\\f"; break;
+            case '\n': aRes << "\\n"; break;
+            case '\r': aRes << "\\r"; break;
+            case '\t': aRes << "\\t"; break;
+            default: {
+                if (aCh < 0x20) {
+                    aRes << "\\u" << std::hex << std::setw(4) << std::setfill('0') << (int)aCh << std::dec;
+                } else {
+                    aRes << (char)aCh;
+                }
+                break;
+            }
+        }
+    }
+    return aRes.str();
+}
+} // namespace
+
+// ================================================================
+// Function : GetSceneGraphJson
+// ================================================================
+std::string InteractiveContext::GetSceneGraphJson(const std::string& theIdPrefix) const
+{
+    std::vector<std::string> anIds;
+    const bool               hasNamePrefix = !theIdPrefix.empty() && theIdPrefix != "*";
+    const TCollection_AsciiString aNamePrefix(theIdPrefix.c_str());
+
+    for (AIS_DataMapOfIOStatus::Iterator anObjIter = myWebViewer->GetContext()->ObjectIterator(); anObjIter.More();
+         anObjIter.Next()) {
+        const Handle(AIS_InteractiveObject)& anObj = anObjIter.Key();
+        if (const ViewBase::InteractiveOwner* anId = dynamic_cast<ViewBase::InteractiveOwner*>(
+                anObj->GetOwner().get())) {
+            if (anId->Id().IsEmpty()) {
+                continue;
+            }
+            if (hasNamePrefix && !anId->Id().StartsWith(aNamePrefix)) {
+                continue;
+            }
+            anIds.emplace_back(anId->Id().ToCString());
+        }
+    }
+
+    std::sort(anIds.begin(), anIds.end());
+    anIds.erase(std::unique(anIds.begin(), anIds.end()), anIds.end());
+
+    std::ostringstream aJson;
+    aJson << std::setprecision(17);
+
+    aJson << "{\"specVersion\":\"0.1\",\"rootNodeId\":\"root\",\"nodes\":[";
+
+    // Root node
+    aJson << "{\"id\":\"root\",\"name\":\"root\",\"type\":\"Root\",\"parentId\":null,\"children\":[";
+    for (size_t anIdIter = 0; anIdIter < anIds.size(); ++anIdIter) {
+        if (anIdIter != 0) {
+            aJson << ",";
+        }
+        aJson << "\"" << jsonEscape(anIds[anIdIter]) << "\"";
+    }
+    aJson << "],\"bbox\":null}";
+
+    // Object nodes (flat tree for now: root -> objects)
+    for (const std::string& anObjId : anIds) {
+        const std::string aType = GetType(anObjId);
+        const BndBox3     aBox  = GetMinMax(anObjId);
+
+        aJson << ",{\"id\":\"" << jsonEscape(anObjId) << "\""
+              << ",\"name\":\"" << jsonEscape(anObjId) << "\""
+              << ",\"type\":\"" << jsonEscape(aType) << "\""
+              << ",\"parentId\":\"root\""
+              << ",\"children\":[]"
+              << ",\"bbox\":";
+
+        if (aBox.IsValid()) {
+            const Vec3 aMin = aBox.GetCornerMin();
+            const Vec3 aMax = aBox.GetCornerMax();
+            aJson << "{\"min\":[" << aMin.x() << "," << aMin.y() << "," << aMin.z() << "],"
+                  << "\"max\":[" << aMax.x() << "," << aMax.y() << "," << aMax.z() << "]}";
+        } else {
+            aJson << "null";
+        }
+        aJson << "}";
+    }
+
+    aJson << "]}";
+    return aJson.str();
+}
+
 // ================================================================
 // Function : GetLastDraggedObject
 // ================================================================
@@ -671,6 +822,8 @@ EMSCRIPTEN_BINDINGS(InteractiveContext)
         .function("setEnabled", &InteractiveContext::SetEnabled)
         .function("isVisible", &InteractiveContext::IsVisible)
         .function("setVisible", &InteractiveContext::SetVisible)
+        .function("setVisibleMany", &InteractiveContext::SetVisibleMany)
+        .function("setVisibleOnly", &InteractiveContext::SetVisibleOnly)
         .function("isVisibleInView", &InteractiveContext::IsVisibleInView)
         .function("getVisibleInView", &InteractiveContext::GetVisibleInView)
         .function("setVisibleInView", &InteractiveContext::SetVisibleInView)
@@ -689,6 +842,7 @@ EMSCRIPTEN_BINDINGS(InteractiveContext)
         .function("clone", &InteractiveContext::Clone)
         .function("generateId", &InteractiveContext::generateId)
         .function("getObjectsInside", &InteractiveContext::GetObjectsInside)
+        .function("getSceneGraphJson", &InteractiveContext::GetSceneGraphJson)
         .function("getLastDraggedObject", &InteractiveContext::GetLastDraggedObject);
 }
 #endif

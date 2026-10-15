@@ -3,6 +3,8 @@ cmake_minimum_required (VERSION 3.7)
 project (ViewCaeTest)
 
 set (SRCFILES
+  CutViewCommands.cpp
+  CutBenchmarkCommands.cpp
   MeshPrsCommand.cpp
   PrsCaeCommands.cpp
   ScvColorScale.cpp
@@ -25,6 +27,7 @@ set (SRCFILES
   ScvSphericalAxes.cpp
 )
 set (INCFILES
+  CutViewCommands.h
   MeshPrsCommand.h
   PrsCaeCommands.h
   ScvColorScale.h
@@ -55,10 +58,16 @@ add_library (${PROJECT_NAME} SHARED ${SRCFILES} ${INCFILES})
 set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER "Draw")
 
 # internal dependencies
-target_link_libraries (${PROJECT_NAME} PUBLIC DrawBase Viewer ViewCae ViewBase ViewBaseTest)
+target_link_libraries (${PROJECT_NAME} PUBLIC DrawBase Viewer ViewCae ViewBase ViewBaseTest RWVtk)
 
 # OCCT libraries
 target_link_libraries (${PROJECT_NAME} PUBLIC TKDraw TKernel TKViewerTest)
+if (WIN32)
+  target_link_libraries (${PROJECT_NAME} PRIVATE opengl32 psapi)
+else()
+  find_package (OpenGL REQUIRED)
+  target_link_libraries (${PROJECT_NAME} PRIVATE OpenGL::GL)
+endif()
 
 if (UNIX)
   target_link_libraries (${PROJECT_NAME} PRIVATE dl)

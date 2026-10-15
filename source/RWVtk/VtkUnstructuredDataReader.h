@@ -13,6 +13,7 @@
 #include <LDOMParser.hxx>
 
 #include <vector>
+#include <map>
 
 namespace RWVtk {
 //! Base reader class for unstructured VTK data stored in XML format.
@@ -23,6 +24,8 @@ public:
 
     //! Destructor.
     Standard_EXPORT virtual ~VtkUnstructuredDataReader();
+
+    void SetPreserveCellTypes(bool enabled) { myPreserveCellTypes = enabled; }
 
     //! Return mesh data.
     const Handle(RWCae::MeshData)& GetMeshData() const { return myMeshData; }
@@ -37,11 +40,15 @@ public:
     //! Set time step for all properties.
     void SetTimeStep(int theTimeStep)
     {
+        myRequestedTimeStep = theTimeStep;
         myTimeStep = theTimeStep;
         if (myTimeStep != -1) {
             myTimeStamp = (double)myTimeStep;
         }
     }
+
+    //! Explicit manifest time takes precedence over leaf TimeValue.
+    void SetTimeStamp(double theTime) { myRequestedTimeStamp = theTime; myHasExplicitTimeStamp = true; }
 
 public:
     //! DataArrays that is used to define array of VTK elements.
@@ -51,6 +58,7 @@ public:
         DataArray Types;
         DataArray Faces;
         DataArray FaceOffsets;
+        DataArray FaceConnectivity, FaceEnds, PolyhedronFaces, PolyhedronEnds;
     };
 
     //! Struct for mapped property.
@@ -96,12 +104,13 @@ protected:
 
     //! Map properties according to the mapping info.
     Standard_EXPORT std::vector<MappedProp> extractMappedProps(const VtkBaseXMLReader::DataArray& theProp,
-                                                               bool                               theIsNodal) const;
+                                                               bool                               theIsNodal,
+                                                               RWCae::MeshNVecPropertyType theDefaultType);
 
     //! Map property according to the mapping info.
     Standard_EXPORT bool extractMappedProp(const VtkBaseXMLReader::DataArray&   theProp,
                                            const RWCae::MeshFieldMappingInfo& theInfo,
-                                           MappedProp&                          theMappedProp) const;
+                                           MappedProp&                          theMappedProp);
 
     //! Store mesh data property values.
     Standard_EXPORT void storePropValues(RWCae::MeshScalarProperty*    theComp,
@@ -133,6 +142,13 @@ protected:
                                     int                             theElemIndex);
 
 protected:
+    bool myPreserveCellTypes = false;
+    bool myGeneralLayout = false;
+    //! Preserve the schema formerly produced by the SDK fallback (v3 sessions).
+    bool myCompatibilityFields = false;
+    std::vector<DataArray> myPieceTypes;
+    DataArray myDegrees, myWeights;
+    std::map<std::string, DataArray> myTopologyAttributes;
     Handle(RWCae::MeshData) myMeshData;
     int                       myNbNodes            = 0;
     int                       myNodesOffset        = 0;
@@ -140,6 +156,9 @@ protected:
     int                       myCurPiece           = 0;
     double                    myTimeStamp          = 0.0;
     int                       myTimeStep           = -1;
+    int myRequestedTimeStep = -1;
+    double myRequestedTimeStamp = 0.0;
+    bool myHasExplicitTimeStamp = false;
     bool                      myToReadMeshGeometry = true;
 
     std::shared_ptr<std::vector<std::vector<int>>> myStoredElements;

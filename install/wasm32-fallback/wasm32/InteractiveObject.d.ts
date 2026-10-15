@@ -3,6 +3,7 @@ import { ViewCorner } from './CommonTools.js';
 import { Subview } from './Subview.js';
 import { ViewerEventTarget } from './ViewerEventTarget.js';
 import type { SCwebviewer } from './SCwebviewer.js';
+import type { ISceneGraph } from './SceneGraph.js';
 /**
  * Font aspect defined by `Font_FontAspect` enumeration.
  */
@@ -390,6 +391,14 @@ export declare class InteractiveObject extends ViewerEventTarget {
 export interface InteractiveContext extends IManager {
     /** Return the array of created objects */
     readonly objectsInside: InteractiveObject[];
+    /** Return SceneGraph (parsed from JSON returned by C++ side). */
+    getSceneGraph: (theIdPrefix?: string) => ISceneGraph | null;
+    /** Set visible state for multiple objects. */
+    setVisibleManyObjects: (theObjIds: ObjectId[], theToShow: boolean) => void;
+    /** Isolate objects (show only these, hide others). */
+    setVisibleOnlyObjects: (theObjIds: ObjectId[]) => void;
+    /** Set transparency for multiple objects. */
+    setTransparencyManyObjects: (theObjIds: ObjectId[], theTransparency: number) => void;
     /**
      * Remove all named objects.
      * Warning! Using this method would make existing InteractiveObject instances

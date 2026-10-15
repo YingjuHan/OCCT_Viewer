@@ -33,6 +33,8 @@ protected:
     //! Read polygon elements.
     Standard_EXPORT bool parsePolys(const LDOM_Element& theElem);
 
+    bool validateElements(const MeshElements& theElements, int theCount, int theMinNodes);
+
 protected:
     int myNbVerts  = 0;
     int myNbLines  = 0;

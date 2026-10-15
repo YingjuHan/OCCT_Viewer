@@ -4,10 +4,10 @@ set (RapidJSON_ROOT_DIR "" CACHE PATH "Path to RapidJSON root directory")
 
 simake_additional_search_dirs (RapidJSON "rapidjson-")
 
-find_package(RapidJSON QUIET NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_PACKAGE_REGISTRY CMAKE_FIND_ROOT_PATH_BOTH)
+find_package(RapidJSON QUIET NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_PACKAGE_REGISTRY)
 
-if (NOT ${RapidJSON_FOUND})
-    find_path(_rapidjson_include_dirs NAMES rapidjson/rapidjson.h PATHS ${RapidJSON_ROOT_DIR} PATH_SUFFIXES include CMAKE_FIND_ROOT_PATH_BOTH)
+if (NOT RapidJSON_FOUND)
+    find_path(_rapidjson_include_dirs NAMES rapidjson/rapidjson.h PATHS ${RapidJSON_ROOT_DIR} PATH_SUFFIXES include)
 endif()
 
 if (NOT TARGET rapidjson)

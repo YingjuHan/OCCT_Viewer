@@ -2,6 +2,8 @@
 #define _VTKBASEREADER_HEADERFILE
 
 #include <RWCae/MeshFieldMapping.h>
+#include <RWVtk/VtkImportReport.h>
+#include <RWVtk/VtkResourceLimits.h>
 
 namespace RWVtk {
 //! Base reader class for VTK data.
@@ -25,12 +27,28 @@ public:
     //! Set property mapping info.
     void SetMappingInfo(const std::vector<RWCae::MeshFieldMappingInfo>& theInfo) { myMappingInfo = theInfo; }
 
+    const VtkImportReport& Report() const { return myReport; }
+
+    //! Collect diagnostics without printing rejected attempts during fallback.
+    void SetToReportMessages(bool theEnabled) { myToReportMessages = theEnabled; }
+    void SetResourceLimits(const VtkResourceLimits& theLimits) { myLimits = theLimits; mySharedBudget = false; }
+    void SetResourceBudget(const std::shared_ptr<VtkResourceBudget>& theBudget) { myBudget = theBudget; myLimits = theBudget->Limits; mySharedBudget = true; }
+
+protected:
+    Standard_EXPORT bool fail(const std::string& theMessage);
+    Standard_EXPORT void warn(const std::string& theMessage);
+
 protected:
     std::istream*           myIStream = nullptr;
     TCollection_AsciiString myFileName;
 
     std::vector<RWCae::MeshFieldMappingInfo> myMappingInfo;
     TCollection_AsciiString                    myMappingFileName;
+    VtkImportReport myReport;
+    bool myToReportMessages = true;
+    VtkResourceLimits myLimits;
+    std::shared_ptr<VtkResourceBudget> myBudget;
+    bool mySharedBudget = false;
 };
 
 }

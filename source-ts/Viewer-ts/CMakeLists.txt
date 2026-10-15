@@ -14,6 +14,11 @@ set (Viewer_TSFILES
   InteractiveObject.ts
   InteractiveScaleRuler.ts
   InteractiveShape.ts
+  MeasurementStore.ts
+  PmiStore.ts
+  ProjectStore.ts
+  SavedViewStore.ts
+  SceneGraph.ts
   InteractiveTextLabel.ts
   InteractiveViewCube.ts
   InteractiveSphericalAxes.ts

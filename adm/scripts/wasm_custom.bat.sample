@@ -1,0 +1,18 @@
+@echo OFF
+
+rem Copy this file to 'wasm_custom.bat' and adjust paths for your machine.
+rem It will be auto-loaded by wasm_build.bat (if present).
+
+rem Emscripten SDK root folder (should contain emsdk_env.bat)
+rem set "EMSDK_ROOT=C:\path\to\emsdk"
+
+rem OpenCASCADE installation prefix (script will append ABI suffix if "<path>-<abi>" exists)
+rem set "OpenCASCADE_DIR=C:\path\to\occt\install"
+
+rem Optional tools / 3rd-party roots (full path is OK; script won't append when it already exists)
+rem set "FREETYPE_DIR=C:\path\to\freetype\install"
+rem set "RAPIDJSON_DIR=C:\path\to\rapidjson"
+rem set "DRACO_DIR=C:\path\to\draco\install"
+
+rem Optional: TypeDoc executable (only needed when OCCTViewer_BUILD_DOC_TYPESCRIPT=ON)
+rem set "TYPEDOC_EXE=C:\Users\%USERNAME%\AppData\Roaming\npm\typedoc.cmd"

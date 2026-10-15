@@ -66,6 +66,16 @@ public:
         IndexedElement(MeshElemType theType, MeshEntityId theIndex) : Type(theType), Index(theIndex) {}
     };
 
+    //! Original VTK topology for cells not representable by the fixed native enum.
+    //! Nodes/faces use full entity indices and are not restricted to 255 entries.
+    struct GenericCell {
+        int Type = 0;
+        std::vector<MeshEntityId> Nodes;
+        std::vector<std::vector<MeshEntityId>> Faces;
+        std::vector<int> Degrees;
+        std::vector<double> RationalWeights;
+    };
+
     //! Create a Face from the given Mesh.
     //! This method also updates cached AABB.
     //! @sa BRep_Builder::MakeFace()
@@ -263,6 +273,23 @@ public:
 
 public:
     //! Append new element.
+    int AddGenericCell(const GenericCell& theCell)
+    {
+        myGenericCells.push_back(theCell);
+        return AddElement(MeshElementArb<MeshElemType::Generic>(nullptr, 0));
+    }
+    const std::vector<GenericCell>& GenericCells() const { return myGenericCells; }
+    std::vector<GenericCell>& ChangeGenericCells() { return myGenericCells; }
+
+    //! Fully staged time steps. Snapshots never refer back to the published mesh.
+    struct SeriesStep {
+        double Time = 0.0;
+        TCollection_AsciiString Source;
+        Handle(MeshData) Mesh;
+    };
+    const std::vector<SeriesStep>& SeriesSteps() const { return mySeriesSteps; }
+    std::vector<SeriesStep>& ChangeSeriesSteps() { return mySeriesSteps; }
+
     template<class Elem_T>
     int AddElement(const Elem_T& theElement, bool theToAddIndexed = true)
     {
@@ -486,6 +513,8 @@ protected:
     MeshDataVector<Graphic3d_Vec4ub> myNodalColors;          //!< vector of nodal colors  (optional)
 
     MeshDataVector<IndexedElement> myIndexedElements;           //!< vector of indexed elements
+    std::vector<GenericCell>        myGenericCells;
+    std::vector<SeriesStep>         mySeriesSteps;
     MeshElements                   myElements[MeshElemNbTypes]; //!< per-type elements
 
     mutable MeshElements mySurfElements[MeshSurfElemNbTypes]; //!< per-type outer surface elements

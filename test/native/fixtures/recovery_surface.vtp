@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<VTKFile type="PolyData" version="0.1" byte_order="LittleEndian">
+<PolyData><Piece NumberOfPoints="6" NumberOfPolys="2">
+<Points><DataArray type="Float64" NumberOfComponents="3" format="ascii">0 0 0 0 1 0 1 0 0 1 1 0 2 0 0 2 1 0</DataArray></Points>
+<Polys><DataArray type="Int32" Name="connectivity" format="ascii">0 2 3 1 2 4 5 3</DataArray><DataArray type="Int32" Name="offsets" format="ascii">4 8</DataArray></Polys>
+<CellData><DataArray type="Float64" Name="pressure" format="ascii">7 9</DataArray><DataArray type="Int32" Name="material" format="ascii">10 20</DataArray></CellData>
+</Piece></PolyData></VTKFile>

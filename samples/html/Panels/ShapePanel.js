@@ -53,6 +53,10 @@ export class ShapePanel extends SCcontrols.PanelInput {
     this._shapePropsGroup.addControl(this._shapeInfoExpandableGroup);
     this.addInfoControls();
 
+    this._massPropsExpandableGroup = new SCcontrols.GroupInput("Mass properties", true, true);
+    this._shapePropsGroup.addControl(this._massPropsExpandableGroup);
+    this.addMassPropsControls();
+
     // add event handlers
     window.addEventListener("sceneChanged", e => {
       this._selectedShape = null;
@@ -456,6 +460,87 @@ export class ShapePanel extends SCcontrols.PanelInput {
   }
 
   /**
+   * Create mass properties controls.
+   */
+  addMassPropsControls() {
+    this._massPropsJson = "";
+    this._massPropsShapeId = "";
+
+    this._massPropsInfo = new SCcontrols.TextAreaInput("", "\n\n\n", null, {autoHeight: true, readOnly: true});
+    this._massPropsInfo.minWidth = 350;
+
+    this._massPropsComputeButton = new SCcontrols.ButtonInput("Compute", () => {
+      if (this._selectedShape == null) {
+        console.warn("Mass props: select a shape first");
+        return;
+      }
+      const aMgr = this._scViewer.interactiveShapeManager;
+      if (aMgr == null) {
+        console.warn("Mass props: interactiveShapeManager is null");
+        return;
+      }
+
+      const aJson = aMgr.getMassPropsJson(this._selectedShape.id);
+      if (!aJson) {
+        console.warn("Mass props: failed to compute");
+        return;
+      }
+
+      this._massPropsJson = aJson;
+      this._massPropsShapeId = this._selectedShape.id;
+
+      let aRes = null;
+      try { aRes = JSON.parse(aJson); } catch { aRes = null; }
+      if (aRes == null || aRes.centroid == null) {
+        this._massPropsInfo.setValue(aJson);
+        return;
+      }
+
+      const aUnitMgr = this._scViewer.unitManager;
+      const aAreaVal = typeof aRes.area === "number" ? aRes.area : 0.0;
+      const aHasVolume = aRes.volumeValid === true || typeof aRes.volume === "number";
+      const aVolumeVal = aHasVolume && typeof aRes.volume === "number" ? aRes.volume : null;
+      const aAreaText = aUnitMgr ? aUnitMgr.area.format(aAreaVal) : aAreaVal.toString();
+      const aVolumeText = aVolumeVal != null
+        ? (aUnitMgr ? aUnitMgr.volume.format(aVolumeVal) : aVolumeVal.toString())
+        : "n/a";
+      const aCentroid = aRes.centroid;
+      const aCentroidText = aUnitMgr
+        ? aUnitMgr.length.format(aCentroid)
+        : `${aCentroid.x}, ${aCentroid.y}, ${aCentroid.z}`;
+      const aSource = aRes.centroidSource ?? "surface";
+
+      const aLines = [
+        `Area: ${aAreaText}`,
+        `Volume: ${aVolumeText}`,
+        `Centroid (${aSource}): ${aCentroidText}`,
+        "",
+        "JSON:",
+        aJson,
+      ];
+      this._massPropsInfo.setValue(aLines.join("\n"));
+    }, { inlineBlock: true });
+
+    this._massPropsCopyButton = new SCcontrols.ButtonInput("Copy JSON", () => {
+      if (!this._massPropsJson) {
+        console.warn("Mass props: nothing to copy");
+        return;
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(this._massPropsJson);
+      } else {
+        console.warn("Mass props: clipboard is not available");
+      }
+    }, { inlineBlock: true });
+
+    this._massPropsExpandableGroup.addControls([
+      this._massPropsComputeButton,
+      this._massPropsCopyButton,
+      this._massPropsInfo
+    ]);
+  }
+
+  /**
    * Set surface/curve type filter.
    */
   _setSurfaceCurveTypeFilter(theShape, theSurfType, theCurveType) {
@@ -696,7 +781,20 @@ export class ShapePanel extends SCcontrols.PanelInput {
     this._shapeListInput.setValue (aShapeObj == null ? "" : aShapeObj.id);
     this._shapePropsGroup.setVisibility(aShapeObj != null);
     if (aShapeObj == null) {
+      if (this._massPropsInfo != null) {
+        this._massPropsInfo.setValue("");
+      }
+      this._massPropsJson = "";
+      this._massPropsShapeId = "";
       return;
+    }
+
+    if (this._massPropsShapeId !== aShapeObj.id) {
+      this._massPropsJson = "";
+      this._massPropsShapeId = aShapeObj.id;
+      if (this._massPropsInfo != null) {
+        this._massPropsInfo.setValue("");
+      }
     }
 
     // General properties

@@ -1,0 +1,149 @@
+.control-panel-shell {
+  width: 320px;
+  min-width: 280px;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  background: #1b1b1b;
+  border-right: 1px solid #2b2b2b;
+  color: #f5f5f5;
+}
+
+.cp-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
+  background: #161616;
+  border-bottom: 1px solid #2b2b2b;
+}
+
+.cp-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  position: relative;
+}
+
+.panel {
+  background: rgba(35, 35, 35, 0.9);
+  border: 1px solid #2f2f2f;
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 14px;
+}
+
+.controlItem,
+.controlItemInlineBlock {
+  margin: 6px 0;
+}
+
+.controlItemInlineBlock {
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.header-button {
+  cursor: pointer;
+  user-select: none;
+  color: #f5f5f5;
+  text-transform: uppercase;
+  text-align: center;
+  line-height: 1;
+  font-size: 12px;
+  background-color: #2b2b2b;
+  border-radius: 4px;
+  padding: 6px 12px;
+  border: 1px solid #3d3d3d;
+  transition: background 0.15s ease;
+}
+
+.header-button:hover {
+  background-color: #3a3a3a;
+}
+
+.header-button.selected {
+  background-color: #3d6df2;
+  border-color: #3d6df2;
+}
+
+input[type="range"] {
+  width: 250px;
+}
+
+input,
+textarea,
+select {
+  background: #121212;
+  border: 1px solid #3b3b3b;
+  color: #f5f5f5;
+  border-radius: 4px;
+  padding: 4px 6px;
+}
+
+label {
+  margin-right: 6px;
+}
+
+.slider-value,
+.text-value {
+  display: inline-block;
+  margin-left: 6px;
+  min-width: 40px;
+}
+
+.dual-slider-left {
+  margin-right: -3px;
+  display: inline-block;
+  width: 120px !important;
+  direction: rtl;
+}
+
+.dual-slider-right {
+  margin-left: -3px;
+  width: 120px !important;
+}
+
+.collapsible {
+  background-color: #2b2b2b;
+  color: #fff;
+  cursor: pointer;
+  border: none;
+  text-align: left;
+  outline: none;
+  width: 100%;
+  padding: 6px 8px;
+  margin-top: 8px;
+}
+
+.collapsible.active,
+.collapsible:hover {
+  background-color: #3a3a3a;
+}
+
+.treeul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0 0 0 14px;
+  display: none;
+}
+
+.treeul-active {
+  display: block;
+}
+
+.tree-exp {
+  appearance: none;
+  margin: 2px;
+}
+
+.tree-exp::before {
+  content: "▶";
+  color: #f5f5f5;
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+
+.tree-exp:checked::before {
+  transform: rotate(90deg);
+}

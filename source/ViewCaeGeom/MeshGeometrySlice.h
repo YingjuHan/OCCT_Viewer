@@ -4,20 +4,49 @@
 #include <ViewCaeGeom/MeshGeometry.h>
 
 #include <Graphic3d_SequenceOfHClipPlane.hxx>
+#include <array>
 
 namespace ViewCaeGeom {
+struct MeshCutCancellation;
+//! Wall times partition a rebuilt native single-plane section (not cache hits).
+struct MeshSliceWork {
+    double BvhMs=0, PrepareMs=0, CutMs=0, MergeMs=0;
+    size_t Candidates=0, Fallbacks=0;
+};
+//! Endpoints index the slice mesh nodes; source element indexes the original mesh.
+struct MeshSliceLine {
+    std::array<RWCae::MeshEntityId, 2> Nodes;
+    RWCae::MeshEntityId SourceElement;
+};
+
 //! Mesh geometry for mesh slice.
-//! It generates a new mesh data with 2d elements.
+//! It generates section faces for volume cells and section lines for surface cells.
 class MeshGeometrySlice : public MeshGeometry {
 public:
     //! Constructor.
     Standard_EXPORT explicit MeshGeometrySlice(const Handle(MeshBvhData)& theBvhData);
+
+    Standard_EXPORT ~MeshGeometrySlice() override;
+    void SetCancellation(const std::shared_ptr<MeshCutCancellation>& token) { myCancellation=token; }
+    const MeshSliceWork& LastWork() const { return myLastWork; }
+    size_t WorkGeneration() const { return myWorkGeneration; }
 
     //! Return geometry type.
     virtual MeshGeometryType Type() const override { return MeshGeometryType::Slice; }
 
     //! Return active slice planes.
     const Graphic3d_SequenceOfHClipPlane& SlicePlanes() const { return mySlicePlanes; }
+
+    //! Generate the slice if necessary and return surface-mesh intersections.
+    const std::vector<MeshSliceLine>& Lines()
+    {
+        GetMeshData();
+        return myLines;
+    }
+
+    //! Nodal values index slice nodes; elemental values index Lines(), with generated-node subindices for NodeVec.
+    Standard_EXPORT virtual Handle(RWCae::MeshNVecProperty) CalculateLineProperty(
+        const Handle(RWCae::MeshNVecProperty)& theProp) const;
 
     //! Set active slice planes.
     void SetSlicePlanes(const Graphic3d_SequenceOfHClipPlane& theSlicePlanes)
@@ -47,9 +76,12 @@ protected:
 
 protected:
     Graphic3d_SequenceOfHClipPlane mySlicePlanes;
+    std::vector<MeshSliceLine> myLines;
+    std::shared_ptr<MeshCutCancellation> myCancellation;
+    MeshSliceWork myLastWork;
+    size_t myWorkGeneration=0;
 };
 
 } // namespace
 
 #endif // _MESHGEOMETRYSLICE_HEADERFILE
- 

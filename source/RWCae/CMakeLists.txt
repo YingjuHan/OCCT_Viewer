@@ -19,6 +19,7 @@ set (SRCFILES
   MeshToolsSortingImpl.cpp
 )
 set (INCFILES
+  MeshCellTopology.h
   MeshAdaptor.h
   MeshAdaptorsIterator.h
   MeshBinIOBase.h

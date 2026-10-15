@@ -71,6 +71,21 @@ export class ImportPanel extends SCcontrols.PanelInput {
    * Add shape import controls.
    */
   addShapeImport() {
+    const aBuildCfg = SCwebviewer.ViewerBuildConfig || { useStep: true, useIges: true };
+    const aShapeExts = [".glb", ".brep", ".bbrep", ".binbrep", ".sbrep", ".stl"];
+    if (aBuildCfg.useStep) {
+      aShapeExts.push(".step", ".stp");
+    }
+    if (aBuildCfg.useIges) {
+      aShapeExts.push(".iges", ".igs");
+    }
+    if (!aBuildCfg.useStep || !aBuildCfg.useIges) {
+      const missing = [];
+      if (!aBuildCfg.useStep) { missing.push("STEP"); }
+      if (!aBuildCfg.useIges) { missing.push("IGES"); }
+      this.addControl(new SCcontrols.LabelInput("Format support",
+        `${missing.join(", ")} disabled in this build`, null));
+    }
     this.addControl(new SCcontrols.FileInput("Load Shape",
       (val)=> {
         if (val.files.length != 1) { return; }
@@ -78,7 +93,7 @@ export class ImportPanel extends SCcontrols.PanelInput {
           this._scSample.onShapeFileRead(val.files[0].name, aBuffer);
         });
       },
-      { accept: ".glb, .brep, .bbrep, .binbrep, .sbrep, .stl"}
+      { accept: aShapeExts.join(", ")}
     ));
     this.addControl(new SCcontrols.CheckboxInput("Explode Shape", this._scSample.toExplodeShape, (val) => {
       this._scSample.toExplodeShape = val;

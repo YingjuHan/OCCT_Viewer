@@ -48,7 +48,7 @@ public:
         MapOfColorMappers;
 
     //! Returns an object for mapping mesh values to colors.
-    Handle(MeshColorMapper) ColorMapper(const RWCae::MeshPropertyComponent& theProp) const;
+    Standard_EXPORT Handle(MeshColorMapper) ColorMapper(const RWCae::MeshPropertyComponent& theProp) const;
 
     //! Sets an object for mapping mesh values to colors.
     Standard_EXPORT void SetColorMapper(const Handle(MeshColorMapper)&        theColorMapper,

@@ -8,6 +8,8 @@ import { ShapePanel } from '../control-panel/Panels/ShapePanel.js';
 import { BuildersPanel } from '../control-panel/Panels/BuildersPanel.js';
 import { MeshPanel } from '../control-panel/Panels/MeshPanel.js';
 import { ClippingPanel } from '../control-panel/Panels/ClippingPanel.js';
+import { ExportPanel } from '../control-panel/Panels/ExportPanel.js';
+import { BenchmarkPanel } from '../control-panel/Panels/BenchmarkPanel.js';
 import { SettingsPanel } from '../control-panel/Panels/SettingsPanel.js';
 // import { TemplatePanel } from '../control-panel/Panels/TemplatePanel.js';
 
@@ -28,6 +30,8 @@ onMounted(async () => {
   panel.addPanel(new BuildersPanel(props.viewerService));
   panel.addPanel(new MeshPanel(props.viewerService));
   panel.addPanel(new ClippingPanel(props.viewerService));
+  panel.addPanel(new ExportPanel(props.viewerService));
+  panel.addPanel(new BenchmarkPanel(props.viewerService));
   panel.addPanel(new SettingsPanel(props.viewerService));
   // panel.addPanel(new TemplatePanel(props.viewerService));
 

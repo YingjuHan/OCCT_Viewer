@@ -1,6 +1,3 @@
-// Created by: Kirill Gavrilov
-// Copyright (c) 2022 Huawei Technologies Co., Ltd.
-
 import type {IVec2, ObjectId, Quantity} from './CommonTools.js';
 import {ObjectPart} from './InteractiveObject.js';
 import type {InteractiveObject} from './InteractiveObject.js';
@@ -75,6 +72,12 @@ export const UserEvents = {
    * Event definition: {@link MeshGenGeomRequestedEvent}.
    */
   onMeshGenGeomRequested: 'onMeshGenGeomRequested',
+
+  /**
+   * Called when Viewer emits a log/error message.
+   * Event definition: {@link ViewerMessageEvent}.
+   */
+  onViewerMessage: 'onViewerMessage',
 };
 
 /**
@@ -321,6 +324,29 @@ export class MeshGenGeomRequestedEvent extends Event {
 };
 
 /**
+ * Viewer message event, {@link UserEvents.onViewerMessage}.
+ */
+export class ViewerMessageEvent extends Event {
+  /** Message text without error code prefix. */
+  public message: string;
+  /** Raw message as received from C++ side. */
+  public rawMessage: string;
+  /** Message gravity as number (see MessageGravity). */
+  public gravity: number;
+  /** Parsed error code if present. */
+  public errorCode: string | null;
+
+  /** Main constructor. */
+  constructor(theType: string) {
+    super(theType);
+    this.message = '';
+    this.rawMessage = '';
+    this.gravity = 0;
+    this.errorCode = null;
+  }
+};
+
+/**
  * Event Manager is a global object accessible via {@link SCwebviewer.eventManager},
  * responsible for managing event handlers (subscribing and unsubscribing callbacks).
  */
@@ -515,6 +541,16 @@ export class ViewerEventManager extends ViewerEventTarget {
     anEvent.parameters = theParameters;
 
     if (anObj != null) { anObj.dispatchEvent(anEvent); }
+    this.dispatchEvent(anEvent);
+  }
+
+  /** Emit viewer message event. */
+  public onViewerMessage(theMessage: string, theGravity: number, theErrorCode: string | null, theRawMessage: string): void {
+    let anEvent = new ViewerMessageEvent(UserEvents.onViewerMessage);
+    anEvent.message = theMessage ?? '';
+    anEvent.rawMessage = theRawMessage ?? '';
+    anEvent.gravity = theGravity;
+    anEvent.errorCode = theErrorCode;
     this.dispatchEvent(anEvent);
   }
 };

@@ -5,34 +5,18 @@
 #ifdef __EMSCRIPTEN__
     #include <emscripten.h>
 
-    #if defined(_LP64)
-//! Cast 64-bit pointer (BigInt) into double (Number).
-EM_JS(double, jsPtrToNumber, (const char* thePtr), { return bigintToI53Checked(thePtr); });
-
-//! Cast Number -> 64-bit pointer (BigInt).
-EM_JS(const char*, jsNumberToPtr, (double thePtr), { return BigInt(thePtr); });
-    #else
-//! Cast 32-bit pointer (Number) into double (Number).
-EM_JS(double, jsPtrToNumber, (const char* thePtr), { return thePtr; });
-
-//! Cast Number -> 32-bit pointer (Number).
-EM_JS(const char*, jsNumberToPtr, (double thePtr), { return thePtr; });
-    #endif
-
-//! Wrap UTF8ToString() for casting BigInt -> Number.
-EM_JS(const char*, jsUTF8ToString, (const char* theText), {
-    const aPtr = jsPtrToNumber(theText);
-    return UTF8ToString(aPtr);
-});
-
 //! Print message to Module.printMessage callback.
 EM_JS(void, jsPrintMessage, (const char* theText, int theGravity), {
+    const aPtr = typeof theText === "bigint"
+        ? (typeof bigintToI53Checked === "function" ? bigintToI53Checked(theText) : Number(theText))
+        : theText;
+    const aText = UTF8ToString(aPtr);
     if (Module.printMessage != undefined && Module.printMessage != null) {
-        Module.printMessage(jsUTF8ToString(theText), theGravity);
+        Module.printMessage(aText, theGravity);
     } else if (Module.print != undefined && Module.print != null) {
-        Module.print(jsUTF8ToString(theText));
+        Module.print(aText);
     } else {
-        // @c console.info (jsUTF8ToString(theText));
+        // @c console.info (aText);
     }
 });
 #endif

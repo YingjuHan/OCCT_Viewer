@@ -347,7 +347,15 @@ export class InteractiveObject extends ViewerEventTarget {
     /** Return view corner offset of 2D presentation; has no meaning for 3D objects. */
     get viewCornerOffset() { var _a, _b; return (_b = (_a = this.objMgr) === null || _a === void 0 ? void 0 : _a.getViewCornerOffset(this._myObjId)) !== null && _b !== void 0 ? _b : { x: 0, y: 0 }; }
     /** Return local transformation. */
-    get localTransformation() { var _a, _b; return (_b = (_a = this.objMgr) === null || _a === void 0 ? void 0 : _a.getLocalTransformation(this._myObjId)) !== null && _b !== void 0 ? _b : new Trsf(); }
+    get localTransformation() {
+        var _a;
+        const aMgr = this.objMgr;
+        const aGetter = aMgr === null || aMgr === void 0 ? void 0 : aMgr.getLocalTransformation;
+        if (typeof aGetter === 'function') {
+            return (_a = aGetter.call(aMgr, this._myObjId)) !== null && _a !== void 0 ? _a : new Trsf();
+        }
+        return new Trsf();
+    }
     /** Return object AABB (axes-aligned bounding box). */
     get minMax() { var _a, _b; return (_b = (_a = this.objMgr) === null || _a === void 0 ? void 0 : _a.getMinMax(this._myObjId)) !== null && _b !== void 0 ? _b : BndBox3.voidBox(); }
     /** Return object's Z-Layer. */

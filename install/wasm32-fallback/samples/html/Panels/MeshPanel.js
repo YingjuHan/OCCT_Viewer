@@ -1,7 +1,3 @@
-/**
- * Created by: Andrey Golodyaev
- * Copyright (c) 2022 Huawei Technologies Co., Ltd.
- */
 import * as SCwebviewer from '/wasm32/SCwebviewer.js';
 import * as SCcontrols from './../SCcontrols.js';
 

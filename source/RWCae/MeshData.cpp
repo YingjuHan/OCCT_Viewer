@@ -122,6 +122,7 @@ namespace RWCae
         ChangeElements(MeshElemType::Hexahedron).Init<MeshElementHexahedron>();
         ChangeElements(MeshElemType::Hexahedron2nd).Init<MeshElementHexahedron2nd>();
         ChangeElements(MeshElemType::Polyhedron).Init<MeshElementPolyhedron>();
+        ChangeElements(MeshElemType::Generic).Init<MeshElementArb<MeshElemType::Generic>>();
         ChangeSurfaceElements(MeshElemType::Triangle).Init<MeshElementTriangle>();
         ChangeSurfaceElements(MeshElemType::Triangle2nd).Init<MeshElementTriangle2nd>();
         ChangeSurfaceElements(MeshElemType::Quad).Init<MeshElementQuad>();
@@ -153,6 +154,7 @@ namespace RWCae
         myNodesUV.Clear();
         myNodalColors.Clear();
         myIndexedElements.Clear();
+        myGenericCells.clear();
         for (int i = 0; i < MeshElemNbTypes; i++)
         {
             myElements[i].Clear();
@@ -212,6 +214,10 @@ namespace RWCae
         };
 
         RWCae::MeshAdaptorsIteratorAllElems::For(compute, this);
+
+        for (const auto& cell : myGenericCells) {
+            for (auto node : cell.Nodes) { aUsedNodes.Add((int)node); }
+        }
 
         for (int aNodeIndexIter = myNodes.Lower(); aNodeIndexIter <= myNodes.Upper(); ++aNodeIndexIter)
         {
@@ -496,6 +502,10 @@ namespace RWCae
     {
         MeshElemType aType = myIndexedElements[theElementIndex].Type;
         MeshEntityId anInternalIndex = myIndexedElements[theElementIndex].Index;
+        if (aType == MeshElemType::Generic) {
+            theNodes = myGenericCells.at(anInternalIndex).Nodes;
+            return;
+        }
 
         auto compute = [&theNodes, anInternalIndex](const auto &theAdaptor)
         {

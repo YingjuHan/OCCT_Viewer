@@ -1,0 +1,86 @@
+# N04 import outcome routing and failed-import live-model preservation.
+set script_dir [file dirname [file normalize [info script]]]
+set ::env(CSF_VIEWDRAWDefaults) [file normalize [file join $script_dir .. .. source-draw ViewDraw]]
+pload -VIEWDRAW
+set fixtures $::env(VTK_IMPORT_FIXTURES)
+proc import_assert {condition message} {
+    if {![uplevel 1 [list expr $condition]]} { error $message }
+}
+
+if {[catch {
+    scvcutview imported read [file join $fixtures tetra.vtu]
+    set report [scvcutview imported importreport]
+    import_assert {[dict get $report succeeded] && [dict get $report backend] eq "portable"} "Portable DRAW report"
+    import_assert {[dict get $report points] == 4 && [dict get $report cells] == 1 && [dict get $report fields] == 2} "Published DRAW counts"
+    import_assert {[dict get $report errors] eq {} && [llength [dict get $report attempts]] == 1} "Portable DRAW diagnostics"
+    set before [scvcutview imported info]
+    import_assert {[catch {scvcutview imported replace [file join $fixtures invalid.vtu]}]} "Invalid replace accepted"
+    import_assert {[scvcutview imported info] eq $before && [scvcutview imported importreport] eq $report} "Failed cut replacement mutated live model/report"
+    import_assert {[catch {scvcutview imported replace [file join $fixtures unsupported_section.vtk]}]} "Legacy unsupported section accepted"
+    import_assert {[scvcutview imported info] eq $before} "Unsupported section mutated live model"
+        set copied [file join $fixtures {polyline with spaces.vtp}]
+        file copy -force [file join $fixtures polyline.vtp] $copied
+        scvcutview lines read $copied
+        set fallback [scvcutview lines importreport]
+        import_assert {[dict get $fallback source] eq $copied} "DRAW report source quoting"
+        import_assert {[dict get $fallback succeeded] && [dict get $fallback backend] eq "portable"} "Self-contained DRAW outcome"
+        import_assert {[dict get $fallback errors] eq {} && [llength [dict get $fallback attempts]] == 1} "Self-contained DRAW attempts"
+        set first [lindex [dict get $fallback attempts] 0]
+        import_assert {[dict get $first succeeded] && [dict get $first errors] eq {}} "Self-contained DRAW attempt failed"
+        scvcutview lines field point temperature 0
+        foreach field [scvcutview lines fields] {
+            import_assert {[dict get $field step] == -1} "Static fallback default field step changed"
+        }
+        scvcutview timed read [file join $fixtures polyline_time.vtu]
+        scvcutview timed field point temperature 0 0
+        foreach field [scvcutview timed fields] {
+            import_assert {[dict get $field step] == 0} "TimeValue explicit field step changed"
+        }
+    if {[info exists ::env(VTK_IMPORT_VISUAL)]} {
+        set output $::env(VTK_IMPORT_OUTPUT)
+        file mkdir $output
+        vinit View1 -width 640 -height 480
+        vbackground -color white
+        scvreadmesh live [file join $fixtures tetra.vtu] -display 1
+        vfit
+        vrepaint
+        set info_before [scvmeshinfo live]
+        vdump [file join $output before.png]
+        import_assert {[dict get [scvcutimagestats [file join $output before.png]] visible] > 500} "Ordinary Viewer reference image is blank"
+        foreach file {absent.vtu invalid.vtu missing.vtm failed_stage.vtm.series} {
+            import_assert {[catch {scvreadmesh live [file join $fixtures $file] -display 1}]} "DRAW accepted invalid replacement"
+            import_assert {[scvmeshinfo live] eq $info_before} "DRAW replacement changed original mesh"
+            vrepaint
+            vdump [file join $output after-$file.png]
+            set delta [scvcutimagecompare [file join $output before.png] [file join $output after-$file.png]]
+            import_assert {[dict get $delta changed] == 0} "Failed DRAW import removed or changed displayed old mesh"
+        }
+        scvreadmesh live [file join $fixtures tetra.vtu] -display 1
+        vrepaint
+        vdump [file join $output replaced.png]
+            verase live
+            foreach file {polyline.vtk polyline.vtu polyline.vtp mixed.vtu curved_line.vtu polyvertex.vtu voxel.vtu} {
+                scvreadmesh ordinary [file join $fixtures $file] -display 1
+                vfit
+                vrepaint
+                vdump [file join $output ordinary-$file.png]
+                set minimum [expr {$file eq "polyvertex.vtu" ? 5 : 100}]
+                import_assert {[dict get [scvcutimagestats [file join $output ordinary-$file.png]] visible] > $minimum} "Ordinary Viewer $file image is blank"
+                scvmeshactiveprop ordinary -nodal 0 -comp 0
+                vrepaint
+                vdump [file join $output ordinary-$file-nodal.png]
+                set difference [scvcutimagecompare [file join $output ordinary-$file.png] [file join $output ordinary-$file-nodal.png]]
+                import_assert {[dict get $difference changed] > $minimum / 2} "Ordinary Viewer nodal contour does not change pixels"
+                scvmeshactiveprop ordinary -elem 0 -comp 0
+                vrepaint
+                vdump [file join $output ordinary-$file-cell.png]
+                set difference [scvcutimagecompare [file join $output ordinary-$file-nodal.png] [file join $output ordinary-$file-cell.png]]
+                import_assert {[dict get $difference changed] > $minimum / 2} "Ordinary Viewer CellData contour does not change pixels"
+            }
+    }
+} reason]} {
+    puts "VTK_IMPORT_DRAW_FAIL: $reason"
+    exit 1
+}
+puts "VTK_IMPORT_DRAW_PASS"
+exit 0

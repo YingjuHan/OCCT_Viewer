@@ -1,11 +1,41 @@
 #include <RWVtk/VtkBaseXMLReader.h>
+#include "VtkBinaryDecoder.h"
 
-#include <FSD_Base64.hxx>
 #include <Message.hxx>
 #include <Message_Messenger.hxx>
 #include <OSD_FileSystem.hxx>
+#include <zlib.h>
+
+#include <algorithm>
+#include <cctype>
+#include <cstring>
+#include <iterator>
+#include <limits>
+#include <sstream>
+#include <stdexcept>
+
+namespace {
+using Bytes = RWVtk::detail::Bytes;
+
+size_t componentSize(const TCollection_AsciiString& type)
+{
+    if (type == "Int8" || type == "UInt8") { return 1; }
+    if (type == "Int16" || type == "UInt16") { return 2; }
+    if (type == "Int32" || type == "UInt32" || type == "Float32") { return 4; }
+    if (type == "Int64" || type == "UInt64" || type == "Float64") { return 8; }
+    throw std::runtime_error("Unsupported VTK numeric type");
+}
+}
 
 namespace RWVtk {
+int VtkBaseXMLReader::readCount(const LDOM_Element& element, const char* name, const char* alias, bool optional)
+{
+    const TCollection_AsciiString text=getXmlAttribute(element,name,alias);
+    if (optional && text.IsEmpty()) { return 0; }
+    size_t used=0; const auto value=std::stoll(text.ToCString(),&used);
+    if (used!=(size_t)text.Length() || value<0 || value>std::numeric_limits<int>::max()) { throw std::runtime_error(std::string("Invalid VTK count: ")+name); }
+    return (int)value;
+}
 
 // ================================================================
 // function : VtkBaseXMLReader
@@ -32,24 +62,49 @@ bool VtkBaseXMLReader::PerformStream(std::istream& theStream, const TCollection_
         return false;
     }
 
+    myHeaderSize = 4;
+    myByteOrder = ByteOrder::LittleEndian;
+    myCompressor.clear();
+    myRawAppendedData.clear();
+    myAppendedIsRaw = false;
+    myAppendedData = LDOMString();
+    myDataElement = LDOM_Element();
+
+    std::string document;
+    try { document=myBudget->Read(theStream); } catch (const std::exception& error) { return fail(error.what()); }
+    // Raw appended bytes are outside XML. Parse the XML envelope separately.
+    const size_t begin = document.find("<AppendedData");
+    if (begin != std::string::npos) {
+        const size_t tagEnd = document.find('>', begin);
+        const size_t end = document.rfind("</AppendedData>");
+        if (tagEnd == std::string::npos || end == std::string::npos || end <= tagEnd) {
+            return fail("Malformed AppendedData envelope");
+        }
+        const size_t marker = document.find('_', tagEnd + 1);
+        if (marker == std::string::npos || marker >= end) { return fail("Missing appended data marker"); }
+        myRawAppendedData = document.substr(marker + 1, end - marker - 1);
+        document.erase(tagEnd + 1, end - tagEnd - 1);
+        document.shrink_to_fit();
+    }
+    if(document.find('\0')!=std::string::npos) {return fail("NUL in VTK XML envelope");}
+    std::istringstream xml(document);
     LDOMParser aParser;
 
-    if (aParser.parse(*myIStream)) {
+    if (aParser.parse(xml)) {
         TCollection_AsciiString aData;
         TCollection_AsciiString anError = aParser.GetError(aData);
-        Message::SendFail() << "Error: " << anError << ": " << aData;
-        return false;
+        return fail(std::string(anError.ToCString()) + ": " + aData.ToCString());
     }
 
     myDOM = aParser.getDocument();
 
     if (!readHeader()) {
-        return false;
+        return myReport.errors.empty() ? fail("Invalid VTK XML header") : false;
     }
 
-    if (!perform()) {
-        return false;
-    }
+    try {
+        if (!perform()) { return myReport.errors.empty() ? fail("Invalid VTK dataset") : false; }
+    } catch (const std::exception& error) { return fail(error.what()); }
 
     return true;
 }
@@ -61,14 +116,12 @@ bool VtkBaseXMLReader::readHeader()
 {
     LDOM_Element aRoot = myDOM.getDocumentElement();
     if (aRoot.isNull()) {
-        Message::SendFail() << "Error: Root element is null";
-        return false;
+        return fail("Root element is null");
     }
 
     TCollection_AsciiString aRootName = aRoot.getTagName();
     if (aRootName != "VTKFile") {
-        Message::SendFail() << "Error: Invalid root name : '" << aRootName << "'";
-        return false;
+        return fail(std::string("Invalid root name : '") + aRootName.ToCString() + "'");
     }
 
     if (!readRootAttributes(aRoot)) {
@@ -109,24 +162,20 @@ bool VtkBaseXMLReader::readRootAttributes(const LDOM_Element& theRoot)
     }
 
     if (aType != dataType()) {
-        Message::SendFail() << "Error: Invalid data type: '" << aType << "'";
-        return false;
+        return fail(std::string("Invalid data type: '") + aType.ToCString() + "'");
     }
 
     if (aByteOrder == "BigEndian") {
         myByteOrder = ByteOrder::BigEndian;
-        Message::SendFail() << "Error: BigEndian byte order is not supported";
-        return false;
     } else if (aByteOrder == "LittleEndian") {
         myByteOrder = ByteOrder::LittleEndian;
     } else {
-        Message::SendFail() << "Error: Invalid byte order: '" << aByteOrder << "'";
-        return false;
+        return fail(std::string("Invalid byte order: '") + aByteOrder.ToCString() + "'");
     }
 
-    if (aCompressor != "") {
-        Message::SendFail() << "Error: Compression is not supported";
-        return false;
+    myCompressor = aCompressor.ToCString();
+    if (!myCompressor.empty() && myCompressor != "vtkZLibDataCompressor") {
+        return fail("Unsupported VTK compressor: " + myCompressor);
     }
 
     if (aHeaderType == "UInt32") {
@@ -134,8 +183,7 @@ bool VtkBaseXMLReader::readRootAttributes(const LDOM_Element& theRoot)
     } else if (aHeaderType == "UInt64") {
         myHeaderSize = sizeof(uint64_t);
     } else if (!aHeaderType.IsEmpty()) {
-        Message::SendFail() << "Error: Unsupported header type '" << aHeaderType << "'";
-        return false;
+        return fail(std::string("Unsupported header type '") + aHeaderType.ToCString() + "'");
     }
 
     return true;
@@ -153,17 +201,14 @@ bool VtkBaseXMLReader::readDataElements(const LDOM_Element& theRoot)
         if (anElementName == dataType()) {
             myDataElement = anElement;
         } else if (anElementName == "AppendedData") {
-            myAppendedData = anElement.getFirstChild().getNodeValue();
-            if (getXmlAttribute(anElement, "encoding", "Encoding") == "raw") {
-                Message::SendFail() << "Error: Unsupported encoding type 'raw'";
-                return false;
-            }
+            const TCollection_AsciiString encoding = getXmlAttribute(anElement, "encoding", "Encoding");
+            if (encoding != "raw" && encoding != "base64") { return fail("Unsupported appended encoding"); }
+            myAppendedIsRaw = encoding == "raw";
         }
     }
 
     if (myDataElement.isNull()) {
-        Message::SendFail() << "Error: '" << dataType() << "' element not found";
-        return false;
+        return fail(std::string("'") + dataType().ToCString() + "' element not found");
     }
 
     return true;
@@ -175,53 +220,57 @@ bool VtkBaseXMLReader::readDataElements(const LDOM_Element& theRoot)
 VtkBaseXMLReader::DataArray VtkBaseXMLReader::readDataArray(const LDOM_Element& theElem)
 {
     DataArray aRes;
-
+    try { VtkResourceBudget::Consume(myBudget->Arrays,1,myLimits.MaxArrays,"arrays"); }
+    catch (const std::exception& error) { fail(error.what()); return aRes; }
     if (!readDataArrayHeader(theElem, aRes)) {
         return aRes;
     }
 
-    const char* aBase64Data;
-
-    if (aRes.Format == DataFormat::Binary || aRes.Format == DataFormat::Ascii) {
-        LDOMString aDataString = theElem.getFirstChild().getNodeValue();
-        aBase64Data            = aDataString.GetString();
-    } else {
-        aBase64Data = myAppendedData.GetString() + 1 + aRes.Offset;
+    try {
+        const size_t valueSize = componentSize(aRes.Type);
+        std::string text;
+        std::string_view source;
+        if (aRes.Format == DataFormat::Appended) {
+            if (aRes.Offset >= myRawAppendedData.size()) { throw std::runtime_error("Appended offset out of range"); }
+            source = std::string_view(myRawAppendedData).substr(aRes.Offset);
+        } else {
+            for (LDOM_Node node = theElem.getFirstChild(); !node.isNull(); node = node.getNextSibling()) {
+                const TCollection_AsciiString value = node.getNodeValue();
+                text += value.ToCString();
+            }
+        }
+        if (aRes.Format != DataFormat::Appended) { source=text; }
+        if (aRes.Format == DataFormat::Ascii) {
+            uint64_t values=0; bool token=false;
+            for (unsigned char c : source) { if (std::isspace(c)) {token=false;} else if (!token) {++values;token=true;} }
+            if (source.size()>(size_t)std::numeric_limits<int>::max() || values>(uint64_t)std::numeric_limits<int>::max()) { throw std::runtime_error("VTK array exceeds native index range"); }
+            myBudget->Array(values*valueSize);
+            aRes.Data = VtkAbstractArray::CreateAscii(aRes.Type, text.data(), static_cast<int>(text.size()),
+                                                     static_cast<int>(aRes.Components.size()));
+        } else {
+            detail::BinaryCursor cursor(source,aRes.Format==DataFormat::Appended && myAppendedIsRaw);
+            Bytes payload=detail::Decode(cursor,myHeaderSize,myByteOrder==ByteOrder::BigEndian,!myCompressor.empty(),*myBudget);
+            if (aRes.Format!=DataFormat::Appended && !cursor.End()) {throw std::runtime_error("Extra inline VTK binary bytes");}
+            if (payload.size()/valueSize>(size_t)std::numeric_limits<int>::max()) {throw std::runtime_error("VTK array exceeds native index range");}
+            if (payload.size() % (valueSize * aRes.Components.size()) != 0) {
+                throw std::runtime_error("VTK array byte length does not match component count");
+            }
+            const uint16_t endianProbe = 1;
+            const bool hostBig = *reinterpret_cast<const unsigned char*>(&endianProbe) == 0;
+            if (hostBig != (myByteOrder == ByteOrder::BigEndian)) {
+                for (size_t i = 0; i < payload.size(); i += valueSize) {
+                    std::reverse(payload.begin() + i, payload.begin() + i + valueSize);
+                }
+            }
+            Handle(NCollection_Buffer) buffer = new NCollection_Buffer(NCollection_BaseAllocator::CommonBaseAllocator(), payload.size());
+            if (!payload.empty()) { std::memcpy(buffer->ChangeData(), payload.data(), payload.size()); }
+            aRes.Data = VtkAbstractArray::CreateBinary(aRes.Type, buffer, 0, static_cast<int>(aRes.Components.size()));
+        }
+        if (aRes.Data.IsNull()) { throw std::runtime_error("Unsupported VTK array type"); }
+    } catch (const std::exception& error) {
+        fail(std::string("Array '") + aRes.Name.ToCString() + "': " + error.what());
+        aRes.Data.Nullify();
     }
-
-    if (aRes.Format == DataFormat::Ascii) {
-        aRes.Data = VtkAbstractArray::CreateAscii(aRes.Type,
-                                                  aBase64Data,
-                                                  int(std::strlen(aBase64Data)),
-                                                  int(aRes.Components.size()));
-        return aRes;
-    }
-
-    constexpr double aByteToBase64Coeff = 4.0 / 3.0;
-
-    Handle(NCollection_Buffer) aData = FSD_Base64::Decode(aBase64Data, (int)Ceiling(myHeaderSize * aByteToBase64Coeff));
-    if (aData.IsNull()) {
-        Message::SendFail() << "Error: Fail to allocate memory";
-        return aRes;
-    }
-
-    DataArrayHeader aHeader;
-    for (int i = 0; i < myHeaderSize; i++) {
-        aHeader.RawData[i] = aData->Data()[i];
-    }
-
-    constexpr int  aInt32Size = 4;
-    const uint64_t aDataSize  = myHeaderSize == aInt32Size ? aHeader.Data32 : aHeader.Data64;
-
-    uint64_t aNbSymbols = (uint64_t)Ceiling(((uint64_t)(int64_t)myHeaderSize + aDataSize) * aByteToBase64Coeff);
-
-    aData = FSD_Base64::Decode(aBase64Data, (size_t)aNbSymbols);
-    if (aData.IsNull()) {
-        Message::SendFail() << "Error: Fail to allocate memory";
-        return aRes;
-    }
-
-    aRes.Data = VtkAbstractArray::CreateBinary(aRes.Type, aData, myHeaderSize, int(aRes.Components.size()));
     return aRes;
 }
 
@@ -234,17 +283,27 @@ bool VtkBaseXMLReader::readDataArrayHeader(const LDOM_Element& theElem, VtkBaseX
 
     theDataArray.Type = getXmlAttribute(theElem, "Type", "type");
     if (theDataArray.Type.IsEmpty()) {
-        Message::SendFail() << "Error: 'DataArray -> type' attribute not found";
-        return false;
+        return fail("'DataArray -> type' attribute not found");
     }
 
     int aNbComponents = 1;
-    getXmlAttribute(theElem, "NumberOfComponents", "numberOfComponents").GetInteger(aNbComponents);
-    if (aNbComponents <= 0) {
-        Message::SendFail() << "Error: Invalid number of components '" << aNbComponents << "'";
-        return false;
+    const TCollection_AsciiString componentCount = getXmlAttribute(theElem, "NumberOfComponents", "numberOfComponents");
+    if (!componentCount.IsEmpty()) {
+        try {
+            size_t used = 0; const auto count = std::stoll(componentCount.ToCString(), &used);
+            if (used != (size_t)componentCount.Length() || count < 1 || count > std::numeric_limits<int>::max()) { return fail("Invalid NumberOfComponents"); }
+            aNbComponents = (int)count;
+        } catch (const std::exception&) { return fail("Invalid NumberOfComponents"); }
     }
+    if (aNbComponents <= 0) {
+        return fail(std::string("Invalid number of components '") + std::to_string(aNbComponents) + "'");
+    }
+    if ((uint64_t)aNbComponents>myLimits.MaxComponents) { return fail("VTK resource limit: components"); }
     theDataArray.Components.resize(aNbComponents, "");
+    for (int i = 0; i < aNbComponents; ++i) {
+        const std::string key = "ComponentName" + std::to_string(i);
+        theDataArray.Components[i] = TCollection_AsciiString(theElem.getAttribute(key.c_str()));
+    }
 
     TCollection_AsciiString aFormat = getXmlAttribute(theElem, "format", "Format");
     if (aFormat == "binary") {
@@ -254,11 +313,19 @@ bool VtkBaseXMLReader::readDataArrayHeader(const LDOM_Element& theElem, VtkBaseX
     } else if (aFormat == "appended") {
         theDataArray.Format = DataFormat::Appended;
     } else {
-        Message::SendFail() << "Error: Invalid points format '" << aFormat << "'";
-        return false;
+        return fail(std::string("Invalid points format '") + aFormat.ToCString() + "'");
     }
 
-    getXmlAttribute(theElem, "offset", "Offset").GetInteger(theDataArray.Offset);
+    const TCollection_AsciiString offset = getXmlAttribute(theElem, "offset", "Offset");
+    if (theDataArray.Format == DataFormat::Appended && offset.IsEmpty()) { return fail("Missing appended offset"); }
+    if (!offset.IsEmpty()) {
+        try {
+            if (offset.ToCString()[0] == '-') { return fail("Negative appended offset"); }
+            size_t used = 0;
+            theDataArray.Offset = std::stoull(offset.ToCString(), &used);
+            if (used != static_cast<size_t>(offset.Length())) { return fail("Invalid appended offset"); }
+        } catch (const std::exception&) { return fail("Invalid appended offset"); }
+    }
     return true;
 }
 

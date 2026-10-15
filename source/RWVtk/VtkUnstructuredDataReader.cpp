@@ -1,4 +1,6 @@
 #include <RWVtk/VtkUnstructuredDataReader.h>
+#include <set>
+#include <cmath>
 
 #include <Message.hxx>
 #include <Message_Messenger.hxx>
@@ -71,25 +73,93 @@ void VtkUnstructuredDataReader::SetLoadedMeshData(
 // =======================================================================
 bool VtkUnstructuredDataReader::perform()
 {
+    myCurPiece = 0;
+    myNodesOffset = 0;
+    myTimeStep = myRequestedTimeStep;
+    myTimeStamp = myHasExplicitTimeStamp ? myRequestedTimeStamp : (double)std::max(myTimeStep, 0);
+    if (myToReadMeshGeometry) {
+        myMeshData = new RWCae::MeshData();
+    }
     LDOM_Element aFieldDataElement = getFirstElement(myDataElement, "FieldData");
     if (!aFieldDataElement.isNull()) {
         std::vector<LDOM_Element> aDataArrayElements = getChildrenElementsByTagName(aFieldDataElement, "DataArray");
         for (const LDOM_Element& aDataArrayElement : aDataArrayElements) {
             DataArray aDataArray = readDataArray(aDataArrayElement);
-            if (aDataArray.Name == "TimeValue" && !aDataArray.Data.IsNull() && aDataArray.Data->NbElements() == 1) {
-                myTimeStamp = aDataArray.Data->GetDouble(0, 0);
-                myTimeStep  = myTimeStep == -1 ? (int)myTimeStamp : myTimeStep;
+            if (aDataArray.Data.IsNull()) { return false; }
+            if (aDataArray.Name == "TimeValue") {
+                if (aDataArray.Data->NbElements() != 1 || aDataArray.Components.size() != 1
+                    || !std::isfinite(aDataArray.Data->GetDouble(0, 0))) {
+                    return fail("TimeValue requires one finite scalar tuple");
+                }
+                if (!myHasExplicitTimeStamp) { myTimeStamp = aDataArray.Data->GetDouble(0, 0); }
+                // Time is not an integer index (fractional/negative/large times are legal).
+                if (myTimeStep == -1) { myTimeStep = 0; }
+            } else if (aDataArray.Name != "TimeValue") {
+                warn(std::string("Dataset FieldData '") + aDataArray.Name.ToCString()
+                    + "' is validated but not exposed as a nodal/elemental field");
             }
         }
     }
 
     std::vector<LDOM_Element> aPieceElements = getChildrenElementsByTagName(myDataElement, "Piece");
+    if (aPieceElements.empty()) { return fail("VTK dataset has no Piece"); }
+
+    // Choose one representation for the whole leaf before creating any cells.
+    // Cache types so this prepass never decodes/charges an array twice.
+    myGeneralLayout = myPreserveCellTypes;
+    myPieceTypes.assign(aPieceElements.size(),DataArray());
+    for (size_t piece = 0; piece < aPieceElements.size(); ++piece) {
+        if (dataType() == "UnstructuredGrid") {
+            const auto cells = getFirstElement(aPieceElements[piece],"Cells");
+            for (const auto& element : getChildrenElementsByTagName(cells,"DataArray")) {
+                const TCollection_AsciiString name = getXmlAttribute(element,"Name","name");
+                if (name == "face_connectivity" || name == "face_offsets" || name == "polyhedron_to_faces" || name == "polyhedron_offsets") {
+                    myGeneralLayout = true;
+                }
+                if (name != "types") { continue; }
+                auto& types = myPieceTypes[piece];
+                if (!types.Data.IsNull()) { return fail("Duplicate VTK topology array name"); }
+                types = readDataArray(element);
+                if (types.Data.IsNull() || types.Type != "UInt8" || types.Components.size() != 1) { return fail("Invalid VTK cell types array"); }
+                for (int i = 0; i < types.Data->NbElements(); ++i) {
+                    switch (types.Data->GetInt(i,0)) {
+                    case 1: case 5: case 7: case 9: case 10: case 12: case 13: case 14:
+                    case 22: case 23: case 24: case 25: case 26: case 27: case 42: break;
+                    default: myGeneralLayout = true; break;
+                    }
+                }
+            }
+        } else if (readCount(aPieceElements[piece],"NumberOfLines","numberOfLines",true) > 0) {
+            myGeneralLayout = true;
+        }
+    }
+    myCompatibilityFields = myGeneralLayout && myMappingInfo.empty();
 
     if (myToReadMeshGeometry) {
         myStoredElements->resize(aPieceElements.size());
+    } else if (!myStoredElements || myStoredElements->size() != aPieceElements.size()) {
+        return fail("VTK time step Piece layout differs from the original mesh");
     }
 
     for (const LDOM_Element& aPieceElement : aPieceElements) {
+        for (LDOM_Node node = aPieceElement.getFirstChild(); !node.isNull(); node = node.getNextSibling()) {
+            if (node.getNodeType() != LDOM_Node::ELEMENT_NODE) { continue; }
+            const std::string tag = TCollection_AsciiString(node.getNodeName()).ToCString();
+            const std::set<std::string> supported = {"Points", "Cells", "PointData", "CellData", "Verts", "Lines", "Polys", "Strips"};
+            if (!supported.count(tag)) { return fail("Unsupported VTK Piece section: " + tag); }
+        }
+        for (const char* association : {"PointData", "CellData"}) {
+            std::set<std::string> names;
+            const auto section = getFirstElement(aPieceElement, association);
+            if (section.isNull()) { continue; }
+            for (const auto& element : getChildrenElementsByTagName(section, "DataArray")) {
+                const std::string name = TCollection_AsciiString(getXmlAttribute(element, "Name", "name")).ToCString();
+                if (name.empty() || !names.insert(name).second) {
+                    return fail(std::string("Missing/duplicate VTK field name in ") + association + ": " + name);
+                }
+            }
+        }
+        myDegrees.Reset(); myWeights.Reset(); myTopologyAttributes.clear();
         if (!readMeshInfo(aPieceElement)) {
             return false;
         }
@@ -107,7 +177,10 @@ bool VtkUnstructuredDataReader::perform()
         myCurPiece++;
     }
 
-    return true;
+    myReport.points = myMeshData->NbNodes();
+    myReport.cells = myMeshData->NbIndexedElems();
+    myReport.fields = myMeshData->Properties().Size();
+    return myReport.errors.empty();
 }
 
 // =======================================================================
@@ -115,10 +188,10 @@ bool VtkUnstructuredDataReader::perform()
 // =======================================================================
 bool VtkUnstructuredDataReader::readMeshInfo(const LDOM_Element& theElem)
 {
-    getXmlAttribute(theElem, "NumberOfPoints", "numberOfPoints").GetInteger(myNbNodes);
-    if (myNbNodes <= 0) {
-        Message::SendFail() << "Error: Invalid number of nodes '" << myNbNodes << "'";
-        return false;
+    myNbNodes = readCount(theElem,"NumberOfPoints","numberOfPoints");
+    VtkResourceBudget::Consume(myBudget->Nodes,myNbNodes,std::min(myLimits.MaxNodes,(uint64_t)std::numeric_limits<int>::max()),"nodes");
+    if (myNbNodes < 0) {
+        return fail(std::string("Invalid number of nodes '") + std::to_string(myNbNodes) + "'");
     }
 
     myNbProcessed = 0;
@@ -133,8 +206,7 @@ bool VtkUnstructuredDataReader::readMeshGeometry(const LDOM_Element& theElem)
 {
     LDOM_Element aPoints = getFirstElement(theElem, "Points");
     if (aPoints.isNull()) {
-        Message::SendFail() << "Error: 'Points' element not found";
-        return false;
+        return fail("'Points' element not found");
     }
 
     if (!parsePoints(aPoints)) {
@@ -173,22 +245,21 @@ bool VtkUnstructuredDataReader::parsePoints(const LDOM_Element& theElem)
 {
     LDOM_Element aPointsDataArray = getFirstElement(theElem, "DataArray");
     if (aPointsDataArray.isNull()) {
-        Message::SendFail() << "Error: 'Points/DataArray' element not found";
-        return false;
+        return fail("'Points/DataArray' element not found");
     }
 
     constexpr int aNbPntComp = 3;
 
     DataArray aDataArray = readDataArray(aPointsDataArray);
     if (aDataArray.Components.size() != aNbPntComp) {
-        Message::SendFail() << "Error: Invalid number of point components '" << aDataArray.Components.size() << "'";
-        return false;
+        return fail(std::string("Invalid number of point components '") + std::to_string(aDataArray.Components.size()) + "'");
     }
 
     if (aDataArray.Data.IsNull()) {
-        Message::SendFail() << "Error: Failed to read points data";
-        return false;
+        return fail("Failed to read points data");
     }
+
+    if (aDataArray.Data->NbElements() != myNbNodes) { return fail("Point array length does not match NumberOfPoints"); }
 
     constexpr int aComp1 = 0;
     constexpr int aComp2 = 1;
@@ -198,6 +269,9 @@ bool VtkUnstructuredDataReader::parsePoints(const LDOM_Element& theElem)
         Graphic3d_Vec3 aNode(aDataArray.Data->GetFloat(i, aComp1),
                              aDataArray.Data->GetFloat(i, aComp2),
                              aDataArray.Data->GetFloat(i, aComp3));
+        if (!std::isfinite(aNode.x()) || !std::isfinite(aNode.y()) || !std::isfinite(aNode.z())) {
+            return fail("VTK point coordinates must be finite and fit the mesh coordinate type");
+        }
         myMeshData->AddNodePosition(aNode);
     }
 
@@ -214,24 +288,38 @@ void VtkUnstructuredDataReader::parseElements(const LDOM_Element& theElem, MeshE
     theMeshElems.Types.Reset();
     theMeshElems.Faces.Reset();
     theMeshElems.FaceOffsets.Reset();
+    theMeshElems.FaceConnectivity.Reset(); theMeshElems.FaceEnds.Reset();
+    theMeshElems.PolyhedronFaces.Reset(); theMeshElems.PolyhedronEnds.Reset();
 
     std::vector<LDOM_Element> aDataArrays = getChildrenElementsByTagName(theElem, "DataArray");
     if (aDataArrays.empty()) {
         return;
     }
-
+    std::set<std::string> names;
     for (const LDOM_Element& anElement : aDataArrays) {
         TCollection_AsciiString aName = getXmlAttribute(anElement, "Name", "name");
+        if (!names.insert(aName.ToCString()).second) { fail("Duplicate VTK topology array name"); return; }
+        const TCollection_AsciiString type = getXmlAttribute(anElement, "type", "Type");
+        if ((aName == "types" && type != "UInt8") || (aName != "types" && type != "Int32" && type != "Int64")) {
+            fail("Invalid VTK topology array type"); return;
+        }
         if (aName == "connectivity") {
             theMeshElems.Connectivity = readDataArray(anElement);
         } else if (aName == "offsets") {
             theMeshElems.Offsets = readDataArray(anElement);
         } else if (aName == "types") {
-            theMeshElems.Types = readDataArray(anElement);
+            theMeshElems.Types = myPieceTypes.at(myCurPiece).Data.IsNull()
+                ? readDataArray(anElement) : myPieceTypes.at(myCurPiece);
         } else if (aName == "faces") {
             theMeshElems.Faces = readDataArray(anElement);
         } else if (aName == "faceoffsets") {
             theMeshElems.FaceOffsets = readDataArray(anElement);
+        } else if (aName == "face_connectivity") { theMeshElems.FaceConnectivity = readDataArray(anElement);
+        } else if (aName == "face_offsets") { theMeshElems.FaceEnds = readDataArray(anElement);
+        } else if (aName == "polyhedron_to_faces") { theMeshElems.PolyhedronFaces = readDataArray(anElement);
+        } else if (aName == "polyhedron_offsets") { theMeshElems.PolyhedronEnds = readDataArray(anElement);
+        } else {
+            fail(std::string("Unsupported VTK topology array: ") + aName.ToCString()); return;
         }
     }
 }
@@ -252,19 +340,53 @@ bool VtkUnstructuredDataReader::parseProperties(const LDOM_Element& theElem, boo
     static constexpr unsigned int aCompIdx2           = 2;
 
     for (const LDOM_Element& anElement : aDataArrays) {
-        DataArray aDataArray = readDataArray(anElement);
+        const std::string key = std::string(theIsNodal ? "PointData:" : "CellData:") + TCollection_AsciiString(getXmlAttribute(anElement,"Name","name")).ToCString();
+        const auto cached = myTopologyAttributes.find(key);
+        DataArray aDataArray = cached == myTopologyAttributes.end() ? readDataArray(anElement) : cached->second;
         if (aDataArray.Data.IsNull()) {
-            Message::SendFail() << "Error: Failed to read property data '" << aDataArray.Name << "'";
-            continue;
+            return fail(std::string("Cannot read property '") + aDataArray.Name.ToCString() + "'");
+        }
+
+        const size_t expected = theIsNodal ? static_cast<size_t>(myNbNodes) : (*myStoredElements)[myCurPiece].size();
+        if (static_cast<size_t>(aDataArray.Data->NbElements()) != expected) {
+            return fail(std::string("Tuple count mismatch in ") + (theIsNodal ? "PointData '" : "CellData '")
+                        + aDataArray.Name.ToCString() + "'");
+        }
+        if (aDataArray.Type == "Int64" || aDataArray.Type == "UInt64") {
+            for (int n=0;n<aDataArray.Data->NbElements();++n) {
+                for (int c=0;c<(int)aDataArray.Components.size();++c) {
+                    if (std::abs(aDataArray.Data->GetDouble(n,c))>9007199254740991.0) {return fail("VTK integer field exceeds exact double range");}
+                }
+            }
         }
 
         if (aDataArray.Components.size() == aVectorNbComponents) {
-            aDataArray.Components[aCompIdx0] = "X";
-            aDataArray.Components[aCompIdx1] = "Y";
-            aDataArray.Components[aCompIdx2] = "Z";
+            if (aDataArray.Components[aCompIdx0].IsEmpty()) { aDataArray.Components[aCompIdx0] = "X"; }
+            if (aDataArray.Components[aCompIdx1].IsEmpty()) { aDataArray.Components[aCompIdx1] = "Y"; }
+            if (aDataArray.Components[aCompIdx2].IsEmpty()) { aDataArray.Components[aCompIdx2] = "Z"; }
         }
 
-        std::vector<MappedProp> aMappedProps = extractMappedProps(aDataArray, theIsNodal);
+        RWCae::MeshNVecPropertyType aDefaultType = RWCae::MeshNVecPropertyType::ScalarSet;
+        const TCollection_AsciiString aVectors = getXmlAttribute(theElem, "Vectors", "vectors");
+        const TCollection_AsciiString aNormals = getXmlAttribute(theElem, "Normals", "normals");
+        const TCollection_AsciiString aTensors = getXmlAttribute(theElem, "Tensors", "tensors");
+        if ((!aVectors.IsEmpty() && aDataArray.Name == aVectors) || (!aNormals.IsEmpty() && aDataArray.Name == aNormals)) {
+            if (aDataArray.Components.size() != 3) { return fail("VTK vector/normal attribute must have three components"); }
+            aDefaultType = RWCae::MeshNVecPropertyType::Vector;
+        } else if (!aTensors.IsEmpty() && aDataArray.Name == aTensors) {
+            if (aDataArray.Components.size() != 9) { return fail("VTK tensor attribute must have nine components"); }
+            aDefaultType = RWCae::MeshNVecPropertyType::Tensor;
+        }
+        std::vector<MappedProp> aMappedProps = extractMappedProps(aDataArray, theIsNodal, aDefaultType);
+        if (myCompatibilityFields) {
+            // SDK-backed v3 sessions fingerprinted Double fields, empty field
+            // descriptions and the default XYZ names for three-component arrays.
+            for (auto& mapped : aMappedProps) { mapped.Name.Clear(); }
+            if (aDataArray.Components.size() == 3) {
+                const char* names[] = {"X","Y","Z"};
+                for (int c = 0; c < 3; ++c) { if (aDataArray.Components[c].IsEmpty()) { aDataArray.Components[c] = names[c]; } }
+            }
+        }
 
         std::vector<Handle(RWCae::MeshNVecProperty)> aProperties(aMappedProps.size());
         RWCae::MeshPropertyBase::MappingType         aMappingType = theIsNodal
@@ -281,6 +403,10 @@ bool VtkUnstructuredDataReader::parseProperties(const LDOM_Element& theElem, boo
                 storePropValues(aComp, aDataArray.Data, aMappedProps[i].Components[aCompIter]);
             }
 
+            if (aProperty->IsVector()) {
+                myBudget->Array((uint64_t)aProperty->GetComponent(0)->NbValues()
+                    * (aProperty->GetComponent(0)->ElemType() == RWCae::MeshPropertyElemType::Float ? sizeof(float) : sizeof(double)));
+            }
             aProperty->UpdateComponents();
         }
     }
@@ -336,7 +462,7 @@ void VtkUnstructuredDataReader::parseMappedProps(
         aProp->SetTimeDisplayUnits(aMappedProp.TimeUnits);
         myMeshData->ChangeProperties().Append(aProp);
 
-        RWCae::MeshPropertyElemType anElemType = theProp.Type == "Float32" ? RWCae::MeshPropertyElemType::Float
+        RWCae::MeshPropertyElemType anElemType = !myCompatibilityFields && theProp.Type == "Float32" ? RWCae::MeshPropertyElemType::Float
                                                                              : RWCae::MeshPropertyElemType::Double;
 
         for (int aCompIter = 0; aCompIter < aProp->NbComponents(); aCompIter++) {
@@ -357,7 +483,8 @@ void VtkUnstructuredDataReader::parseMappedProps(
 // =======================================================================
 std::vector<VtkUnstructuredDataReader::MappedProp> VtkUnstructuredDataReader::extractMappedProps(
     const VtkBaseXMLReader::DataArray& theProp,
-    bool                               theIsNodal) const
+    bool                               theIsNodal,
+    RWCae::MeshNVecPropertyType theDefaultType)
 {
     std::vector<MappedProp> aRes;
 
@@ -391,7 +518,7 @@ std::vector<VtkUnstructuredDataReader::MappedProp> VtkUnstructuredDataReader::ex
         MappedProp& aMapperProp = aRes.back();
 
         if (!extractMappedProp(theProp, anInfo, aMapperProp)) {
-            Message::SendWarning() << "Warning: Failed to parse mapping for property '" << anInfo.FieldMask << "'";
+            warn(std::string("Failed to parse mapping for property '") + anInfo.FieldMask + "'");
             aRes.erase(aRes.end() - 1);
             continue;
         }
@@ -410,7 +537,7 @@ std::vector<VtkUnstructuredDataReader::MappedProp> VtkUnstructuredDataReader::ex
             aRes[0].Components[i] = i;
         }
         aRes[0].DisplayUnits.resize(theProp.Components.size(), "");
-        aRes[0].Type = RWCae::MeshNVecPropertyType::ScalarSet;
+        aRes[0].Type = theDefaultType;
     }
 
     return aRes;
@@ -421,7 +548,7 @@ std::vector<VtkUnstructuredDataReader::MappedProp> VtkUnstructuredDataReader::ex
 // =======================================================================
 bool VtkUnstructuredDataReader::extractMappedProp(const VtkBaseXMLReader::DataArray&     theProp,
                                                   const RWCae::MeshFieldMappingInfo&   theInfo,
-                                                  VtkUnstructuredDataReader::MappedProp& theMappedProp) const
+                                                  VtkUnstructuredDataReader::MappedProp& theMappedProp)
 {
     for (int aMappedCompIdx = 0; aMappedCompIdx < (int)theInfo.ComponentMasks.size(); aMappedCompIdx++) {
         std::regex aCompMaskRegex(theInfo.ComponentMasks[aMappedCompIdx]);
@@ -438,8 +565,7 @@ bool VtkUnstructuredDataReader::extractMappedProp(const VtkBaseXMLReader::DataAr
         }
 
         if (!hasFound) {
-            Message::SendWarning() << "Warning: Cannot find component '" << theInfo.ComponentMasks[aMappedCompIdx]
-                                   << "' for property '" << theInfo.FieldMask << "'";
+            warn(std::string("Cannot find component '") + theInfo.ComponentMasks[aMappedCompIdx] + "' for property '" + theInfo.FieldMask + "'");
             continue;
         }
     }
@@ -486,6 +612,11 @@ void VtkUnstructuredDataReader::storePropValues(RWCae::MeshScalarProperty*    th
 {
     const int aNbValues = theData->NbElements();
     int       isNodal   = theComp->IsNodal();
+    uint64_t generated = 0;
+    for (int i = 0; i < aNbValues; ++i) { generated += isNodal ? 1 : (*myStoredElements)[myCurPiece][i]; }
+    const uint64_t bytes = theComp->ElemType() == RWCae::MeshPropertyElemType::Float ? sizeof(float) : sizeof(double);
+    if (((uint64_t)theComp->NbValues()+generated)*bytes > myLimits.MaxArrayBytes) { throw std::runtime_error("VTK resource limit: output field bytes"); }
+    myBudget->Array(generated*bytes);
     for (int aValueIter = 0; aValueIter < aNbValues; aValueIter++) {
         int aNbGenElems = isNodal ? 1 : (*myStoredElements)[myCurPiece][aValueIter];
         for (int aGenElemIter = 0; aGenElemIter < aNbGenElems; aGenElemIter++) {

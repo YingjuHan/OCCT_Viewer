@@ -1314,20 +1314,27 @@ bool InteractiveCaeMeshManager::OpenMesh(const Handle(AIS_InteractiveContext)& t
                                          const std::string&                    theFilePath,
                                          const std::string&                    theMappingFilePath,
                                          const std::string&                    theArtifactFilePath,
-                                         const int                             theOptions)
+                                         const int                             theOptions,
+                                         RWVtk::VtkImportReport*                theReport,
+                                         const std::string& theVtkStagingDirectory,
+                                         const RWVtk::VtkResourceLimits& theVtkLimits)
 {
-    InteractiveContext::RemoveObject(theCtx, theObjId);
+    if (theReport != nullptr) { *theReport = RWVtk::VtkImportReport(); theReport->source = theFilePath; }
 
     const TCollection_AsciiString aFileName(theFilePath.c_str());
 
     Handle(OSD_FileSystem) aFileSystem = RWBase::EmulatedFileSystem::Create(aFileName);
     if (aFileSystem.IsNull()) {
+        if (theReport != nullptr) { theReport->errors.push_back("Cannot create input file system"); }
         return false;
     }
 
     RWMeshConv::MeshLoader  aLoader(theOptions);
+    aLoader.SetVtkStagingDirectory(theVtkStagingDirectory.c_str());
+    aLoader.SetVtkResourceLimits(theVtkLimits);
     Handle(RWCae::MeshData) aMeshData =
         aLoader.OpenMesh(aFileSystem, aFileName, theMappingFilePath.c_str(), theArtifactFilePath.c_str());
+    if (theReport != nullptr) { *theReport = aLoader.VtkReport(); }
     if (aMeshData.IsNull()) {
         return false;
     }
@@ -1359,6 +1366,7 @@ bool InteractiveCaeMeshManager::OpenMesh(const Handle(AIS_InteractiveContext)& t
         });
 
 #endif
+    InteractiveContext::RemoveObject(theCtx, theObjId);
     theCtx->Display(aMeshPrs, 0, -1, false, PrsMgr_DisplayStatus_Erased);
     return true;
 }
@@ -1370,12 +1378,14 @@ bool InteractiveCaeMeshManager::saveModelMesh(const ObjectId& theObjId, const st
 {
     Handle(ViewCae::InteractiveCaeMeshOwner) aMesh;
     if (!FindPrsOwner(aMesh, theObjId)) {
-        Message::SendFail() << "Error: saveModelMesh (" << theObjId << ") called for non-existing mesh object";
+        Message::SendFail() << "[ERR_EXPORT_MESH] saveModelMesh (" << theObjId << ") called for non-existing mesh object";
         return false;
     }
 
     RWCae::MeshBinWriter aWriter(aMesh->GetMeshData());
     if (!aWriter.Perform(theFile.c_str())) {
+        Message::SendFail() << "[ERR_EXPORT_MESH] saveModelMesh (" << theObjId << ") failed to write '" << theFile
+                            << "'";
         return false;
     }
     return true;

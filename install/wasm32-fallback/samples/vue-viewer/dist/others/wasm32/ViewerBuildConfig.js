@@ -1,0 +1,1 @@
+export const ViewerBuildConfig={wasmConfigs:"wasm32".split(" ")};

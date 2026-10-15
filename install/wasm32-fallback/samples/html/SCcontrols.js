@@ -1,9 +1,4 @@
 /**
- * Created by: Andrey Golodyaev
- * Copyright (c) 2022 Huawei Technologies Co., Ltd.
- */
-
-/**
  * @file
  * @brief This file defines auxiliary classes for defining a simple user interface
  * via controls like Panels, Sliders, Buttons, etc.

@@ -1,5 +1,3 @@
-// Created by: Kirill Gavrilov
-// Copyright (c) 2022 Huawei Technologies Co., Ltd.
 import { ObjectPart } from './InteractiveObject.js';
 import { ViewerEventTarget } from './ViewerEventTarget.js';
 /**
@@ -56,6 +54,11 @@ export const UserEvents = {
      * Event definition: {@link MeshGenGeomRequestedEvent}.
      */
     onMeshGenGeomRequested: 'onMeshGenGeomRequested',
+    /**
+     * Called when Viewer emits a log/error message.
+     * Event definition: {@link ViewerMessageEvent}.
+     */
+    onViewerMessage: 'onViewerMessage',
 };
 /**
  * {@link InteractiveObject} dragging event {@link UserEvents.onObjectDragged}.
@@ -207,6 +210,20 @@ export class MeshGenGeomRequestedEvent extends Event {
         this.prsId = '';
         this.partId = -1;
         this.parameters = '';
+    }
+}
+;
+/**
+ * Viewer message event, {@link UserEvents.onViewerMessage}.
+ */
+export class ViewerMessageEvent extends Event {
+    /** Main constructor. */
+    constructor(theType) {
+        super(theType);
+        this.message = '';
+        this.rawMessage = '';
+        this.gravity = 0;
+        this.errorCode = null;
     }
 }
 ;
@@ -403,6 +420,15 @@ export class ViewerEventManager extends ViewerEventTarget {
         if (anObj != null) {
             anObj.dispatchEvent(anEvent);
         }
+        this.dispatchEvent(anEvent);
+    }
+    /** Emit viewer message event. */
+    onViewerMessage(theMessage, theGravity, theErrorCode, theRawMessage) {
+        let anEvent = new ViewerMessageEvent(UserEvents.onViewerMessage);
+        anEvent.message = theMessage !== null && theMessage !== void 0 ? theMessage : '';
+        anEvent.rawMessage = theRawMessage !== null && theRawMessage !== void 0 ? theRawMessage : '';
+        anEvent.gravity = theGravity;
+        anEvent.errorCode = theErrorCode;
         this.dispatchEvent(anEvent);
     }
 }

@@ -7,18 +7,35 @@
 
 //! Get SVG image info.
 EM_JS(bool, jsGetImageInfo, (const char *theImageId, int *theW, int *theH, int *theIsScl), {
-    const aPath = jsUTF8ToString(theImageId);
+    const toNumber = (ptr) => {
+        if (typeof ptr === "bigint") {
+            return typeof bigintToI53Checked === "function" ? bigintToI53Checked(ptr) : Number(ptr);
+        }
+        return ptr;
+    };
+    const aPath = UTF8ToString(toNumber(theImageId));
     const aSize = Module.getImageSize(aPath);
 
-    Module.HEAPU32[jsPtrToNumber(theW) / 4] = aSize.x;
-    Module.HEAPU32[jsPtrToNumber(theH) / 4] = aSize.y;
-    Module.HEAPU32[jsPtrToNumber(theIsScl) / 4] = Module.isImageScalable(aPath) ? 1 : 0;
+    Module.HEAPU32[toNumber(theW) / 4] = aSize.x;
+    Module.HEAPU32[toNumber(theH) / 4] = aSize.y;
+    Module.HEAPU32[toNumber(theIsScl) / 4] = Module.isImageScalable(aPath) ? 1 : 0;
     return aSize.x != 0 || aSize.y != 0;
 });
 
 //! Render SVG image with specified resolution.
 EM_JS(char *, jsRenderImage, (const char *theImageId, int theW, int theH), {
-    return jsNumberToPtr(Module.renderImage(jsUTF8ToString(theImageId), theW, theH));
+    const toNumber = (ptr) => {
+        if (typeof ptr === "bigint") {
+            return typeof bigintToI53Checked === "function" ? bigintToI53Checked(ptr) : Number(ptr);
+        }
+        return ptr;
+    };
+    const aPath = UTF8ToString(toNumber(theImageId));
+    const aPtr = Module.renderImage(aPath, theW, theH);
+    if (typeof theImageId === "bigint") {
+        return typeof aPtr === "bigint" ? aPtr : BigInt(aPtr || 0);
+    }
+    return aPtr || 0;
 });
 #endif
 

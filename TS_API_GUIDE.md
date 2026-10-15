@@ -10,7 +10,7 @@
 ## API 规范
 1. **手写声明**：`.d.ts` 文件由我们维护并跟随源码提交，新增接口时先补全类型/文档再实现，确保 IDE/Typedoc 行为可控。
 2. **模块划分**：按功能拆分 `Interactive*`, `ViewerEvent*`, `CommonTools`, `Subview` 等 TS 源文件，并通过 `SCwebviewer.ts` 聚合导出，避免外部直接引用底层实现。
-3. **Promise 桥接**：异步加载、选取等流程统一依赖 `IPromise` 绑定（`source/RWbase/IPromise.h`），JS 侧通过数字句柄唤起 `_cppWasmCallBack`，由 C++ 触发 `resolve/reject`。
+3. **Promise 桥接**：异步加载、选取等流程统一依赖 `IPromise` 绑定（`source/RWBase/IPromise.h`），JS 侧通过数字句柄唤起 `_cppWasmCallBack`，由 C++ 触发 `resolve/reject`。
 4. **数据通道**：跨语言传输仅允许使用 JSON 兼容对象、`std::vector`、`std::map` 映射到 JS Array/Map（`Viewer::EmscriptenHelper`），如确需传递大型缓冲，必须通过 Viewer Manager 的高层接口封装。
 
 ## CMake 配置策略

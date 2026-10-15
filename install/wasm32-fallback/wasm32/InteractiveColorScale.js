@@ -1,5 +1,3 @@
-// Created by: Kirill Gavrilov
-// Copyright (c) 2022 Huawei Technologies Co., Ltd.
 import { ViewCorner } from './CommonTools.js';
 import { InteractiveObject } from './InteractiveObject.js';
 /**

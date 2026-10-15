@@ -65,6 +65,7 @@ protected:
                                        int                             theCellBegin,
                                        int                             theCellEnd,
                                        int                             theFacesBegin,
+                                              int                             theFacesEnd,
                                        int                             theElemIndex);
 
 protected:

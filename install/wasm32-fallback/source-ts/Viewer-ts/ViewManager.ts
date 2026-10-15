@@ -1,6 +1,3 @@
-// Created by: Kirill Gavrilov
-// Copyright (c) 2022 Huawei Technologies Co., Ltd.
-
 import type {IManager, CameraOrientation, ICameraViewPoint, ColorString, IVec2, IBndBox3, ViewCorner, ViewId, ObjectId} from './CommonTools.js';
 
 import type {Subview} from './Subview.js';
