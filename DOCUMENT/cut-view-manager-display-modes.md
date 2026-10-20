@@ -14,6 +14,8 @@ Manager 的 Result 区新增 Display 下拉框，修改作用于所有 cut、所
 
 形变后的三种模式、位移倍率、云图插值、专用 Tcl 和百万单元验证见 [形变网格指南](cut-view-manager-deformation.md)。形变切换会更新源几何和 BVH；形变固定后继续拖动平面，主体及其线框仍常驻 GPU。
 
+需要分别配置 Below / On / Above 时，使用 Manager 的 **View Cut Options...**，设置默认样式或单 cut 的扩展覆盖。入口、继承规则、颜色作用范围及对 Abaqus 的差距见 [对标台账与 A01 使用说明](cut-view-manager-abaqus-parity.md#6-a01-的使用方式与工程边界)。
+
 ## 2. 可直接运行的 Tcl
 
 使用本次构建的 `ViewDraw` 插件，以 Release DRAW 直接启动，在提示符执行：

@@ -67,6 +67,7 @@ source [file join [file dirname [info script]] cut_view_time.tcl]
 source [file join [file dirname [info script]] cut_view_physics.tcl]
 source [file join [file dirname [info script]] cut_view_cache_panel.tcl]
 source [file join [file dirname [info script]] cut_view_session.tcl]
+source [file join [file dirname [info script]] cut_view_plot_options.tcl]
 
 proc ::CutViewManager::invoke {command args} {
     variable status
@@ -102,7 +103,7 @@ proc ::CutViewManager::refresh {{attach 0}} {
         }
         foreach id [$w.cuts children {}] { if {$id ni $ids} { $w.cuts delete $id } }
         if {$selected ni $ids} { set selected [lindex $ids 0]; set attach 1 }
-        foreach widget [list $w.controls.apply $w.controls.translate $w.controls.rotate $w.controls.show $w.actions.copy $w.actions.delete \
+        foreach widget [list $w.controls.apply $w.controls.translate $w.controls.rotate $w.controls.show $w.actions.copy $w.actions.delete $w.actions.rename \
             $w.controls.name $w.controls.nx $w.controls.ny $w.controls.nz $w.controls.cx $w.controls.cy $w.controls.cz $w.controls.position $w.controls.gizmo \
             $w.controls.below $w.controls.on $w.controls.above $w.controls.isocomponent] {
             $widget configure -state [expr {$selected eq "" ? "disabled" : "normal"}]
@@ -569,6 +570,8 @@ proc ::CutViewManager::load {} {
 }
 
 proc ::CutViewManager::close {} {
+    catch {destroy .scvcutoptions}
+    catch {destroy .scvcutrename}
     if {[winfo exists .scvcutsession]} { destroy .scvcutsession }
     if {[winfo exists .scvcutcache]} { destroy .scvcutcache }
     if {[winfo exists .scvcutphysics]} { destroy .scvcutphysics }
@@ -613,8 +616,8 @@ proc scvcutmanager {theModel} {
     bind $w.cuts <<TreeviewSelect>> {::CutViewManager::invoke ::CutViewManager::select}
     bind $w.cuts <ButtonRelease-1> {::CutViewManager::invoke ::CutViewManager::toggleCell %x %y}
     ttk::frame $w.actions -padding 8
-    foreach widget {create copy delete save load} label {Create Copy Delete Save Load} command {
-        {::CutViewManager::create} {::CutViewManager::create 1} {::CutViewManager::remove} {::CutViewManager::save} {::CutViewManager::load}
+    foreach widget {create copy rename delete save load} label {Create Copy Rename Delete Save Load} command {
+        {::CutViewManager::create} {::CutViewManager::create 1} {::CutViewManager::renameDialog} {::CutViewManager::remove} {::CutViewManager::save} {::CutViewManager::load}
     } {
         ttk::button $w.actions.$widget -text $label -command [list ::CutViewManager::invoke {*}$command]
         pack $w.actions.$widget -side left -padx 2
@@ -772,6 +775,8 @@ proc scvcutmanager {theModel} {
     pack $w.traces -fill x -padx 8
     ttk::button $w.tools -text "Viewer Tools" -command [list scvcuttools $theModel]
     pack $w.tools -fill x -padx 8 -pady 3
+    ttk::button $w.options -text "View Cut Options..." -command {::CutViewManager::invoke scvcutoptions $::CutViewManager::model}
+    pack $w.options -fill x -padx 8 -pady 3
     ttk::label $w.status -textvariable ::CutViewManager::status -wraplength 530 -foreground #a02020
     pack $w.status -fill x -padx 8
     ttk::button $w.close -text Close -command ::CutViewManager::close

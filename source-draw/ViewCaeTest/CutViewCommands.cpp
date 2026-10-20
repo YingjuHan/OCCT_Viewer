@@ -423,23 +423,39 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             }
             model.View->SetMeshDisplayMode(mode == "cloud" ? Mode::FlatShaded : mode == "wireframe" ? Mode::MeshEdges : Mode::ShadedMeshEdges);
             ok = true;
-        } else if (action == "cutstyle" && (argc == 5 || argc == 8)) {
+        } else if (action == "cutstyle" && (argc == 5 || argc == 8 || argc == 11)) {
             const int portion = cutInteger(argv[4]);
             if (portion < 0 || portion > 2) { throw std::invalid_argument("Style portion must be 0, 1 or 2"); }
             const auto part = (ViewCaeGeom::MeshCutPortion)portion;
+            const std::string owner(argv[3]);
+            const bool defaults = owner == "defaults";
+            const auto definitions = cuts.Definitions();
+            if (!defaults && std::none_of(definitions.begin(),definitions.end(),[&](const auto& d) { return d.Id == owner; })) {
+                throw std::invalid_argument("Unknown cut style owner");
+            }
+            auto style = defaults ? model.View->Style(part) : model.View->EffectiveStyle(owner,part);
             if (argc == 5) {
-                const auto style = model.View->EffectiveStyle(argv[3],part);
-                di << "transparency " << style.Transparency << " width " << style.LineWidth << " mode " << (int)style.Mode; return 0;
+                const bool overridden = !defaults && model.View->StyleOverrides().count({owner,portion}) != 0;
+                di << "transparency " << style.Transparency << " width " << style.LineWidth << " mode " << (int)style.Mode
+                   << " color {" << style.Color.Red() << " " << style.Color.Green() << " " << style.Color.Blue()
+                   << "} override " << (int)overridden; return 0;
             }
-            if (std::string(argv[3]) == "defaults") {
-                auto style = model.View->Style(part); style.Transparency = (float)cutReal(argv[5]); style.LineWidth = (float)cutReal(argv[6]);
-                style.Mode = (ViewCae::InteractiveCaeMeshPrsMode)cutInteger(argv[7]); model.View->SetStyle(part,style);
-            } else {
-                auto style = model.View->EffectiveStyle(argv[3],part); style.Transparency = (float)cutReal(argv[5]); style.LineWidth = (float)cutReal(argv[6]);
-                style.Mode = (ViewCae::InteractiveCaeMeshPrsMode)cutInteger(argv[7]); model.View->SetStyle(argv[3],part,style);
+            style.Transparency = (float)cutReal(argv[5]); style.LineWidth = (float)cutReal(argv[6]);
+            style.Mode = (ViewCae::InteractiveCaeMeshPrsMode)cutInteger(argv[7]);
+            if (argc == 11) {
+                const Graphic3d_Vec3d rgb(cutReal(argv[8]),cutReal(argv[9]),cutReal(argv[10]));
+                for (int i = 0; i < 3; ++i) {
+                    if (rgb[i] < 0 || rgb[i] > 1) { throw std::invalid_argument("Style RGB components must be in [0,1]"); }
+                }
+                style.Color = Quantity_Color(rgb.x(),rgb.y(),rgb.z(),Quantity_TOC_RGB);
             }
+            if (defaults) { model.View->SetStyle(part,style); } else { model.View->SetStyle(owner,part,style); }
             ok = true;
         } else if (action == "clearstyle" && argc == 5) {
+            const auto definitions = cuts.Definitions();
+            if (std::none_of(definitions.begin(),definitions.end(),[&](const auto& d) { return d.Id == argv[3]; })) {
+                throw std::invalid_argument("Unknown cut style owner");
+            }
             model.View->ClearStyle(argv[3],(ViewCaeGeom::MeshCutPortion)cutInteger(argv[4])); ok = true;
         } else if (action == "contour" && (argc == 3 || argc == 8)) {
             auto options = model.View->ContourOptions();
@@ -820,9 +836,22 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             ok = mask >= 0 && cuts.SetVisibility(argv[3], (unsigned)mask);
         } else if (action == "enable" && argc == 5) {
             ok = cuts.SetEnabled(argv[3], cutBoolean(argv[4]));
-        } else if (action == "copy" && argc == 5) { ok = cuts.Duplicate(argv[3], argv[4]); }
+        } else if (action == "copy" && argc == 5) {
+            ok = cuts.Duplicate(argv[3], argv[4]);
+            if (ok) {
+                for (int portion = 0; portion < 3; ++portion) {
+                    const auto foundStyle = model.View->StyleOverrides().find({argv[3],portion});
+                    if (foundStyle != model.View->StyleOverrides().end()) {
+                        model.View->SetStyle(argv[4],(ViewCaeGeom::MeshCutPortion)portion,foundStyle->second);
+                    }
+                }
+            }
+        }
         else if (action == "rename" && argc == 5) { ok = cuts.Rename(argv[3], argv[4]); }
-        else if (action == "remove" && argc == 4) { ok = cuts.Remove(argv[3]); }
+        else if (action == "remove" && argc == 4) {
+            ok = cuts.Remove(argv[3]);
+            if (ok) { for (int portion = 0; portion < 3; ++portion) { model.View->ClearStyle(argv[3],(ViewCaeGeom::MeshCutPortion)portion); } }
+        }
         else if (action == "snapshot" && argc == 3) { di << cuts.DumpDefinitionsJson().c_str(); return 0; }
         else if (action == "restore" && argc == 4) { ok = cuts.RestoreDefinitionsJson(argv[3]); }
         else if (action == "deform" && (argc == 3 || argc == 5 || argc == 6)) {
@@ -1116,7 +1145,7 @@ void ViewCaeTest::CutViewCommands::Factory(Draw_Interpretor& di)
         "  | localmove id datum a b c d (plane) / cx cy cz ax ay az radius (quadric)\n"
         "  | axes datum/global show length | nativeinfo | pickmode 0/1/2\n"
         "  | sessionsave file ?CAD-brep-source? | sessionload file | sessioninfo\n"
-        "  | cutstyle id/defaults portion [transparency width mode] | clearstyle id portion\n"
+        "  | cutstyle id/defaults portion [transparency width mode [r g b]] | clearstyle id portion\n"
         "  | displaymode [cloud/wireframe/cloud_edges] (all portions; preserves other style settings)\n"
         "  | contour [automatic min max legend intervals] | probe id portion index node0/1\n"
         "  | vectors none / mapping field step scale sampling orientation show\n"

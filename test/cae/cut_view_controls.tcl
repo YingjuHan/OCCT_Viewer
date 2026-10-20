@@ -175,6 +175,12 @@ proc ui_run {} {
     ui_pump
     set expected [ui_controls .scvcutmanager]
     ui_ok
+    ui_click .scvcutmanager.options
+    ui_assert {[winfo exists .scvcutoptions] && $::CutViewOptions::status eq ""} "View Cut Options did not open"
+    destroy .scvcutoptions
+    ui_click .scvcutmanager.actions.rename
+    ui_assert {[winfo exists .scvcutrename]} "Rename did not open"
+    .scvcutrename.cancel invoke
     ui_click .scvcutmanager.tools
     ui_assert {[winfo exists .scvcuttools]} "Viewer tools did not open"
     destroy .scvcuttools

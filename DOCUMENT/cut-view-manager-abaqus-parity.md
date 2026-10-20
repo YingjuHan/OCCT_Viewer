@@ -58,7 +58,7 @@
 
 | 工作包 | 优先级 | 本轮状态 | 内容 / 依赖 |
 | --- | --- | --- | --- |
-| A01 Manager 显示与对象管理入口 | P0 | 开发中 | R01/R11 的独立 Rename、Options 三页、样式覆盖查询/颜色输入、复制/删除样式生命周期；不代表 R11 全部收敛 |
+| A01 Manager 显示与对象管理入口 | P0 | 本包完成 | R01/R11 的独立 Rename、Options 三页、样式覆盖查询/颜色输入、复制/删除样式生命周期；不代表 R11 全部收敛 |
 | A02 完整坐标系和运动模型 | P0 | 待开发 | R05/R06/R07/R08；先持久化 origin/frame/translation/rotation，后做 UI；避免继续仅累加改平面方程 |
 | A03 真正随变形截面 | P0 | 待开发 | R14/R15；依赖 A02 的参考帧定义；先线性体单元，再高阶/壳/梁；单独性能预算 |
 | A04 Manager 自由体工作流 | P1 | 待开发 | R16..R20；求和点/法向/积分域/独立开关；与 A03 的参考/当前面积语义联验 |
@@ -123,7 +123,47 @@ gdb --args "$CUT_DRAWEXE" -i -f "$CUT_REPO/test/cae/cut_view_deformation_demo.tc
 
 大规模基线：3,375,000 六面体，变形倍率 0.1，mask=3；已有 Windows Release 测量 cloud/wireframe/cloud_edges 约 8.97/9.85/8.21 FPS，p95 150.15/129.94/157.81 ms，详见 [变形指南](cut-view-manager-deformation.md)。这只是当前基线，未达到稳定 30 FPS；A03/A10 应分别报告参考求交与逐帧更新成本。
 
-## 6. 本轮开发记录
+## 6. A01 的使用方式与工程边界
+
+打开既有演示后，点击 Manager 的 **View Cut Options...**。三个页签是 Below Cut / On Cut / Above Cut，对应 portion `0/1/2`。选择 **Model defaults** 编辑模型内各 cut 使用的默认样式；选择 **Selected cut override** 后勾选 Override，在打开对话框时选中的 cut 上设置覆盖。取消勾选再 Apply tab 恢复继承。切换 Manager 列表选中项不会把已打开的选项窗口悄悄指向别的 cut。
+
+目前提供 Display（cloud / wireframe / cloud_edges）、透明度、边线宽度、无标量场时的面 RGB；Apply tab 只提交当前页，不丢弃其他页的待编辑值。默认样式和 cut 覆盖都已存在于原有 C++ 显示层；本轮新增独立 UI、颜色的 DRAW 输入及覆盖状态查询，没有更改求交算法或引入新依赖。
+
+```tcl
+# 在 DRAW 中运行；先加载一个模型和 Manager。
+source D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_deformation_demo.tcl
+scvcutoptions cut_modes
+scvcutoptions cut_modes "Selected cut override"
+
+# 查询返回 transparency / width / mode / color / override。
+scvcutview cut_modes cutstyle cut 1
+scvcutview cut_modes cutstyle defaults 1
+# 旧的三个数值参数写法仍有效；可选的末尾三个数是 RGB。
+scvcutview cut_modes cutstyle cut 1 0 1 2 0.2 0.4 0.8
+scvcutview cut_modes clearstyle cut 1
+```
+
+Manager 的 **Rename** 是独立操作：即使 Position/Normal 中留有无效、尚未 Apply 的输入，重命名也只改名称。原有几何 Apply 的行为保留。DRAW `copy` 复制单 cut 的显示覆盖，随后两者独立；`remove` 即使在模型未显示时也立即清除该 ID 的覆盖。复制物理请求和时间绑定仍属于后续工作，不在此包内。
+
+保存完整状态请使用已有 Session 面板或 `sessionsave/sessionload`；Manager 原有 Save/Load 只保存 cut definitions，不保存这些显示样式。透明度和混合 portion 模式仍按现有能力选择 CPU fallback；本轮不把这种配置标为 GPU 已加速。
+
+新增文件：`test/cae/cut_view_plot_options.tcl`（UI）、`cut_view_plot_options_test.tcl`（语义与图像回归）、`cut_view_plot_options_large.tcl`（百万单元预算/源体复用验收）。后者不注册为默认 CTest；先生成 [变形指南](cut-view-manager-deformation.md) 中的 `hex_150.vtu` 并设置 Windows/Linux 运行环境后手动运行：
+
+```powershell
+# Windows：使用前文环境和 build/mingw-deformation 的插件。
+& 'D:\workspace\OpenCASCADE\OCCT_private\install\mingw\win64\gcc\bin\DRAWEXE.exe' -i -f 'D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_plot_options_large.tcl'
+```
+
+```bash
+# Linux：Release 环境，输入必须至少包含 1,000,000 个单元。
+export CUTVIEW_BENCHMARK_FILE="$CUT_REPO/build/large-vtk-deformed/hex_150.vtu"
+export CUTVIEW_OUTPUT_DIR="$CUT_REPO/build/plot-options-large"
+"$CUT_DRAWEXE" -i -f "$CUT_REPO/test/cae/cut_view_plot_options_large.tcl"
+```
+
+## 7. 本轮开发记录
 
 - 2026-10-20：核验官方 S1..S10 与当前源码，建立 R01..R26 和 A01..A10；开始 A01。索引对 C++/Tcl 存在部分解析覆盖，本轮以相关源文件直接读取补全，不能把图查询未返回符号视为能力缺失。
-- A01 验收记录将在实现、DRAW 回归与百万单元检查结束后补充。
+- A01 已完成实现与验收：`ViewDraw` Release 构建通过；9 项相关 CTest 通过（`cut_view`、`cut_display`、`native_session`、`draw_cut_view_controls`、`draw_cut_view_tools`、`draw_cut_view_plot_options`、`draw_cut_view_gpu_plane`、`draw_cut_view_display_modes`、`draw_cut_view_deformation`）。补充完整 session 的 RGB/覆盖往返、未显示模型删除后的 ID 重用、输入格式修正后，新回归再次通过。新面板截图已人工检查；Windows 截图辅助进程曾导致测试超时，已将其移出自动回归，保留实际渲染的面色/云图图像比较。
+- 百万单元：3,375,000 六面体、倍率 0.1，三模式 × mask 2/3/7 共 9 组完成 `CUT_PLOT_OPTIONS_LARGE_PASS`。打开 Options 不触发同步求交；Apply/恢复继承后 GPU 路径保留，后续 4 步切面移动均无主体重建/上传，源准备次数不增加。逻辑预算始终为 source `1,460,965,248`、result `17,010,275,392` 字节，限额仍为 4/16 GiB。它是预算与缓存回归，不是新的鼠标 FPS 基准。
+- 本地验证产物：`build/cut-parity-large/run.log`、`plot-options-large.png`，以及 `build/mingw-deformation/test/native/draw-plot-options/` 的面色/云图图像；不纳入 Git。OCCT inventory 检查通过。下一工作包为 A02：完整定义 frame、局部绝对运动、滑块精度和持久化兼容；随后 A03 实现真正随材料变形的截面。
