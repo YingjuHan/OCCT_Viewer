@@ -35,7 +35,7 @@ void tests()
     require(!cuts.RotatePlane("p",1,20) && !cuts.RotatePlane("p",2,std::numeric_limits<double>::infinity()),"Invalid rotation accepted");
     require(!cuts.TranslatePlane("p",std::numeric_limits<double>::quiet_NaN()),"NaN offset accepted");
     require(cuts.DumpDefinitionsJson() == baseline,"Invalid operation changed live state");
-    require(cuts.RestoreDefinitionsJson(json) && cuts.DumpDefinitionsJson() == json,"Version 8 roundtrip");
+    require(cuts.RestoreDefinitionsJson(json) && cuts.DumpDefinitionsJson() == json,"Placement roundtrip");
     auto invalid = json; const auto where = invalid.find("\"angle\":90"); require(where != std::string::npos,"Test angle missing");
     invalid.replace(where,10,"\"angle\":60");
     require(!cuts.RestoreDefinitionsJson(invalid) && cuts.DumpDefinitionsJson() == json,"Mismatched equation accepted");
@@ -46,7 +46,7 @@ void tests()
     d = cuts.Definitions()[0]; check(d.Placement.Origin.y(),.5); check(d.Placement.Angle,0);
     require(d.Placement.IsValid(),"Migrated frame invalid");
     auto version7 = json;
-    version7.replace(version7.find("\"version\":8"),11,"\"version\":7");
+    version7.replace(version7.find("\"version\":9"),11,"\"version\":7");
     require(cuts.RestoreDefinitionsJson(version7),"Version 7 migration");
     check(cuts.Definitions()[0].Placement.Angle,0);
     check(cuts.Definitions()[0].Plane.y(),1);

@@ -18,6 +18,8 @@ public:
     bool BindDeformation(const CutFieldBinding& binding, double normalizedScale);
     bool SetMaterialFrame(const std::string& datum, const CutMaterialFrame& frame);
     bool BindCutFrame(const std::string& cut, const std::string& datum);
+    //! First/Last/Current are resolved at this call, then remain fixed during playback.
+    bool FollowDeformation(const std::string& cut, bool enabled, const std::string& reference = "Current");
     bool Play(double secondsPerStep, bool loop = true, bool restart = false);
     //! Real source timestamps, advanced at the requested time-unit/second speed.
     bool PlayTime(double speed = 1, bool loop = true, bool restart = false);

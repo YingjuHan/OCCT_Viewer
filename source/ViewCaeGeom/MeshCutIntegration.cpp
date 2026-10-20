@@ -20,7 +20,7 @@ ViewCaeGeom::MeshCutResultant integrate(const ViewCaeGeom::MeshCutResult& cut,
     const std::array<int, N>& components, Evaluate evaluate)
 {
     if (cut.PresentationOnly) { throw std::invalid_argument("Physical integration requires an independent numerical cut"); }
-    if (cut.Definition.Shape != ViewCaeGeom::MeshCutShape::Plane) {
+    if (cut.Definition.FollowDeformation || cut.Definition.Shape != ViewCaeGeom::MeshCutShape::Plane) {
         throw std::invalid_argument("Non-planar section integration requires local-normal mapping");
     }
     constexpr size_t on = (size_t)ViewCaeGeom::MeshCutPortion::On;

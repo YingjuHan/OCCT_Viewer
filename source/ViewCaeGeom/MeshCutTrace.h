@@ -64,6 +64,10 @@ public:
     Standard_EXPORT MeshGeometryTraceSection(const Handle(MeshBvhData)& bvh,
         const Handle(MeshGeometrySlice)& section, const Handle(MeshGeometry)& source,
         const std::shared_ptr<MeshCutTraceSource>& topology);
+    //! Material mapping retains reference-side provenance, including both interface owners.
+    Standard_EXPORT MeshGeometryTraceSection(const Handle(MeshBvhData)& bvh,
+        const MeshGeometryTraceSection& reference, const Handle(MeshGeometrySlice)& mapped,
+        const Handle(MeshGeometry)& source);
     //! Refresh FE weights/positions while preserving cached fast-slice connectivity.
     Standard_EXPORT void Refresh(const Handle(MeshGeometrySlice)& section,
         const std::shared_ptr<MeshCutTraceSource>& topology);

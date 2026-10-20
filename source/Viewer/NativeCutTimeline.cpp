@@ -38,6 +38,7 @@ NativeCutTimeline::NativeCutTimeline(NativeCutView& owner) : myOwner(owner)
     if (owner.Display().IsNull()) { throw std::invalid_argument("Timeline requires an open native cut model"); }
     mySource = owner.Display()->SourceMesh();
     myStep = mySource->SeriesSteps().empty() ? -1 : 0;
+    owner.Display()->Cuts().SetMaterialSource(mySource);
 }
 Handle(RWCae::MeshNVecProperty) NativeCutTimeline::resolve(const Handle(RWCae::MeshData)& mesh, const CutFieldBinding& binding) const
 {
@@ -92,10 +93,25 @@ bool NativeCutTimeline::BindCutFrame(const std::string& id, const std::string& d
     return myOwner.attempt([&] {
         const auto definitions = myOwner.Display()->Cuts().Definitions();
         const auto found = std::find_if(definitions.begin(),definitions.end(),[&](const auto& d) { return d.Id == id; });
-        if (found == definitions.end() || found->Shape == ViewCaeGeom::MeshCutShape::Isosurface || !myOwner.Datums().count(datum)) {
+        if (found == definitions.end() || found->FollowDeformation || found->Shape == ViewCaeGeom::MeshCutShape::Isosurface || !myOwner.Datums().count(datum)) {
             throw std::invalid_argument("Material following requires a geometric cut and an explicit datum");
         }
         myCutFrames[id] = datum;
+    });
+}
+bool NativeCutTimeline::FollowDeformation(const std::string& id, bool enabled, const std::string& reference)
+{
+    return myOwner.attempt([&] {
+        int step = myStep;
+        if (reference == "First") { step = StepCount() ? 0 : -1; }
+        else if (reference == "Last") { step = StepCount() ? (int)StepCount()-1 : -1; }
+        else if (reference != "Current") { throw std::invalid_argument("Reference frame must be First/Last/Current"); }
+        if (enabled && myCutFrames.count(id)) { throw std::invalid_argument("Remove rigid datum following before enabling material deformation"); }
+        auto& cuts = myOwner.Display()->Cuts();
+        const std::string field = cuts.DeformationField().IsNull() ? "" : cuts.DeformationField()->Name().ToCString();
+        if (!cuts.SetFollowDeformation(id,enabled,step,field,cuts.DeformationScale())) {
+            throw std::invalid_argument("Material follow requires a plane, matching FE topology, and reference displacement field");
+        }
     });
 }
 bool NativeCutTimeline::BindDeformation(const CutFieldBinding& binding, double scale)
@@ -120,10 +136,12 @@ bool NativeCutTimeline::prepare(int step, const CutFieldBinding& deformation, do
         if (mesh.IsNull()) { throw std::invalid_argument("Coordinated step has no geometry snapshot"); }
         NativeCutView staged(mesh); const auto candidate = staged.Display();
         auto& oldCuts = myOwner.Display()->Cuts();
+        candidate->Cuts().SetMaterialSource(mySource);
         if(!candidate->Cuts().ShareCacheFrom(oldCuts)) { throw std::runtime_error("Cannot share coordinated cache accounting"); }
         auto definitions = oldCuts.Definitions();
         if (myOwner.IsDragging()) {
             ViewCaeGeom::MeshCutViewManager baseline(myOwner.Display()->SourceMesh());
+            baseline.SetMaterialSource(mySource);
             if(!baseline.ShareCacheFrom(oldCuts)||!baseline.SetCachePolicy(oldCuts.CachePolicy())
                 ||!baseline.SetGeometryOptions(oldCuts.GeometryOptions())
                 ||!baseline.SetDeformation(oldCuts.DeformationField(),oldCuts.DeformationScale())) { throw std::runtime_error("Cannot stage drag baseline options/accounting"); }
@@ -183,7 +201,12 @@ bool NativeCutTimeline::prepare(int step, const CutFieldBinding& deformation, do
                 || !candidate->Cuts().SetTraceOptions(definition.Id,true,definition.PhysicalTrace) || !candidate->Cuts().SetEnabled(definition.Id,definition.Enabled)) {
                 throw std::invalid_argument("Target step has an invalid cut definition");
             }
+            if (definition.FollowDeformation && !candidate->Cuts().SetFollowDeformation(definition.Id,true,
+                definition.ReferenceStep,definition.ReferenceDisplacement,definition.ReferenceScale)) {
+                throw std::invalid_argument("Material reference cannot follow a remeshed/missing reference frame");
+            }
         }
+        candidate->Cuts().ShareMaterialCacheFrom(oldCuts);
         for (int p = 0; p < 3; ++p) { candidate->SetStyle((ViewCaeGeom::MeshCutPortion)p,myOwner.Display()->Style((ViewCaeGeom::MeshCutPortion)p)); }
         for (const auto& style : myOwner.Display()->StyleOverrides()) { candidate->SetStyle(style.first.first,(ViewCaeGeom::MeshCutPortion)style.first.second,style.second); }
         candidate->SetContourOptions(myOwner.Display()->ContourOptions()); candidate->SetField(field,contour.Component);

@@ -73,6 +73,10 @@ struct MeshCutDefinition {
     std::string Name;
     Graphic3d_Vec4d Plane;
     MeshCutPlanePlacement Placement;
+    bool FollowDeformation = false;
+    int ReferenceStep = -1; //!< Resolved First/Last/Current; never a moving sentinel.
+    std::string ReferenceDisplacement;
+    double ReferenceScale = 0; //!< Normalized scale captured when follow is enabled.
     unsigned Visibility = 2; //!< bits: negative=1, on=2, positive=4
     bool Enabled = true;
     MeshCutCellMode CellMode = MeshCutCellMode::Constant;
@@ -136,6 +140,12 @@ public:
     Standard_EXPORT bool TranslatePlane(const std::string& id, double offset);
     //! Absolute rotation about the original local axis 2/3; discards translation.
     Standard_EXPORT bool RotatePlane(const std::string& id, int axis, double degrees);
+    Standard_EXPORT bool SetFollowDeformation(const std::string& id, bool enabled,
+        int referenceStep = -1, const std::string& displacement = "", double scale = 0);
+    //! Series root is shared; per-viewport/current-step geometry remains independent.
+    Standard_EXPORT bool SetMaterialSource(const Handle(RWCae::MeshData)& source);
+    Standard_EXPORT void ShareMaterialCacheFrom(const MeshCutViewManager& other);
+    Standard_EXPORT std::array<uint64_t,3> MaterialStatistics(const std::string& id) const;
     //! Creates inactive central X/Y/Z planes only when no definitions exist.
     Standard_EXPORT bool EnsureDefaultPlanes();
     //! Scalar cutting; VTK chart cells use bounded original-FE numerical refinement.
@@ -234,6 +244,8 @@ private:
     bool setPlaneEquation(Entry& entry, const Graphic3d_Vec4d& plane);
     void release(Entry& theEntry);
     void initialize(Entry& theEntry);
+    void initializeMaterial(Entry& entry);
+    Handle(RWCae::MeshData) materialMesh(int step) const;
     Handle(MeshGeometry) makeSourceGeometry(bool theBoundary = true);
     bool moveCachedPlane(Entry& theEntry, const Graphic3d_Vec4d& thePlane);
     bool validIsoField(const Handle(RWCae::MeshNVecProperty)& theField, int theComponent) const;
@@ -257,6 +269,7 @@ private:
     std::shared_ptr<MeshCutTraceSource> myTraceSource;
 
     Handle(RWCae::MeshData) myMesh;
+    Handle(RWCae::MeshData) myMaterialSource;
     Handle(MeshBvhData) myBvh;
     Handle(MeshGeometry) mySourceGeometry;
     std::map<std::string, std::unique_ptr<Entry>> myEntries;
@@ -270,8 +283,9 @@ private:
     uint64_t myRequestGeneration=1,myAccess=0,mySourceReserved=0;
     void reserveSource();
     MeshCutFrameTimings myTimings;
+    bool myNativeSectionBudget = false;
     void checkRequest(uint64_t generation) const;
-    void prepareCache(Entry& entry,const Handle(RWCae::MeshNVecProperty)& field);
+    void prepareCache(Entry& entry,const Handle(RWCae::MeshNVecProperty)& field, unsigned mask);
 };
 
 }

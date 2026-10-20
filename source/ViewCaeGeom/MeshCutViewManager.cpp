@@ -1,6 +1,7 @@
 #include <ViewCaeGeom/MeshCutViewManager.h>
 #include <ViewCaeGeom/MeshCutUnion.h>
 #include <ViewCaeGeom/MeshCutTrace.h>
+#include <ViewCaeGeom/MeshCutMaterial.h>
 #include "MeshCutFieldTools.h"
 
 #include <RWCae/MeshScalarProperty.h>
@@ -213,10 +214,12 @@ struct MeshCutViewManager::Entry {
     std::shared_ptr<void> Lease;
     uint64_t Access=0;
     uint64_t Reserved=0;
+    std::shared_ptr<MeshCutMaterialCache> Material;
+    uint64_t SectionBytes = 0;
 };
 
 MeshCutViewManager::MeshCutViewManager(const Handle(RWCae::MeshData)& theMesh)
-    : myMesh(theMesh), myBvh(new MeshBvhData())
+    : myMesh(theMesh), myMaterialSource(theMesh), myBvh(new MeshBvhData())
 {
     if (myMesh.IsNull()) { throw std::invalid_argument("Cut manager requires a mesh"); }
 }
@@ -288,11 +291,65 @@ bool MeshCutViewManager::RotatePlane(const std::string& id, int axis, double deg
     auto p = entry->Definition.Placement; p.RotationAxis = axis; p.Angle = degrees; p.Offset = 0;
     return SetPlanePlacement(id,p);
 }
+Handle(RWCae::MeshData) MeshCutViewManager::materialMesh(int step) const
+{
+    const auto& series = myMaterialSource->SeriesSteps();
+    if (series.empty()) { return step == -1 ? myMaterialSource : Handle(RWCae::MeshData)(); }
+    return step >= 0 && (size_t)step < series.size() ? series[step].Mesh : Handle(RWCae::MeshData)();
+}
+bool MeshCutViewManager::SetMaterialSource(const Handle(RWCae::MeshData)& source)
+{
+    if (source.IsNull()) { return false; }
+    if (source == myMaterialSource) { return true; }
+    if (std::any_of(myEntries.begin(),myEntries.end(),[](const auto& e) { return e.second->Definition.FollowDeformation; })) { return false; }
+    myMaterialSource = source; return true;
+}
+bool MeshCutViewManager::SetFollowDeformation(const std::string& id, bool enabled,
+    int step, const std::string& displacement, double scale)
+{
+    auto entry = find(id);
+    if (!entry || entry->Definition.Shape != MeshCutShape::Plane || !std::isfinite(scale)
+        || displacement.find('\0') != std::string::npos) { return false; }
+    if (enabled) {
+        const auto reference = materialMesh(step);
+        if (!SameMaterialTopology(reference,myMesh)) { return false; }
+        if (!displacement.empty()) {
+            Handle(RWCae::MeshNVecProperty) field;
+            for (const auto& f : reference->Properties()) {
+                if (f->Name().ToCString() == displacement && f->IsNodal() && f->TimeStep() == step) {
+                    if (!field.IsNull()) { return false; } field = f;
+                }
+            }
+            if (field.IsNull() || !field->IsInitialized() || !field->IsVector3() || !field->HasScalarComponents()
+                || field->NbValues() != (int)reference->NbNodes()) { return false; }
+        }
+    }
+    auto& d = entry->Definition;
+    if (d.FollowDeformation == enabled && (!enabled || (d.ReferenceStep == step
+        && d.ReferenceDisplacement == displacement && d.ReferenceScale == scale))) { return true; }
+    release(*entry); entry->Material.reset(); d.FollowDeformation = enabled;
+    d.ReferenceStep = enabled ? step : -1; d.ReferenceDisplacement = enabled ? displacement : "";
+    d.ReferenceScale = enabled ? scale : 0; ++entry->Revision; return true;
+}
+void MeshCutViewManager::ShareMaterialCacheFrom(const MeshCutViewManager& other)
+{
+    if (myMaterialSource != other.myMaterialSource) { return; }
+    for (auto& e : myEntries) {
+        const auto found = other.myEntries.find(e.first);
+        if (found != other.myEntries.end()) { e.second->Material = found->second->Material; }
+    }
+}
+std::array<uint64_t,3> MeshCutViewManager::MaterialStatistics(const std::string& id) const
+{
+    const auto found = myEntries.find(id);
+    if (found == myEntries.end() || !found->second->Material) { return {{0,0,0}}; }
+    const auto& c = *found->second->Material; return {{c.ReferenceBuilds,c.MappingBuilds,c.MappedNodes}};
+}
 bool MeshCutViewManager::setPlaneEquation(Entry& entry, const Graphic3d_Vec4d& aPlane)
 {
     auto anEntry = &entry;
     if (anEntry->Definition.Plane == aPlane) { return true; }
-    if (needsGeneralPlane()) {
+    if (entry.Definition.FollowDeformation || needsGeneralPlane()) {
         release(*anEntry); anEntry->Definition.Plane = aPlane; ++anEntry->Revision;
         return true;
     }
@@ -675,6 +732,7 @@ void MeshCutViewManager::release(Entry& theEntry)
     if (!theEntry.TraceRoot.IsNull()) { theEntry.TraceRoot->RemoveChildren(); }
     theEntry.TraceRoot.Nullify(); theEntry.TraceSection.Nullify(); theEntry.TraceRevision = 0;
     theEntry.CachedMask = 0;
+    theEntry.SectionBytes = 0;
     theEntry.NodeProjections.clear();
     for (size_t i = 0; i < theEntry.Roots.size(); ++i) {
         if (!theEntry.Roots[i].IsNull()) {
@@ -756,7 +814,7 @@ std::string MeshCutViewManager::DumpDefinitionsJson() const
     rapidjson::OStreamWrapper wrapper(stream);
     RWBase::JsonHelper::Writer writer(wrapper);
     writer.StartObject();
-    writer.Key("version"); writer.Int(8);
+    writer.Key("version"); writer.Int(9);
     writer.Key("isoOptions"); writer.StartObject();
     writer.Key("absolute"); writer.Double(myIsoOptions.AbsoluteTolerance);
     writer.Key("relative"); writer.Double(myIsoOptions.RelativeTolerance);
@@ -814,6 +872,11 @@ std::string MeshCutViewManager::DumpDefinitionsJson() const
         }
         writer.Key("visibility"); writer.Uint(definition.Visibility);
         writer.Key("enabled"); writer.Bool(definition.Enabled);
+        writer.Key("material"); writer.StartObject();
+        writer.Key("enabled"); writer.Bool(definition.FollowDeformation);
+        writer.Key("step"); writer.Int(definition.ReferenceStep);
+        writer.Key("displacement"); writer.String(definition.ReferenceDisplacement.c_str());
+        writer.Key("scale"); writer.Double(definition.ReferenceScale); writer.EndObject();
         writer.Key("cellMode"); writer.String(definition.CellMode == MeshCutCellMode::Constant ? "constant" : "projected");
         auto writeTrace = [&](const char* name, const MeshCutTraceOptions& options) {
             writer.Key(name); writer.StartObject();
@@ -835,7 +898,7 @@ bool MeshCutViewManager::RestoreDefinitionsJson(const std::string& theJson)
     rapidjson::Document document;
     document.Parse<rapidjson::kParseFullPrecisionFlag>(theJson.data(), theJson.size());
     if (document.HasParseError() || !document.IsObject() || !document.HasMember("version")
-        || !document["version"].IsInt() || document["version"].GetInt() < 1 || document["version"].GetInt() > 8
+        || !document["version"].IsInt() || document["version"].GetInt() < 1 || document["version"].GetInt() > 9
         || !document.HasMember("cuts") || !document["cuts"].IsArray()) { return false; }
     std::map<std::string, std::unique_ptr<Entry>> entries;
     MeshCutIsoOptions isoOptions;
@@ -966,12 +1029,26 @@ bool MeshCutViewManager::RestoreDefinitionsJson(const std::string& theJson)
             if (definition.IsoFieldName.empty() || definition.IsoFieldName.find('\0') != std::string::npos
                 || !validIsoField(resolveIsoField(definition), definition.IsoComponent)) { return false; }
         } else { return false; }
+        if (document["version"].GetInt() >= 9) {
+            if (!cut.HasMember("material") || !cut["material"].IsObject()) { return false; }
+            const auto& m = cut["material"];
+            if (!m.HasMember("enabled") || !m["enabled"].IsBool() || !m.HasMember("step") || !m["step"].IsInt()
+                || !m.HasMember("displacement") || !m["displacement"].IsString() || !m.HasMember("scale")
+                || !m["scale"].IsNumber() || !std::isfinite(m["scale"].GetDouble())) { return false; }
+            definition.FollowDeformation = m["enabled"].GetBool(); definition.ReferenceStep = m["step"].GetInt();
+            definition.ReferenceDisplacement.assign(m["displacement"].GetString(),m["displacement"].GetStringLength());
+            definition.ReferenceScale = m["scale"].GetDouble();
+            if (definition.ReferenceDisplacement.find('\0') != std::string::npos || (definition.FollowDeformation
+                && definition.Shape != MeshCutShape::Plane) || (!definition.FollowDeformation
+                && (definition.ReferenceStep != -1 || !definition.ReferenceDisplacement.empty() || definition.ReferenceScale != 0))) { return false; }
+        }
         entries.emplace(id, std::move(entry));
     }
     // Validate source resolution on isolated caches before replacing live cuts.
     // Older documents migrate to lowest and need no extra geometry preparation.
     try {
         MeshCutViewManager staged(myMesh);
+        staged.myMaterialSource = myMaterialSource;
         if(!staged.ShareCacheFrom(*this)||!staged.SetCachePolicy(CachePolicy())) { return false; }
         staged.myGeometryOptions = myGeometryOptions; staged.myIsoOptions = isoOptions;
         staged.myDeformationField = myDeformationField; staged.myDeformationScale = myDeformationScale;
@@ -981,6 +1058,8 @@ bool MeshCutViewManager::RestoreDefinitionsJson(const std::string& theJson)
         }
         for (const auto& item : entries) {
             const auto& definition = item.second->Definition;
+            if (definition.FollowDeformation && !staged.SetFollowDeformation(item.first,true,definition.ReferenceStep,
+                definition.ReferenceDisplacement,definition.ReferenceScale)) { return false; }
             if (definition.DisplayTrace.Policy != MeshCutTracePolicy::Lowest
                 && !staged.SetTraceOptions(item.first,false,definition.DisplayTrace)) { return false; }
             if (definition.PhysicalTrace.Policy != MeshCutTracePolicy::Lowest
@@ -1011,10 +1090,13 @@ bool MeshCutViewManager::SetDeformation(const Handle(RWCae::MeshNVecProperty)& t
             }
         }
     }
+    std::map<std::string,std::shared_ptr<MeshCutMaterialCache>> references;
+    for (const auto& entry : myEntries) { if (entry.second->Material) { references[entry.first] = entry.second->Material; } }
     myDeformationField = theField;
     if (!myDeformationField.IsNull()) { myMesh->BoundingBox(); }
     myDeformationScale = theScale;
     InvalidateGeometry();
+    for (const auto& reference : references) { myEntries.at(reference.first)->Material = reference.second; }
     return true;
 }
 
@@ -1062,6 +1144,7 @@ Bnd_Box MeshCutViewManager::SourceBounds()
 void MeshCutViewManager::initialize(Entry& theEntry)
 {
     if (!theEntry.Roots[0].IsNull()) { return; }
+    if (theEntry.Definition.FollowDeformation) { initializeMaterial(theEntry); return; }
     if ((theEntry.Definition.Shape == MeshCutShape::Sphere || theEntry.Definition.Shape == MeshCutShape::Cylinder)
         && !validQuadricMesh()) {
         throw std::invalid_argument("Curved cuts currently support only linear triangle/tetrahedron meshes");
@@ -1104,6 +1187,42 @@ void MeshCutViewManager::initialize(Entry& theEntry)
         theEntry.Roots[i]->Append(theEntry.Portions[i]);
         theEntry.Portions[i]->RetainCacheLease(theEntry.Lease);
         theEntry.Portions[i]->RetainCacheLease(mySourceLease);
+    }
+}
+
+void MeshCutViewManager::initializeMaterial(Entry& entry)
+{
+    const auto& d = entry.Definition; const auto reference = materialMesh(d.ReferenceStep);
+    if (!SameMaterialTopology(reference,myMesh)) { throw std::invalid_argument("Material cut requires identical node/element correspondence; remeshing has no material mapping"); }
+    std::ostringstream key; key.precision(17);
+    key << reference.get() << ' ' << d.ReferenceStep << ' ' << d.ReferenceDisplacement << ' ' << d.ReferenceScale;
+    for (int a = 0; a < 4; ++a) { key << ' ' << d.Plane[a]; }
+    key << ' ' << (int)myGeometryOptions.Mode << ' ' << myGeometryOptions.AbsoluteTolerance << ' ' << myGeometryOptions.RelativeTolerance
+        << ' ' << myGeometryOptions.FaceSubdivisionLimit << ' ' << myGeometryOptions.LineSubdivisionLimit << ' ' << myGeometryOptions.MaxSourcePrimitives;
+    if (!entry.Material || entry.Material->Key != key.str()) {
+        auto cache = std::make_shared<MeshCutMaterialCache>(); cache->Key = key.str();
+        cache->Cuts = std::make_unique<MeshCutViewManager>(reference);
+        auto& cuts = *cache->Cuts;
+        cuts.myNativeSectionBudget = true;
+        if (!cuts.ShareCacheFrom(*this) || !cuts.SetGeometryOptions(myGeometryOptions) || !cuts.AddPlane("reference",d.Plane)) {
+            throw std::runtime_error("Cannot prepare material reference cut");
+        }
+        Handle(RWCae::MeshNVecProperty) displacement;
+        if (!d.ReferenceDisplacement.empty()) {
+            for (const auto& field : reference->Properties()) {
+                if (field->Name().ToCString() == d.ReferenceDisplacement && field->IsNodal() && field->TimeStep() == d.ReferenceStep) {
+                    if (!displacement.IsNull()) { throw std::invalid_argument("Ambiguous material reference displacement"); } displacement = field;
+                }
+            }
+            if (displacement.IsNull()) { throw std::invalid_argument("Missing material reference displacement"); }
+        }
+        if (!cuts.SetDeformation(displacement,d.ReferenceScale)) { throw std::invalid_argument("Invalid material reference deformation"); }
+        entry.Material = std::move(cache);
+    }
+    for (unsigned i = 0; i < 3; ++i) {
+        entry.Roots[i] = makeSourceGeometry(false);
+        entry.Portions[i] = new MeshGeometryMaterial(myBvh,entry.Material,i,entry.Roots[i],*this);
+        entry.Roots[i]->Append(entry.Portions[i]);
     }
 }
 
@@ -1196,7 +1315,7 @@ MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
     aResult.Revision = anEntry->Revision;
     const unsigned mask = requestedMask == 8 ? anEntry->Definition.Visibility : requestedMask;
     if (!anEntry->Definition.Enabled || (mask == 0 && requestedMask != 0)) { return aResult; }
-    if (mask != 0) { prepareCache(*anEntry,theField); }
+    if (mask != 0 && !anEntry->Definition.FollowDeformation) { prepareCache(*anEntry,theField,mask); }
     if (!theField.IsNull()) { CutFieldTools::Validate(myMesh,theField); }
     using Clock=std::chrono::steady_clock;
     auto phase=Clock::now(); auto elapsed=[&] { const auto end=Clock::now(); const double value=std::chrono::duration<double,std::milli>(end-phase).count(); phase=end; return value; };
@@ -1248,6 +1367,17 @@ MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
         anEntry->CachedMask |= 1u << i;
         if (i == 1) {
             if (anEntry->TraceSection.IsNull() || anEntry->TraceRevision != anEntry->Revision) {
+                if (anEntry->Definition.FollowDeformation) {
+                    const auto& reference = anEntry->Material->Get(1);
+                    const auto traced = Handle(MeshGeometryTraceSection)::DownCast(reference.Portions[1]);
+                    if (traced.IsNull()) { throw std::runtime_error("Material reference has no physical traces"); }
+                    anEntry->TraceSection = new MeshGeometryTraceSection(myBvh,*traced,
+                        Handle(MeshGeometrySlice)::DownCast(anEntry->Portions[1]),anEntry->Roots[1]);
+                    anEntry->TraceRoot = new MeshGeometryBase(myBvh,myMesh); anEntry->TraceRoot->Append(anEntry->TraceSection);
+                    // Mapped mesh and provenance have independent lifetimes; retain their accounting.
+                    anEntry->TraceSection->RetainCacheLease(std::make_shared<Handle(MeshGeometry)>(anEntry->Portions[1]));
+                    anEntry->TraceRoot->RetainCacheLease(mySourceLease);
+                } else {
                 if (!myTraceSource) {
                     myTraceSource = std::make_shared<MeshCutTraceSource>(myMesh,makeSourceGeometry(false),myGeometryOptions
                         ,myGeneralSource
@@ -1261,6 +1391,7 @@ MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
                     anEntry->TraceRoot->RetainCacheLease(anEntry->Lease); anEntry->TraceSection->RetainCacheLease(anEntry->Lease);
                     anEntry->TraceRoot->RetainCacheLease(mySourceLease); anEntry->TraceSection->RetainCacheLease(mySourceLease);
                 } else { anEntry->TraceSection->Refresh(Handle(MeshGeometrySlice)::DownCast(anEntry->Portions[1]),myTraceSource); }
+                }
                 anEntry->TraceRevision = anEntry->Revision;
                 const auto& work=anEntry->TraceSection->TraceWork();
                 myTimings.TraceOriginsMs=work.OriginsMs; myTimings.TraceClassifyMs=work.ClassifyMs;
@@ -1340,6 +1471,11 @@ std::shared_ptr<MeshCutPresentation> MeshCutViewManager::EvaluatePresentation(co
 {
     const auto cuts = EvaluateVisible(field);
     if (cuts.empty()) { return std::make_shared<MeshCutPresentation>(); }
+    if (std::any_of(cuts.begin(),cuts.end(),[](const auto& cut) { return cut.Definition.FollowDeformation; })) {
+        // A world-space cutting-tool boolean would silently undo material-side classification.
+        // Independent material branches retain their reference classification and current cap.
+        auto result = std::make_shared<MeshCutPresentation>(); result->Branches = cuts; return result;
+    }
     auto source = makeSourceGeometry(false);
     if (!myTraceSource) {
         myTraceSource = std::make_shared<MeshCutTraceSource>(myMesh,source,myGeometryOptions
@@ -1357,9 +1493,10 @@ void MeshCutViewManager::InvalidateFields()
     myProjectedSource.Nullify();
     myProjectedField.Nullify();
     for (auto& anEntry : myEntries) {
-        if (anEntry.second->Definition.Shape == MeshCutShape::Isosurface) {
+        if (anEntry.second->Definition.Shape == MeshCutShape::Isosurface || anEntry.second->Definition.FollowDeformation) {
             release(*anEntry.second);
             anEntry.second->IsoValues.Nullify();
+            anEntry.second->Material.reset();
         }
         ++anEntry.second->Revision;
     }
@@ -1373,6 +1510,7 @@ void MeshCutViewManager::InvalidateGeometry()
     if (!mySourceGeometry.IsNull()) { mySourceGeometry->RemoveChildren(); mySourceGeometry.Nullify(); }
     for (auto& anEntry : myEntries) {
         release(*anEntry.second);
+        anEntry.second->Material.reset();
         ++anEntry.second->Revision;
     }
     myBvh->Clear();
@@ -1411,6 +1549,14 @@ void MeshCutViewManager::reserveSource()
 }
 uint64_t MeshCutViewManager::EstimatedSourceBytes() const
 {
+    const bool materialCap = !needsGeneralPlane() && std::any_of(myEntries.begin(),myEntries.end(),[](const auto& e) { return e.second->Definition.Enabled; })
+        && std::all_of(myEntries.begin(),myEntries.end(),[](const auto& e) {
+            const auto& d = e.second->Definition; return !d.Enabled || (d.FollowDeformation && (d.Visibility & 5) == 0);
+        });
+    // Reference intersections own the BVH/source preparation. Mapping an On-only
+    // branch reads shared FE input and sparse weights; it creates no current BVH
+    // or whole-source node cache. Old/new mapped frames may overlap atomically.
+    if (materialCap) { return 65536; }
     bool compact=true;
     for(int t=0;t<RWCae::MeshElemNbTypes;++t) { const auto type=(RWCae::MeshElemType)t; using T=RWCae::MeshElemType;
         if(myMesh->NbElems(type)>0 && type!=T::Elem0d&&type!=T::Triangle&&type!=T::Quad&&type!=T::Tetrahedron&&type!=T::Pyramid&&type!=T::Prism&&type!=T::Hexahedron) { compact=false; }
@@ -1448,11 +1594,22 @@ uint64_t MeshCutViewManager::EstimatedResultBytes(const Handle(RWCae::MeshNVecPr
     }
     return 65536+cells*(4096+components*512)+nodes*(256+components*64)+primitives*4096;
 }
-void MeshCutViewManager::prepareCache(Entry& entry,const Handle(RWCae::MeshNVecProperty)& field)
+void MeshCutViewManager::prepareCache(Entry& entry,const Handle(RWCae::MeshNVecProperty)& field, unsigned mask)
 {
     if(EstimatedSourceBytes()>mySourceReserved && !myCache.CanReserve(EstimatedSourceBytes()-mySourceReserved,true)) { throw std::length_error("Cut source cache budget exceeded before preparation"); }
+    uint64_t estimate = EstimatedResultBytes(field);
+    if (myNativeSectionBudget && mask == 2 && field.IsNull() && !needsGeneralPlane()
+        && myMesh->NbElems(RWCae::MeshElemType::Polygon) == 0 && myMesh->NbElems(RWCae::MeshElemType::Polyhedron) == 0) {
+        if (!entry.SectionBytes) {
+            const auto source = makeSourceGeometry(false);
+            try { entry.SectionBytes = 65536 + MeshGeometrySlice::CountPlaneCandidates(myBvh,source,entry.Definition.Plane)*8192; }
+            catch (...) { myBvh->RemoveBvhBoxSet(source); source->RemoveChildren(); throw; }
+            myBvh->RemoveBvhBoxSet(source); source->RemoveChildren();
+        }
+        estimate = std::min(estimate,entry.SectionBytes);
+    }
     if(!entry.Lease) {
-        const auto bytes=EstimatedResultBytes(field);
+        const auto bytes=estimate;
         if(!myCache.CanReserve(bytes,false)) {
             std::vector<Entry*> old;
             for(auto& e:myEntries) { if(e.second.get()!=&entry && e.second->Lease) { old.push_back(e.second.get()); } }
@@ -1462,7 +1619,7 @@ void MeshCutViewManager::prepareCache(Entry& entry,const Handle(RWCae::MeshNVecP
         entry.Lease=myCache.Reserve(bytes,false);
         entry.Reserved=bytes;
     } else {
-        const auto bytes=EstimatedResultBytes(field);
+        const auto bytes=estimate;
         if(bytes>entry.Reserved) {
             auto extra=myCache.Reserve(bytes-entry.Reserved,false);
             entry.Lease=std::shared_ptr<void>(new std::pair<std::shared_ptr<void>,std::shared_ptr<void>>(entry.Lease,extra),[](void* p) { delete static_cast<std::pair<std::shared_ptr<void>,std::shared_ptr<void>>*>(p); });

@@ -450,6 +450,20 @@ MeshGeometryTraceSection::MeshGeometryTraceSection(const Handle(MeshBvhData)& bv
     myTraceWork.GeneralMs=elapsed();
 }
 
+MeshGeometryTraceSection::MeshGeometryTraceSection(const Handle(MeshBvhData)& bvh,
+    const MeshGeometryTraceSection& reference, const Handle(MeshGeometrySlice)& mapped,
+    const Handle(MeshGeometry)& source) : MeshGeometrySlice(bvh), mySource(source)
+{
+    myMeshData = mapped->GetMeshData(); myInput = myMeshData; myIsUpdated = true;
+    myElementTraces = reference.myElementTraces; myLineTraces = reference.myLineTraces; myLines = reference.myLines;
+    for (NodesMap::Iterator i(reference.myNodesMap); i.More(); i.Next()) {
+        myNodesMap.Bind(i.Key(),std::make_pair(source.get(),i.Value().second));
+    }
+    for (ElementsMap::Iterator i(reference.myElementsMap); i.More(); i.Next()) {
+        myElementsMap.Bind(i.Key(),std::make_pair(source.get(),i.Value().second));
+    }
+}
+
 void MeshGeometryTraceSection::Refresh(const Handle(MeshGeometrySlice)& section,
     const std::shared_ptr<MeshCutTraceSource>& topology)
 {

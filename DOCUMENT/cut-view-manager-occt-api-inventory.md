@@ -256,7 +256,7 @@ python -B -X utf8 DOCUMENT/tools/build_cut_view_occt_inventory.py --check
 
 ## 扫描范围与完整直接头文件清单
 
-扫描 186 个项目源文件，发现 149 种直接 `.hxx` 依赖。
+扫描 188 个项目源文件，发现 149 种直接 `.hxx` 依赖。
 这是指定范围的词法依赖清单，不是完整运行时调用图。头文件可能只提供类型，
 不能据此断言该算法每帧执行。OCCT 内部传递调用、虚函数调度和模板展开未展开。
 核心功能与成员方法的人工核对见前文；引用位置由下面的列表覆盖。
@@ -545,6 +545,8 @@ python -B -X utf8 DOCUMENT/tools/build_cut_view_occt_inventory.py --check
 - [source/ViewCaeGeom/MeshCutFrame.h](../source/ViewCaeGeom/MeshCutFrame.h)
 - [source/ViewCaeGeom/MeshCutIntegration.cpp](../source/ViewCaeGeom/MeshCutIntegration.cpp)
 - [source/ViewCaeGeom/MeshCutIntegration.h](../source/ViewCaeGeom/MeshCutIntegration.h)
+- [source/ViewCaeGeom/MeshCutMaterial.cpp](../source/ViewCaeGeom/MeshCutMaterial.cpp)
+- [source/ViewCaeGeom/MeshCutMaterial.h](../source/ViewCaeGeom/MeshCutMaterial.h)
 - [source/ViewCaeGeom/MeshCutPhysics.cpp](../source/ViewCaeGeom/MeshCutPhysics.cpp)
 - [source/ViewCaeGeom/MeshCutPhysics.h](../source/ViewCaeGeom/MeshCutPhysics.h)
 - [source/ViewCaeGeom/MeshCutPlanePlacement.h](../source/ViewCaeGeom/MeshCutPlanePlacement.h)

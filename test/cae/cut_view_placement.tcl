@@ -8,16 +8,19 @@ namespace eval ::CutViewPlacement {
     variable datum global
     variable normalAxis 1
     variable status ""
+    variable follow 0
+    variable reference Current
     variable values
 }
 proc ::CutViewPlacement::open {} {
-    variable w; variable model; variable id; variable generation; variable values; variable method; variable status
+    variable w; variable model; variable id; variable generation; variable values; variable method; variable status; variable follow
     set model $::CutViewManager::model; set id $::CutViewManager::selected
     if {$id eq ""} { return }
     foreach cut [scvcutview $model list] { if {[dict get $cut id] eq $id} { break } }
     if {[dict get $cut shape] ne "plane"} { error "Definition requires a plane cut" }
     set generation [dict get [scvcutview $model info] generation]
     set method "Key-in"; set status ""
+    set follow [dict get $cut material]
     if {[winfo exists $w]} { destroy $w }
     toplevel $w; wm title $w "Plane Definition: [dict get $cut name]"
     ttk::frame $w.body -padding 12; pack $w.body -fill both -expand 1
@@ -41,16 +44,28 @@ proc ::CutViewPlacement::open {} {
     grid $w.body.datum -row 4 -column 1 -sticky ew
     grid $w.body.axisLabel -row 4 -column 2
     grid $w.body.axis -row 4 -column 3
-    ttk::label $w.body.help -text "Apply defines a new base frame and resets motion.\nCSYS axes use cyclic order: normal / next axis / remaining axis.\nCSYS is sampled at Apply; use Viewer Tools to define datums." -wraplength 490
-    grid $w.body.help -row 5 -column 0 -columnspan 4 -sticky w -pady 8
+    ttk::checkbutton $w.body.follow -text "Follow model deformation" -variable ::CutViewPlacement::follow
+    ttk::combobox $w.body.reference -state readonly -values {First Last Current} -textvariable ::CutViewPlacement::reference -width 10
+    ttk::button $w.body.followApply -text "Apply follow" -command {if {[catch {::CutViewPlacement::applyFollow} message]} {set ::CutViewPlacement::status $message}}
+    grid $w.body.follow -row 5 -column 0 -columnspan 2 -sticky w -pady 8
+    grid $w.body.reference -row 5 -column 2
+    grid $w.body.followApply -row 5 -column 3
+    ttk::label $w.body.help -text "Apply defines a new base frame and resets motion.\nCSYS is sampled at Apply. Apply follow captures the chosen frame and current deformation scale.\nMaterial sections deform with FE weights; their current shape may be curved." -wraplength 490
+    grid $w.body.help -row 6 -column 0 -columnspan 4 -sticky w -pady 8
     ttk::label $w.body.status -textvariable ::CutViewPlacement::status -foreground firebrick -wraplength 490
-    grid $w.body.status -row 6 -column 0 -columnspan 4 -sticky w
+    grid $w.body.status -row 7 -column 0 -columnspan 4 -sticky w
     ttk::button $w.body.apply -text Apply -command {if {[catch {::CutViewPlacement::apply} message]} {set ::CutViewPlacement::status $message}}
     ttk::button $w.body.close -text Close -command [list destroy $w]
-    grid $w.body.apply -row 7 -column 2 -pady 8; grid $w.body.close -row 7 -column 3
+    grid $w.body.apply -row 8 -column 2 -pady 8; grid $w.body.close -row 8 -column 3
     bind $w.body.method <<ComboboxSelected>> {::CutViewPlacement::methodChanged}
     methodChanged
     bind $w <Escape> [list destroy $w]
+}
+proc ::CutViewPlacement::applyFollow {} {
+    variable model; variable id; variable generation; variable follow; variable reference; variable status
+    if {[dict get [scvcutview $model info] generation] != $generation} { error "Model was replaced; reopen Definition" }
+    scvcutview $model material $id $follow $reference
+    set status ""; ::CutViewManager::refresh 1
 }
 proc ::CutViewPlacement::methodChanged {} {
     variable w; variable method

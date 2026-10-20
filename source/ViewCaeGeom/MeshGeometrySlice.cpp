@@ -434,6 +434,15 @@ void MeshGeometrySlice::generateMeshData()
     }
 }
 
+size_t MeshGeometrySlice::CountPlaneCandidates(const Handle(MeshBvhData)& bvh,
+    const Handle(MeshGeometry)& source, const Graphic3d_Vec4d& plane)
+{
+    NodesMap nodes; ElementsMap elements; std::vector<MeshSliceLine> lines;
+    MeshSliceSelector selector(source,new Graphic3d_ClipPlane(plane),new RWCae::MeshData(),&nodes,&elements,&lines,nullptr);
+    selector.SetBVHSet(bvh->BvhBoxSet(source).get()); selector.CollectCandidates(true); selector.Select();
+    return selector.Candidates().size();
+}
+
 // =======================================================================
 // function : CalculateProperty
 // =======================================================================

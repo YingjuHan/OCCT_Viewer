@@ -347,6 +347,13 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             ok = model.Timeline->SetMaterialFrame(argv[3],frame); if (!ok) { throw std::invalid_argument(model.Native->LastError()); }
         } else if (action == "follow" && argc == 5) {
             ok = model.Timeline->BindCutFrame(argv[3],argv[4]); if (!ok) { throw std::invalid_argument(model.Native->LastError()); }
+        } else if (action == "material" && argc == 6) {
+            ok = model.Timeline->FollowDeformation(argv[3],cutBoolean(argv[4]),argv[5]);
+            if (!ok) { throw std::invalid_argument(model.Native->LastError()); }
+        } else if (action == "materialstats" && argc == 4) {
+            const auto statistics = cuts.MaterialStatistics(argv[3]);
+            di << "referenceBuilds " << std::to_string(statistics[0]).c_str() << " mappingBuilds "
+               << std::to_string(statistics[1]).c_str() << " mappedNodes " << std::to_string(statistics[2]).c_str(); return 0;
         } else if (action == "play" && argc == 7) {
             const bool timestamps = cutBoolean(argv[6]);
             ok = timestamps ? model.Timeline->PlayTime(cutReal(argv[3]),cutBoolean(argv[4]),cutBoolean(argv[5]))
@@ -577,6 +584,9 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
                 di << "{id"; di.AppendElement(cut.Id.c_str());
                 di << " name"; di.AppendElement(cut.Name.c_str());
                 di << " enabled " << (int)cut.Enabled << " visibility " << (int)cut.Visibility;
+                di << " material " << (int)cut.FollowDeformation << " reference_step " << cut.ReferenceStep
+                   << " reference_scale " << cut.ReferenceScale << " reference_displacement";
+                di.AppendElement(cut.ReferenceDisplacement.c_str());
                 if (cut.Shape == ViewCaeGeom::MeshCutShape::Plane) {
                     di << " shape plane plane {" << cut.Plane.x() << " " << cut.Plane.y() << " "
                        << cut.Plane.z() << " " << cut.Plane.w() << "}";
@@ -1181,6 +1191,7 @@ void ViewCaeTest::CutViewCommands::Factory(Draw_Interpretor& di)
         "  | physics requestId explicitMappingJson | physicsremove/physicsreport/physicscsv requestId\n"
         "  | automatic id crack/density nodalField component threshold sign minimum maximum visibility\n"
         "  | materialframe name reference/updated {step n0 n1 n2}... | follow cut datum\n"
+        "  | material cut on/off First/Last/Current | materialstats cut\n"
         "  | slicing plane regular/range start spacing/end count | rotational ax ay az ox oy oz start end count | path ux uy uz {x y z}...\n"
         "  | localmove id datum a b c d (plane) / cx cy cz ax ay az radius (quadric)\n"
         "  | axes datum/global show length | nativeinfo | pickmode 0/1/2\n"

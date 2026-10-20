@@ -124,6 +124,7 @@ std::string InteractiveCaeCutView::planeFallback(const std::vector<ViewCaeGeom::
     }
     if (plane == nullptr) { return "no_active_cut"; }
     if (plane->Shape != ViewCaeGeom::MeshCutShape::Plane) { return "non_plane_cut"; }
+    if (plane->FollowDeformation) { return "material_reference_cut"; }
     if (!myVectorField.IsNull()) { return "vectors"; }
     bool volume = false;
     RWCae::MeshAdaptorsIterator3dElems::For([&](const auto& a) { volume |= a.NbElements() != 0; },myMesh);

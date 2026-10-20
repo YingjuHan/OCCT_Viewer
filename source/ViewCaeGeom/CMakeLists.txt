@@ -3,6 +3,7 @@ project (ViewCaeGeom)
 set (SRCFILES
   MeshCutViewManager.cpp
   MeshCutFrame.cpp
+  MeshCutMaterial.cpp
   MeshCutSlicing.cpp
   MeshCutPhysics.cpp
   MeshCutAutomatic.cpp
@@ -26,6 +27,7 @@ set (SRCFILES
 set (INCFILES
   MeshCutViewManager.h
   MeshCutPlanePlacement.h
+  MeshCutMaterial.h
   MeshCutFrame.h
   MeshCutSlicing.h
   MeshCutPhysics.h

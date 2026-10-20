@@ -30,6 +30,9 @@ public:
     void SetCancellation(const std::shared_ptr<MeshCutCancellation>& token) { myCancellation=token; }
     const MeshSliceWork& LastWork() const { return myLastWork; }
     size_t WorkGeneration() const { return myWorkGeneration; }
+    //! Same conservative BVH plane test as cutting, without creating output primitives.
+    Standard_EXPORT static size_t CountPlaneCandidates(const Handle(MeshBvhData)& bvh,
+        const Handle(MeshGeometry)& source, const Graphic3d_Vec4d& plane);
 
     //! Return geometry type.
     virtual MeshGeometryType Type() const override { return MeshGeometryType::Slice; }

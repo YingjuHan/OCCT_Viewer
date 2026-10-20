@@ -135,6 +135,9 @@ template<size_t N, class Evaluate> MeshCutPhysicsReport integrate(const MeshCutR
     const std::array<int,N>& components, const MeshCutPhysicsOptions& options, Evaluate evaluate)
 {
     validate(cut,options);
+    if (cut.Definition.FollowDeformation && !options.Normal && options.ElementNormals.empty()) {
+        throw std::invalid_argument("Material section physics requires current-configuration local normals");
+    }
     MeshCutPhysicsReport report; report.Cut = cut.Definition.Id; report.Group = options.GroupName;
     const auto mesh = cut.Portions[1]->GetMeshData(); const auto source = cut.Roots[1]->GetMeshData();
     const auto field = !cut.PhysicalFields[1].IsNull() ? cut.PhysicalFields[1] : cut.Fields[1];

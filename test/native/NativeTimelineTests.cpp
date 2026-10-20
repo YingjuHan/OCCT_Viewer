@@ -44,6 +44,32 @@ Handle(RWCae::MeshData) series(bool missing = false, bool remesh = false)
 void tests()
 {
     {
+        Viewer::NativeCutView material(series()); Viewer::NativeCutTimeline time(material);
+        auto& cuts=material.Display()->Cuts();
+        require(cuts.AddPlane("p",Graphic3d_Vec4d(1,0,0,-.25)),"Material plane");
+        require(time.FollowDeformation("p",true,"First"),material.LastError());
+        cuts.Evaluate("p");
+        require(time.SwitchStep(1),material.LastError());
+        auto result=material.Display()->Cuts().Evaluate("p");
+        closeTo(result.Portions[1]->GetMeshData()->Nodes()[0].x(),.45);
+        require(material.Display()->Cuts().MaterialStatistics("p")[0]==1,"Material reference intersection was rebuilt on step");
+        require(time.BindDeformation({"displacement",true,0,1},.1),material.LastError());
+        result=material.Display()->Cuts().Evaluate("p");
+        closeTo(result.Portions[1]->GetMeshData()->Nodes()[0].x(),.45+material.Display()->Cuts().EffectiveDeformationScale());
+        require(material.Display()->Cuts().Definitions()[0].ReferenceStep==0,"Reference First drifted");
+        require(time.FollowDeformation("p",true,"Current"),material.LastError());
+        require(material.Display()->Cuts().Definitions()[0].ReferenceStep==1,"Reference Current not resolved");
+        require(time.FollowDeformation("p",true,"Last"),material.LastError());
+        require(material.Display()->Cuts().Definitions()[0].ReferenceStep==2,"Reference Last not resolved");
+        require(time.FollowDeformation("p",false),material.LastError());
+        require(!time.FollowDeformation("p",true,"invalid"),"Invalid material reference name");
+        Viewer::NativeCutView remapped(series(false,true)); Viewer::NativeCutTimeline remap(remapped);
+        remapped.Display()->Cuts().AddPlane("p",Graphic3d_Vec4d(1,0,0,-.25));
+        require(remap.FollowDeformation("p",true,"First"),remapped.LastError());
+        const auto previous=remapped.Display();
+        require(!remap.SwitchStep(1) && remapped.Display()==previous && remap.Step()==0,"Material remesh partially published");
+    }
+    {
         Viewer::NativeCutView absolute(series()); Viewer::NativeCutTimeline time(absolute);
         auto& cuts = absolute.Display()->Cuts();
         require(cuts.AddPlane("p",Graphic3d_Vec4d(1,0,0,-.25)),"Absolute timeline fixture");
