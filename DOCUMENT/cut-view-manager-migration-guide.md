@@ -4,6 +4,9 @@
 
 本指南供一个没有 OCCT、没有本项目单元级 BVH 体系的旧版 VisIt CAE 工具迁移 Cut View Manager 使用。目标已有交互式渲染，但总体处理方式偏静态；迁移的关键是拆开“源数据准备”“每次切面计算”“显示资源更新”，而不是仅增加一个管理面板。
 
+本篇保留 2026-10-14 的架构核对基线。后续 A01–A09 已增加完整平面运动/材料截面、自由体、独立等值面、切片集合、plot 策略、自动来源和视口隔离；当前 session 为 4、definitions 为 13。
+最新行为与验收以 [对标台账](cut-view-manager-abaqus-parity.md)、[A10 验收记录](cut-view-manager-acceptance.md) 和 [无 OCCT 手册第 17–24 节](cut-view-manager-visit-porting.md) 为准；下文旧版本说明用于理解演进，不是当前写出格式。
+
 **目标迁移方案已确定完全不使用 OCCT**，包括基础类型、BVH、几何内核、显示及间接运行时依赖。下文 OCCT 内容描述当前源项目，供学习算法与逐项替换；目标约束以 [无 OCCT 迁移手册](cut-view-manager-visit-porting.md) 为准。本项目当前版本的 Linux 直接运行、GDB 调试和测试命令见 [Linux 操作指南](cut-view-manager-linux-run-test.md)。
 
 本项目的高性能单平面方案是：**源模型外表面常驻 GPU，GPU 裁剪保留侧，CPU 计算带有限元来源的切面并补面**。只看切面时隐藏整个源模型；两侧都看时不裁剪实体，只按需计算 slice。球、柱、等值面以及不满足快速路径的显示方式维持各自的 CPU 路径。

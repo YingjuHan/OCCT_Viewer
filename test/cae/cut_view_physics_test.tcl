@@ -65,11 +65,15 @@ proc phys_run {} {
     phys_entry .scvcutphysics.automatic.range {0 5}
     phys_entry .scvcutphysics.automatic.mask 1
     phys_click .scvcutphysics.automatic.apply
+    phys_assert {$::CutViewPhysics::status ne ""} "Nonzero crack level was accepted"
+    phys_entry .scvcutphysics.automatic.threshold 0
+    phys_click .scvcutphysics.automatic.apply
     phys_assert {$::CutViewPhysics::status eq ""} "Explicit crack mapping"
     set distance {}; foreach d [scvcutview physics list] { if {[dict get $d id] eq "distance"} { set distance $d } }
-    phys_assert {[dict get $distance visibility]==4} "Crack sign mapping"
+    phys_assert {[dict get $distance visibility]==1 && [dict get $distance sourceOrigin] eq "xfem"} "XFEM Below must retain the complete body for either sign"
     phys_entry .scvcutphysics.automatic.id density
     phys_combo .scvcutphysics.automatic.kind density; phys_entry .scvcutphysics.automatic.sign 1
+    phys_entry .scvcutphysics.automatic.threshold 2
     phys_entry .scvcutphysics.automatic.mask 2; phys_click .scvcutphysics.automatic.apply
     phys_assert {$::CutViewPhysics::status eq ""} "Explicit density mapping"
     set definitions [scvcutview physics list]

@@ -540,3 +540,96 @@ CentOS 上还要执行窗口关闭中计算、换模型中取消、内存预算�
 目标工程完全不使用 OCCT；将标量快照、owner 单元节点迹和 FE 求值实现为项目自己的数据结构。
 显示云图设置不能隐式更改求交标量；显式编辑才重新绑定。多 cut 主体联合不能将不连续迹偷偷换成全局平均场。
 
+## 20. A06：切片集合与事务扫描
+
+源实现入口：[MeshCutSlicing](../source/ViewCaeGeom/MeshCutSlicing.cpp)、
+[Manager](../source/ViewCaeGeom/MeshCutViewManager.cpp)、
+[NativeCutAnalysis](../source/Viewer/NativeCutAnalysis.cpp)；用户协议见 [集合指南](cut-view-manager-slice-collections.md)。
+目标仍完全不使用 OCCT，向量、矩阵、平面、预算账本和 cell BVH 均用目标自有实现。
+
+推荐在目标新增独立于 GUI/renderer 的 `SliceCollection`：保存 collection ID、source cut ID、成员定义、路径坐标、区间和单位。
+`replace(collectionId, definitions)` 先在候选 manager 验证所有成员，确认预算、ID、字段和单源显示限制后一次提交。
+失败保留原集合；删除源 cut 同时删除所属集合，成员不能作为普通 cut 被单独删除。
+显示集合时替代源 cut 的 presentation，保留源定义和 mask；关闭后恢复，不能创建两份重叠实体。
+当前仅迁移空间平面集合，材料随动集合需要另行定义参考映射。
+
+等弧长折线采样先计算累计距离 `s[i]`，在目标距离所在的线段线性插值；端点必须确定性包含。
+相邻切向之间以最小旋转 transport 平面内轴，之后投影正交化；平行/反向及重复点须单独处理。
+这是折线上的 frame，不是光滑曲线 Frenet frame；路径或源 cut 后续变化不隐式改变快照。
+
+扫描接口可返回 `Result<Report>`，输入是 collection 快照和独立物理请求。
+每片复用原 FE owner/权重、域、单位及求和点契约，临时结果按片释放，并共享总预算账本。
+仅当全部成功才发布报告/CSV；取消、缺字段或坏单元不得留下部分已发布报告或更改现场 cut。
+默认每片一组合量，分布贡献须显式请求；CSV 必须保存 `interval_units`。
+迁移回归使用 `cut_view_slices_test.tcl` 的状态序列和百万门禁的“创建→显示→扫描→移除”顺序。
+
+## 21. A07：样式解析和多 cut 策略
+
+详细字段和顺序见 [显示指南](cut-view-manager-plot-parity.md)。目标实现保留三层：
+当前视口 plot style、三个 portion 的默认 style、单 cut/portion 的可选 override。
+先确定有没有 cut override，再按该 style 的 `UsePlotOptions` 动态选择 plot；不能在勾选继承时只复制一次值。
+面色来源 `ColorByField` 与 FE field binding 分离：切成单色时探测和物理积分仍使用原始字段。
+将透明度、每侧面/边色、边型和宽度传给目标 renderer 的能力协商层，不能通过修改源网格触发所有缓存失效。
+实线空间平面可更新 clip uniform 和 cap；图案边/透明 pass 不支持时给出可查询的 fallback。
+本项目壳云图切线仍为连续线，目标不可据此声明完整图案线已经有可照搬实现。
+
+将策略保存为独立枚举：`Single`、`AbaqusMultiple`、`ProjectExtended`。
+`AbaqusMultiple` 的有效显示只有 On，保留保存的 portion mask、隐藏自由体向量、禁止显示切片集合。
+退出模式后恢复保存值；报告计算状态不应被显示开关删除。
+多个 cut 各从同一源数据求值，不能接到旧 VisIt 的连续 Clip operator 链上而变成交集。
+`ProjectExtended` 的主体 OR 只是本项目扩展；高级不连续 elemental iso 不支持该联合路径，应明确拒绝。
+
+## 22. A08：自动来源和求解器适配
+
+[自动 cut 指南](cut-view-manager-automatic-cuts.md) 与
+[MeshCutAutomatic](../source/ViewCaeGeom/MeshCutAutomatic.cpp) 定义显式 provider 快照协议。
+目标求解器适配器发布 `{provider, revision, cuts[]}`；每项携带 ID、kind、field identity、component、threshold、range、sign、mask、enabled。
+`revision` 是目标侧建议增加的单调版本，源协议 version 1 并没有该字段；不要直接改变源 JSON 解析含义。
+全批预验证再替换该 provider 的自动 cut，消失的 ID 自动撤销，其他 provider 和手工 cut 保留。
+字段名相似、存在温度或密度场不构成自动识别证据。
+
+XFEM 接口仅接受显式 signed-distance 的零等值面；Below 表示完整源体外表面，On 表示裂纹显示面，Above 不可用。
+`sign` 不交换 Below/Above；禁止普通删除/复制/改名/换变量，优化 cut 只允许在声明范围内调整阈值。
+统一在 manager 层校验，不能只禁用 GUI 按钮；时间帧缺字段时拒绝候选并保留旧帧。
+对有限裂纹必须再提供有效域/第二 level set 或已裁剪的裂纹网格；富集位移间断需要对应数据。
+连续 FE 的单个零等值面并不自动成为有限裂纹前沿或真实裂纹开口。
+目标的 ODB/自有结果 reader 负责该适配，本项目没有提供 ODB reader。
+
+## 23. A09：无 OCCT 的视口所有权与完整会话
+
+源实现与回归见 [会话指南](cut-view-manager-session-scope.md)、
+[NativeCutView](../source/Viewer/NativeCutView.cpp)、
+[NativeCutSession](../source/Viewer/NativeCutSession.cpp)、`cut_view_scope_test.tcl`。
+源 session 4 / definitions 13 可作为字段设计参考；目标应使用自己的 schema/version migration，
+禁止将 `Handle`、AIS 对象、进程内 View ID 或 OCCT 序列化对象写入目标会话。
+
+建议明确下面的持有关系：
+
+```text
+SharedSource: immutable mesh/fields + source hash + domain/owner identities
+ViewportState: cut manager + mutable cell BVH + epoch/cache + timeline + plot styles
+ViewportLayers: body + cap + edges + handles + legend + labels + CAD lines + resultants
+SessionCandidate: source verification + parsed state + validated FE bindings
+```
+
+两个视口可以共享 `SharedSource`，不能共享可变 BVH、clip plane、选中项、相机或已发布 cut 结果。
+输入原地修改时必须通知全部消费者；只有 plane 改变时不得更新源 epoch。
+目标已有 renderer/layer ownership 就应直接使用：所有层都只注册到所属 renderer，GPU buffer/presentation 同样带 owner。
+本项目修复过首次 Display 重置可见 mask 的问题；目标也要核对 actor 注册、clone、session restore 是否恢复了全局默认可见性。
+对每个覆盖做“A 有画面→给 B 添加覆盖→A 逐像素不变”的回归，包括 CAD、标注、图例和自由体箭头。
+目标使用渲染器所有权完成该职责，无需复刻或链接 OCCT affinity。
+
+完整恢复先验证源 SHA-256、schema、字段和 FE 域，再创建候选 renderer 状态，一次替换所属视口。
+失败保留旧场景；恢复 B 不触碰 A。GUI 临时状态按模型实例/视口保存，重新加载模型后解析 ID 有效性。
+公共物理模板是独立配置快照，去掉 cut ID，捕获后不依赖原 cut 生命周期；修改模板不覆盖现有请求。
+应用到新 cut 时即使默认关闭也应真实验证截面和 FE 域。
+重网格没有显式集合/截面/法向对应关系时拒绝模板复用，不退回全模型积分。
+
+## 24. 本轮源项目验收与目标迁移验收的分界
+
+[A10 验收记录](cut-view-manager-acceptance.md) 给出本机测试、337.5 万单元门禁及完整 redraw 的性能证据。
+[Linux 指南](cut-view-manager-linux-run-test.md) 同时给出直接运行和 GDB 调试命令，操作的是源项目，不能当作目标 VisIt 的启动命令。
+本轮未在 CentOS 7.9 上编译/运行目标工具，也没有完成 Abaqus 同输入对照。
+目标需按第 13 节补不规则大网格、真实跨 domain/MPI、生产字段、旧 renderer、取消和故障注入；
+最终附无 OCCT 头文件/链接/运行依赖的证据，不能仅用源 Windows 测试通过声明迁移完成。
+

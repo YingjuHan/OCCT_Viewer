@@ -26,7 +26,7 @@ proc trace_run {} {
     set physical [scvcutview trace_model trace cut physical]
     trace_assert {[dict get $physical region] eq "9223372036854775807" && [lindex [dict get $physical regions] 0] eq "-9223372036854775808"} "Exact int64 binding lost"
     set stable [scvcutview trace_model snapshot]
-    trace_assert {[string first {"version":7} $stable] >= 0} "Trace JSON version"
+    trace_assert {[string first {"version":13} $stable] >= 0} "Trace JSON version"
     foreach arguments {{physical region 1.5 {10 20}} {physical region 0 {10 20}} {physical region 10 {10 10}} {physical region 10 {10}} {physical region 9223372036854775808 {10 20}} {physical bad} {bad lowest}} {
         trace_assert {[catch {scvcutview trace_model trace cut {*}$arguments}]} "Invalid trace arguments accepted"
         trace_assert {[scvcutview trace_model snapshot] eq $stable} "Invalid trace edit changed definitions"

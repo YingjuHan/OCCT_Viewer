@@ -44,11 +44,13 @@ int memory(Draw_Interpretor& di,int argc,const char**)
 int benchmark(Draw_Interpretor& di,int argc,const char** argv)
 {
     try {
-        if(argc<5 || argc>7) { throw std::invalid_argument("Usage: scvcutbenchmark grid frames scenario outputDirectory [mask [auto/cpu]]; scvcutfilebenchmark file frames scenario outputDirectory [mask [auto/cpu]]"); }
+        if(argc<5 || argc>8) { throw std::invalid_argument("Usage: scvcutbenchmark grid frames scenario outputDirectory [mask [auto/cpu [deformationScale]]]; scvcutfilebenchmark file frames scenario outputDirectory [mask [auto/cpu [deformationScale]]]"); }
         const bool fromFile = std::string(argv[0]) == "scvcutfilebenchmark";
         int n=fromFile ? 0 : std::stoi(argv[1]); const int frames=std::stoi(argv[2]); const std::string mode(argv[3]);
         const unsigned mask = argc > 5 ? (unsigned)std::stoul(argv[5]) : 2;
         const std::string backend = argc > 6 ? argv[6] : "auto";
+        const double deformationScale = argc > 7 ? std::stod(argv[7]) : .005;
+        if (!std::isfinite(deformationScale)) { throw std::invalid_argument("Deformation scale must be finite"); }
         if (mask > 7 || (backend != "auto" && backend != "cpu")) { throw std::invalid_argument("Invalid mask/backend"); }
         if((!fromFile && (n<2||n>200))||frames<2||frames>1000||(mode!="crossing"&&mode!="rotating"&&mode!="deformed")) { throw std::invalid_argument("Invalid benchmark parameters"); }
         const auto context=ViewerTest::GetAISContext(); const auto view=ViewerTest::CurrentView();
@@ -100,7 +102,7 @@ int benchmark(Draw_Interpretor& di,int argc,const char** argv)
         Viewer::NativeCutView native(mesh); auto display=native.Display(); auto& cuts=display->Cuts(); cuts.AddPlane("benchmark",Graphic3d_Vec4d(1,0,0,-n*.5-.125));
         cuts.SetVisibility("benchmark",mask);
         display->SetRenderBackend(backend == "auto" ? ViewCae::MeshCutRenderBackend::Auto : ViewCae::MeshCutRenderBackend::Cpu);
-        if(mode=="deformed"&&!cuts.SetDeformation(deformation,.005)) { throw std::runtime_error("Benchmark deformation rejected"); }
+        if(mode=="deformed"&&!cuts.SetDeformation(deformation,deformationScale)) { throw std::runtime_error("Benchmark deformation rejected"); }
         if(!native.BindField({"temperature",true,0,-1})||!native.Attach(context,view)) { throw std::runtime_error(native.LastError()); }
         view->FitAll(); view->Redraw(); glFinish(); const double setupMs=ms(setup);
         const auto renderer=glGetString(GL_RENDERER); if(!renderer) { throw std::runtime_error("Benchmark has no current OpenGL rendering context"); }
@@ -138,7 +140,7 @@ int benchmark(Draw_Interpretor& di,int argc,const char** argv)
         }
         if (mask == 5) { validateSection(); }
         std::sort(timings.begin(),timings.end()); const double p95=timings[(size_t)std::ceil(.95*frames)-1],fps=1000*frames/sum;
-        di<<"cells "<<(int)mesh->NbIndexedElems()<<" frames "<<frames<<" scenario "<<mode.c_str()<<" mask "<<(int)mask<<" backend "<<backend.c_str()<<" body_builds "<<(double)display->RenderStatistics().BodyBuilds<<" import_ms "<<importMs<<" setup_ms "<<setupMs<<" p50_ms "<<timings[frames/2]<<" p95_ms "<<p95<<" fps "<<fps<<" actual_redraw 1 original_FE 1 target "<<(int)(fps>=15&&p95<=67);
+        di<<"cells "<<(int)mesh->NbIndexedElems()<<" frames "<<frames<<" scenario "<<mode.c_str()<<" mask "<<(int)mask<<" backend "<<backend.c_str()<<" deformation_scale "<<(mode=="deformed"?deformationScale:0)<<" body_builds "<<(double)display->RenderStatistics().BodyBuilds<<" import_ms "<<importMs<<" setup_ms "<<setupMs<<" p50_ms "<<timings[frames/2]<<" p95_ms "<<p95<<" fps "<<fps<<" actual_redraw 1 original_FE 1 target "<<(int)(fps>=15&&p95<=67);
         native.Close(); return 0;
     } catch(const Standard_Failure& e) { di<<"Error: "<<e.GetMessageString(); }
     catch(const std::exception& e) { di<<"Error: "<<e.what(); } return 1;

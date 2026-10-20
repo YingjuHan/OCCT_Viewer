@@ -23,36 +23,36 @@
 
 ## 2. 当前能力与差距矩阵
 
-“已有”仅表示源码和既有回归中存在该能力；“部分”表示存在入口但还有语义、交互或验收差距；“待开发”不承诺已支持。下表覆盖本轮工作包，仍需以运行验收逐项关闭。
+下表按 A01–A09 的最终实现更新。“本轮完成”指已交付并验证约定的工程范围；显式列出的适配、算法及平台边界仍有效，不等于已取得 Abaqus 的同输入对照证据。最终测试与性能记录见 [A10 验收记录](cut-view-manager-acceptance.md)。
 
 | 编号 | 用户需求 / 官方依据 | 当前状态与证据入口 | 收敛条件 |
 | --- | --- | --- | --- |
-| R01 | 创建/编辑/复制/重命名/删除，默认 XYZ（S2/S6） | 部分；`MeshCutViewManager`、Manager；重命名混在几何 Apply，DRAW 复制只复制定义 | 独立重命名；复制显示覆盖；删除后相同 ID 不继承旧样式；非法操作保留状态 |
+| R01 | 创建/编辑/复制/重命名/删除，默认 XYZ（S2/S6） | A01 完成；独立 Rename、复制定义与显示覆盖、删除清理 | 非激活项和非法操作保留现场；物理请求由独立配置/公共模板管理 |
 | R02 | 选中项与激活项分离（S1/S3） | 已有；`selected` 与 `Enabled` 分离 | 非激活项选择、编辑、重命名不激活；关闭窗口不改显示 |
 | R03 | Below/On/Above 的全部组合（S4） | 已有；mask 0..7，单平面 GPU 特殊路径 | 8 种 mask、空截面、正负法向、薄板断开截面、三显示模式均正确 |
-| R04 | 多 cut 独立显示（S5） | 部分；加性分支与 OR presentation，不做串联裁剪 | 对照 S5 的多 cut 模式只显示切面/自由体限制；明确兼容模式与本项目扩展，不能直接认定 OR 已完全等价 |
+| R04 | 多 cut 独立显示（S5） | A07 完成；single / abaqus / project 显式策略 | abaqus 只显示 On、隐藏自由体并禁用显示切片；project 的 retained-body OR 为扩展，不作串联裁剪 |
 | R05 | Key-in 原点、法向、平面内第二轴（S2） | A02 已验收；完整 Placement、手柄、JSON 8 和旧版迁移 | `cut_placement`、`draw_cut_view_placement`、鼠标交互回归通过 |
 | R06 | 从 CSYS 创建与编辑（S2） | A02 已提供 Manager 的 CSYS/法向轴入口；Apply 获取 datum 快照 | 改 datum 后重新 Apply；显式刚性 follow 独立存在。自动关联 datum 后续扩展，不能声称已实现 |
 | R07 | 平移、精细灵敏度、位置输入（S3） | A02 已验收；1/10/100、非激活输入、禁用滑块 | 范围以当前位置为中心；切换精度与运动模式不编辑几何 |
 | R08 | 关于原始局部 2/3 轴的绝对旋转（S3） | A02 已验收；保留定义轴/pivot，绝对角度，旋转清除平移 | 重复角度、切轴、Escape、跨帧与 session 回归通过 |
-| R09 | 柱、球的中心/轴/半径（S2/S3） | 已有入口；自研通用单元内核 | 保持既有非平面路径，径向 Below=内部；适用单元、容差、退化轴明确报告 |
-| R10 | Isosurface 绑定创建时的变量（S1/S2） | 部分；独立 field/component/step/value 已持久化 | 改云图不改切面；显式 Edit 才重绑；等值范围、派生不变量及 averaging override 独立验收 |
-| R11 | 三部分渲染方式、边线、颜色、透明度（S7） | 部分；`Style/EffectiveStyle` 与 Viewer Tools 简单入口 | Manager 三页选项；默认值与单 cut 扩展覆盖可查询；边色/线型、面色/云图来源、继承 plot options 后续补齐 |
+| R09 | 柱、球的中心/轴/半径（S2/S3） | 既有路径通过 A10 回归；自研通用单元内核 | 径向 Below=内部；保持 CPU 路径，支持范围与退化输入明确报告，不套用平面 GPU 快路 |
+| R10 | Isosurface 绑定创建时的变量（S1/S2） | A05 完成；独立变量、派生量、恢复及 averaging 快照 | 改云图不改求交；显式重绑；高级不连续单元迹不支持 retained-body OR，独立 On 可用 |
+| R11 | 三部分渲染方式、边线、颜色、透明度（S7） | A01/A07 完成；三页、动态 plot 继承、面/边色与线型、作用域 | 透明/混合/图案边按能力进入 CPU fallback；壳云图切线仍连续，见显示指南 |
 | R12 | 云图/线框/云图+线框实时剖切 | 已有；`MeshCutGpuPresentation` | 无变形与变形数据、mask 2/3/6/7；拖动时主体提交字节为 0，空截面无残影 |
 | R13 | 固定空间切面对变形网格剖切（S2 默认） | 已有；`SetDeformation` | 位移正/负/零、多倍率、字段插值与预算稳定；不把 FE 字段重新解释为空间坐标函数 |
 | R14 | Follow model deformation，First/Last/Current 参考帧（S2） | A03 平面材料模式已验收；真实 FE 权重映射、当前曲面采样和局部法向，三节点刚性 frame 独立保留 | 平面范围闭环；保持非平面 cut 现有行为。采样误差/参数图支持边界见材料指南，不声称任意阶全域认证 |
-| R15 | 时间/倍率动画中的 cut（S1） | 部分；`NativeCutTimeline` 与 Time 面板 | 数据帧/变形/场/结果/手柄同代发布；失败停播并保留可用帧；补倍率动画和参考帧语义 |
-| R16 | Manager 每 cut 自由体开关（S4/S8） | 部分；Analysis 请求与 Physics 独立面板 | 按 cut 显示合力/矩/热流；开关不改 cut；删除/切换模型清理；Above/Below 法向与符号相反 |
-| R17 | 积分域：整体/显示组/单元集（S8） | 部分；显式 element IDs/GroupName | 连接实际显示组/集合，空集区别于全体，随帧/重网格映射或明确拒绝 |
-| R18 | 求和点：截面形心/自定义（S8） | 部分；固定 `MomentOrigin` 已有，缺自动形心策略 | 面积加权体截面、厚度加权壳线、梁交点；零测度可解释；平移求和点满足力矩变换 |
-| R19 | 法/切向与 CSYS 分量向量（S8） | 部分；显式 output frame/向量覆盖已有 | 自动局部 frame、法切向/合向量显示和稳定切向；数值与显示分离 |
-| R20 | 实体/壳/复合/梁结果及热流（S1/S8） | 部分；`MeshCutPhysics`、原始 FE provenance | 单位/应力 Voigt 顺序/厚度/层映射可见；NFORC、SF、SM 输入的适配与应力积分分别验证，不声称二者等价 |
-| R21 | 切片范围/规则间距/旋转/路径（S9） | 部分；`MeshCutSlicing` 生成独立 cut 定义 | 显示切片与手工 cut 生命周期分离；路径节点/重采样、单激活限制、删除/覆盖/预算控制 |
-| R22 | 切片上的自由体分布与报告（S8/S9） | 部分；Physics Slices API、CSV | Manager 统一入口，区间/路径/求和点、单位列、失败中止和不污染现场 |
-| R23 | 自动 XFEM/优化 cut（S1/S6） | 部分；显式 signed-distance/density 映射，无 ODB 元数据发现 | 语义数据适配、受保护的定义、特殊 mask、自动创建/移除；缺字段不能推断为自动 cut |
-| R24 | 状态持久化（S2/S6） | 部分；definitions JSON 与 version 3 session bundle 已有 | 明确 Save definitions 不保存样式；完整 session 保存样式/绑定；新增 frame/options 版本迁移；不宣称直接兼容 Abaqus XML/ODB |
-| R25 | 多视口隔离 | 部分；Native facade 绑定一个视口，DRAW Manager 为单实例 | 每视口 cut 激活/样式/临时选择隔离，模型数据共享；保存恢复不影响另一视口 |
-| R26 | 性能、内存预算与取消（S1） | 已有基础，变形网格仍有性能差距 | 百万级路径无每步全量上传/节点重算；取消不发布过期帧；记录 FPS/p95/分阶段时间/预算；不能以提高限额掩盖泄漏 |
+| R15 | 时间/倍率动画中的 cut（S1） | A03/A05/A08/A09 完成约定帧绑定；字段、参考构形、自动来源和模板重绑 | 原子候选帧，失败保留现场；重网格无材料/显式集合对应关系时拒绝，不猜测映射 |
+| R16 | Manager 每 cut 自由体开关（S4/S8） | A04 完成；每 cut 独立请求/enable、合力/矩/热流及覆盖清理 | Above/Below 法向和符号、关闭不改几何、A07 多 cut 限制及 A09 模板均有回归 |
+| R17 | 积分域：整体/显示组/单元集（S8） | A04 完成；标签集合、显式 IDs、真实显示组快照 | 空域不等于全体；跨帧解析，重网格显式映射不完整则拒绝 |
+| R18 | 求和点：截面形心/自定义（S8） | A04 完成；体面积/壳厚度/梁交点与自定义点 | 验证形心与力矩平移公式；退化/零测度明确处理 |
+| R19 | 法/切向与 CSYS 分量向量（S8） | A04 完成；稳定 NT frame、输出 CSYS、分量/合向量 | 平行切向拒绝；数值计算与显示变换分离 |
+| R20 | 实体/壳/复合/梁结果及热流（S1/S8） | A04 完成显式 FE 契约；原始 provenance、单位/分量/厚度/层/截面映射 | 仍需目标求解器适配；没有 ODB NFORC/SF/SM 自动读取，不把节点内力或截面结果冒充实体应力 |
+| R21 | 切片范围/规则间距/旋转/路径（S9） | A06 完成空间平面集合；节点/等弧长路径与 parallel transport | 原子替换/删除、单源显示、集合快照；材料平面集合及光滑精确 Frenet frame 不在本轮范围 |
+| R22 | 切片上的自由体分布与报告（S8/S9） | A06 完成；Manager 扫描/CSV、interval_units、路径求和点 | 临时视图逐片事务，失败不返回半份报告；不污染现场，预算受控 |
+| R23 | 自动 XFEM/优化 cut（S1/S6） | A08 完成显式 provider 快照、保护、特殊 mask、替换/撤销与持久化 | 无 ODB 元数据发现；有限裂纹域/富集位移需额外适配，单一零等值面不能重构真实裂纹开口 |
+| R24 | 状态持久化（S2/S6） | A09 完成；definitions 13 / session 4，读取旧 session 1/2/3 | 样式、plot、材料/iso/集合/来源/公共模板；源 SHA-256 校验，definitions Save 不保存完整 Viewer；不兼容 Abaqus XML/ODB |
+| R25 | 多视口隔离 | A09 完成；共享只读源，独立 manager/BVH/时间轴；全部自有覆盖与 GPU affinity | 实际双视口图像、CAD/标注/箭头/session 验证；Manager 单窗口，临时状态按模型/视口暂存 |
+| R26 | 性能、内存预算与取消（S1） | A10 测试与测量完成，性能目标仍未达到 | 337.5 万数据暖帧 body 上传/重建为 0，八组预算门禁通过；Iris Xe 全帧平移/旋转/变形约 14.91/8.05/6.68 FPS，均未满足 15 FPS+p95≤67 ms；4/16 GiB 限额不变 |
 
 ## 3. 开发顺序和可交付工作包
 
@@ -67,7 +67,7 @@
 | A07 全部 plot options 与多 cut 兼容 | P1 | 本包完成 | R04/R11；动态 plot 继承、独立面/边色与线型、single/abaqus/project 策略；图案边走 CPU，壳云图切线仍连续，见显示指南 |
 | A08 自动 cut 与数据适配 | P2 | 本包完成（显式元数据） | R23；provider 快照、自动移除、定义保护、XFEM 特殊显示和优化阈值、跨帧/session；ODB 发现和有限裂纹域适配不在通用零等值面契约内 |
 | A09 持久化与视口隔离 | P1 | 本包完成 | R24/R25；session 4/definitions 13、旧版迁移、公共物理模板、共享只读源与独立 BVH、全部自有 AIS 对象/GPU 结构 affinity、Manager 临时状态隔离 |
-| A10 大规模性能及对照验收 | 持续 | 已有基线 | R26 和每包性能门禁；最终再做有 Abaqus 环境的同输入数值/画面对照 |
+| A10 大规模性能及对照验收 | 持续 | 本轮测试/测量交付完成，性能与外部对照有保留项 | 84 个注册用例均有通过证据，八组 337.5 万门禁通过；全帧目标未达，Abaqus 同输入对照及 Linux 实跑仍待环境；详见验收记录 |
 
 每包结束单独提交；矩阵按实际测试更新。总进度按通过验收的需求条目统计，当前不提供缺少分母与验收证据的百分比。
 
@@ -83,9 +83,9 @@ Spatial 模式按当前节点位置与空间平面求交，保持现有 GPU clip
 
 ### 4.2 显示选项与状态边界
 
-官方 S7 的三部分 plot options 是视口级设置；本项目现有单 cut 样式覆盖是扩展。UI 必须明确“Model defaults”与“Selected cut override”，不能把后者宣称为 Abaqus 原生行为。完整的“Use current plot options”还需要单独的原始 plot style 与 portion override 状态，A01 暂不伪装实现它。
+官方 S7 的三部分 plot options 是视口级设置；本项目单 cut 样式覆盖是扩展。UI 明确区分“Model defaults”“Selected cut override”和“Current plot options”。A01 完成三页与作用域，A07 已加入独立 PlotStyle 和动态 Use current plot options。
 
-显示修改不能更改原始 FE 字段、物理 provenance、cut 几何与启用状态。字段存在时面色仍取云图；A01 颜色仅控制无标量场时的面色。边色/线型、独立切面单色/云图选择在 A07 实现。混合模式/透明度可能进入现有 CPU fallback，应可用 `renderinfo` 查明，不能承诺所有 plot options 都走 GPU。
+显示修改不能更改原始 FE 字段、物理 provenance、cut 几何与启用状态。A07 已实现有字段时仍可独立选择单色/云图，以及边色/线型。混合模式、透明度和图案边可能进入 CPU fallback，可用 `renderinfo` 查明；壳云图切线仍为连续色线，不能承诺全部选项均 GPU 加速。
 
 复制要区分定义、显示配置、物理请求、时间绑定和临时手柄；A01 仅完成定义和显示样式，后续工作包处理其余引用。删除后不得留下同 ID 的显示覆盖。普通 definitions Save/Load 和完整 session Save/Load 的范围必须明确。
 
@@ -122,6 +122,8 @@ gdb --args "$CUT_DRAWEXE" -i -f "$CUT_REPO/test/cae/cut_view_deformation_demo.tc
 新增回归使用 `OCCTV_TEST_DRAW_VISUAL=ON` 并需要可用 OpenGL 显示环境。Linux 命令按现有构建配置编写，当前工作机是 Windows，不能视为已在 Linux 执行通过。
 
 大规模基线：3,375,000 六面体，变形倍率 0.1，mask=3；已有 Windows Release 测量 cloud/wireframe/cloud_edges 约 8.97/9.85/8.21 FPS，p95 150.15/129.94/157.81 ms，详见 [变形指南](cut-view-manager-deformation.md)。这只是当前基线，未达到稳定 30 FPS；A03/A10 应分别报告参考求交与逐帧更新成本。
+
+A10 新测量是同步 API 驱动的完整 redraw，使用 Iris Xe、20 帧/场景，平移/旋转/变形约 14.91/8.05/6.68 FPS；不是上述三显示模式的鼠标拖动同协议复测，不计算加速倍数。最新分阶段记录和全部保留项见 [验收记录](cut-view-manager-acceptance.md)。
 
 ## 6. A01 的使用方式与工程边界
 
@@ -174,3 +176,4 @@ export CUTVIEW_OUTPUT_DIR="$CUT_REPO/build/plot-options-large"
 - A07 已完成：Release 构建与 12 项相关 CTest 通过；修复 CPU 单色属性容器崩溃及图案边被重置问题。337.5 万单元三模式 × mask 2/3/7 门禁通过，plot 继承和单色切换后暖移动无主体重建/上传，source/result 保留 1,460,965,248 / 597,683,072 字节，限额仍为 4/16 GiB。日志 build/a07-final-tests.log、build/cut-plot-parity-large/run.log；索引已 full+persistence 刷新，OCCT inventory 检查通过。详见 [显示与多 cut 指南](cut-view-manager-plot-parity.md)。
 - A08 已完成：8 项数值、session、时间轴与 Manager 回归通过。337.5 万单元两个优化阈值整批替换并撤销成功，批次 17,715.690 ms，source/result 保留 1,460,965,248 / 460,855,296 字节，4/16 GiB 限额不变；不是鼠标 FPS。修正了 nodal scalar 绑定预验证按完整裁剪结果预留预算的问题，验证只借用标量句柄。日志 build/a08-final-tests.log、build/cut-automatic-large/run.log；持久索引已刷新。详见 [自动切面契约与限制](cut-view-manager-automatic-cuts.md)。
 - A09 已完成：10 项初步回归及扩大后的 7 项回归通过，覆盖 session 1/2/3 迁移、模板跨帧、双视口实际图像、CAD/标注/自由体覆盖和 session 恢复。修复 OCCT 首次 Display 注册时将 affinity 重置为所有视口可见的串显根因。337.5 万单元双视口门禁通过，A 四次暖移动批次 743.501 ms、主体上传为 0，B 定义/预算完全不变；每视口 source 1,460,965,248，A/B result 597,683,072 / 561,011,072 字节。日志 build/a09-scope-fix-tests.log、build/cut-scope-large/run.log；索引已持久刷新，OCCT inventory 已核对。详见 [会话与多视口指南](cut-view-manager-session-scope.md)。
+- A10 本轮测试/测量交付完成：首轮 81/84，修正 definitions 版本断言、旧裂纹阈值测试和薄板 420 秒超时后，5/5 复测通过；薄板全部 384 张图耗时 485.65 秒。基准倍率参数编译后 smoke 再次通过；八组 337.5 万单元门禁全部通过，未提高 4/16 GiB 限额。完整 redraw 的三个场景均未达到组合性能目标，记录实际 FPS/p95 和合并/trace/节点/渲染开销，未冒充性能达标。迁移手册补齐 A06–A09，Linux 直接/GDB/全量与百万命令已核对但未在 Linux 实跑；Abaqus 同输入对照仍缺环境。证据见 [A10 验收记录](cut-view-manager-acceptance.md)。

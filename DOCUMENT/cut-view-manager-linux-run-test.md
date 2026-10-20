@@ -297,3 +297,57 @@ xvfb-run -a -s '-screen 0 1280x1024x24' \
 | 拖动仅在 GDB 下很慢 | 用第 2 节 Release 直接运行对照；Debug 和性能计时分别记录 |
 
 命令依据：[构建选项](../CMakeLists.txt)、[输出目录](../adm/cmake/platform_setup.cmake)、[测试注册](../test/native/CMakeLists.txt)、[插件资源](../source-draw/ViewDraw/VIEWDRAW)、[Linux 也会调用的插件加载脚本](../test/cae/viewdraw_runtime.tcl)、[大模型演示](../test/cae/cut_view_vtk_demo.tcl)、[鼠标拖动测试](../test/cae/cut_view_drag_benchmark.tcl)。
+
+## 8. A01–A10 完整回归与百万门禁
+
+最新范围、版本和限制见 [对标台账](cut-view-manager-abaqus-parity.md)、[验收记录](cut-view-manager-acceptance.md)。
+先按第 2 节配置 Release，启用 `OCCTV_BUILD_TESTS=ON`、`OCCTV_TEST_DRAW_VISUAL=ON` 并完整构建。
+有可用桌面/OpenGL 后按顺序执行，避免 GUI 或性能任务互相竞争：
+
+```bash
+ctest --test-dir "$CUT_BUILD" --output-on-failure --parallel 1
+
+export CUTVIEW_BENCHMARK_FILE="$CUT_MODEL"
+test -s "$CUTVIEW_BENCHMARK_FILE"
+for case in placement material free_body iso_binding slices plot_options automatic scope; do
+  export CUTVIEW_OUTPUT_DIR="$CUT_REPO/build/linux-results/a10-$case"
+  mkdir -p "$CUTVIEW_OUTPUT_DIR"
+  "$CUT_DRAWEXE" -i -f "$CUT_REPO/test/cae/cut_view_${case}_large.tcl" \
+    > "$CUTVIEW_OUTPUT_DIR/run.log" 2>&1 || { cat "$CUTVIEW_OUTPUT_DIR/run.log"; exit 1; }
+  grep -Eq '^CUT_.*_LARGE_PASS' "$CUTVIEW_OUTPUT_DIR/run.log" || { cat "$CUTVIEW_OUTPUT_DIR/run.log"; exit 1; }
+  tail -n 8 "$CUTVIEW_OUTPUT_DIR/run.log"
+done
+```
+
+每个脚本应输出对应的 `CUT_*_LARGE_PASS`；若缺少标记也视为失败，停止后续验收并查日志。
+输入必须含位移场且不少于一百万单元，本轮基准为 3,375,000 hex。
+这些脚本中有少量小型语义断言，但性能工作均针对大数据；命令批次耗时不代表鼠标 FPS。
+
+单独复现完整帧计时（包含更新、Redraw 和 GPU 完成等待）：
+
+```bash
+export CUTVIEW_BENCHMARK_FRAMES=20
+export CUTVIEW_BENCHMARK_DEFORMATION_SCALE=0.1
+export CUTVIEW_BENCHMARK_MASK=3
+export CUTVIEW_BENCHMARK_SCENARIOS='crossing rotating deformed'
+export CUTVIEW_OUTPUT_DIR="$CUT_REPO/build/linux-results/a10-full-frame"
+mkdir -p "$CUTVIEW_OUTPUT_DIR"
+"$CUT_DRAWEXE" -i -f "$CUT_REPO/test/cae/cut_view_benchmark.tcl" \
+  > "$CUTVIEW_OUTPUT_DIR/run.log" 2>&1
+cat "$CUTVIEW_OUTPUT_DIR/run.log"
+```
+
+保存每场景 CSV、`*-renderer.txt` 和 `*-import.txt`。`target=0` 表示该次运行未达到脚本的 15 FPS / p95≤67 ms 双门槛，
+文件模式不会因此自动返回失败，必须在验收报告明确记录。20 帧用于复现本轮测量，生产验收应延长采样。
+
+调试相同功能时，先按第 3 节切换 Debug 的库和 `OCCTV_DRAW_RUNTIME`，再运行：
+
+```bash
+export CUTVIEW_OUTPUT_DIR="$CUT_REPO/build/linux-results/a10-scope-debug"
+mkdir -p "$CUTVIEW_OUTPUT_DIR"
+gdb -q -ex 'set breakpoint pending on' \
+  --args "$CUT_DRAWEXE" -i -f "$CUT_REPO/test/cae/cut_view_scope_test.tcl"
+# GDB 内执行 run；可把脚本替换为 cut_view_material_test.tcl 等相关回归。
+```
+
+以上是本项目命令；本轮执行证据来自 Windows Release，Linux/CentOS 结果需在对应机器另外取得。

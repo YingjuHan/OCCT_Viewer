@@ -6,7 +6,7 @@ namespace eval ::CutViewPhysics {
     variable units {1 1 1 1 1}; variable origin {0 0 0}
     variable frame {0 0 0 1 0 0 0 1 0 0 0 1}; variable sections {[]}
     variable autoid automatic; variable kind crack; variable autofield heat_flux
-    variable component 1; variable threshold 2; variable sign 1; variable range {0 5}
+    variable component 1; variable threshold 0; variable sign 1; variable range {0 5}
     variable mask 2; variable output ""; variable status ""
 }
 proc ::CutViewPhysics::numbers {values count} {

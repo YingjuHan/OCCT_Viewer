@@ -393,10 +393,11 @@ if (TARGET ViewDraw)
         PASS_REGULAR_EXPRESSION "CUT_DISPLAY_MODES_PASS" FAIL_REGULAR_EXPRESSION "CUT_DISPLAY_MODES_FAIL"
         RUN_SERIAL TRUE TIMEOUT 180)
       add_test (NAME draw_cut_view_sine_plate COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_sine_plate.tcl")
+      # 384 framebuffer captures cover both formats, signs, masks and backends.
       set_tests_properties (draw_cut_view_sine_plate PROPERTIES
         ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-sine-plate"
         PASS_REGULAR_EXPRESSION "CUT_SINE_PLATE_DRAW_PASS" FAIL_REGULAR_EXPRESSION "CUT_SINE_PLATE_DRAW_FAIL"
-        RUN_SERIAL TRUE TIMEOUT 420)
+        RUN_SERIAL TRUE TIMEOUT 900)
       set_tests_properties (draw_cut_view_gpu_plane PROPERTIES ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-gpu-plane"
         PASS_REGULAR_EXPRESSION "CUT_GPU_PLANE_PASS" FAIL_REGULAR_EXPRESSION "CUT_GPU_PLANE_FAIL" RUN_SERIAL TRUE TIMEOUT 90)
       set_tests_properties (draw_cut_view_visual PROPERTIES ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-images"

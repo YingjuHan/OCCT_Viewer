@@ -48,6 +48,7 @@ proc sine_run {} {
                     sine_assert {[dict get $comparison silhouette] < 1000} "Sine GPU/CPU silhouette mismatch: $plane / $sign / $mask: $comparison"
                 }
             }
+            puts "CUT_SINE_PLATE_CASE_PASS $format $index"; flush stdout
             incr index
         }
         scvcutview sine_test clear

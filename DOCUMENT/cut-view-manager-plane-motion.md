@@ -51,7 +51,7 @@ scvcutview cut_view_demo fromcsys x fixture 2
 
 `list` 中平面新增 `origin/normal/axis2/offset/angle/rotation_axis`。`range` 继续返回旧的世界法向投影范围；`motionrange` 返回相对于定义原点的可用 Offset。旧 `rotate id axisIndex degrees [pivot]` 仍按全局 X/Y/Z 增量旋转，不能与新 `absrotate` 混用语义。
 
-Definitions JSON 升到 **version 8**，平面新增 `placement` 对象，同时保存派生平面方程。读取时校验二者一致，拒绝不完整或矛盾文件，失败不会替换现场。版本 1–7 使用原方程的最近原点和确定性垂直轴迁移，无法恢复未保存的历史切向姿态。Definitions、完整 Session、Duplicate 和时间帧切换均携带新状态；Session 仍为外层 version 3，其内嵌 definitions 自带版本。
+本节记录 A02 当时的格式：Definitions JSON 升到 **version 8**，平面新增 `placement` 对象，同时保存派生平面方程。读取时校验二者一致，拒绝不完整或矛盾文件，失败不会替换现场。版本 1–7 使用原方程的最近原点和确定性垂直轴迁移，无法恢复未保存的历史切向姿态。Definitions、完整 Session、Duplicate 和时间帧切换均携带新状态；当时外层 Session 为 version 3。当前格式已为 definitions 13 / session 4，迁移规则见 [会话指南](cut-view-manager-session-scope.md)。
 
 ## 4. 代码入口与移植
 
