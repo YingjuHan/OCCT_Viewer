@@ -434,7 +434,7 @@ void MeshCutGpuPresentation::Attach(const Handle(Prs3d_Presentation)& parent,con
         myClip = new Graphic3d_ClipPlane(myPlane); myClip->SetCapping(false);
         Handle(Graphic3d_SequenceOfHClipPlane) planes = new Graphic3d_SequenceOfHClipPlane(); planes->Append(myClip);
         myBodyStructure->SetClipPlanes(planes);
-        myBodyChanged = !myBody.IsNull(); mySliceChanged = !mySlice.IsNull() || !mySliceEdges.IsNull();
+        myBodyChanged = !myBodyArrays.empty(); mySliceChanged = !mySlice.IsNull() || !mySliceEdges.IsNull();
     }
     myParent = parent;
     myBodyConnected = false;

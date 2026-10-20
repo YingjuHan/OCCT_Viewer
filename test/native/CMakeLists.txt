@@ -334,6 +334,11 @@ if (TARGET ViewDraw)
       add_test (NAME draw_cut_view_visual COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_visual.tcl")
       add_test (NAME draw_cut_view_gpu_plane COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_gpu_plane.tcl")
       add_test (NAME draw_cut_view_display_modes COMMAND "${OCCTV_DRAWEXE}" -b -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_display_modes.tcl")
+      add_test (NAME draw_cut_view_deformation COMMAND "${OCCTV_DRAWEXE}" -i -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_deformation.tcl")
+      set_tests_properties (draw_cut_view_deformation PROPERTIES
+        ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-deformation"
+        PASS_REGULAR_EXPRESSION "CUT_DEFORMATION_PASS" FAIL_REGULAR_EXPRESSION "CUT_DEFORMATION_FAIL"
+        RUN_SERIAL TRUE TIMEOUT 180)
       set_tests_properties (draw_cut_view_display_modes PROPERTIES
         ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-display-modes"
         PASS_REGULAR_EXPRESSION "CUT_DISPLAY_MODES_PASS" FAIL_REGULAR_EXPRESSION "CUT_DISPLAY_MODES_FAIL"

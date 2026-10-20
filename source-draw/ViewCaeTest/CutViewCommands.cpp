@@ -825,19 +825,30 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
         else if (action == "remove" && argc == 4) { ok = cuts.Remove(argv[3]); }
         else if (action == "snapshot" && argc == 3) { di << cuts.DumpDefinitionsJson().c_str(); return 0; }
         else if (action == "restore" && argc == 4) { ok = cuts.RestoreDefinitionsJson(argv[3]); }
-        else if (action == "deform" && (argc == 5 || argc == 6)) {
-            const int step = argc == 6 ? cutInteger(argv[5]) : -1;
-            if (std::string(argv[3]) == "none") { ok = cuts.SetDeformation(nullptr, 0.0); }
-            else {
-                for (const auto& field : model.Mesh->Properties()) {
-                    if (field->Name() == argv[3] && field->TimeStep() == step) {
-                        ok = cuts.SetDeformation(field, cutReal(argv[4]));
-                        break;
-                    }
-                }
+        else if (action == "deform" && (argc == 3 || argc == 5 || argc == 6)) {
+            if (argc == 3) {
+                const auto& field = cuts.DeformationField();
+                di << "field"; di.AppendElement(field.IsNull() ? "none" : field->Name().ToCString());
+                di << " step " << (field.IsNull() ? -1 : field->TimeStep()) << " scale " << cuts.DeformationScale()
+                   << " effectiveScale " << cuts.EffectiveDeformationScale();
+                return 0;
             }
+            const int step = argc == 6 ? cutInteger(argv[5]) : -1;
+            const double scale = cutReal(argv[4]);
+            Handle(RWCae::MeshNVecProperty) displacement;
+            if (std::string(argv[3]) != "none") {
+                for (const auto& field : model.Mesh->Properties()) {
+                    if (field->Name() != argv[3] || field->TimeStep() != step || !field->IsNodal() || !field->IsVector3()) { continue; }
+                    if (!displacement.IsNull()) { throw std::invalid_argument("Ambiguous nodal deformation field"); }
+                    displacement = field;
+                }
+                if (displacement.IsNull()) { throw std::invalid_argument("Deformation requires a matching nodal 3D vector field"); }
+            }
+            // Cancel a held plane edit before invalidating its geometry chains.
+            cancelHandleDrag(model);
+            if (std::string(argv[3]) == "none") { ok = cuts.SetDeformation(nullptr, 0.0); }
+            else { ok = cuts.SetDeformation(displacement,scale); }
             if (ok) {
-                cancelHandleDrag(model);
                 model.Bounds = cuts.SourceBounds();
                 if (!model.Plane.IsNull()) { model.Plane->SetBounds(model.Bounds); }
                 if (!model.Quadric.IsNull()) { model.Quadric->SetBounds(model.Bounds); }
@@ -1087,7 +1098,7 @@ void ViewCaeTest::CutViewCommands::Factory(Draw_Interpretor& di)
         "  | union (display OR volume, exposed area and primitive provenance) | style negative/on/positive [transparency]\n"
         "    layout: xx-yy-zz-xy-xz-yz, xx-yy-zz-xy-yz-xz, row-major, column-major\n"
         "  | copy id newId | rename id name | enable id 0/1 | remove id | eval id | display | clear\n"
-        "  | snapshot | restore json | deform property/none normalizedScale [timeStep]\n"
+        "  | snapshot | restore json | deform [property/none normalizedScale [timeStep]]\n"
         "  | freebody id field xx yy zz xy xz yz originX originY originZ [timeStep]\n"
         "  | heatflow id field componentX componentY componentZ [timeStep]\n"
         "  | list | fields | bounds | range id | stats | presentation id | rotate id axisIndex degrees [originX originY originZ]\n"

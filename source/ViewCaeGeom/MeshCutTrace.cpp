@@ -95,6 +95,12 @@ struct MeshCutTraceSource::Data {
     };
     Handle(RWCae::MeshData) Mesh;
     Handle(MeshGeometry) Source;
+    ~Data() {
+        // This topology owns a dedicated source chain. Deformation adds owning
+        // parent/child handles; dropping only Source leaves that cycle and its
+        // source-budget lease alive after every deformation epoch (or failure).
+        if (!Source.IsNull()) { Source->RemoveChildren(); }
+    }
     std::vector<Cell> Cells;
     std::vector<Boundary> Boundaries;
     std::shared_ptr<MeshVtkCutSource> Prepared;

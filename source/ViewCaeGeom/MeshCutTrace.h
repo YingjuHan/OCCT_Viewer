@@ -39,6 +39,7 @@ struct MeshCutPrimitiveTrace {
     MeshCutTraceWeights Weights;
 };
 //! Cached topology and original-FE lookup for one source/deformation epoch.
+//! Takes a dedicated source chain; detaches its children on destruction.
 class MeshCutTraceSource {
 public:
     Standard_EXPORT MeshCutTraceSource(const Handle(RWCae::MeshData)& mesh,

@@ -404,6 +404,17 @@ void InteractiveCaeCutView::Synchronize()
 {
     const auto frameStart = std::chrono::steady_clock::now();
     const auto request=myCuts.RequestGeneration();
+    if (!myCuts.IsCurrentRequest(request)) { throw std::runtime_error("Cut frame cancelled before synchronization"); }
+    if (myGpuPresentation && mySynchronizedSourceEpoch != myCuts.Statistics().SourceEpoch) {
+        // InvalidateGeometry has already detached these live geometry chains.
+        // Do not pin their entire source/result budgets while preparing the next
+        // deformation. GPU arrays retain the displayed frame independently;
+        // externally held geometry keeps its own lease and remains accounted.
+        myPresentations.clear(); myVectorPresentations.clear(); myPickResults.clear();
+        myCutPresentation.reset(); myBodyPresentation.Nullify(); myBodyPickResult = {};
+        myBodySelection = {}; myBodySelectionEpoch = 0;
+        if (myGpuPresentation) { myGpuPresentation->ReleaseSourceGeometry(); }
+    }
     decltype(myPresentations) presentations;
     decltype(myVectorPresentations) vectorPresentations;
     decltype(myLineArrays) lineArrays;
@@ -644,6 +655,7 @@ void InteractiveCaeCutView::Synchronize()
             value < 0.5 ? 2*value : 2-2*value,value < 0.5 ? 1-2*value : 0,Quantity_TOC_RGB),i);
     }
     ++mySynchronizationCount;
+    mySynchronizedSourceEpoch = myCuts.Statistics().SourceEpoch;
     if (!gpuPlane || !myGpuPresentation->IsAttached()) { SetToUpdate(); }
     UpdateSelection();
     if (myOnSynchronize) { myOnSynchronize(); }

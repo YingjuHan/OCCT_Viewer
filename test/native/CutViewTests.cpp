@@ -770,6 +770,81 @@ static void gpuBodyBudgetReuse()
     require(cuts.CacheStatistics().ResultReserved <= used.ResultReserved+18432,"Repeated field/mode edits grew body reservations");
 }
 
+static void gpuDeformedHex()
+{
+    Handle(RWCae::MeshData) mesh = new RWCae::MeshData();
+    std::vector<double> temperatures;
+    for (const auto& p : {Graphic3d_Vec3(0,0,0),Graphic3d_Vec3(1,0,0),Graphic3d_Vec3(1,1,0),Graphic3d_Vec3(0,1,0),
+                          Graphic3d_Vec3(0,0,1),Graphic3d_Vec3(1,0,1),Graphic3d_Vec3(1,1,1),Graphic3d_Vec3(0,1,1)}) {
+        mesh->AddNodePosition(p); temperatures.push_back(p.x()+2*p.y()+3*p.z());
+    }
+    const RWCae::MeshEntityId nodes[] = {0,1,2,3,4,5,6,7}; mesh->AddElement(RWCae::MeshElementHexahedron(nodes));
+    const auto temperature = field("temperature",true,temperatures);
+    Handle(RWCae::MeshNVecProperty) displacement = new RWCae::MeshNVecProperty("displacement",3,
+        RWCae::MeshPropertyBase::MappingType::Nodal,RWCae::MeshNVecPropertyType::Vector);
+    displacement->Init<RWCae::MeshScalarProperty>();
+    for (int c = 0; c < 3; ++c) {
+        auto values = Handle(RWCae::MeshScalarProperty)::DownCast(displacement->GetComponent(c)); values->Init(8);
+        for (int n = 0; n < 8; ++n) { values->SetValue(RWCae::MeshPropertyEntityInfo(n),c == 0 ? mesh->Nodes()[n].z() : 0); }
+    }
+    displacement->UpdateComponents();
+    Handle(ViewCae::InteractiveCaeCutView) view = new ViewCae::InteractiveCaeCutView(mesh);
+    auto& cuts = view->Cuts(); cuts.AddPlane("x",Graphic3d_Vec4d(1,0,0,-.57)); cuts.SetVisibility("x",3);
+    view->SetField(temperature); view->Synchronize();
+    const auto used = cuts.CacheStatistics();
+    require(cuts.SetCachePolicy({cuts.CachePolicy().SourceBytes,used.ResultReserved+65536}),"Set deformation cache budget");
+    using Mode = ViewCae::InteractiveCaeMeshPrsMode;
+    for (const auto mode : {Mode::FlatShaded,Mode::MeshEdges,Mode::ShadedMeshEdges}) {
+        view->SetMeshDisplayMode(mode);
+        for (const double scale : {.3,-.2,0.0}) {
+            require(cuts.SetDeformation(displacement,scale),"Hex deformation rejected"); view->Synchronize();
+            require(cuts.CacheStatistics().SourceReserved == used.SourceReserved,"Deformed trace source leaked its geometry chain");
+            const double k = cuts.EffectiveDeformationScale();
+            require(view->RenderStatistics().GpuPlane,"Deformation left GPU plane path");
+            const auto builds = view->RenderStatistics().BodyBuilds;
+            for (const unsigned mask : {3u,2u,6u,7u}) {
+                cuts.SetVisibility("x",mask); cuts.SetPlane("x",Graphic3d_Vec4d(1,0,0,-.61)); view->Synchronize();
+                require(view->RenderStatistics().BodyBuilds == builds && view->RenderStatistics().SubmittedBodyBytes == 0,
+                    "Moving deformed plane uploaded body");
+                const auto section = cuts.EvaluateSectionForDisplay("x",temperature);
+                for (int n = 0; n < (int)section.Portions[1]->GetMeshData()->NbNodes(); ++n) {
+                    const auto p = section.Portions[1]->GetMeshData()->Nodes()[n];
+                    near(p.x(),.61,"Deformed hex section off plane");
+                    near(section.Fields[1]->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(n)),
+                        p.x()+2*p.y()+(3-k)*p.z(),"Deformed hex cloud used current coordinates as original values");
+                }
+                const double originX = (1+k)/2;
+                for (const auto& array : {Handle(Graphic3d_ArrayOfPrimitives)(view->SliceArray()),
+                                         Handle(Graphic3d_ArrayOfPrimitives)(view->SliceEdgesArray())}) {
+                    if (array.IsNull()) { continue; }
+                    for (int v = 1; v <= array->VertexNumber(); ++v) {
+                        const auto p = array->Vertice(v);
+                        near(p.X()+originX,.61,"GPU deformed section double-applied displacement");
+                        const double value = p.X()+originX+2*(p.Y()+.5)+(3-k)*(p.Z()+.5);
+                        const auto uv = ViewCae::CaeMeshTools::GetUVCoords(value,0,6,ViewCae::CaeMeshTools::NbColorscaleColors);
+                        near(array->VertexTexel(v).X(),uv.x(),"GPU deformed cloud UV differs from FE field");
+                    }
+                }
+            }
+        }
+    }
+    require(cuts.SetDeformation(nullptr,0),"Hex deformation reset failed"); view->Synchronize();
+    near(cuts.SourceBounds().CornerMax().X(),1,"Hex bounds stale after deformation reset");
+    cuts.SetVisibility("x",2); view->Synchronize();
+    const auto builds = view->RenderStatistics().BodyBuilds;
+    require(cuts.SetDeformation(displacement,.4),"Hidden body deformation failed"); view->Synchronize();
+    require(view->RenderStatistics().BodyBuilds == builds,"Hidden deformation rebuilt body immediately");
+    cuts.SetVisibility("x",3); view->Synchronize();
+    require(view->RenderStatistics().BodyBuilds == builds+1,"Restored body missed hidden deformation");
+    // Internal live geometry may be released, but exported results must remain charged.
+    auto held = cuts.EvaluateSectionForDisplay("x",temperature);
+    require(cuts.SetDeformation(displacement,.2),"Pinned deformation failed");
+    bool rejected = false; try { view->Synchronize(); } catch (const std::length_error&) { rejected = true; }
+    require(rejected,"Externally pinned deformation escaped result budget");
+    held = {}; view->Synchronize();
+    near(cuts.SourceBounds().CornerMax().X(),1.2,"Deformation retry after releasing pinned result failed");
+}
+
 int main()
 {
     try {
@@ -788,6 +863,7 @@ int main()
         gpuPlanePrimitives();
         gpuPlaneWireframe();
         gpuBodyBudgetReuse();
+        gpuDeformedHex();
         std::cout << "Cut view numerical tests passed\n";
         return 0;
     } catch (const std::exception& error) {

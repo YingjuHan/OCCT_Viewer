@@ -22,6 +22,10 @@ if {[catch {
     set ::vtk_cut_demo_file $::env(CUTVIEW_BENCHMARK_FILE)
     source [file join $drag_dir cut_view_vtk_demo.tcl]
     set model cut_view_vtk_demo
+    if {[info exists ::env(CUTVIEW_BENCHMARK_DEFORMATION)]} {
+        scvcutview $model deform displacement $::env(CUTVIEW_BENCHMARK_DEFORMATION)
+        ::CutViewManager::refresh 1
+    }
     set mode cloud
     if {[info exists ::env(CUTVIEW_BENCHMARK_MODE)]} { set mode $::env(CUTVIEW_BENCHMARK_MODE) }
     scvcutview $model displaymode $mode
@@ -40,7 +44,7 @@ if {[catch {
     scvcutview $model handle x 1 0
     scvcutview $model fit
     lassign [scvcutview $model bounds] xmin ymin zmin xmax ymax zmax
-    set x [expr {($xmin+$xmax)/2.0}]
+    set x [expr {-[lindex [drag_plane] 3]/[lindex [drag_plane] 0]}]
     set y [expr {$ymin+0.35*($ymax-$ymin)}]
     set z [expr {$zmin+0.35*($zmax-$zmin)}]
     lassign [scvcutview $model project $x $y $z] px py

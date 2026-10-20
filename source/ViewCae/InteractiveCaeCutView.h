@@ -167,6 +167,7 @@ private:
     std::vector<Handle(Graphic3d_ArrayOfPoints)> myPointArrays;
     std::vector<Handle(Graphic3d_AspectMarker3d)> myPointAspects;
     uint64_t mySynchronizationCount = 0;
+    uint64_t mySynchronizedSourceEpoch = 0;
     std::map<std::string, uint64_t> mySynchronizedRevisions;
     std::shared_ptr<ViewCaeGeom::MeshCutPresentation> myCutPresentation;
     std::vector<ViewCaeGeom::MeshCutResult> myPickResults;

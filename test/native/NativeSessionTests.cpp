@@ -119,10 +119,13 @@ void tests()
         ViewCaeGeom::MeshCutTraceOptions negative; negative.Policy=ViewCaeGeom::MeshCutTracePolicy::Negative;
         require(cuts.SetTraceOptions("p",false,negative)&&bounded.Refresh(false),"bounded edit trace fixture");
         const auto snapshot=cuts.DumpDefinitionsJson(); const auto used=cuts.CacheStatistics();
+        // Explicit external ownership must pin the old epoch. The renderer now
+        // releases its own invalidated geometry before rebuilding deformation.
+        const auto heldPresentations=bounded.Display()->Presentations();
         const auto generation=bounded.Generation(); const auto events=bounded.EventCounts();
         const auto synchronized=bounded.Display()->SynchronizationCount();
         require(cuts.SetCachePolicy({used.SourceReserved,used.ResultReserved}),"bounded edit policy");
-        cuts.InvalidateGeometry(); // Old published geometry remains charged across a source epoch reset.
+        cuts.InvalidateGeometry(); // Externally held geometry remains charged across the source epoch reset.
         auto changed=cuts.Definitions()[0]; changed.Plane=Graphic3d_Vec4d(0,1,0,-.4);
         require(!bounded.Edit(changed)&&!bounded.LastError().empty(),"over-budget edit accepted");
         require(cuts.DumpDefinitionsJson()==snapshot&&bounded.Generation()==generation&&bounded.EventCounts()==events

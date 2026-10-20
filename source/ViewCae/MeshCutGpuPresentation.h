@@ -20,6 +20,8 @@ public:
         ViewCaeGeom::MeshCutViewManager& cuts, MeshCutRenderStatistics& statistics);
     void Attach(const Handle(Prs3d_Presentation)& parent,const Handle(Graphic3d_StructureManager)& manager);
     void Reset();
+    //! Drop invalidated CPU geometry; resident GPU arrays keep the last frame.
+    void ReleaseSourceGeometry() { myBody.Nullify(); }
     bool IsAttached() const { return !myBodyStructure.IsNull(); }
     bool AcceptBodyPoint(const gp_Pnt& point) const;
     const Handle(Graphic3d_ArrayOfTriangles)& SliceArray() const { return mySlice; }
