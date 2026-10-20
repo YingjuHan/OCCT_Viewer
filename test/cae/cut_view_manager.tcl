@@ -68,6 +68,7 @@ source [file join [file dirname [info script]] cut_view_tools.tcl]
 source [file join [file dirname [info script]] cut_view_time.tcl]
 source [file join [file dirname [info script]] cut_view_physics.tcl]
 source [file join [file dirname [info script]] cut_view_free_body.tcl]
+source [file join [file dirname [info script]] cut_view_iso_binding.tcl]
 source [file join [file dirname [info script]] cut_view_cache_panel.tcl]
 source [file join [file dirname [info script]] cut_view_session.tcl]
 source [file join [file dirname [info script]] cut_view_plot_options.tcl]
@@ -125,6 +126,7 @@ proc ::CutViewManager::refresh {{attach 0}} {
         if {[$w.cuts selection] ne [list $selected]} { $w.cuts selection set $selected }
         foreach cut $definitions { if {[dict get $cut id] eq $selected} { break } }
         set shape [dict get $cut shape]
+        $w.isobinding configure -state [expr {$shape eq "isosurface" ? "normal" : "disabled"}]
         if {$shape eq "plane"} { set plane [dict get $cut plane] } elseif {$shape in {sphere cylinder}} {
             set plane [list $shape [dict get $cut center] [dict get $cut axis] [dict get $cut radius]]
         } else {
@@ -613,6 +615,7 @@ proc ::CutViewManager::close {} {
     catch {destroy .scvcutrename}
     catch {destroy .scvcutplacement}
     catch {destroy .scvcutfreebody}
+    catch {destroy .scvcutisobinding}
     if {[winfo exists .scvcutsession]} { destroy .scvcutsession }
     if {[winfo exists .scvcutcache]} { destroy .scvcutcache }
     if {[winfo exists .scvcutphysics]} { destroy .scvcutphysics }
@@ -827,9 +830,10 @@ proc scvcutmanager {theModel} {
     pack $w.tools -fill x -padx 8 -pady 3
     ttk::button $w.options -text "View Cut Options..." -command {::CutViewManager::invoke scvcutoptions $::CutViewManager::model}
     ttk::button $w.freebody -text "Free Body Options..." -command {::CutViewManager::invoke scvcutfreebody $::CutViewManager::model}
+    ttk::button $w.isobinding -text "Isosurface Options..." -command {::CutViewManager::invoke scvcutisobinding $::CutViewManager::model}
     ttk::frame $w.optionButtons
     pack $w.optionButtons -fill x -padx 8 -pady 3
-    pack $w.options $w.freebody -in $w.optionButtons -side left -fill x -expand 1 -padx 2
+    pack $w.options $w.freebody $w.isobinding -in $w.optionButtons -side left -fill x -expand 1 -padx 2
     ttk::label $w.status -textvariable ::CutViewManager::status -wraplength 530 -foreground #a02020
     pack $w.status -fill x -padx 8
     ttk::button $w.close -text Close -command ::CutViewManager::close

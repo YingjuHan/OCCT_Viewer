@@ -920,6 +920,20 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             ok = action == "isoadd" ? cuts.AddIsosurface(argv[3], boundField, cutInteger(argv[6]), cutReal(argv[7]))
                 : cuts.SetIsosurface(argv[3], boundField, cutInteger(argv[6]), cutReal(argv[7]));
             if (!ok) { throw std::invalid_argument("Invalid isosurface: unique finite scalar component and first-order mesh required"); }
+        } else if (action == "isobinding" && (argc == 4 || argc >= 10)) {
+            const auto definitions = cuts.Definitions(); const auto found = std::find_if(definitions.begin(),definitions.end(),[&](const auto& d) { return d.Id == argv[3] && d.Shape == ViewCaeGeom::MeshCutShape::Isosurface; });
+            if(found == definitions.end()) { throw std::invalid_argument("Select an isosurface cut"); }
+            if(argc == 4) {
+                const auto& b=found->IsoRecovery;
+                di<<"measure "<<(int)b.Tensor.Measure<<" layout "<<(int)b.Tensor.Layout<<" shear "<<(b.Tensor.EngineeringShear?1:0)<<" override "<<(found->IsoAveragingOverride?1:0)<<" threshold "<<b.ThresholdPercent<<" before "<<(b.InvariantsBeforeAveraging?1:0)<<" regions {";
+                for(auto r:b.Regions) { di<<std::to_string(r).c_str()<<" "; } di<<"}"; return 0;
+            }
+            auto b=found->IsoRecovery;
+            b.Tensor.Measure=(ViewCaeGeom::MeshCutTensorMeasure)cutInteger(argv[4]); b.Tensor.Layout=(ViewCaeGeom::MeshCutTensorLayout)cutInteger(argv[5]); b.Tensor.EngineeringShear=cutBoolean(argv[6]);
+            const bool overrideAveraging=cutBoolean(argv[7]); b.ThresholdPercent=cutReal(argv[8]); b.InvariantsBeforeAveraging=cutBoolean(argv[9]); b.Regions.clear();
+            for(int i=10;i<argc;++i) { b.Regions.push_back(cutInt64(argv[i])); }
+            ok=cuts.SetIsoBindingOptions(argv[3],b,overrideAveraging);
+            if(!ok) { throw std::invalid_argument("Invalid isosurface tensor/averaging options or candidate cache budget"); }
         } else if (action == "isovalue" && argc == 5) {
             ok = cuts.SetIsoValue(argv[3], cutReal(argv[4]));
         } else if (action == "visibility" && argc == 5) {
@@ -1209,6 +1223,7 @@ void ViewCaeTest::CutViewCommands::Factory(Draw_Interpretor& di)
         imageCompare, "SC Viewer CAE Prs");
     di.Add("scvcutview", "scvcutview name read/replace file | info | importreport | defaults | add/move id A B C D | visibility id mask\n"
         "  | isoadd/isomove id point/cell field rawComponent value [timeStep] | isovalue id value\n"
+        "  | isobinding id [measure0..6 layout0..3 engineeringShear override100 threshold beforeAverage [regions...]]\n"
         "  | sphereadd/spheremove id centerX centerY centerZ radius | radius id radius\n"
         "  | cylinderadd/cylindermove id centerX centerY centerZ axisX axisY axisZ radius\n"
         "  | field point/cell name rawComponent [timeStep] | cellmode id constant/projected\n"

@@ -206,9 +206,37 @@ void curvedDeformation()
     };
     check(scale); manager.SetDeformation(nullptr,0); check(0);
 }
+void bindingSnapshots()
+{
+    auto mesh=fixture(10); mesh->AddNodePosition(Graphic3d_Vec3(0,0,-1));
+    const RWCae::MeshEntityId other[]={0,2,1,4}; mesh->AddElement(RWCae::MeshElementTetrahedron(other));
+    Handle(RWCae::MeshNVecProperty) scalar=new RWCae::MeshNVecProperty("label",1,RWCae::MeshPropertyBase::MappingType::Elemental);
+    scalar->Init<RWCae::MeshScalarProperty>(); auto values=Handle(RWCae::MeshScalarProperty)::DownCast(scalar->GetComponent(0)); values->Init(2);
+    values->SetValue(RWCae::MeshPropertyEntityInfo(0),2); values->SetValue(RWCae::MeshPropertyEntityInfo(1),6); scalar->UpdateComponents();
+    MeshCutViewManager manager(mesh); require(manager.AddIsosurface("iso",scalar,0,4),"Cell iso binding");
+    MeshCutRecoveryOptions snapshot; snapshot.ThresholdPercent=0;
+    require(manager.SetIsoBindingOptions("iso",snapshot,false),"Independent iso threshold");
+    require(manager.Evaluate("iso").Portions[1]->GetMeshData()->NbNodes()==0,"Threshold zero was globally averaged");
+    auto display=snapshot; display.ThresholdPercent=100; require(manager.SetRecoveryOptions(display),"Display averaging");
+    require(manager.Evaluate("iso").Portions[1]->GetMeshData()->NbNodes()==0,"Display averaging changed iso snapshot");
+    require(manager.SetIsoBindingOptions("iso",snapshot,true),"Iso 100 percent override");
+    require(manager.Evaluate("iso").Portions[1]->GetMeshData()->NbNodes()>0,"Override did not restore continuous cut");
+    const auto json=manager.DumpDefinitionsJson(); MeshCutViewManager restored(mesh); require(restored.RestoreDefinitionsJson(json),"Iso binding JSON10");
+    require(restored.Definitions()[0].IsoRecovery.ThresholdPercent==0 && restored.Definitions()[0].IsoAveragingOverride,"Iso binding snapshot persistence");
+    snapshot.Tensor.Measure=MeshCutTensorMeasure::Mises;
+    require(!manager.SetIsoBindingOptions("iso",snapshot,false) && manager.DumpDefinitionsJson()==json,"Invalid tensor options changed binding");
+    auto tensorMesh=fixture(10);
+    Handle(RWCae::MeshNVecProperty) stress=new RWCae::MeshNVecProperty("S",6,RWCae::MeshPropertyBase::MappingType::Nodal,RWCae::MeshNVecPropertyType::Tensor);
+    stress->Init<RWCae::MeshScalarProperty>();
+    for(int c=0;c<6;++c) { auto v=Handle(RWCae::MeshScalarProperty)::DownCast(stress->GetComponent(c)); v->Init(4); for(int n=0;n<4;++n) { v->SetValue(RWCae::MeshPropertyEntityInfo(n),c==0?1+tensorMesh->Nodes()[n].x():0); } }
+    stress->UpdateComponents(); MeshCutViewManager tensorManager(tensorMesh); require(tensorManager.AddIsosurface("s",stress,0,1.25),"Tensor iso");
+    require(tensorManager.SetIsoBindingOptions("s",snapshot,true),"Mises binding");
+    const auto cut=tensorManager.Evaluate("s"); for(const auto& p:cut.Portions[1]->GetMeshData()->Nodes()) { near(p.x(),.25,2e-6,"Derived Mises section position"); }
+    require(cut.Portions[1]->GetMeshData()->NbNodes()>0,"Derived iso empty");
+}
 }
 int main()
 {
-    try { familyCharts(); nativeSecondOrders(); nonmonotone(); rational(); enclosedAndConvergence(); lifecycle(); curvedDeformation(); std::cout << "CUT_ISO_PASS\n"; return 0; }
+    try { familyCharts(); nativeSecondOrders(); nonmonotone(); rational(); enclosedAndConvergence(); lifecycle(); curvedDeformation(); bindingSnapshots(); std::cout << "CUT_ISO_PASS\n"; return 0; }
     catch (const std::exception& e) { std::cerr << "CUT_ISO_FAIL: " << e.what() << '\n'; return 1; }
 }

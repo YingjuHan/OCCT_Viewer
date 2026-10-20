@@ -87,7 +87,8 @@ void MeshGeometryVtkIso::generateMeshData()
         auto evaluate = [&](const Vec& q) -> Sample {
             const auto cached = samples.find(key(q)); if (cached != samples.end()) { return cached->second; }
             Sample s; s.Q = q; s.Origin = cell.EvaluateParameter(q,s.P); long double value = 0;
-            for (const auto& base : s.Origin.BaseNodes()) { value += (long double)base.second*Values->Value(RWCae::MeshPropertyEntityInfo(base.first)); }
+            for (const auto& base : s.Origin.BaseNodes()) { value += (long double)base.second*Values->Value(Values->MapType() == RWCae::MeshPropertyBase::MappingType::Nodal
+                ? RWCae::MeshPropertyEntityInfo(base.first) : RWCae::MeshPropertyEntityInfo(index,base.first)); }
             s.F = (double)(value-(long double)Definition.IsoValue);
             if (!std::isfinite(s.F)) { throw std::runtime_error("Isosurface field exceeds finite evaluation range"); }
             if (samples.size() >= Options.MaxPrimitives*4) { throw std::runtime_error("Isosurface sample budget exceeded"); }
@@ -96,7 +97,8 @@ void MeshGeometryVtkIso::generateMeshData()
         std::vector<RWCae::MeshEntityId> originalNodes; mesh->ElementNodes(index,originalNodes);
         double scale = 0; Vec low(INFINITY), high(-INFINITY);
         for (auto node : originalNodes) {
-            scale = std::max(scale,std::abs(Values->Value(RWCae::MeshPropertyEntityInfo(node))));
+            scale = std::max(scale,std::abs(Values->Value(Values->MapType() == RWCae::MeshPropertyBase::MappingType::Nodal
+                ? RWCae::MeshPropertyEntityInfo(node) : RWCae::MeshPropertyEntityInfo(index,node))));
             auto p = mesh->Nodes()[node]; source->ModifyNode(node,p);
             for (int a = 0; a < 3; ++a) { low[a] = std::min(low[a],(double)p[a]); high[a] = std::max(high[a],(double)p[a]); }
         }

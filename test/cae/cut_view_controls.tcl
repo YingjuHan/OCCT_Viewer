@@ -407,10 +407,15 @@ proc ui_run {} {
     ui_ok
 
     # Cover the already-present optional shape controls without using them for plane acceptance.
+    # Advanced elemental binding is tested independently from retained-body OR.
+    if {$::CutViewManager::multiple} { ui_click .scvcutmanager.header.multiple }
     ui_combo .scvcutmanager.actions.shape Isosurface
     ui_click .scvcutmanager.actions.create
     ui_ok
     ui_assert {[dict get [ui_cut $::CutViewManager::selected] shape] eq "isosurface"} "Optional shape selector failed"
+    ui_click .scvcutmanager.isobinding
+    ui_assert {[winfo exists .scvcutisobinding]} "Isosurface binding dialog did not open"
+    .scvcutisobinding.actions.close invoke
     ui_combo .scvcutmanager.controls.isofield "pressure (cell)"
     ui_mark .scvcutmanager.controls.isocomponent
     event generate .scvcutmanager.controls.isocomponent <<Increment>>

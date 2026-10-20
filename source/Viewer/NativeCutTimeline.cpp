@@ -218,6 +218,14 @@ bool NativeCutTimeline::prepare(int step, const CutFieldBinding& deformation, do
                     added = candidate->Cuts().AddIsosurface(definition.Id,iso,definition.IsoComponent,definition.IsoValue); break;
                 }
             }
+            if (added && definition.Shape == ViewCaeGeom::MeshCutShape::Isosurface) {
+                auto isoRecovery = definition.IsoRecovery;
+                if (remesh && !isoRecovery.Regions.empty()) {
+                    if (!myRecoverySteps.count(step)) { throw std::invalid_argument("Remesh requires rebinding the isosurface recovery regions"); }
+                    isoRecovery.Regions = myRecoverySteps.at(step).Regions;
+                }
+                added = candidate->Cuts().SetIsoBindingOptions(definition.Id,isoRecovery,definition.IsoAveragingOverride);
+            }
             if (!added || !candidate->Cuts().Rename(definition.Id,definition.Name) || !candidate->Cuts().SetVisibility(definition.Id,definition.Visibility)
                 || !candidate->Cuts().SetCellMode(definition.Id,definition.CellMode) || !candidate->Cuts().SetTraceOptions(definition.Id,false,definition.DisplayTrace)
                 || !candidate->Cuts().SetTraceOptions(definition.Id,true,definition.PhysicalTrace) || !candidate->Cuts().SetEnabled(definition.Id,definition.Enabled)) {

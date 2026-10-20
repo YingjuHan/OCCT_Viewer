@@ -88,6 +88,8 @@ struct MeshCutDefinition {
     int IsoComponent = 0; //!< raw component, independent of the displayed contour
     int IsoTimeStep = -1;
     double IsoValue = 0.0;
+    MeshCutRecoveryOptions IsoRecovery; //!< Snapshot, independent of subsequent contour averaging/tensor edits.
+    bool IsoAveragingOverride = true; //!< Force 100 percent averaging; legacy binding behavior.
     Graphic3d_Vec3d Center = Graphic3d_Vec3d(0.0);
     Graphic3d_Vec3d Axis = Graphic3d_Vec3d(0.0, 0.0, 1.0);
     double Radius = 1.0;
@@ -162,6 +164,8 @@ public:
     Standard_EXPORT bool SetIsosurface(const std::string& theId,
         const Handle(RWCae::MeshNVecProperty)& theField, int theComponent, double theValue);
     Standard_EXPORT bool SetIsoValue(const std::string& theId, double theValue);
+    Standard_EXPORT bool SetIsoBindingOptions(const std::string& id,
+        const MeshCutRecoveryOptions& options, bool overrideAveraging);
     Standard_EXPORT bool IsoRange(const std::string& theId, double& theMinimum, double& theMaximum);
     //! General cells use the repository-owned finite-element kernel.
     //! Radius is in model units.

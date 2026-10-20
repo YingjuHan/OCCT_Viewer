@@ -46,7 +46,8 @@ void tests()
     d = cuts.Definitions()[0]; check(d.Placement.Origin.y(),.5); check(d.Placement.Angle,0);
     require(d.Placement.IsValid(),"Migrated frame invalid");
     auto version7 = json;
-    version7.replace(version7.find("\"version\":9"),11,"\"version\":7");
+    const auto version = version7.find("\"version\":");
+    require(version != std::string::npos,"Missing definition version"); version7.replace(version,version7.find(',',version)-version,"\"version\":7");
     require(cuts.RestoreDefinitionsJson(version7),"Version 7 migration");
     check(cuts.Definitions()[0].Placement.Angle,0);
     check(cuts.Definitions()[0].Plane.y(),1);

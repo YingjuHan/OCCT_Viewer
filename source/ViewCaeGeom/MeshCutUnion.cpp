@@ -314,7 +314,13 @@ std::vector<double> isoNodes(const Handle(RWCae::MeshData)& mesh, const MeshCutD
         if (candidate->Name() == cut.IsoFieldName.c_str() && candidate->IsNodal() == cut.IsoFieldNodal && candidate->TimeStep() == cut.IsoTimeStep) { field = candidate; }
     }
     if (field.IsNull()) { throw std::invalid_argument("Missing union isosurface field"); }
-    const auto component = field->GetRawComponent(cut.IsoComponent);
+    if (field->IsElemental() && ((!cut.IsoAveragingOverride && cut.IsoRecovery.ThresholdPercent != 100)
+        || !cut.IsoRecovery.Regions.empty() || cut.IsoRecovery.Tensor.Measure != MeshCutTensorMeasure::Components)) {
+        throw std::invalid_argument("Multi-cut retained-body union requires continuous component isosurfaces; display this discontinuous/derived isosurface alone");
+    }
+    const bool derived = cut.IsoRecovery.Tensor.Measure != MeshCutTensorMeasure::Components;
+    if (derived) { field = DeriveCutTensorField(field,cut.IsoRecovery.Tensor); }
+    const auto component = field->GetRawComponent(derived ? 0 : cut.IsoComponent);
     std::vector<double> values(mesh->NbNodes(),0); std::vector<unsigned> counts(values.size(),0);
     if (field->IsNodal()) { for (size_t n = 0; n < values.size(); ++n) { values[n] = component->Value(RWCae::MeshPropertyEntityInfo(n)); } }
     else {

@@ -5,6 +5,7 @@
 #include "MeshCutFieldTools.h"
 
 #include <RWCae/MeshScalarProperty.h>
+#include <RWCae/MeshNodeVecProperty.h>
 #include <RWCae/MeshTools.h>
 #include <ViewCaeGeom/MeshGeometryDeformed.h>
 #include <ViewCaeGeom/MeshGeometryTools.h>
@@ -441,7 +442,22 @@ Handle(RWCae::MeshScalarPropertyBase) MeshCutViewManager::isoValues(Entry& entry
     if (!entry.IsoValues.IsNull()) { return entry.IsoValues; }
     const auto field = resolveIsoField(entry.Definition);
     if (!validIsoField(field, entry.Definition.IsoComponent)) {
-        throw std::invalid_argument("Isosurface requires a unique finite scalar on a supported mesh (high-order charts require VTK)");
+        throw std::invalid_argument("Isosurface requires a unique finite scalar on a supported FE chart");
+    }
+    const auto& binding = entry.Definition.IsoRecovery;
+    const bool derived = binding.Tensor.Measure != MeshCutTensorMeasure::Components;
+    if (!binding.IsValid(myMesh->NbIndexedElems()) || (derived && !binding.Tensor.Matches(field->NbComponents()))) { throw std::invalid_argument("Invalid isosurface tensor/averaging snapshot"); }
+    if (derived || (field->IsElemental() && (!entry.Definition.IsoAveragingOverride || !binding.Regions.empty()))) {
+        auto selected = field;
+        if (derived && (field->IsNodal() || binding.InvariantsBeforeAveraging)) { selected = DeriveCutTensorField(selected,binding.Tensor); }
+        if (field->IsElemental()) {
+            auto recovery = binding;
+            if (entry.Definition.IsoAveragingOverride) { recovery.ThresholdPercent = 100; }
+            selected = RecoverCutField(myMesh,selected,recovery);
+            if (derived && !binding.InvariantsBeforeAveraging) { selected = DeriveCutTensorField(selected,binding.Tensor); }
+        }
+        entry.IsoValues = selected->GetRawComponent(derived ? 0 : entry.Definition.IsoComponent);
+        return entry.IsoValues;
     }
     entry.IsoValues = field->GetRawComponent(entry.Definition.IsoComponent);
     if (field->IsElemental()) {
@@ -483,6 +499,9 @@ bool MeshCutViewManager::bindIsoField(Entry& entry, const Handle(RWCae::MeshNVec
     entry.Definition.IsoComponent = component;
     entry.Definition.IsoTimeStep = field->TimeStep();
     entry.Definition.IsoValue = threshold;
+    entry.Definition.IsoRecovery = myRecoveryOptions;
+    if (field->Type() != RWCae::MeshNVecPropertyType::Tensor) { entry.Definition.IsoRecovery.Tensor.Measure = MeshCutTensorMeasure::Components; }
+    entry.Definition.IsoAveragingOverride = true;
     ++entry.Revision;
     return true;
 }
@@ -515,6 +534,26 @@ bool MeshCutViewManager::SetIsoValue(const std::string& id, double threshold)
     entry->Definition.IsoValue = threshold;
     ++entry->Revision;
     return true;
+}
+bool MeshCutViewManager::SetIsoBindingOptions(const std::string& id,const MeshCutRecoveryOptions& options,bool overrideAveraging)
+{
+    const auto entry = find(id);
+    if (!entry || entry->Definition.Shape != MeshCutShape::Isosurface || !options.IsValid(myMesh->NbIndexedElems())) { return false; }
+    const auto& old = entry->Definition.IsoRecovery;
+    if (old.ThresholdPercent == options.ThresholdPercent && old.InvariantsBeforeAveraging == options.InvariantsBeforeAveraging
+        && old.Tensor.Measure == options.Tensor.Measure && old.Tensor.Layout == options.Tensor.Layout
+        && old.Tensor.EngineeringShear == options.Tensor.EngineeringShear && old.Regions == options.Regions
+        && entry->Definition.IsoAveragingOverride == overrideAveraging) { return true; }
+    try {
+        Entry candidate; candidate.Definition = entry->Definition;
+        candidate.Definition.IsoRecovery = options; candidate.Definition.IsoAveragingOverride = overrideAveraging;
+        const auto field = resolveIsoField(candidate.Definition);
+        // Account the candidate's field preparation while the previous result remains live.
+        auto lease = myCache.Reserve(EstimatedResultBytes(field),false);
+        const auto values = isoValues(candidate);
+        release(*entry); entry->Definition = std::move(candidate.Definition); entry->IsoValues = values;
+        entry->Lease = lease; entry->Reserved = EstimatedResultBytes(field); ++entry->Revision; return true;
+    } catch (...) { return false; }
 }
 
 bool MeshCutViewManager::IsoRange(const std::string& id, double& minimum, double& maximum)
@@ -814,7 +853,7 @@ std::string MeshCutViewManager::DumpDefinitionsJson() const
     rapidjson::OStreamWrapper wrapper(stream);
     RWBase::JsonHelper::Writer writer(wrapper);
     writer.StartObject();
-    writer.Key("version"); writer.Int(9);
+    writer.Key("version"); writer.Int(10);
     writer.Key("isoOptions"); writer.StartObject();
     writer.Key("absolute"); writer.Double(myIsoOptions.AbsoluteTolerance);
     writer.Key("relative"); writer.Double(myIsoOptions.RelativeTolerance);
@@ -869,6 +908,12 @@ std::string MeshCutViewManager::DumpDefinitionsJson() const
             writer.Key("component"); writer.Int(definition.IsoComponent);
             writer.Key("step"); writer.Int(definition.IsoTimeStep);
             writer.Key("value"); writer.Double(definition.IsoValue);
+            const auto& r = definition.IsoRecovery;
+            writer.Key("isoBinding"); writer.StartObject();
+            writer.Key("override"); writer.Bool(definition.IsoAveragingOverride);
+            writer.Key("threshold"); writer.Double(r.ThresholdPercent); writer.Key("before"); writer.Bool(r.InvariantsBeforeAveraging);
+            writer.Key("measure"); writer.Int((int)r.Tensor.Measure); writer.Key("layout"); writer.Int((int)r.Tensor.Layout);
+            writer.Key("shear"); writer.Bool(r.Tensor.EngineeringShear); writer.Key("regions"); writer.StartArray(); for(auto region:r.Regions) { writer.Int64(region); } writer.EndArray(); writer.EndObject();
         }
         writer.Key("visibility"); writer.Uint(definition.Visibility);
         writer.Key("enabled"); writer.Bool(definition.Enabled);
@@ -898,7 +943,7 @@ bool MeshCutViewManager::RestoreDefinitionsJson(const std::string& theJson)
     rapidjson::Document document;
     document.Parse<rapidjson::kParseFullPrecisionFlag>(theJson.data(), theJson.size());
     if (document.HasParseError() || !document.IsObject() || !document.HasMember("version")
-        || !document["version"].IsInt() || document["version"].GetInt() < 1 || document["version"].GetInt() > 9
+        || !document["version"].IsInt() || document["version"].GetInt() < 1 || document["version"].GetInt() > 10
         || !document.HasMember("cuts") || !document["cuts"].IsArray()) { return false; }
     std::map<std::string, std::unique_ptr<Entry>> entries;
     MeshCutIsoOptions isoOptions;
@@ -1026,6 +1071,18 @@ bool MeshCutViewManager::RestoreDefinitionsJson(const std::string& theJson)
             definition.IsoFieldNodal = mapping == "point";
             definition.IsoComponent = cut["component"].GetInt(); definition.IsoTimeStep = cut["step"].GetInt();
             definition.IsoValue = cut["value"].GetDouble();
+            if (document["version"].GetInt() >= 10) {
+                if (!cut.HasMember("isoBinding") || !cut["isoBinding"].IsObject()) { return false; }
+                const auto& b=cut["isoBinding"]; auto& r=definition.IsoRecovery;
+                if (!b.HasMember("override") || !b["override"].IsBool() || !b.HasMember("threshold") || !b["threshold"].IsNumber()
+                    || !b.HasMember("before") || !b["before"].IsBool() || !b.HasMember("measure") || !b["measure"].IsInt()
+                    || !b.HasMember("layout") || !b["layout"].IsInt() || !b.HasMember("shear") || !b["shear"].IsBool()
+                    || !b.HasMember("regions") || !b["regions"].IsArray()) { return false; }
+                definition.IsoAveragingOverride=b["override"].GetBool(); r.ThresholdPercent=b["threshold"].GetDouble(); r.InvariantsBeforeAveraging=b["before"].GetBool();
+                r.Tensor.Measure=(MeshCutTensorMeasure)b["measure"].GetInt(); r.Tensor.Layout=(MeshCutTensorLayout)b["layout"].GetInt(); r.Tensor.EngineeringShear=b["shear"].GetBool();
+                for(const auto& region:b["regions"].GetArray()) { if(!region.IsInt64()) { return false; } r.Regions.push_back(region.GetInt64()); }
+                if(!r.IsValid(myMesh->NbIndexedElems())) { return false; }
+            }
             if (definition.IsoFieldName.empty() || definition.IsoFieldName.find('\0') != std::string::npos
                 || !validIsoField(resolveIsoField(definition), definition.IsoComponent)) { return false; }
         } else { return false; }
@@ -1058,6 +1115,11 @@ bool MeshCutViewManager::RestoreDefinitionsJson(const std::string& theJson)
         }
         for (const auto& item : entries) {
             const auto& definition = item.second->Definition;
+            if (definition.Shape == MeshCutShape::Isosurface && document["version"].GetInt() >= 10) {
+                auto& candidate = *staged.find(item.first);
+                auto lease = staged.myCache.Reserve(staged.EstimatedResultBytes(staged.resolveIsoField(definition)),false);
+                staged.isoValues(candidate);
+            }
             if (definition.FollowDeformation && !staged.SetFollowDeformation(item.first,true,definition.ReferenceStep,
                 definition.ReferenceDisplacement,definition.ReferenceScale)) { return false; }
             if (definition.DisplayTrace.Policy != MeshCutTracePolicy::Lowest
@@ -1164,7 +1226,7 @@ void MeshCutViewManager::initialize(Entry& theEntry)
         if ((theEntry.Definition.Shape == MeshCutShape::Plane && needsGeneralPlane())
             || ((theEntry.Definition.Shape == MeshCutShape::Sphere || theEntry.Definition.Shape == MeshCutShape::Cylinder) && nonSimplex)) {
             theEntry.Portions[i] = new MeshGeometryVtkCut(myBvh,theEntry.Definition,(MeshCutPortion)i,generalSource());
-        } else if (!isoValues.IsNull() && needsGeneralIso()) {
+        } else if (!isoValues.IsNull() && (needsGeneralIso() || isoValues->MapType() == RWCae::MeshPropertyBase::MappingType::Elemental)) {
             theEntry.Portions[i] = new MeshGeometryVtkIso(myBvh,theEntry.Definition,(MeshCutPortion)i,isoValues,myGeometryOptions,myIsoOptions);
         } else
         if (theEntry.Definition.Shape == MeshCutShape::Sphere || theEntry.Definition.Shape == MeshCutShape::Cylinder) {
@@ -1435,7 +1497,8 @@ MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
                 if (definition.Shape == MeshCutShape::Isosurface) {
                     double value = 0;
                     for (const auto& w : trace.InteriorWeights.BaseNodes()) {
-                        if (w.second != 0) { value += w.second*iso->Value(RWCae::MeshPropertyEntityInfo(w.first)); }
+                        if (w.second != 0) { value += w.second*iso->Value(iso->MapType() == RWCae::MeshPropertyBase::MappingType::Nodal
+                            ? RWCae::MeshPropertyEntityInfo(w.first) : RWCae::MeshPropertyEntityInfo(trace.Element,w.first)); }
                     }
                     return value-definition.IsoValue;
                 }
@@ -1496,6 +1559,13 @@ std::shared_ptr<MeshCutPresentation> MeshCutViewManager::EvaluatePresentation(co
 {
     const auto cuts = EvaluateVisible(field);
     if (cuts.empty()) { return std::make_shared<MeshCutPresentation>(); }
+    if (cuts.size() == 1 && cuts.front().Definition.Shape == MeshCutShape::Isosurface
+        && (cuts.front().Definition.Visibility == 2
+            || isoValues(*find(cuts.front().Definition.Id))->MapType() == RWCae::MeshPropertyBase::MappingType::Elemental)) {
+        // An element-owned recovery trace cannot be replaced by a global nodal
+        // cutting tool. A single branch already contains its retained FE cells.
+        auto result = std::make_shared<MeshCutPresentation>(); result->Branches = cuts; return result;
+    }
     if (std::any_of(cuts.begin(),cuts.end(),[](const auto& cut) { return cut.Definition.FollowDeformation; })) {
         // A world-space cutting-tool boolean would silently undo material-side classification.
         // Independent material branches retain their reference classification and current cap.
@@ -1633,6 +1703,22 @@ void MeshCutViewManager::prepareCache(Entry& entry,const Handle(RWCae::MeshNVecP
         }
         const uint64_t components = field.IsNull() ? 0 : field->NbRawComponents();
         estimate = std::min(estimate,65536+entry.SectionBytes*(8192+components*2048));
+    }
+    if (mask == 2 && entry.Definition.Shape == MeshCutShape::Isosurface && !needsGeneralIso()
+        && myMesh->NbElems(RWCae::MeshElemType::Polygon) == 0 && myMesh->NbElems(RWCae::MeshElemType::Polyhedron) == 0) {
+        const auto scalar = isoValues(entry);
+        if (scalar->MapType() == RWCae::MeshPropertyBase::MappingType::Nodal) {
+            if (!entry.SectionBytes) {
+                std::vector<RWCae::MeshEntityId> nodes;
+                for (RWCae::MeshEntityId e = 0; e < myMesh->NbIndexedElems(); ++e) {
+                    myMesh->ElementNodes(e,nodes); double low = INFINITY, high = -INFINITY;
+                    for (auto n : nodes) { const double v=scalar->Value(RWCae::MeshPropertyEntityInfo(n)); low=std::min(low,v); high=std::max(high,v); }
+                    entry.SectionBytes += low <= entry.Definition.IsoValue+1e-7 && high >= entry.Definition.IsoValue-1e-7;
+                }
+            }
+            const uint64_t components = field.IsNull() ? 0 : field->NbRawComponents();
+            estimate = std::min(estimate,65536+entry.SectionBytes*(8192+components*2048));
+        }
     }
     if(!entry.Lease) {
         const auto bytes=estimate;
