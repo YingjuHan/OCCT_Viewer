@@ -31,6 +31,10 @@ struct MeshCutRenderStatistics {
 };
 struct MeshCutDisplayStyle {
     Quantity_Color Color = Quantity_Color(Quantity_NOC_GRAY80);
+    Quantity_Color EdgeColor = Quantity_Color(Quantity_NOC_GRAY20);
+    Aspect_TypeOfLine EdgeType = Aspect_TOL_SOLID;
+    bool ColorByField = true;
+    bool UsePlotOptions = false;
     float Transparency = 0.0f;
     float LineWidth = 2.0f;
     InteractiveCaeMeshPrsMode Mode = InteractiveCaeMeshPrsMode::FlatShaded;
@@ -87,6 +91,8 @@ public:
     Standard_EXPORT void SetStyle(const std::string& cut, ViewCaeGeom::MeshCutPortion portion, const MeshCutDisplayStyle& style);
     Standard_EXPORT void ClearStyle(const std::string& cut, ViewCaeGeom::MeshCutPortion portion);
     Standard_EXPORT MeshCutDisplayStyle EffectiveStyle(const std::string& cut, ViewCaeGeom::MeshCutPortion portion) const;
+    Standard_EXPORT void SetPlotStyle(const MeshCutDisplayStyle& style);
+    const MeshCutDisplayStyle& PlotStyle() const { return myPlotStyle; }
     const std::map<std::pair<std::string,int>,MeshCutDisplayStyle>& StyleOverrides() const { return myStyleOverrides; }
     const MeshCutDisplayStyle& Style(ViewCaeGeom::MeshCutPortion portion) const { return myStyles.at((size_t)portion); }
     Standard_EXPORT void SetContourOptions(const MeshCutContourOptions& options);
@@ -153,6 +159,7 @@ private:
     Handle(RWCae::MeshNVecProperty) myField;
     int myComponent = 0;
     std::array<MeshCutDisplayStyle, 3> myStyles;
+    MeshCutDisplayStyle myPlotStyle;
     std::map<std::pair<std::string,int>,MeshCutDisplayStyle> myStyleOverrides;
     MeshCutContourOptions myContourOptions;
     MeshCutContourState myContourState = MeshCutContourState::NoField;

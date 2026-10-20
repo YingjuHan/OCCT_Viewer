@@ -7,6 +7,7 @@ namespace eval ::CutViewManager {
     variable selected ""
     variable busy 0
     variable multiple 1
+    variable multipleBehavior project
     variable gizmo 1
     variable motion Translate
     variable axis 2
@@ -91,6 +92,9 @@ proc ::CutViewManager::refresh {{attach 0}} {
     if {[catch {scvcutview $model info} info]} { ::CutViewManager::close; return }
     if {[dict get $info generation] != $generation} { scvcutmanager $model; return }
     set definitions [scvcutview $model list]
+    set multiMode [scvcutview $model multimode]
+    set ::CutViewManager::multiple [expr {$multiMode ne "single"}]
+    if {$multiMode ne "single"} { set ::CutViewManager::multipleBehavior $multiMode }
     set ids {}
     set busy 1
     try {
@@ -222,6 +226,9 @@ proc ::CutViewManager::refresh {{attach 0}} {
         set cellmode [dict get $cut cellmode]
         ::CutViewManager::traceRefresh
         $w.controls.definition configure -state [expr {$shape eq "plane" ? "normal" : "disabled"}]
+        set portionState [expr {$multiMode eq "abaqus" || [dict get $cut sliceCollection] ne "" ? "disabled" : "normal"}]
+        foreach control {below on above} { $w.controls.$control configure -state $portionState }
+        $w.freebody configure -state [expr {$multiMode eq "abaqus" ? "disabled" : "normal"}]
         foreach slider {translate rotate} { $w.controls.$slider configure -state [expr {$enabled ? "normal" : "disabled"}] }
         if {$attach && $shape ne "plane"} { set angle 0; set lastAngle 0 }
         if {!$dragging && ($attach || $changed || $lastDragging)} {
@@ -252,6 +259,7 @@ proc ::CutViewManager::toggleCell {x y} {
     variable w; variable model; variable selected; variable multiple
     set id [$w.cuts identify row $x $y]; set column [$w.cuts identify column $x $y]
     if {$id eq "" || $column eq "#0"} { return }
+    if {$column ni {#0 #1} && [scvcutview $model multimode] eq "abaqus"} { return }
     foreach cut [scvcutview $model list] { if {[dict get $cut id] eq $id} { break } }
     if {$column eq "#1"} {
         set active [expr {![dict get $cut enabled]}]
@@ -271,14 +279,18 @@ proc ::CutViewManager::toggleCell {x y} {
 }
 
 proc ::CutViewManager::setMultiple {} {
-    variable model; variable selected; variable multiple
+    variable model; variable selected; variable multiple; variable multipleBehavior
+    scvcutview $model multimode project
     if {!$multiple} {
+        foreach group [scvcutview $model slicelist] { scvcutview $model sliceenable [dict get $group id] 0 }
         set keep ""
         foreach cut [scvcutview $model list] {
+            if {[dict get $cut sliceCollection] ne ""} { continue }
             if {[dict get $cut enabled] && ($keep eq "" || [dict get $cut id] eq $selected)} { set keep [dict get $cut id] }
         }
         foreach cut [scvcutview $model list] { scvcutview $model enable [dict get $cut id] [expr {[dict get $cut id] eq $keep}] }
     }
+    scvcutview $model multimode [expr {$multiple ? $multipleBehavior : "single"}]
     refresh
 }
 
@@ -447,7 +459,10 @@ proc ::CutViewManager::create {{copy 0}} {
         scvcutview $model visibility $id 3
     }
     scvcutview $model rename $id "Cut-$serial"
-    if {!$multiple} { foreach cut [scvcutview $model list] { scvcutview $model enable [dict get $cut id] [expr {[dict get $cut id] eq $id}] } }
+    if {!$multiple} {
+        foreach cut [scvcutview $model list] { scvcutview $model enable [dict get $cut id] 0 }
+        scvcutview $model enable $id 1
+    }
     set selected $id
     refresh 1
 }
@@ -647,8 +662,11 @@ proc scvcutmanager {theModel} {
     ttk::frame $w.header -padding 8
     ttk::label $w.header.model -text "Model: $theModel"
     ttk::checkbutton $w.header.multiple -text "Allow Multiple Cuts" -variable ::CutViewManager::multiple -command {::CutViewManager::invoke ::CutViewManager::setMultiple}
+    ttk::combobox $w.header.behavior -state readonly -values {project abaqus} -textvariable ::CutViewManager::multipleBehavior -width 9
+    bind $w.header.behavior <<ComboboxSelected>> {::CutViewManager::invoke ::CutViewManager::setMultiple}
     pack $w.header.model -side left
     pack $w.header.multiple -side right
+    pack $w.header.behavior -side right -padx 4
     pack $w.header -fill x
     ttk::treeview $w.cuts -columns {show below on above freebody} -height 2 -selectmode browse -style CutView.Treeview
     $w.cuts heading #0 -text Name; $w.cuts column #0 -width 220 -minwidth 100

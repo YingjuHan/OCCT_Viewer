@@ -64,8 +64,25 @@ void vec(W& w,const Graphic3d_Vec3d& v) { w.StartArray(); for(int c=0;c<3;++c) {
 Graphic3d_Vec3d vec(const V& v) { if(array(v,3).Size()!=3) { throw std::invalid_argument("Expected three session coordinates"); } return Graphic3d_Vec3d(num(v[0]),num(v[1]),num(v[2])); }
 void frame(W& w,const ViewCaeGeom::MeshCutFrame& f) { w.StartArray(); for(const auto& v:{f.Origin,f.X,f.Y,f.Z}) { for(int c=0;c<3;++c) { w.Double(v[c]); } } w.EndArray(); }
 ViewCaeGeom::MeshCutFrame frame(const V& v) { if(array(v,12).Size()!=12) { throw std::invalid_argument("Invalid session frame"); } ViewCaeGeom::MeshCutFrame f; for(int c=0;c<3;++c) { f.Origin[c]=num(v[c]); f.X[c]=num(v[3+c]); f.Y[c]=num(v[6+c]); f.Z[c]=num(v[9+c]); } if(!f.IsValid()) { throw std::invalid_argument("Invalid session frame axes"); } return f; }
-void style(W& w,const ViewCae::MeshCutDisplayStyle& s) { w.StartObject(); w.Key("color"); vec(w,Graphic3d_Vec3d(s.Color.Red(),s.Color.Green(),s.Color.Blue())); w.Key("alpha"); w.Double(s.Transparency); w.Key("width"); w.Double(s.LineWidth); w.Key("mode"); w.Int((int)s.Mode); w.EndObject(); }
-ViewCae::MeshCutDisplayStyle style(const V& v) { ViewCae::MeshCutDisplayStyle s; const auto c=vec(get(v,"color")); for(int i=0;i<3;++i) { if(c[i]<0||c[i]>1) { throw std::invalid_argument("Invalid session color"); } } s.Color=Quantity_Color(c.x(),c.y(),c.z(),Quantity_TOC_RGB); s.Transparency=(float)num(get(v,"alpha")); s.LineWidth=(float)num(get(v,"width")); s.Mode=(ViewCae::InteractiveCaeMeshPrsMode)integer(get(v,"mode")); return s; }
+void style(W& w,const ViewCae::MeshCutDisplayStyle& s)
+{
+    w.StartObject(); w.Key("color"); vec(w,Graphic3d_Vec3d(s.Color.Red(),s.Color.Green(),s.Color.Blue()));
+    w.Key("alpha"); w.Double(s.Transparency); w.Key("width"); w.Double(s.LineWidth); w.Key("mode"); w.Int((int)s.Mode);
+    w.Key("edgeColor"); vec(w,Graphic3d_Vec3d(s.EdgeColor.Red(),s.EdgeColor.Green(),s.EdgeColor.Blue()));
+    w.Key("edgeType"); w.Int((int)s.EdgeType); w.Key("fieldColor"); w.Bool(s.ColorByField);
+    w.Key("inheritPlot"); w.Bool(s.UsePlotOptions); w.EndObject();
+}
+ViewCae::MeshCutDisplayStyle style(const V& v)
+{
+    ViewCae::MeshCutDisplayStyle s;
+    auto color=[](const V& value) { const auto c=vec(value); for(int i=0;i<3;++i) { if(c[i]<0||c[i]>1) { throw std::invalid_argument("Invalid session color"); } } return Quantity_Color(c.x(),c.y(),c.z(),Quantity_TOC_RGB); };
+    s.Color=color(get(v,"color")); s.Transparency=(float)num(get(v,"alpha")); s.LineWidth=(float)num(get(v,"width")); s.Mode=(ViewCae::InteractiveCaeMeshPrsMode)integer(get(v,"mode"));
+    if(v.HasMember("edgeColor")) { s.EdgeColor=color(v["edgeColor"]); }
+    if(v.HasMember("edgeType")) { s.EdgeType=(Aspect_TypeOfLine)integer(v["edgeType"]); }
+    if(v.HasMember("fieldColor")) { s.ColorByField=boolean(v["fieldColor"]); }
+    if(v.HasMember("inheritPlot")) { s.UsePlotOptions=boolean(v["inheritPlot"]); }
+    return s;
+}
 void recovery(W& w,const ViewCaeGeom::MeshCutRecoveryOptions& o) { w.StartObject(); w.Key("threshold"); w.Double(o.ThresholdPercent); w.Key("before"); w.Bool(o.InvariantsBeforeAveraging); w.Key("measure"); w.Int((int)o.Tensor.Measure); w.Key("layout"); w.Int((int)o.Tensor.Layout); w.Key("shear"); w.Bool(o.Tensor.EngineeringShear); w.Key("regions"); w.StartArray(); for(auto r:o.Regions) { w.Int64(r); } w.EndArray(); w.EndObject(); }
 ViewCaeGeom::MeshCutRecoveryOptions recovery(const V& v) { ViewCaeGeom::MeshCutRecoveryOptions o; o.ThresholdPercent=num(get(v,"threshold")); o.InvariantsBeforeAveraging=boolean(get(v,"before")); o.Tensor.Measure=(ViewCaeGeom::MeshCutTensorMeasure)integer(get(v,"measure")); o.Tensor.Layout=(ViewCaeGeom::MeshCutTensorLayout)integer(get(v,"layout")); o.Tensor.EngineeringShear=boolean(get(v,"shear")); for(const auto& r:array(get(v,"regions"),10000000).GetArray()) { if(!r.IsInt64()) { throw std::invalid_argument("Invalid region ID"); } o.Regions.push_back(r.GetInt64()); } return o; }
 void trace(W& w,const ViewCaeGeom::MeshCutTraceOptions& o) { w.StartObject(); w.Key("policy"); w.Int((int)o.Policy); w.Key("region"); w.Int64(o.Region); w.Key("regions"); w.StartArray(); for(auto r:o.Regions) { w.Int64(r); } w.EndArray(); w.EndObject(); }
@@ -152,6 +169,7 @@ bool NativeCutSession::Save(const std::string& filename,const std::string& meshS
             auto& cuts=myOwner.Display()->Cuts(); w.Key("definitions"); raw(w,cuts.DumpDefinitionsJson()); w.Key("field"); binding(w,myOwner.FieldBinding()); w.Key("deformation"); binding(w,myTimeline.DeformationBinding().Name.empty()&&!cuts.DeformationField().IsNull()?CutFieldBinding{cuts.DeformationField()->Name().ToCString(),true,0,step}:myTimeline.DeformationBinding()); w.Key("deformationScale"); w.Double(cuts.DeformationScale()); w.Key("step"); w.Int(step);
             const auto& g=cuts.GeometryOptions(); w.Key("geometry"); w.StartObject(); w.Key("mode"); w.Int((int)g.Mode); w.Key("absolute"); w.Double(g.AbsoluteTolerance); w.Key("relative"); w.Double(g.RelativeTolerance); w.Key("face"); w.Int(g.FaceSubdivisionLimit); w.Key("line"); w.Int(g.LineSubdivisionLimit); w.Key("primitives"); w.Uint64(g.MaxSourcePrimitives); w.EndObject(); w.Key("cache"); w.StartArray(); w.Uint64(cuts.CachePolicy().SourceBytes); w.Uint64(cuts.CachePolicy().ResultBytes); w.EndArray();
             w.Key("styles"); w.StartArray(); for(int p=0;p<3;++p) { style(w,myOwner.Display()->Style((ViewCaeGeom::MeshCutPortion)p)); } w.EndArray(); w.Key("overrides"); w.StartArray(); for(const auto& s:myOwner.Display()->StyleOverrides()) { w.StartObject(); w.Key("cut"); text(w,s.first.first); w.Key("portion"); w.Int(s.first.second); w.Key("style"); style(w,s.second); w.EndObject(); } w.EndArray();
+            w.Key("plotStyle"); style(w,myOwner.Display()->PlotStyle());
             const auto& c=myOwner.Display()->ContourOptions(); w.Key("contour"); w.StartObject(); w.Key("auto"); w.Bool(c.AutomaticRange); w.Key("min"); w.Double(c.Minimum); w.Key("max"); w.Double(c.Maximum); w.Key("legend"); w.Bool(c.ShowLegend); w.Key("intervals"); w.Int(c.Intervals); w.EndObject();
             w.Key("vectors"); w.StartObject(); const auto v=myOwner.Display()->VectorField(); w.Key("field"); binding(w,v.IsNull()?CutFieldBinding():CutFieldBinding{v->Name().ToCString(),v->IsNodal(),0,v->TimeStep()}); w.Key("scale"); w.Double(myOwner.Display()->VectorScale()); w.Key("sampling"); w.Double(myOwner.Display()->VectorSampling()); w.Key("orientation"); w.Bool(myOwner.Display()->VectorOrientation()); w.EndObject();
             w.Key("datums"); w.StartArray(); for(const auto& d:myOwner.Datums()) { w.StartObject(); w.Key("id"); text(w,d.first); w.Key("frame"); frame(w,d.second); w.EndObject(); } w.EndArray(); w.Key("axes"); w.StartObject(); w.Key("datum"); text(w,myOwner.ReferenceDatum()); w.Key("show"); w.Bool(myOwner.ReferenceAxesVisible()); w.Key("length"); w.Double(myOwner.ReferenceAxesLength()); w.EndObject();
@@ -205,6 +223,7 @@ bool NativeCutSession::Load(const std::string& filename)
         cuts.SetMaterialSource(mesh);
         if(!cuts.RestoreDefinitionsJson(json(get(doc,"definitions")))) { throw std::invalid_argument("Invalid/missing session definitions or field bindings"); }
         staged.myFieldBinding=binding(get(doc,"field")); display->SetField(staged.resolveField(staged.myFieldBinding),staged.myFieldBinding.Component);
+        if(doc.HasMember("plotStyle")) { display->SetPlotStyle(style(doc["plotStyle"])); }
         if(doc.HasMember("styles")) { const auto& s=array(doc["styles"],3); if(s.Size()!=3) { throw std::invalid_argument("Invalid common session styles"); } for(int p=0;p<3;++p) { display->SetStyle((ViewCaeGeom::MeshCutPortion)p,style(s[p])); } }
         if(doc.HasMember("overrides")) {
             std::set<std::pair<std::string,int>> seen;

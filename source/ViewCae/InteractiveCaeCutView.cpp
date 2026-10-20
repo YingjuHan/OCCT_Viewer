@@ -137,6 +137,7 @@ std::string InteractiveCaeCutView::planeFallback(const std::vector<ViewCaeGeom::
     if (!volume || other) { return "non_volume_mesh"; }
     for (int i = 0; i < 3; ++i) {
         const auto style = EffectiveStyle(plane->Id,(ViewCaeGeom::MeshCutPortion)i);
+        if(style.EdgeType!=Aspect_TOL_SOLID) { return "patterned_edges"; }
         // Connected OCCT instances do not reproduce the CPU union's transparent
         // surface ordering. Preserve that display contract on the existing path.
         if (style.Transparency > 0) { return "transparent_style"; }
@@ -168,7 +169,8 @@ void InteractiveCaeCutView::SetStyle(ViewCaeGeom::MeshCutPortion thePortion, con
     const int anIndex = (int)thePortion;
     if (anIndex < 0 || anIndex >= 3 || !std::isfinite(theStyle.Transparency)
         || theStyle.Transparency < 0 || theStyle.Transparency > 1 || !std::isfinite(theStyle.LineWidth)
-        || theStyle.LineWidth <= 0 || (int)theStyle.Mode < 0 || (int)theStyle.Mode >= InteractiveCaeMeshNbPrsModes) {
+        || theStyle.LineWidth <= 0 || (int)theStyle.Mode < 0 || (int)theStyle.Mode >= InteractiveCaeMeshNbPrsModes
+        || (int)theStyle.EdgeType<0 || (int)theStyle.EdgeType>3) {
         throw std::invalid_argument("Invalid cut display style");
     }
     myStyles[anIndex] = theStyle;
@@ -179,6 +181,7 @@ void InteractiveCaeCutView::SetMeshDisplayMode(InteractiveCaeMeshPrsMode mode)
     if ((int)mode < 0 || (int)mode >= InteractiveCaeMeshNbPrsModes) { throw std::invalid_argument("Invalid cut display mode"); }
     for (auto& style : myStyles) { style.Mode = mode; }
     for (auto& entry : myStyleOverrides) { entry.second.Mode = mode; }
+    myPlotStyle.Mode=mode;
 }
 
 void InteractiveCaeCutView::SetStyle(const std::string& cut, ViewCaeGeom::MeshCutPortion portion, const MeshCutDisplayStyle& style)
@@ -200,7 +203,15 @@ void InteractiveCaeCutView::ClearStyle(const std::string& cut, ViewCaeGeom::Mesh
 MeshCutDisplayStyle InteractiveCaeCutView::EffectiveStyle(const std::string& cut, ViewCaeGeom::MeshCutPortion portion) const
 {
     const auto found = myStyleOverrides.find({cut,(int)portion});
-    return found == myStyleOverrides.end() ? Style(portion) : found->second;
+    if(cut=="uncut_source") { return myPlotStyle; }
+    auto style=found == myStyleOverrides.end() ? Style(portion) : found->second;
+    if(style.UsePlotOptions) { style=myPlotStyle; style.UsePlotOptions=true; }
+    return style;
+}
+void InteractiveCaeCutView::SetPlotStyle(const MeshCutDisplayStyle& style)
+{
+    const auto previous=myStyles; SetStyle(ViewCaeGeom::MeshCutPortion::Negative,style); myStyles=previous;
+    myPlotStyle=style; myPlotStyle.UsePlotOptions=false;
 }
 void InteractiveCaeCutView::SetContourOptions(const MeshCutContourOptions& options)
 {
@@ -269,7 +280,7 @@ std::vector<double> InteractiveCaeCutView::ProbeSource(RWCae::MeshEntityId entit
 MeshCutProbe InteractiveCaeCutView::Probe(const std::string& id, ViewCaeGeom::MeshCutPortion portion, RWCae::MeshEntityId entity, bool node)
 {
     if ((int)portion < 0 || (int)portion > 2 || myField.IsNull()) { throw std::invalid_argument("Invalid section probe"); }
-    const auto cut = myCuts.EvaluatePhysical(id,myField);
+    const auto cut = myCuts.MultipleSurfacesOnly() ? myCuts.EvaluatePhysicalSection(id,myField) : myCuts.EvaluatePhysical(id,myField);
     return probeResult(cut,(int)portion,entity,node);
 }
 MeshCutProbe InteractiveCaeCutView::probeResult(const ViewCaeGeom::MeshCutResult& cut, int portion, RWCae::MeshEntityId entity, bool node)
@@ -353,7 +364,7 @@ MeshCutProbe InteractiveCaeCutView::probeResult(const ViewCaeGeom::MeshCutResult
 MeshCutProbe InteractiveCaeCutView::ProbeLine(const std::string& id, size_t line, int endpoint)
 {
     if (endpoint < -1 || endpoint > 1 || myField.IsNull()) { throw std::invalid_argument("Invalid shell line probe"); }
-    const auto cut = myCuts.EvaluatePhysical(id,myField);
+    const auto cut = myCuts.MultipleSurfacesOnly() ? myCuts.EvaluatePhysicalSection(id,myField) : myCuts.EvaluatePhysical(id,myField);
     return probeLineResult(cut,line,endpoint);
 }
 MeshCutProbe InteractiveCaeCutView::probeLineResult(const ViewCaeGeom::MeshCutResult& cut, size_t line, int endpoint)
@@ -441,6 +452,7 @@ void InteractiveCaeCutView::Synchronize()
     Handle(MeshPresentationScalar) bodyPresentation = myBodyPresentation;
     if (gpuPlane) {
         gpuDefinition = *std::find_if(definitions.begin(),definitions.end(),[](const auto& d) { return d.Enabled; });
+        if(myCuts.MultipleSurfacesOnly()) { gpuDefinition.Visibility=2; }
         const auto mask = gpuDefinition.Visibility;
         if (mask != 0) {
             gpuSection = mask == 5 ? myCuts.EvaluateFieldForDisplay(gpuDefinition.Id,myField)
@@ -524,12 +536,16 @@ void InteractiveCaeCutView::Synchronize()
                 presentations.push_back(bodyPresentation);
                 continue;
             }
-            Handle(MeshPresentationScalar) aPrs = new MeshPresentationScalar(aProps, aPropIndex,
+            // MeshPresentation::fillProperties requires a property container even
+            // for an uncoloured presentation. An empty container disables field
+            // textures without breaking that contract.
+            Handle(MeshPropertyData) presentationProps = aStyle.ColorByField ? aProps : new MeshPropertyData();
+            Handle(MeshPresentationScalar) aPrs = new MeshPresentationScalar(presentationProps, aPropIndex,
                 aResult.Roots[i], TCollection_AsciiString(aResult.Definition.Id.c_str()) + "_" + (int)i);
             auto aDrawer = aPrs->HighlightDrawer(MeshHighlightingType::None);
             aDrawer->SetShadingColor(aStyle.Color);
             aDrawer->SetShadingTransparency(aStyle.Transparency);
-            aDrawer->SetEdgesColor(Quantity_Color(Quantity_NOC_GRAY20));
+            aDrawer->SetEdgesColor(aStyle.EdgeColor); aDrawer->SetEdgesType(aStyle.EdgeType);
             aDrawer->SetEdgesWidth(aStyle.LineWidth);
             aPrs->ScalarVisProps()->SetPresentationMode(aStyle.Mode);
             aPrs->UpdateAspects(Handle(InteractiveCaeMeshOwner)());
@@ -538,7 +554,7 @@ void InteractiveCaeCutView::Synchronize()
                 aPrs->GetParts()(MeshPartType::Elems0d)->SetShow(false);
                 RWCae::MeshAdaptor0d points(*mesh);
                 const auto values = aResult.Portions[i]->CalculateProperty(aResult.SourceField);
-                const bool colored = !values.IsNull();
+                const bool colored = aStyle.ColorByField && !values.IsNull();
                 Handle(Graphic3d_ArrayOfPoints) array = new Graphic3d_ArrayOfPoints(points.NbElements(),
                     colored ? Graphic3d_ArrayFlags_VertexColor : Graphic3d_ArrayFlags_None);
                 Handle(Image_PixMap) colors;
@@ -580,10 +596,10 @@ void InteractiveCaeCutView::Synchronize()
             const auto& aLines = aSlice->Lines();
             if (aLines.empty()) { continue; }
             const auto lineField = aSlice->CalculateLineProperty(aResult.SourceField);
-            const bool hasField = !lineField.IsNull();
+            const bool hasField = aStyle.ColorByField && !lineField.IsNull();
             Handle(Graphic3d_ArrayOfSegments) anArray = new Graphic3d_ArrayOfSegments((int)aLines.size()*2, 0,
                 hasField ? Graphic3d_ArrayFlags_VertexTexel : Graphic3d_ArrayFlags_None);
-            Handle(Graphic3d_AspectLine3d) anAspect = new Graphic3d_AspectLine3d(aStyle.Color, Aspect_TOL_SOLID, aStyle.LineWidth);
+            Handle(Graphic3d_AspectLine3d) anAspect = new Graphic3d_AspectLine3d(aStyle.Color, aStyle.EdgeType, aStyle.LineWidth);
             anAspect->SetInteriorColor(Quantity_ColorRGBA(aStyle.Color,(float)(1.0-aStyle.Transparency)));
             double aMin = 0.0, aMax = 1.0;
             if (hasField) {

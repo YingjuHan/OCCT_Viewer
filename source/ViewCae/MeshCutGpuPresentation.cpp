@@ -23,7 +23,8 @@ Handle(Graphic3d_ShaderProgram) planeShader()
     uniforms.Append({"vec4 CutPlane",Graphic3d_TOS_FRAGMENT});
     uniforms.Append({"vec4 CutNegative",Graphic3d_TOS_FRAGMENT});
     uniforms.Append({"vec4 CutPositive",Graphic3d_TOS_FRAGMENT});
-    uniforms.Append({"int CutHasField",Graphic3d_TOS_FRAGMENT});
+    uniforms.Append({"int CutNegativeField",Graphic3d_TOS_FRAGMENT});
+    uniforms.Append({"int CutPositiveField",Graphic3d_TOS_FRAGMENT});
     uniforms.Append({"int CutMode",Graphic3d_TOS_FRAGMENT});
     uniforms.Append({"int CutLines",Graphic3d_TOS_FRAGMENT});
     uniforms.Append({"vec3 CutOrigin",Graphic3d_TOS_VERTEX});
@@ -53,7 +54,7 @@ Handle(Graphic3d_ShaderProgram) planeShader()
         " }\n"
         " vec4 style = side <= 0.0 ? CutNegative : CutPositive;\n"
         " vec4 color = style;\n"
-        " if (CutHasField != 0) { color.rgb = occTexture2D(occSamplerBaseColor,CutUV).rgb; }\n"
+        " if ((side <= 0.0 ? CutNegativeField : CutPositiveField) != 0) { color.rgb = occTexture2D(occSamplerBaseColor,CutUV).rgb; }\n"
         " else if (CutLines == 0) { color.rgb *= 0.35 + 0.65 * abs(CutNormal.z) / max(length(CutNormal),1.0e-20); }\n"
         " occSetFragColor(color);\n"
         "}\n";
@@ -71,7 +72,8 @@ void setUniforms(const Handle(Graphic3d_ShaderProgram)& shader,const Graphic3d_V
     shader->PushVariableVec4("CutPlane",Graphic3d_Vec4(plane));
     shader->PushVariableVec4("CutNegative",color(negative));
     shader->PushVariableVec4("CutPositive",color(positive));
-    shader->PushVariableInt("CutHasField",field ? 1 : 0);
+    shader->PushVariableInt("CutNegativeField",field && negative.ColorByField ? 1 : 0);
+    shader->PushVariableInt("CutPositiveField",field && positive.ColorByField ? 1 : 0);
     shader->PushVariableVec3("CutOrigin",Graphic3d_Vec3(origin));
     shader->PushVariableInt("CutMode",mode);
     shader->PushVariableInt("CutLines",lines ? 1 : 0);
@@ -305,8 +307,8 @@ void MeshCutGpuPresentation::Update(const Handle(MeshPresentationScalar)& body,
     auto sliceEdgeShader = mySliceEdgeShader.IsNull() ? planeShader() : mySliceEdgeShader;
     Handle(Graphic3d_AspectFillArea3d) bodyAspect = new Graphic3d_AspectFillArea3d();
     Handle(Graphic3d_AspectFillArea3d) sliceAspect = new Graphic3d_AspectFillArea3d();
-    Handle(Graphic3d_AspectLine3d) bodyEdgeAspect = new Graphic3d_AspectLine3d(Quantity_Color(Quantity_NOC_GRAY20),Aspect_TOL_SOLID,styles[0].LineWidth);
-    Handle(Graphic3d_AspectLine3d) sliceEdgeAspect = new Graphic3d_AspectLine3d(Quantity_Color(Quantity_NOC_GRAY20),Aspect_TOL_SOLID,capStyle.LineWidth);
+    Handle(Graphic3d_AspectLine3d) bodyEdgeAspect = new Graphic3d_AspectLine3d(styles[0].EdgeColor,styles[0].EdgeType,styles[0].LineWidth);
+    Handle(Graphic3d_AspectLine3d) sliceEdgeAspect = new Graphic3d_AspectLine3d(capStyle.EdgeColor,capStyle.EdgeType,capStyle.LineWidth);
     auto configure = [&](const Handle(Graphic3d_AspectFillArea3d)& aspect,float opacity) {
         aspect->SetInteriorStyle(Aspect_IS_SOLID);
         aspect->SetInteriorColor(Quantity_ColorRGBA(Quantity_Color(Quantity_NOC_WHITE),opacity));
@@ -338,8 +340,9 @@ void MeshCutGpuPresentation::Update(const Handle(MeshPresentationScalar)& body,
     setUniforms(bodyShader,localPlane,styles[0],styles[2],!texture.IsNull(),origin,
         !showBody ? 0 : (mask & 5) == 1 ? 1 : (mask & 5) == 4 ? 2 : 3);
     setUniforms(sliceShader,localPlane,capStyle,capStyle,!texture.IsNull(),origin,3);
-    auto edgeStyle = capStyle; edgeStyle.Color = Quantity_Color(Quantity_NOC_GRAY20);
-    setUniforms(bodyEdgeShader,localPlane,edgeStyle,edgeStyle,false,origin,
+    auto edgeStyle = capStyle; edgeStyle.Color = capStyle.EdgeColor;
+    auto negativeEdge=styles[0],positiveEdge=styles[2]; negativeEdge.Color=negativeEdge.EdgeColor; positiveEdge.Color=positiveEdge.EdgeColor;
+    setUniforms(bodyEdgeShader,localPlane,negativeEdge,positiveEdge,false,origin,
         !showBody ? 0 : (mask & 5) == 1 ? 1 : (mask & 5) == 4 ? 2 : 3,true);
     setUniforms(sliceEdgeShader,localPlane,edgeStyle,edgeStyle,false,origin,3,true);
     const bool geometryBuild = bodyChanged && bodyUVs.empty();

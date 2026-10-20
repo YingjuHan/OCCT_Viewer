@@ -72,7 +72,7 @@ std::vector<Handle(AIS_Shape)> NativeCutAnalysis::arrows(const NativeCutAnalysis
     const ViewCaeGeom::MeshCutPhysicsReport& report) const
 {
     std::vector<Handle(AIS_Shape)> result;
-    if (!request.Overlay || !request.Enabled) { return result; }
+    if (!request.Overlay || !request.Enabled || myOwner->Display()->Cuts().MultipleSurfacesOnly()) { return result; }
     const auto definitions = myOwner->Display()->Cuts().Definitions();
     if (std::none_of(definitions.begin(),definitions.end(),[&](const auto& d) { return d.Id == request.Cut && d.Enabled; })) { return result; }
     const auto& frame = report.OutputFrame;

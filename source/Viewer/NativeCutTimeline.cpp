@@ -240,6 +240,8 @@ bool NativeCutTimeline::prepare(int step, const CutFieldBinding& deformation, do
             if(!definition.SliceCollection.empty() && !candidate->Cuts().SetSliceMetadata(definition)) { throw std::invalid_argument("Invalid slice collection after step change"); }
         }
         candidate->Cuts().ShareMaterialCacheFrom(oldCuts);
+        if(!candidate->Cuts().SetMultipleMode(oldCuts.MultipleMode())) { throw std::invalid_argument("Invalid multi-cut mode on target frame"); }
+        candidate->SetPlotStyle(myOwner.Display()->PlotStyle());
         for (int p = 0; p < 3; ++p) { candidate->SetStyle((ViewCaeGeom::MeshCutPortion)p,myOwner.Display()->Style((ViewCaeGeom::MeshCutPortion)p)); }
         for (const auto& style : myOwner.Display()->StyleOverrides()) { candidate->SetStyle(style.first.first,(ViewCaeGeom::MeshCutPortion)style.first.second,style.second); }
         candidate->SetContourOptions(myOwner.Display()->ContourOptions()); candidate->SetField(field,contour.Component);

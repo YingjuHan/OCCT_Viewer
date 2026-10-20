@@ -156,11 +156,12 @@ void MeshPresentationScalar::updateElementsVisibility()
 
     myDrawer->FillAreaAspect3d()->SetInteriorStyle(toShow3d ? Aspect_IS_SOLID : Aspect_IS_EMPTY);
     myDrawer->CentroidAspect3d()->SetMarkerType(toShowCentr && toShow3d ? Aspect_TOM_POINT : Aspect_TOM_EMPTY);
-    myDrawer->LineAspect3d()->SetLineType(toShow3d ? Aspect_TOL_SOLID : Aspect_TOL_EMPTY);
+    const auto edgeType = myDrawer->LineAspect()->Aspect()->Type();
+    myDrawer->LineAspect3d()->SetLineType(toShow3d ? edgeType : Aspect_TOL_EMPTY);
 
     myDrawer->FillAreaAspect2d()->SetInteriorStyle(toShow2d ? Aspect_IS_SOLID : Aspect_IS_EMPTY);
     myDrawer->CentroidAspect2d()->SetMarkerType(toShowCentr && toShow2d ? Aspect_TOM_POINT : Aspect_TOM_EMPTY);
-    myDrawer->LineAspect2d()->SetLineType(toShow2d ? Aspect_TOL_SOLID : Aspect_TOL_EMPTY);
+    myDrawer->LineAspect2d()->SetLineType(toShow2d ? edgeType : Aspect_TOL_EMPTY);
 
     myDrawer->PointAspect()->Aspect()->SetMarkerType(toShowNodes ? Aspect_TOM_POINT : Aspect_TOM_EMPTY);
     myDrawer->Elem0dAspect()->SetMarkerType(toShow0d ? Aspect_TOM_PLUS : Aspect_TOM_EMPTY);

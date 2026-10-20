@@ -20,6 +20,7 @@ namespace ViewCaeGeom {
 enum class MeshCutPortion { Negative = 0, On = 1, Positive = 2 };
 enum class MeshCutCellMode { Constant, Projected };
 enum class MeshCutShape { Plane, Isosurface, Cylinder, Sphere };
+enum class MeshCutMultipleMode { ProjectExtended, Single, AbaqusMultiple };
 enum class MeshCutGeometryMode { Numerical, AnalyticPreferred, AnalyticRequired };
 
 struct MeshCutGeometryOptions {
@@ -144,6 +145,9 @@ public:
     MeshCutViewManager& operator=(const MeshCutViewManager&) = delete;
 
     Standard_EXPORT bool AddPlane(const std::string& theId, const Graphic3d_Vec4d& thePlane);
+    Standard_EXPORT bool SetMultipleMode(MeshCutMultipleMode mode);
+    MeshCutMultipleMode MultipleMode() const { return myMultipleMode; }
+    bool MultipleSurfacesOnly() const { return myMultipleMode == MeshCutMultipleMode::AbaqusMultiple; }
     //! Validate every sample in a temporary bounded manager, then replace one collection.
     Standard_EXPORT bool ReplaceSlices(const std::string& collection, const std::string& source,
         const std::vector<MeshCutSliceSample>& samples, const std::string& units = "model_length");
@@ -289,6 +293,7 @@ private:
     MeshCutGeometryOptions myGeometryOptions;
     MeshCutRecoveryOptions myRecoveryOptions;
     MeshCutIsoOptions myIsoOptions;
+    MeshCutMultipleMode myMultipleMode = MeshCutMultipleMode::ProjectExtended;
     std::shared_ptr<MeshCutTraceSource> myTraceSource;
 
     Handle(RWCae::MeshData) myMesh;

@@ -324,6 +324,7 @@ proc ui_run {} {
     ui_tree x
     ui_click .scvcutmanager.header.multiple
     ui_assert {$::CutViewManager::multiple == 0} "Multiple toggle failed"
+    ui_combo .scvcutmanager.header.behavior project
     ui_tree y show
     ui_assert {[dict get [ui_cut y] enabled] && ![dict get [ui_cut x] enabled]} "Single-cut activation left two cuts enabled"
     ui_click .scvcutmanager.header.multiple

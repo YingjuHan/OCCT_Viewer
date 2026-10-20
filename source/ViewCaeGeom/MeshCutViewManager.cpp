@@ -243,6 +243,9 @@ bool MeshCutViewManager::AddPlane(const std::string& theId, const Graphic3d_Vec4
     anEntry->Definition.Id = theId;
     anEntry->Definition.Name = theId;
     anEntry->Definition.Plane = aPlane;
+    if(myMultipleMode==MeshCutMultipleMode::Single) {
+        for(const auto& e:myEntries) { if(e.second->Definition.Enabled && e.second->Definition.SliceCollection.empty()) { anEntry->Definition.Enabled=false; break; } }
+    }
     if (!anEntry->Definition.Placement.FromEquation(aPlane)) { return false; }
     myEntries.emplace(theId, std::move(anEntry));
     return true;
@@ -765,6 +768,7 @@ bool MeshCutViewManager::Duplicate(const std::string& theId, const std::string& 
     aCopy->Definition.Id = theNewId;
     aCopy->Definition.Name = theNewId;
     aCopy->Definition.SliceCollection.clear(); aCopy->Definition.SliceSource.clear();
+    if(myMultipleMode==MeshCutMultipleMode::Single) { aCopy->Definition.Enabled=false; }
     return true;
 }
 
@@ -816,6 +820,9 @@ bool MeshCutViewManager::SetEnabled(const std::string& theId, bool theEnabled)
     if (anEntry == nullptr) { return false; }
     if (!anEntry->Definition.SliceCollection.empty()) { return EnableSlices(anEntry->Definition.SliceCollection,theEnabled); }
     if (theEnabled) {
+        if(myMultipleMode==MeshCutMultipleMode::Single) {
+            for(const auto& e:myEntries) { if(e.first!=theId && e.second->Definition.SliceCollection.empty() && e.second->Definition.Enabled) { return false; } }
+        }
         for(const auto& e:myEntries) {
             const auto& d=e.second->Definition;
             if(!d.SliceCollection.empty() && d.Enabled && d.SliceSource!=theId && find(d.SliceSource)->Definition.Enabled) { return false; }
@@ -824,6 +831,14 @@ bool MeshCutViewManager::SetEnabled(const std::string& theId, bool theEnabled)
     anEntry->Definition.Enabled = theEnabled;
     ++anEntry->Revision;
     return true;
+}
+bool MeshCutViewManager::SetMultipleMode(MeshCutMultipleMode mode)
+{
+    if((int)mode<0 || (int)mode>2) { return false; }
+    size_t active=0; bool slices=false;
+    for(const auto& e:myEntries) { const auto& d=e.second->Definition; if(d.Enabled) { if(d.SliceCollection.empty()) { ++active; } else { slices=true; } } }
+    if((mode==MeshCutMultipleMode::Single && active>1) || (mode==MeshCutMultipleMode::AbaqusMultiple && slices)) { return false; }
+    myMultipleMode=mode; return true;
 }
 
 bool MeshCutViewManager::SetCellMode(const std::string& theId, MeshCutCellMode theMode)
@@ -921,6 +936,7 @@ bool MeshCutViewManager::EnableSlices(const std::string& collection,bool enabled
     for(const auto& e:myEntries) { if(e.second->Definition.SliceCollection==collection) { source=e.second->Definition.SliceSource; break; } }
     if(source.empty()) { return false; }
     if(enabled) {
+        if(MultipleSurfacesOnly()) { return false; }
         size_t active=0;
         for(const auto& e:myEntries) { if(e.second->Definition.SliceCollection.empty() && e.second->Definition.Enabled) { ++active; } }
         if(active!=1 || !find(source)->Definition.Enabled) { return false; }
@@ -938,7 +954,8 @@ std::string MeshCutViewManager::DumpDefinitionsJson() const
     rapidjson::OStreamWrapper wrapper(stream);
     RWBase::JsonHelper::Writer writer(wrapper);
     writer.StartObject();
-    writer.Key("version"); writer.Int(11);
+    writer.Key("version"); writer.Int(12);
+    writer.Key("multipleMode"); writer.Int((int)myMultipleMode);
     writer.Key("isoOptions"); writer.StartObject();
     writer.Key("absolute"); writer.Double(myIsoOptions.AbsoluteTolerance);
     writer.Key("relative"); writer.Double(myIsoOptions.RelativeTolerance);
@@ -1034,11 +1051,16 @@ bool MeshCutViewManager::RestoreDefinitionsJson(const std::string& theJson)
     rapidjson::Document document;
     document.Parse<rapidjson::kParseFullPrecisionFlag>(theJson.data(), theJson.size());
     if (document.HasParseError() || !document.IsObject() || !document.HasMember("version")
-        || !document["version"].IsInt() || document["version"].GetInt() < 1 || document["version"].GetInt() > 11
+        || !document["version"].IsInt() || document["version"].GetInt() < 1 || document["version"].GetInt() > 12
         || !document.HasMember("cuts") || !document["cuts"].IsArray()) { return false; }
     std::map<std::string, std::unique_ptr<Entry>> entries;
     MeshCutIsoOptions isoOptions;
     MeshCutRecoveryOptions recoveryOptions;
+    MeshCutMultipleMode multipleMode=MeshCutMultipleMode::ProjectExtended;
+    if(document["version"].GetInt()>=12) {
+        if(!document.HasMember("multipleMode") || !document["multipleMode"].IsInt() || document["multipleMode"].GetInt()<0 || document["multipleMode"].GetInt()>2) { return false; }
+        multipleMode=(MeshCutMultipleMode)document["multipleMode"].GetInt();
+    }
     if (document["version"].GetInt() >= 5) {
         if (!document.HasMember("recovery") || !document["recovery"].IsObject()) { return false; }
         const auto& recovery = document["recovery"];
@@ -1209,6 +1231,9 @@ bool MeshCutViewManager::RestoreDefinitionsJson(const std::string& theJson)
             || d.Shape!=MeshCutShape::Plane || d.Visibility!=2 || d.FollowDeformation
             || d.SliceBegin>d.SliceCoordinate || d.SliceCoordinate>d.SliceEnd || (d.SliceUnits!="model_length" && d.SliceUnits!="radian")) { return false; }
     }
+    size_t activeCount=0; bool displayedSlices=false;
+    for(const auto& e:entries) { const auto& d=e.second->Definition; if(d.Enabled) { if(d.SliceCollection.empty()) { ++activeCount; } else { displayedSlices=true; } } }
+    if((multipleMode==MeshCutMultipleMode::Single && activeCount>1) || (multipleMode==MeshCutMultipleMode::AbaqusMultiple && displayedSlices)) { return false; }
     // Validate source resolution on isolated caches before replacing live cuts.
     // Older documents migrate to lowest and need no extra geometry preparation.
     try {
@@ -1239,7 +1264,7 @@ bool MeshCutViewManager::RestoreDefinitionsJson(const std::string& theJson)
     Clear();
     myIsoOptions = isoOptions;
     myRecoveryOptions = recoveryOptions;
-    myEntries = std::move(entries);
+    myEntries = std::move(entries); myMultipleMode=multipleMode;
     return true;
 }
 
@@ -1667,8 +1692,10 @@ std::vector<MeshCutResult> MeshCutViewManager::EvaluateVisible(const Handle(RWCa
     for (const auto& anEntry : myEntries) {
         const auto& d=anEntry.second->Definition;
         if(slicedSources.count(d.Id) || (!d.SliceSource.empty() && !find(d.SliceSource)->Definition.Enabled)) { continue; }
-        if (anEntry.second->Definition.Enabled && anEntry.second->Definition.Visibility != 0) {
-            aResults.push_back(Evaluate(anEntry.first, theField));
+        if (anEntry.second->Definition.Enabled && (MultipleSurfacesOnly() || anEntry.second->Definition.Visibility != 0)) {
+            auto result=MultipleSurfacesOnly()?EvaluateSectionForDisplay(anEntry.first,theField):Evaluate(anEntry.first,theField);
+            if(MultipleSurfacesOnly()) { result.Definition.Visibility=2; }
+            aResults.push_back(std::move(result));
         }
     }
     return aResults;
@@ -1678,6 +1705,7 @@ std::shared_ptr<MeshCutPresentation> MeshCutViewManager::EvaluatePresentation(co
 {
     const auto cuts = EvaluateVisible(field);
     if (cuts.empty()) { return std::make_shared<MeshCutPresentation>(); }
+    if(MultipleSurfacesOnly()) { auto result=std::make_shared<MeshCutPresentation>(); result->Branches=cuts; return result; }
     if(!cuts.front().Definition.SliceCollection.empty() && std::all_of(cuts.begin(),cuts.end(),[&](const auto& c) {
         return c.Definition.SliceCollection==cuts.front().Definition.SliceCollection;
     })) { auto result=std::make_shared<MeshCutPresentation>(); result->Branches=cuts; return result; }

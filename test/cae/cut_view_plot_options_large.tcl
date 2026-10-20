@@ -13,6 +13,8 @@ if {[catch {
         scvcutview cut_modes displaymode $mode
         foreach mask {2 3 7} {
             scvcutview cut_modes visibility cut $mask
+            set currentMode [dict get [scvcutview cut_modes cutstyle cut 0] mode]
+            scvcutview cut_modes cutstyle plot 0 0 1 $currentMode .2 .4 .8 .8 .1 .2 0 0 0
             ::CutViewManager::refresh
             update
             set beforeOpen [scvcutview cut_modes renderinfo]
@@ -28,6 +30,8 @@ if {[catch {
             set ::CutViewOptions::values(1,r) .2
             set ::CutViewOptions::values(1,g) .4
             set ::CutViewOptions::values(1,b) .8
+            set ::CutViewOptions::values(1,fieldColor) 0
+            set ::CutViewOptions::values(1,inheritPlot) 1
             .scvcutoptions.actions.apply invoke
             plot_large_assert {$::CutViewOptions::status eq ""} "Applying options failed: $::CutViewOptions::status"
             set initial [scvcutview cut_modes renderinfo]
