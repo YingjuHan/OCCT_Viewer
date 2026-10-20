@@ -20,6 +20,7 @@ namespace ViewCaeGeom {
 enum class MeshCutPortion { Negative = 0, On = 1, Positive = 2 };
 enum class MeshCutCellMode { Constant, Projected };
 enum class MeshCutShape { Plane, Isosurface, Cylinder, Sphere };
+enum class MeshCutOrigin { User, Xfem, Optimization };
 enum class MeshCutMultipleMode { ProjectExtended, Single, AbaqusMultiple };
 enum class MeshCutGeometryMode { Numerical, AnalyticPreferred, AnalyticRequired };
 
@@ -85,6 +86,9 @@ struct MeshCutDefinition {
     MeshCutTraceOptions DisplayTrace;
     MeshCutTraceOptions PhysicalTrace;
     MeshCutShape Shape = MeshCutShape::Plane;
+    MeshCutOrigin Origin = MeshCutOrigin::User;
+    std::string AutomaticProvider;
+    double AutomaticMinimum = 0, AutomaticMaximum = 1;
     std::string IsoFieldName;
     bool IsoFieldNodal = true;
     int IsoComponent = 0; //!< raw component, independent of the displayed contour
@@ -140,6 +144,7 @@ struct MeshCutResult {
 class MeshCutViewManager {
 public:
     Standard_EXPORT explicit MeshCutViewManager(const Handle(RWCae::MeshData)& theMesh);
+    const Handle(RWCae::MeshData)& SourceMesh() const { return myMesh; }
     Standard_EXPORT ~MeshCutViewManager();
     MeshCutViewManager(const MeshCutViewManager&) = delete;
     MeshCutViewManager& operator=(const MeshCutViewManager&) = delete;
@@ -180,6 +185,9 @@ public:
     Standard_EXPORT bool SetIsoValue(const std::string& theId, double theValue);
     Standard_EXPORT bool SetIsoBindingOptions(const std::string& id,
         const MeshCutRecoveryOptions& options, bool overrideAveraging);
+    //! Data-adapter lifecycle API. Ordinary geometry edits/removal reject owned cuts.
+    Standard_EXPORT bool SetAutomaticMetadata(const MeshCutDefinition& definition);
+    Standard_EXPORT bool RemoveAutomatic(const std::string& id, const std::string& provider);
     Standard_EXPORT bool IsoRange(const std::string& theId, double& theMinimum, double& theMaximum);
     //! General cells use the repository-owned finite-element kernel.
     //! Radius is in model units.

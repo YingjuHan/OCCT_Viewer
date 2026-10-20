@@ -58,6 +58,8 @@ public:
     bool ScanSlices(const std::string& collection, const NativeCutAnalysisRequest& request,
         bool sumOnPath, std::vector<ViewCaeGeom::MeshCutPhysicsReport>& reports);
     struct AutomaticBinding { CutFieldBinding Field; ViewCaeGeom::MeshCutAutomaticMapping Mapping; };
+    bool SyncAutomatic(const std::string& provider, const std::map<std::string,AutomaticBinding>& bindings);
+    bool SyncAutomaticJson(const std::string& provider, const std::string& json);
     const std::map<std::string,AutomaticBinding>& AutomaticBindings() const { return myAutomatic; }
 private:
     friend class NativeCutTimeline;

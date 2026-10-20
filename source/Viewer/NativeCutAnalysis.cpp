@@ -216,6 +216,12 @@ bool NativeCutAnalysis::Refresh()
         for(auto entry=myAutomatic.begin();entry!=myAutomatic.end();) {
             if(std::none_of(definitions.begin(),definitions.end(),[&](const auto& d) { return d.Id==entry->first; })) { entry=myAutomatic.erase(entry); } else { ++entry; }
         }
+        for(const auto& d:definitions) {
+            if(myAutomatic.count(d.Id)) {
+                auto& mapping=myAutomatic.at(d.Id).Mapping;
+                mapping.Threshold=d.IsoValue; mapping.Visibility=d.Visibility; mapping.Enabled=d.Enabled;
+            }
+        }
     });
 }
 void NativeCutAnalysis::Detach()
@@ -244,6 +250,10 @@ bool NativeCutAnalysis::PrepareStep(const NativeCutAnalysis& source,int step,boo
         }
         myAutomatic = source.myAutomatic;
         for (auto& entry : myAutomatic) {
+            const auto definitions=myOwner->Display()->Cuts().Definitions();
+            const auto d=std::find_if(definitions.begin(),definitions.end(),[&](const auto& d) { return d.Id==entry.first; });
+            if(d==definitions.end()) { throw std::invalid_argument("Automatic definition disappeared on target frame"); }
+            entry.second.Mapping.Threshold=d->IsoValue; entry.second.Mapping.Visibility=d->Visibility; entry.second.Mapping.Enabled=d->Enabled;
             entry.second.Field.Step = step;
             entry.second.Mapping.Field = myOwner->resolveField(entry.second.Field);
             ViewCaeGeom::MeshCutViewManager check(myOwner->Display()->SourceMesh());
@@ -257,8 +267,32 @@ bool NativeCutAnalysis::Automatic(const std::string& id,const CutFieldBinding& f
         mapping.Field = myOwner->resolveField(field); mapping.Component = field.Component;
         ViewCaeGeom::MeshCutAutomatic::Add(myOwner->Display()->Cuts(),id,mapping);
         try { myOwner->Display()->Synchronize(); }
-        catch (...) { myOwner->Display()->Cuts().Remove(id); throw; }
+        catch (...) { myOwner->Display()->Cuts().RemoveAutomatic(id,mapping.Provider); throw; }
         myAutomatic[id] = {field,mapping};
+    });
+}
+bool NativeCutAnalysis::SyncAutomatic(const std::string& provider,const std::map<std::string,AutomaticBinding>& bindings)
+{
+    return myOwner->attempt([&] {
+        auto next=myAutomatic;
+        for(auto it=next.begin();it!=next.end();) {
+            if(it->second.Mapping.Provider==provider) { it=next.erase(it); } else { ++it; }
+        }
+        std::map<std::string,ViewCaeGeom::MeshCutAutomaticMapping> mappings;
+        for(auto entry:bindings) {
+            entry.second.Mapping.Provider=provider;
+            entry.second.Mapping.Field=myOwner->resolveField(entry.second.Field);
+            entry.second.Mapping.Component=entry.second.Field.Component;
+            mappings.emplace(entry.first,entry.second.Mapping); next[entry.first]=entry.second;
+        }
+        auto& cuts=myOwner->Display()->Cuts(); const auto previous=cuts.DumpDefinitionsJson();
+        if(!ViewCaeGeom::MeshCutAutomatic::Replace(cuts,provider,mappings)) { throw std::invalid_argument("Invalid automatic metadata snapshot; IDs, fields, ownership or activations conflict"); }
+        try { myOwner->Display()->Synchronize(); }
+        catch (...) {
+            if(!cuts.RestoreDefinitionsJson(previous)) { throw std::runtime_error("Automatic snapshot rollback failed"); }
+            throw;
+        }
+        myAutomatic=std::move(next);
     });
 }
 bool NativeCutAnalysis::ScanSlices(const std::string& collection,const NativeCutAnalysisRequest& request,

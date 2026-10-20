@@ -149,11 +149,20 @@ void tests()
     closeTo(MeshCutPhysics::Stress(manager.EvaluatePhysical("density",field),components,options).Total.Force.x(),1.125);
     options=MeshCutPhysicsOptions();
     automatic.Maximum = 0.5; rejects([&] { MeshCutAutomatic::Add(manager,"invalid",automatic); }); require(manager.Definitions().size() == 4,"Invalid automatic mapping published");
-    automatic.Kind = MeshCutAutomaticKind::CrackDistance; automatic.Sign = -1; automatic.Threshold = -1; automatic.Visibility = 1;
-    require(MeshCutAutomatic::Add(manager,"crack",automatic).State == MeshCutAutomaticState::Empty,"Crack sign state");
+    automatic.Kind = MeshCutAutomaticKind::CrackDistance; automatic.Sign = -1; automatic.Threshold = 0; automatic.Visibility = 1;
+    require(MeshCutAutomatic::Add(manager,"crack",automatic).State == MeshCutAutomaticState::Crossing,"Crack zero state");
     const auto definitions = manager.Definitions();
     const auto crack = std::find_if(definitions.begin(),definitions.end(),[](const auto& d) { return d.Id == "crack"; });
-    require(crack != definitions.end() && crack->Visibility == 4,"Crack explicit sign visibility");
+    require(crack != definitions.end() && crack->Visibility == 1 && crack->Origin==MeshCutOrigin::Xfem,"Crack Below semantics");
+    require(!manager.Remove("crack") && !manager.Rename("crack","other") && !manager.Duplicate("crack","copy")
+        && !manager.SetIsoValue("crack",.1) && !manager.SetVisibility("crack",4),"Automatic protection");
+    const auto visible=manager.EvaluateVisible();
+    const auto whole=std::find_if(visible.begin(),visible.end(),[](const auto& r) { return r.Definition.Id=="crack"; });
+    require(whole!=visible.end() && whole->Portions[0]->GetMeshData()->NbIndexedElems()==volume->NbIndexedElems(),"XFEM Below clipped the source");
+    const auto before=manager.DumpDefinitionsJson();
+    auto invalidAuto=automatic; invalidAuto.Threshold=.1;
+    require(!MeshCutAutomatic::Replace(manager,"explicit",{{"bad",invalidAuto}}) && manager.DumpDefinitionsJson()==before,"Failed snapshot changed live definitions");
+    require(MeshCutAutomatic::Replace(manager,"explicit",{}) && manager.Definitions().size()==3,"Provider removal failed");
     auto paired=geometry(3); paired->AddNodePosition(Graphic3d_Vec3(-1,0,0)); RWCae::MeshEntityId ns[]={0,4,3,2}; paired->AddElement(RWCae::MeshElementTetrahedron(ns));
     Handle(RWCae::MeshNVecProperty) jump=new RWCae::MeshNVecProperty("jump",9,RWCae::MeshPropertyBase::MappingType::Elemental,RWCae::MeshNVecPropertyType::Tensor); jump->Init<RWCae::MeshScalarProperty>();
     for(int c=0;c<9;++c) { auto s=Handle(RWCae::MeshScalarProperty)::DownCast(jump->GetComponent(c)); s->Init(2); for(int e=0;e<2;++e) { s->SetValue(RWCae::MeshPropertyEntityInfo(e),c==0?4+4*e:0); } } jump->UpdateComponents();

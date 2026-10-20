@@ -177,7 +177,13 @@ bool NativeCutSession::Save(const std::string& filename,const std::string& meshS
             w.Key("recoverySteps"); w.StartArray(); for(const auto& r:myTimeline.myRecoverySteps) { w.StartObject(); w.Key("step"); w.Int(r.first); w.Key("options"); recovery(w,r.second); w.EndObject(); } w.EndArray(); w.Key("traceSteps"); w.StartArray(); for(const auto& s:myTimeline.myTraceSteps) { for(const auto& t:s.second) { w.StartObject(); w.Key("step"); w.Int(s.first); w.Key("cut"); text(w,t.first); w.Key("display"); trace(w,t.second.first); w.Key("physical"); trace(w,t.second.second); w.EndObject(); } } w.EndArray();
             w.Key("playback"); w.StartObject(); w.Key("playing"); w.Bool(myTimeline.myPlaying); w.Key("loop"); w.Bool(myTimeline.myLoop); w.Key("timestamps"); w.Bool(myTimeline.myUseTimes); w.Key("period"); w.Double(myTimeline.myPeriod); w.Key("elapsed"); w.Double(myTimeline.myElapsed); w.EndObject();
             w.Key("analysis"); w.StartArray(); if(myOwner.myAnalysis) { for(const auto& r:myOwner.myAnalysis->Requests()) { w.StartObject(); w.Key("id"); text(w,r.first); w.Key("request"); raw(w,NativeCutAnalysis::RequestJson(r.second)); w.EndObject(); } } w.EndArray(); w.Key("analysisSteps"); w.StartArray(); if(myOwner.myAnalysis) { for(const auto& s:myOwner.myAnalysis->StepRequests()) { for(const auto& r:s.second) { w.StartObject(); w.Key("step"); w.Int(s.first); w.Key("id"); text(w,r.first); w.Key("request"); raw(w,NativeCutAnalysis::RequestJson(r.second)); w.EndObject(); } } } w.EndArray();
-            w.Key("automatic"); w.StartArray(); if(myOwner.myAnalysis) { for(const auto& a:myOwner.myAnalysis->AutomaticBindings()) { w.StartObject(); w.Key("id"); text(w,a.first); w.Key("field"); binding(w,a.second.Field); const auto& m=a.second.Mapping; w.Key("kind"); w.Int((int)m.Kind); w.Key("threshold"); w.Double(m.Threshold); w.Key("sign"); w.Int(m.Sign); w.Key("min"); w.Double(m.Minimum); w.Key("max"); w.Double(m.Maximum); w.Key("mask"); w.Uint(m.Visibility); w.EndObject(); } } w.EndArray();
+            w.Key("automatic"); w.StartArray();
+            if(myOwner.myAnalysis) { for(const auto& a:myOwner.myAnalysis->AutomaticBindings()) {
+                w.StartObject(); w.Key("id"); text(w,a.first); w.Key("field"); binding(w,a.second.Field);
+                const auto& m=a.second.Mapping; w.Key("kind"); w.Int((int)m.Kind); w.Key("threshold"); w.Double(m.Threshold);
+                w.Key("sign"); w.Int(m.Sign); w.Key("min"); w.Double(m.Minimum); w.Key("max"); w.Double(m.Maximum);
+                w.Key("mask"); w.Uint(m.Visibility); w.Key("enabled"); w.Bool(m.Enabled); w.Key("provider"); text(w,m.Provider); w.EndObject();
+            } } w.EndArray();
             w.Key("annotations"); w.StartArray(); for(const auto& a:myOwner.Annotations()) { w.StartObject(); w.Key("id"); text(w,a.first); w.Key("text"); text(w,labelText(a.second->Text())); const auto p=a.second->Position(); w.Key("position"); vec(w,Graphic3d_Vec3d(p.X(),p.Y(),p.Z())); w.EndObject(); } w.EndArray();
             w.Key("cad"); if(cad.empty()) { w.Null(); } else { w.StartObject(); w.Key("file"); text(w,cad); w.Key("cut"); text(w,myOwner.myCadCut); w.Key("sync"); w.Bool(myOwner.mySyncClip); w.EndObject(); }
             w.Key("clip"); if(myOwner.GlobalClip().IsNull()) { w.Null(); } else { w.StartObject(); w.Key("plane"); w.StartArray(); for(int p=0;p<4;++p) { w.Double(myOwner.GlobalClip()->GetEquation()[p]); } w.EndArray(); w.Key("on"); w.Bool(myOwner.GlobalClip()->IsOn()); w.EndObject(); }
@@ -271,7 +277,25 @@ bool NativeCutSession::Load(const std::string& filename)
             if(!added||!targetCuts.SetVisibility(found->Id,2)||!targetView.Analysis().Set(id,request)) { throw std::invalid_argument("Invalid mapped physical request: "+targetView.LastError()); }
             staged.Analysis().SetForStep(target,id,request);
         } }
-        if(doc.HasMember("automatic")) { for(const auto& a:array(doc["automatic"]).GetArray()) { const auto id=str(get(a,"id")); const auto b=binding(get(a,"field")); ViewCaeGeom::MeshCutAutomaticMapping m; m.Kind=(ViewCaeGeom::MeshCutAutomaticKind)integer(get(a,"kind")); m.Field=staged.resolveField(b); m.Component=b.Component; m.Threshold=num(get(a,"threshold")); m.Sign=integer(get(a,"sign")); m.Minimum=num(get(a,"min")); m.Maximum=num(get(a,"max")); const int mask=integer(get(a,"mask")); if(mask<0||mask>7) { throw std::invalid_argument("Invalid automatic mask"); } m.Visibility=mask; ViewCaeGeom::MeshCutViewManager check(snapshot); ViewCaeGeom::MeshCutAutomatic::Add(check,id,m); const auto ds=cuts.Definitions(); const auto found=std::find_if(ds.begin(),ds.end(),[&](const auto& d) { return d.Id==id; }); if(found==ds.end()||found->Shape!=ViewCaeGeom::MeshCutShape::Isosurface||found->IsoFieldName!=b.Name||found->IsoFieldNodal!=b.Nodal||found->IsoTimeStep!=b.Step||found->IsoComponent!=b.Component||found->IsoValue!=m.Threshold||found->Visibility!=check.Definitions().front().Visibility||staged.Analysis().myAutomatic.count(id)) { throw std::invalid_argument("Automatic mapping and definition disagree"); } staged.Analysis().myAutomatic[id]={b,m}; } }
+        if(doc.HasMember("automatic")) { for(const auto& a:array(doc["automatic"]).GetArray()) {
+            const auto id=str(get(a,"id")); const auto b=binding(get(a,"field")); ViewCaeGeom::MeshCutAutomaticMapping m;
+            m.Kind=(ViewCaeGeom::MeshCutAutomaticKind)integer(get(a,"kind")); m.Field=staged.resolveField(b); m.Component=b.Component;
+            m.Threshold=num(get(a,"threshold")); m.Sign=integer(get(a,"sign")); m.Minimum=num(get(a,"min")); m.Maximum=num(get(a,"max"));
+            const int mask=integer(get(a,"mask")); if(mask<0||mask>7) { throw std::invalid_argument("Invalid automatic mask"); } m.Visibility=mask;
+            if(a.HasMember("provider")) { m.Provider=str(a["provider"]); }
+            if(a.HasMember("enabled")) { m.Enabled=boolean(a["enabled"]); }
+            ViewCaeGeom::MeshCutViewManager check(snapshot); ViewCaeGeom::MeshCutAutomatic::Add(check,id,m);
+            const auto ds=cuts.Definitions(); const auto found=std::find_if(ds.begin(),ds.end(),[&](const auto& d) { return d.Id==id; });
+            const auto metadata=check.Definitions().front();
+            if(found==ds.end()||found->Shape!=ViewCaeGeom::MeshCutShape::Isosurface||found->IsoFieldName!=b.Name||found->IsoFieldNodal!=b.Nodal
+                ||found->IsoTimeStep!=b.Step||found->IsoComponent!=b.Component||found->IsoValue!=m.Threshold||found->Visibility!=metadata.Visibility
+                ||staged.Analysis().myAutomatic.count(id) || (found->Origin!=ViewCaeGeom::MeshCutOrigin::User
+                    && (found->Origin!=metadata.Origin || found->AutomaticProvider!=m.Provider || found->Enabled!=m.Enabled))) {
+                throw std::invalid_argument("Automatic mapping and definition disagree");
+            }
+            if(!cuts.SetAutomaticMetadata(metadata)) { throw std::invalid_argument("Invalid automatic ownership"); }
+            staged.Analysis().myAutomatic[id]={b,m};
+        } }
         if(doc.HasMember("annotations")) { for(const auto& a:array(doc["annotations"]).GetArray()) { const auto id=str(get(a,"id")); ViewCae::MeshCutProbe p; p.Position=vec(get(a,"position")); if(staged.Annotations().count(id)||!staged.AddAnnotation(id,p,str(get(a,"text")))) { throw std::invalid_argument("Invalid/duplicate annotation"); } } }
         std::string cadSource;
         if(doc.HasMember("cad")&&!doc["cad"].IsNull()) { const auto& c=doc["cad"]; const auto name=str(get(c,"file")); if(!declared.count(name)) { throw std::invalid_argument("CAD source has no digest"); } const auto p=contained(bundle,name); TopoDS_Shape shape; BRep_Builder builder; if(!BRepTools::Read(shape,p.generic_u8string().c_str(),builder)||!staged.SetCadSection(shape,str(get(c,"cut")),boolean(get(c,"sync")))) { throw std::invalid_argument("Invalid CAD source/section"); } cadSource=p.generic_u8string(); }

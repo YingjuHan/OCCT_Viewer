@@ -524,7 +524,7 @@ bool MeshCutViewManager::SetIsosurface(const std::string& id,
     const Handle(RWCae::MeshNVecProperty)& field, int component, double threshold)
 {
     auto entry = find(id);
-    return entry != nullptr && entry->Definition.Shape == MeshCutShape::Isosurface
+    return entry != nullptr && entry->Definition.Origin == MeshCutOrigin::User && entry->Definition.Shape == MeshCutShape::Isosurface
         && bindIsoField(*entry, field, component, threshold);
 }
 
@@ -532,7 +532,10 @@ bool MeshCutViewManager::SetIsoValue(const std::string& id, double threshold)
 {
     auto entry = find(id);
     if (entry == nullptr || entry->Definition.Shape != MeshCutShape::Isosurface
-        || !std::isfinite(threshold)) { return false; }
+        || !std::isfinite(threshold)
+        || (entry->Definition.Origin == MeshCutOrigin::Xfem && threshold != 0)
+        || (entry->Definition.Origin == MeshCutOrigin::Optimization
+            && (threshold < entry->Definition.AutomaticMinimum || threshold > entry->Definition.AutomaticMaximum))) { return false; }
     if (entry->Definition.IsoValue == threshold) { return true; }
     release(*entry);
     entry->Definition.IsoValue = threshold;
@@ -542,7 +545,7 @@ bool MeshCutViewManager::SetIsoValue(const std::string& id, double threshold)
 bool MeshCutViewManager::SetIsoBindingOptions(const std::string& id,const MeshCutRecoveryOptions& options,bool overrideAveraging)
 {
     const auto entry = find(id);
-    if (!entry || entry->Definition.Shape != MeshCutShape::Isosurface || !options.IsValid(myMesh->NbIndexedElems())) { return false; }
+    if (!entry || entry->Definition.Origin != MeshCutOrigin::User || entry->Definition.Shape != MeshCutShape::Isosurface || !options.IsValid(myMesh->NbIndexedElems())) { return false; }
     const auto& old = entry->Definition.IsoRecovery;
     if (old.ThresholdPercent == options.ThresholdPercent && old.InvariantsBeforeAveraging == options.InvariantsBeforeAveraging
         && old.Tensor.Measure == options.Tensor.Measure && old.Tensor.Layout == options.Tensor.Layout
@@ -567,6 +570,29 @@ bool MeshCutViewManager::IsoRange(const std::string& id, double& minimum, double
     if (!validIsoField(resolveIsoField(entry->Definition), entry->Definition.IsoComponent)) { return false; }
     return isoValues(*entry)->ValueRange().GetBounds(minimum, maximum)
         && std::isfinite(minimum) && std::isfinite(maximum);
+}
+
+bool MeshCutViewManager::SetAutomaticMetadata(const MeshCutDefinition& d)
+{
+    const auto entry = find(d.Id);
+    if(!entry || entry->Definition.Shape!=MeshCutShape::Isosurface || (d.Origin!=MeshCutOrigin::Xfem && d.Origin!=MeshCutOrigin::Optimization)
+        || d.AutomaticProvider.empty() || d.AutomaticProvider.find('\0')!=std::string::npos
+        || (entry->Definition.Origin!=MeshCutOrigin::User && entry->Definition.AutomaticProvider!=d.AutomaticProvider)
+        || (d.Origin==MeshCutOrigin::Xfem && (entry->Definition.IsoValue!=0 || entry->Definition.Visibility>3))
+        || (d.Origin==MeshCutOrigin::Optimization && (!std::isfinite(d.AutomaticMinimum) || !std::isfinite(d.AutomaticMaximum)
+            || d.AutomaticMinimum>=d.AutomaticMaximum || entry->Definition.IsoValue<d.AutomaticMinimum || entry->Definition.IsoValue>d.AutomaticMaximum))) { return false; }
+    if(d.Origin==MeshCutOrigin::Xfem && entry->Definition.Enabled) {
+        for(const auto& e:myEntries) { if(e.first!=d.Id && e.second->Definition.Origin==MeshCutOrigin::Xfem && e.second->Definition.Enabled) { return false; } }
+    }
+    entry->Definition.Origin=d.Origin; entry->Definition.AutomaticProvider=d.AutomaticProvider;
+    entry->Definition.AutomaticMinimum=d.AutomaticMinimum; entry->Definition.AutomaticMaximum=d.AutomaticMaximum;
+    ++entry->Revision; return true;
+}
+bool MeshCutViewManager::RemoveAutomatic(const std::string& id,const std::string& provider)
+{
+    const auto entry=find(id);
+    if(!entry || entry->Definition.Origin==MeshCutOrigin::User || entry->Definition.AutomaticProvider!=provider) { return false; }
+    entry->Definition.Origin=MeshCutOrigin::User; return Remove(id);
 }
 
 bool MeshCutViewManager::validQuadricMesh() const
@@ -752,7 +778,7 @@ bool MeshCutViewManager::moveCachedPlane(Entry& theEntry, const Graphic3d_Vec4d&
 bool MeshCutViewManager::Rename(const std::string& theId, const std::string& theName)
 {
     Entry* anEntry = find(theId);
-    if (anEntry == nullptr || theName.empty() || theName.find('\0') != std::string::npos) { return false; }
+    if (anEntry == nullptr || anEntry->Definition.Origin != MeshCutOrigin::User || theName.empty() || theName.find('\0') != std::string::npos) { return false; }
     anEntry->Definition.Name = theName;
     ++anEntry->Revision;
     return true;
@@ -761,7 +787,7 @@ bool MeshCutViewManager::Rename(const std::string& theId, const std::string& the
 bool MeshCutViewManager::Duplicate(const std::string& theId, const std::string& theNewId)
 {
     Entry* anEntry = find(theId);
-    if (anEntry == nullptr || !AddPlane(theNewId, anEntry->Definition.Shape == MeshCutShape::Plane
+    if (anEntry == nullptr || anEntry->Definition.Origin != MeshCutOrigin::User || !AddPlane(theNewId, anEntry->Definition.Shape == MeshCutShape::Plane
         ? anEntry->Definition.Plane : Graphic3d_Vec4d(1,0,0,0))) { return false; }
     Entry* aCopy = find(theNewId);
     aCopy->Definition = anEntry->Definition;
@@ -795,7 +821,7 @@ void MeshCutViewManager::release(Entry& theEntry)
 bool MeshCutViewManager::Remove(const std::string& theId)
 {
     Entry* anEntry = find(theId);
-    if (anEntry == nullptr || !anEntry->Definition.SliceCollection.empty()) { return false; }
+    if (anEntry == nullptr || anEntry->Definition.Origin != MeshCutOrigin::User || !anEntry->Definition.SliceCollection.empty()) { return false; }
     for (auto it=myEntries.begin();it!=myEntries.end();) {
         if (it->second->Definition.SliceSource==theId) { release(*it->second); it=myEntries.erase(it); }
         else { ++it; }
@@ -808,7 +834,8 @@ bool MeshCutViewManager::Remove(const std::string& theId)
 bool MeshCutViewManager::SetVisibility(const std::string& theId, unsigned theMask)
 {
     Entry* anEntry = find(theId);
-    if (anEntry == nullptr || theMask > 7 || (!anEntry->Definition.SliceCollection.empty() && theMask!=2)) { return false; }
+    if (anEntry == nullptr || theMask > 7 || (anEntry->Definition.Origin == MeshCutOrigin::Xfem && theMask>3)
+        || (!anEntry->Definition.SliceCollection.empty() && theMask!=2)) { return false; }
     anEntry->Definition.Visibility = theMask;
     ++anEntry->Revision;
     return true;
@@ -820,6 +847,11 @@ bool MeshCutViewManager::SetEnabled(const std::string& theId, bool theEnabled)
     if (anEntry == nullptr) { return false; }
     if (!anEntry->Definition.SliceCollection.empty()) { return EnableSlices(anEntry->Definition.SliceCollection,theEnabled); }
     if (theEnabled) {
+        if(anEntry->Definition.Origin == MeshCutOrigin::Xfem) {
+            for(const auto& e:myEntries) {
+                if(e.first!=theId && e.second->Definition.Origin==MeshCutOrigin::Xfem && e.second->Definition.Enabled) { return false; }
+            }
+        }
         if(myMultipleMode==MeshCutMultipleMode::Single) {
             for(const auto& e:myEntries) { if(e.first!=theId && e.second->Definition.SliceCollection.empty() && e.second->Definition.Enabled) { return false; } }
         }
@@ -954,7 +986,7 @@ std::string MeshCutViewManager::DumpDefinitionsJson() const
     rapidjson::OStreamWrapper wrapper(stream);
     RWBase::JsonHelper::Writer writer(wrapper);
     writer.StartObject();
-    writer.Key("version"); writer.Int(12);
+    writer.Key("version"); writer.Int(13);
     writer.Key("multipleMode"); writer.Int((int)myMultipleMode);
     writer.Key("isoOptions"); writer.StartObject();
     writer.Key("absolute"); writer.Double(myIsoOptions.AbsoluteTolerance);
@@ -989,6 +1021,10 @@ std::string MeshCutViewManager::DumpDefinitionsJson() const
         writer.Key("shape"); writer.String(definition.Shape == MeshCutShape::Plane ? "plane"
             : definition.Shape == MeshCutShape::Sphere ? "sphere"
             : definition.Shape == MeshCutShape::Cylinder ? "cylinder" : "isosurface");
+        writer.Key("origin"); writer.Int((int)definition.Origin);
+        writer.Key("provider"); writer.String(definition.AutomaticProvider.c_str());
+        writer.Key("automaticMin"); writer.Double(definition.AutomaticMinimum);
+        writer.Key("automaticMax"); writer.Double(definition.AutomaticMaximum);
         if (definition.Shape == MeshCutShape::Plane) {
             writer.Key("plane"); writer.StartArray();
             for (int i = 0; i < 4; ++i) { writer.Double(definition.Plane[i]); }
@@ -1051,7 +1087,7 @@ bool MeshCutViewManager::RestoreDefinitionsJson(const std::string& theJson)
     rapidjson::Document document;
     document.Parse<rapidjson::kParseFullPrecisionFlag>(theJson.data(), theJson.size());
     if (document.HasParseError() || !document.IsObject() || !document.HasMember("version")
-        || !document["version"].IsInt() || document["version"].GetInt() < 1 || document["version"].GetInt() > 12
+        || !document["version"].IsInt() || document["version"].GetInt() < 1 || document["version"].GetInt() > 13
         || !document.HasMember("cuts") || !document["cuts"].IsArray()) { return false; }
     std::map<std::string, std::unique_ptr<Entry>> entries;
     MeshCutIsoOptions isoOptions;
@@ -1109,6 +1145,15 @@ bool MeshCutViewManager::RestoreDefinitionsJson(const std::string& theJson)
         auto entry = std::make_unique<Entry>();
         auto& definition = entry->Definition;
         definition.Id = id; definition.Name = name;
+        if(document["version"].GetInt()>=13) {
+            if(!cut.HasMember("origin") || !cut["origin"].IsInt() || cut["origin"].GetInt()<0 || cut["origin"].GetInt()>2
+                || !cut.HasMember("provider") || !cut["provider"].IsString()
+                || !cut.HasMember("automaticMin") || !cut["automaticMin"].IsNumber()
+                || !cut.HasMember("automaticMax") || !cut["automaticMax"].IsNumber()) { return false; }
+            definition.Origin=(MeshCutOrigin)cut["origin"].GetInt();
+            definition.AutomaticProvider.assign(cut["provider"].GetString(),cut["provider"].GetStringLength());
+            definition.AutomaticMinimum=cut["automaticMin"].GetDouble(); definition.AutomaticMaximum=cut["automaticMax"].GetDouble();
+        }
         if(document["version"].GetInt()>=11) {
             if(!cut.HasMember("slice") || !cut["slice"].IsObject()) { return false; } const auto& s=cut["slice"];
             for(const char* key:{"collection","source","units"}) { if(!s.HasMember(key)||!s[key].IsString()) { return false; } }
@@ -1231,6 +1276,17 @@ bool MeshCutViewManager::RestoreDefinitionsJson(const std::string& theJson)
             || d.Shape!=MeshCutShape::Plane || d.Visibility!=2 || d.FollowDeformation
             || d.SliceBegin>d.SliceCoordinate || d.SliceCoordinate>d.SliceEnd || (d.SliceUnits!="model_length" && d.SliceUnits!="radian")) { return false; }
     }
+    size_t cracks=0;
+    for(const auto& e:entries) {
+        const auto& d=e.second->Definition;
+        if(d.Origin==MeshCutOrigin::User) { if(!d.AutomaticProvider.empty()) { return false; } continue; }
+        if(d.Shape!=MeshCutShape::Isosurface || !d.SliceCollection.empty() || d.AutomaticProvider.empty()
+            || d.AutomaticProvider.find('\0')!=std::string::npos || !std::isfinite(d.AutomaticMinimum) || !std::isfinite(d.AutomaticMaximum)
+            || (d.Origin==MeshCutOrigin::Xfem && (d.IsoValue!=0 || d.Visibility>3))
+            || (d.Origin==MeshCutOrigin::Optimization && (d.AutomaticMinimum>=d.AutomaticMaximum || d.IsoValue<d.AutomaticMinimum || d.IsoValue>d.AutomaticMaximum))) { return false; }
+        if(d.Origin==MeshCutOrigin::Xfem && d.Enabled) { ++cracks; }
+    }
+    if(cracks>1) { return false; }
     size_t activeCount=0; bool displayedSlices=false;
     for(const auto& e:entries) { const auto& d=e.second->Definition; if(d.Enabled) { if(d.SliceCollection.empty()) { ++activeCount; } else { displayedSlices=true; } } }
     if((multipleMode==MeshCutMultipleMode::Single && activeCount>1) || (multipleMode==MeshCutMultipleMode::AbaqusMultiple && displayedSlices)) { return false; }
@@ -1250,7 +1306,12 @@ bool MeshCutViewManager::RestoreDefinitionsJson(const std::string& theJson)
             const auto& definition = item.second->Definition;
             if (definition.Shape == MeshCutShape::Isosurface && document["version"].GetInt() >= 10) {
                 auto& candidate = *staged.find(item.first);
-                auto lease = staged.myCache.Reserve(staged.EstimatedResultBytes(staged.resolveIsoField(definition)),false);
+                const auto field=staged.resolveIsoField(definition);
+                // Binding validation of an existing nodal scalar only borrows
+                // its component handle. It does not allocate retained bodies.
+                const bool borrowed=field->IsNodal() && field->HasScalarComponents()
+                    && definition.IsoRecovery.Tensor.Measure==MeshCutTensorMeasure::Components;
+                auto lease = staged.myCache.Reserve(borrowed?65536:staged.EstimatedResultBytes(field),false);
                 staged.isoValues(candidate);
             }
             if (definition.FollowDeformation && !staged.SetFollowDeformation(item.first,true,definition.ReferenceStep,
@@ -1693,7 +1754,13 @@ std::vector<MeshCutResult> MeshCutViewManager::EvaluateVisible(const Handle(RWCa
         const auto& d=anEntry.second->Definition;
         if(slicedSources.count(d.Id) || (!d.SliceSource.empty() && !find(d.SliceSource)->Definition.Enabled)) { continue; }
         if (anEntry.second->Definition.Enabled && (MultipleSurfacesOnly() || anEntry.second->Definition.Visibility != 0)) {
-            auto result=MultipleSurfacesOnly()?EvaluateSectionForDisplay(anEntry.first,theField):Evaluate(anEntry.first,theField);
+            const bool crack=d.Origin==MeshCutOrigin::Xfem && !MultipleSurfacesOnly();
+            auto result=MultipleSurfacesOnly() || (crack && (d.Visibility&2)) ? EvaluateSectionForDisplay(anEntry.first,theField)
+                : crack ? EvaluateFieldForDisplay(anEntry.first,theField) : Evaluate(anEntry.first,theField);
+            if(crack && (d.Visibility&1)) {
+                result.Roots[0]=SourceGeometry(); result.Portions[0]=result.Roots[0]->GetLastChild();
+                result.Fields[0]=result.Portions[0]->CalculateProperty(result.SourceField);
+            }
             if(MultipleSurfacesOnly()) { result.Definition.Visibility=2; }
             aResults.push_back(std::move(result));
         }
@@ -1705,7 +1772,9 @@ std::shared_ptr<MeshCutPresentation> MeshCutViewManager::EvaluatePresentation(co
 {
     const auto cuts = EvaluateVisible(field);
     if (cuts.empty()) { return std::make_shared<MeshCutPresentation>(); }
-    if(MultipleSurfacesOnly()) { auto result=std::make_shared<MeshCutPresentation>(); result->Branches=cuts; return result; }
+    if(MultipleSurfacesOnly() || std::any_of(cuts.begin(),cuts.end(),[](const auto& c) { return c.Definition.Origin==MeshCutOrigin::Xfem; })) {
+        auto result=std::make_shared<MeshCutPresentation>(); result->Branches=cuts; return result;
+    }
     if(!cuts.front().Definition.SliceCollection.empty() && std::all_of(cuts.begin(),cuts.end(),[&](const auto& c) {
         return c.Definition.SliceCollection==cuts.front().Definition.SliceCollection;
     })) { auto result=std::make_shared<MeshCutPresentation>(); result->Branches=cuts; return result; }

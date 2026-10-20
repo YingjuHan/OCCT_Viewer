@@ -354,6 +354,9 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
         } else if(action == "physicscsv" && argc == 4) {
             const auto& reports=model.Native->Analysis().Reports(); const auto r=reports.find(argv[3]); if(r==reports.end()) { throw std::invalid_argument("Unknown physical report"); }
             di<<r->second.Csv().c_str(); return 0;
+        } else if(action == "automaticsync" && argc == 5) {
+            if(!model.Native->Analysis().SyncAutomaticJson(argv[3],argv[4])) { throw std::invalid_argument(model.Native->LastError()); }
+            ok=true;
         } else if(action == "automatic" && argc == 12) {
             ViewCaeGeom::MeshCutAutomaticMapping mapping;
             if(std::string(argv[4])=="crack") { mapping.Kind=ViewCaeGeom::MeshCutAutomaticKind::CrackDistance; }
@@ -655,6 +658,8 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
                 di << "{id"; di.AppendElement(cut.Id.c_str());
                 di << " name"; di.AppendElement(cut.Name.c_str());
                 di << " enabled " << (int)cut.Enabled << " visibility " << (int)cut.Visibility;
+                di << " sourceOrigin " << (cut.Origin==ViewCaeGeom::MeshCutOrigin::Xfem?"xfem":cut.Origin==ViewCaeGeom::MeshCutOrigin::Optimization?"optimization":"user") << " provider";
+                di.AppendElement(cut.AutomaticProvider.c_str());
                 di << " sliceCollection"; di.AppendElement(cut.SliceCollection.c_str());
                 di << " sliceSource"; di.AppendElement(cut.SliceSource.c_str());
                 di << " material " << (int)cut.FollowDeformation << " reference_step " << cut.ReferenceStep
@@ -1280,6 +1285,7 @@ void ViewCaeTest::CutViewCommands::Factory(Draw_Interpretor& di)
         "  | physicsenabled cutId 0/1 | physicsstate cutId | physicsconfig requestId\n"
         "  | physicsdisplaygroup requestId sourceMeshObject presentationId\n"
         "  | automatic id crack/density nodalField component threshold sign minimum maximum visibility\n"
+        "  | automaticsync provider metadataJSON (version 1 full provider snapshot)\n"
         "  | materialframe name reference/updated {step n0 n1 n2}... | follow cut datum\n"
         "  | material cut on/off First/Last/Current | materialstats cut | materialinfo cut\n"
         "  | slicing plane regular/range start spacing/end count | rotational ax ay az ox oy oz start end count | path ux uy uz {x y z}...\n"

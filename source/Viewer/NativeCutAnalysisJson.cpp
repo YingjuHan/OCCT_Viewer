@@ -25,6 +25,27 @@ template<size_t N> void components(const V& v,std::array<int,N>& result) { if (!
 template<size_t N> void components(W& w,const std::array<int,N>& c) { w.StartArray(); for(int v:c) { w.Int(v); } w.EndArray(); }
 }
 namespace Viewer {
+bool NativeCutAnalysis::SyncAutomaticJson(const std::string& provider,const std::string& json)
+{
+    return myOwner->attempt([&] {
+        if(json.size()>4*1024*1024) { throw std::invalid_argument("Automatic metadata snapshot is too large"); }
+        rapidjson::Document doc; doc.Parse(json.data(),json.size());
+        if(doc.HasParseError() || !doc.IsObject() || integer(member(doc,"version"))!=1 || !member(doc,"cuts").IsArray()) { throw std::invalid_argument("Invalid automatic metadata document"); }
+        std::map<std::string,AutomaticBinding> bindings;
+        for(const auto& c:doc["cuts"].GetArray()) {
+            AutomaticBinding b; b.Field=binding(member(c,"field"));
+            const auto kind=string(member(c,"kind"));
+            if(kind!="crack" && kind!="density") { throw std::invalid_argument("Automatic kind must be crack or density"); }
+            auto& m=b.Mapping; m.Kind=kind=="crack"?ViewCaeGeom::MeshCutAutomaticKind::CrackDistance:ViewCaeGeom::MeshCutAutomaticKind::OptimizationDensity;
+            m.Threshold=number(member(c,"threshold")); m.Minimum=number(member(c,"min")); m.Maximum=number(member(c,"max"));
+            m.Sign=integer(member(c,"sign")); const int mask=integer(member(c,"visibility"));
+            if(mask<0 || mask>7) { throw std::invalid_argument("Invalid automatic visibility"); }
+            m.Visibility=mask; m.Enabled=boolean(member(c,"enabled")); m.Provider=provider;
+            if(!bindings.emplace(string(member(c,"id")),b).second) { throw std::invalid_argument("Duplicate automatic source ID"); }
+        }
+        if(!SyncAutomatic(provider,bindings)) { throw std::invalid_argument(myOwner->LastError()); }
+    });
+}
 NativeCutAnalysisRequest NativeCutAnalysis::ReadRequestJson(const std::string& json) const
 {
     if (json.size()>4*1024*1024) { throw std::invalid_argument("Physics request is too large"); }

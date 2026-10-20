@@ -228,8 +228,15 @@ proc ::CutViewManager::refresh {{attach 0}} {
         $w.controls.definition configure -state [expr {$shape eq "plane" ? "normal" : "disabled"}]
         set portionState [expr {$multiMode eq "abaqus" || [dict get $cut sliceCollection] ne "" ? "disabled" : "normal"}]
         foreach control {below on above} { $w.controls.$control configure -state $portionState }
+        if {[dict get $cut sourceOrigin] ne "user"} {
+            foreach widget [list $w.actions.copy $w.actions.delete $w.actions.rename $w.controls.apply $w.controls.name $w.controls.isofield $w.controls.isocomponent $w.isobinding] { $widget configure -state disabled }
+            if {[dict get $cut sourceOrigin] eq "xfem"} {
+                foreach control {above translate rotate position} { $w.controls.$control configure -state disabled }
+            }
+        }
         $w.freebody configure -state [expr {$multiMode eq "abaqus" ? "disabled" : "normal"}]
         foreach slider {translate rotate} { $w.controls.$slider configure -state [expr {$enabled ? "normal" : "disabled"}] }
+        if {[dict get $cut sourceOrigin] eq "xfem"} { foreach slider {translate rotate} { $w.controls.$slider configure -state disabled } }
         if {$attach && $shape ne "plane"} { set angle 0; set lastAngle 0 }
         if {!$dragging && ($attach || $changed || $lastDragging)} {
             scvcutview $model handle $selected [expr {$shape ne "isosurface"}] $gizmo
@@ -261,6 +268,7 @@ proc ::CutViewManager::toggleCell {x y} {
     if {$id eq "" || $column eq "#0"} { return }
     if {$column ni {#0 #1} && [scvcutview $model multimode] eq "abaqus"} { return }
     foreach cut [scvcutview $model list] { if {[dict get $cut id] eq $id} { break } }
+    if {$column eq "#4" && [dict get $cut sourceOrigin] eq "xfem"} { return }
     if {$column eq "#1"} {
         set active [expr {![dict get $cut enabled]}]
         if {!$multiple && $active} {

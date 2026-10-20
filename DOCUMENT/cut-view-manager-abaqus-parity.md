@@ -65,7 +65,7 @@
 | A05 Isosurface 完整绑定与 averaging | P1 | 本包完成 | R10；独立派生量/平均快照、显式重绑、JSON10、时间帧及 Manager 回归；337.5 万单元实际求交通过，见等值面指南 |
 | A06 切片集合与报告 | P1 | 本包完成（空间平面集合） | R21/R22；规则/范围/旋转/路径等弧长、成组替换与删除、JSON11/session/时间轴、逐片 FE 扫描及 CSV；337.5 万单元三切片门禁通过 |
 | A07 全部 plot options 与多 cut 兼容 | P1 | 本包完成 | R04/R11；动态 plot 继承、独立面/边色与线型、single/abaqus/project 策略；图案边走 CPU，壳云图切线仍连续，见显示指南 |
-| A08 自动 cut 与数据适配 | P2 | 待开发 | R23；不依赖 ODB 库也能使用显式元数据；ODB 导入另立适配边界 |
+| A08 自动 cut 与数据适配 | P2 | 本包完成（显式元数据） | R23；provider 快照、自动移除、定义保护、XFEM 特殊显示和优化阈值、跨帧/session；ODB 发现和有限裂纹域适配不在通用零等值面契约内 |
 | A09 持久化与视口隔离 | P1 | 待开发 | R24/R25；增量版本迁移、完整 session、视口配置与共享源数据拆分 |
 | A10 大规模性能及对照验收 | 持续 | 已有基线 | R26 和每包性能门禁；最终再做有 Abaqus 环境的同输入数值/画面对照 |
 
@@ -172,3 +172,4 @@ export CUTVIEW_OUTPUT_DIR="$CUT_REPO/build/plot-options-large"
 - A03 第一阶段：完成 [参考构形与材料映射核心](cut-view-manager-material-sections.md)。19 项回归通过；337.5 万单元仅显示材料截面时，三模式 × 四次倍率变更均复用一次参考求交，每次仅映射 22,801 个截面节点，逻辑 source/result 稳定为 `1,461,030,784` / `381,761,856` 字节。真实大数据暴露并修复了参考/旧映射/新映射三份完整源预算重叠的问题，没有提高限额。A03 继续做当前曲面误差、退化/反演检测与扩展夹具；尚未启动 A04 的对外闭环。
 - A03 最终验收：三个 portion 的当前 FE 采样、共边细分、局部法向、NaN/相对反演拒绝、失败重试释放预算、参考 Apply 原子验证已完成；二次实体/壳、非仿射 hex、梁交点、空截面与 8 个 mask 已覆盖。19 项交互回归及物理/界面/追踪回归通过。最终单独运行 337.5 万单元门禁再次通过，参考求交 1 次，每步 22,801 个节点，source/result 为 `1,461,030,784` / `445,418,560` 字节；三模式四步批次约 1.57/1.70/2.60 秒，不是鼠标 FPS。公共边界采样距离按两侧容差之和验收，没有宣称全域零误差或无反演证明。开始 A04：Manager 自由体、积分域、形心/自定义求和点和分量坐标系。
 - A07 已完成：Release 构建与 12 项相关 CTest 通过；修复 CPU 单色属性容器崩溃及图案边被重置问题。337.5 万单元三模式 × mask 2/3/7 门禁通过，plot 继承和单色切换后暖移动无主体重建/上传，source/result 保留 1,460,965,248 / 597,683,072 字节，限额仍为 4/16 GiB。日志 build/a07-final-tests.log、build/cut-plot-parity-large/run.log；索引已 full+persistence 刷新，OCCT inventory 检查通过。详见 [显示与多 cut 指南](cut-view-manager-plot-parity.md)。
+- A08 已完成：8 项数值、session、时间轴与 Manager 回归通过。337.5 万单元两个优化阈值整批替换并撤销成功，批次 17,715.690 ms，source/result 保留 1,460,965,248 / 460,855,296 字节，4/16 GiB 限额不变；不是鼠标 FPS。修正了 nodal scalar 绑定预验证按完整裁剪结果预留预算的问题，验证只借用标量句柄。日志 build/a08-final-tests.log、build/cut-automatic-large/run.log；持久索引已刷新。详见 [自动切面契约与限制](cut-view-manager-automatic-cuts.md)。

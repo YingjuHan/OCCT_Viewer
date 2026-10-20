@@ -238,6 +238,7 @@ bool NativeCutTimeline::prepare(int step, const CutFieldBinding& deformation, do
         }
         for(const auto& definition:definitions) {
             if(!definition.SliceCollection.empty() && !candidate->Cuts().SetSliceMetadata(definition)) { throw std::invalid_argument("Invalid slice collection after step change"); }
+            if(definition.Origin!=ViewCaeGeom::MeshCutOrigin::User && !candidate->Cuts().SetAutomaticMetadata(definition)) { throw std::invalid_argument("Invalid automatic source after step change"); }
         }
         candidate->Cuts().ShareMaterialCacheFrom(oldCuts);
         if(!candidate->Cuts().SetMultipleMode(oldCuts.MultipleMode())) { throw std::invalid_argument("Invalid multi-cut mode on target frame"); }
