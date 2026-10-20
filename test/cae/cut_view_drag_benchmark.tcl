@@ -22,6 +22,15 @@ if {[catch {
     set ::vtk_cut_demo_file $::env(CUTVIEW_BENCHMARK_FILE)
     source [file join $drag_dir cut_view_vtk_demo.tcl]
     set model cut_view_vtk_demo
+    set mode cloud
+    if {[info exists ::env(CUTVIEW_BENCHMARK_MODE)]} { set mode $::env(CUTVIEW_BENCHMARK_MODE) }
+    scvcutview $model displaymode $mode
+    if {$mode ne "cloud"} {
+        set width 1
+        if {[info exists ::env(CUTVIEW_BENCHMARK_LINEWIDTH)]} { set width $::env(CUTVIEW_BENCHMARK_LINEWIDTH) }
+        set numericMode [expr {$mode eq "wireframe" ? 0 : 2}]
+        foreach portion {0 1 2} { scvcutview $model cutstyle defaults $portion 0 $width $numericMode }
+    }
     if {[info exists ::env(CUTVIEW_BENCHMARK_PERFCOUNTERS)]} {
         vrenderparams -perfCounters $::env(CUTVIEW_BENCHMARK_PERFCOUNTERS) -perfUpdateInterval 0.5
     }
@@ -72,7 +81,8 @@ if {[catch {
     scvcutview $model mouse up [expr {$px-5-$frames}] $py
     drag_assert {![dict get [scvcutview $model handleinfo] dragging] && [drag_plane] eq $previous} "Release changed the final plane"
     vdump [file join $::env(CUTVIEW_OUTPUT_DIR) drag-last.png]
-    drag_assert {[dict get [scvcutimagestats [file join $::env(CUTVIEW_OUTPUT_DIR) drag-last.png]] colored] > 500} "Dragged contour is blank"
+    set pixels [scvcutimagestats [file join $::env(CUTVIEW_OUTPUT_DIR) drag-last.png]]
+    drag_assert {[dict get $pixels visible] > 500 && ($mode eq "wireframe" || [dict get $pixels colored] > 500)} "Dragged presentation is blank"
     drag_assert {[dict get [scvcutimagecompare [file join $::env(CUTVIEW_OUTPUT_DIR) drag-first.png] [file join $::env(CUTVIEW_OUTPUT_DIR) drag-last.png]] changed] > 500} "Drag did not change framebuffer pixels"
     # A subsequent held drag must also restore the paired display on abort.
     ::CutViewManager::refresh 1

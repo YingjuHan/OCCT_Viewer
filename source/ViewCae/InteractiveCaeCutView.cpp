@@ -108,6 +108,10 @@ Handle(Graphic3d_ArrayOfTriangles) InteractiveCaeCutView::SliceArray() const
 {
     return myGpuPresentation ? myGpuPresentation->SliceArray() : Handle(Graphic3d_ArrayOfTriangles)();
 }
+Handle(Graphic3d_ArrayOfSegments) InteractiveCaeCutView::SliceEdgesArray() const
+{
+    return myGpuPresentation ? myGpuPresentation->SliceEdgesArray() : Handle(Graphic3d_ArrayOfSegments)();
+}
 
 std::string InteractiveCaeCutView::planeFallback(const std::vector<ViewCaeGeom::MeshCutDefinition>& definitions) const
 {
@@ -135,9 +139,14 @@ std::string InteractiveCaeCutView::planeFallback(const std::vector<ViewCaeGeom::
         // Connected OCCT instances do not reproduce the CPU union's transparent
         // surface ordering. Preserve that display contract on the existing path.
         if (style.Transparency > 0) { return "transparent_style"; }
-        if (style.Mode != InteractiveCaeMeshPrsMode::FlatShaded) {
+        if (style.Mode != InteractiveCaeMeshPrsMode::FlatShaded
+            && style.Mode != InteractiveCaeMeshPrsMode::MeshEdges
+            && style.Mode != InteractiveCaeMeshPrsMode::ShadedMeshEdges) {
             return "display_mode";
         }
+        if (style.Mode != EffectiveStyle(plane->Id,ViewCaeGeom::MeshCutPortion::Negative).Mode) { return "mixed_display_modes"; }
+        if (i == 2 && style.Mode != InteractiveCaeMeshPrsMode::FlatShaded
+            && style.LineWidth != EffectiveStyle(plane->Id,ViewCaeGeom::MeshCutPortion::Negative).LineWidth) { return "mixed_line_widths"; }
     }
     return "";
 }
@@ -162,6 +171,13 @@ void InteractiveCaeCutView::SetStyle(ViewCaeGeom::MeshCutPortion thePortion, con
         throw std::invalid_argument("Invalid cut display style");
     }
     myStyles[anIndex] = theStyle;
+}
+
+void InteractiveCaeCutView::SetMeshDisplayMode(InteractiveCaeMeshPrsMode mode)
+{
+    if ((int)mode < 0 || (int)mode >= InteractiveCaeMeshNbPrsModes) { throw std::invalid_argument("Invalid cut display mode"); }
+    for (auto& style : myStyles) { style.Mode = mode; }
+    for (auto& entry : myStyleOverrides) { entry.second.Mode = mode; }
 }
 
 void InteractiveCaeCutView::SetStyle(const std::string& cut, ViewCaeGeom::MeshCutPortion portion, const MeshCutDisplayStyle& style)
@@ -426,7 +442,8 @@ void InteractiveCaeCutView::Synchronize()
                 results.push_back(body);
                 bodyPickResult = body;
                 bodyChanged = bodyPresentation.IsNull() || myBodySourceEpoch != myCuts.Statistics().SourceEpoch
-                    || myBodyFieldEpoch != myCuts.FieldEpoch() || myBodyComponent != myComponent || myBodyCellMode != gpuDefinition.CellMode;
+                    || myBodyFieldEpoch != myCuts.FieldEpoch() || myBodyComponent != myComponent || myBodyCellMode != gpuDefinition.CellMode
+                    || myBodyMode != EffectiveStyle(gpuDefinition.Id,ViewCaeGeom::MeshCutPortion::Negative).Mode;
             }
             if (mask != 5) { results.push_back(gpuSection); }
         }
@@ -500,7 +517,7 @@ void InteractiveCaeCutView::Synchronize()
             auto aDrawer = aPrs->HighlightDrawer(MeshHighlightingType::None);
             aDrawer->SetShadingColor(aStyle.Color);
             aDrawer->SetShadingTransparency(aStyle.Transparency);
-            aDrawer->SetEdgesColor(aStyle.Color);
+            aDrawer->SetEdgesColor(Quantity_Color(Quantity_NOC_GRAY20));
             aDrawer->SetEdgesWidth(aStyle.LineWidth);
             aPrs->ScalarVisProps()->SetPresentationMode(aStyle.Mode);
             aPrs->UpdateAspects(Handle(InteractiveCaeMeshOwner)());
@@ -595,6 +612,7 @@ void InteractiveCaeCutView::Synchronize()
         if ((gpuDefinition.Visibility & 5) != 0) {
             myBodySourceEpoch = myCuts.Statistics().SourceEpoch; myBodyFieldEpoch = myCuts.FieldEpoch();
             myBodyComponent = myComponent; myBodyCellMode = gpuDefinition.CellMode;
+            myBodyMode = EffectiveStyle(gpuDefinition.Id,ViewCaeGeom::MeshCutPortion::Negative).Mode;
         }
         myBodyPickResult = bodyPickResult;
     } else {

@@ -315,6 +315,10 @@ proc ui_run {} {
     scvcutview $ui_model enable y 0
     ui_tree x
 
+    foreach mode {wireframe cloud_edges cloud} {
+        ui_combo .scvcutmanager.results.displaymode $mode
+        ui_assert {[scvcutview $ui_model displaymode] eq $mode} "Manager mode selection ignored"
+    }
     ui_combo .scvcutmanager.results.field "pressure (cell)"
     ui_combo .scvcutmanager.results.cellmode projected
     ui_assert {[dict get [ui_cut x] cellmode] eq "projected"} "Projected CellData menu failed"

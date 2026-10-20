@@ -25,6 +25,7 @@ Handle(Graphic3d_ShaderProgram) planeShader()
     uniforms.Append({"vec4 CutPositive",Graphic3d_TOS_FRAGMENT});
     uniforms.Append({"int CutHasField",Graphic3d_TOS_FRAGMENT});
     uniforms.Append({"int CutMode",Graphic3d_TOS_FRAGMENT});
+    uniforms.Append({"int CutLines",Graphic3d_TOS_FRAGMENT});
     uniforms.Append({"vec3 CutOrigin",Graphic3d_TOS_VERTEX});
     varying.Append({"vec3 CutLocal",Graphic3d_TOS_VERTEX | Graphic3d_TOS_FRAGMENT});
     varying.Append({"vec4 CutWorld",Graphic3d_TOS_VERTEX | Graphic3d_TOS_FRAGMENT});
@@ -53,7 +54,7 @@ Handle(Graphic3d_ShaderProgram) planeShader()
         " vec4 style = side <= 0.0 ? CutNegative : CutPositive;\n"
         " vec4 color = style;\n"
         " if (CutHasField != 0) { color.rgb = occTexture2D(occSamplerBaseColor,CutUV).rgb; }\n"
-        " else { color.rgb *= 0.35 + 0.65 * abs(CutNormal.z) / max(length(CutNormal),1.0e-20); }\n"
+        " else if (CutLines == 0) { color.rgb *= 0.35 + 0.65 * abs(CutNormal.z) / max(length(CutNormal),1.0e-20); }\n"
         " occSetFragColor(color);\n"
         "}\n";
     shader->AttachShader(Graphic3d_ShaderObject::CreateFromSource(fragmentSource,Graphic3d_TOS_FRAGMENT,uniforms,varying));
@@ -61,7 +62,7 @@ Handle(Graphic3d_ShaderProgram) planeShader()
 }
 void setUniforms(const Handle(Graphic3d_ShaderProgram)& shader,const Graphic3d_Vec4d& plane,
     const ViewCae::MeshCutDisplayStyle& negative,const ViewCae::MeshCutDisplayStyle& positive,bool field,
-    const Graphic3d_Vec3d& origin,int mode)
+    const Graphic3d_Vec3d& origin,int mode,bool lines = false)
 {
     auto color = [](const ViewCae::MeshCutDisplayStyle& style) {
         return Graphic3d_Vec4((float)style.Color.Red(),(float)style.Color.Green(),(float)style.Color.Blue(),1-style.Transparency);
@@ -73,6 +74,7 @@ void setUniforms(const Handle(Graphic3d_ShaderProgram)& shader,const Graphic3d_V
     shader->PushVariableInt("CutHasField",field ? 1 : 0);
     shader->PushVariableVec3("CutOrigin",Graphic3d_Vec3(origin));
     shader->PushVariableInt("CutMode",mode);
+    shader->PushVariableInt("CutLines",lines ? 1 : 0);
 }
 struct SliceVertex { Graphic3d_Vec3 Position, Normal; Graphic3d_Vec2 UV; };
 static_assert(std::is_trivially_copyable<SliceVertex>::value, "Slice vertices must be copyable as buffer bytes");
@@ -86,6 +88,30 @@ bool hasSliceLayout(const Handle(Graphic3d_Buffer)& buffer)
         && buffer->AttributeOffset(1) == offsetof(SliceVertex,Normal)
         && buffer->AttributeOffset(2) == offsetof(SliceVertex,UV);
 }
+template<class Array>
+bool reserveSlice(Handle(Array)& array,std::shared_ptr<void>& lease,size_t count,ViewCaeGeom::MeshCutViewManager& cuts)
+{
+    if (count > (size_t)std::numeric_limits<int>::max()/2) { throw std::length_error("Display slice exceeds buffer capacity"); }
+    if (count == 0 || (!array.IsNull() && (size_t)array->VertexNumberAllocated() >= count)) { return false; }
+    const int capacity = (int)std::max<size_t>(256,count*2);
+    // Reserve old + new during staging, before any frame publication.
+    lease = cuts.ReserveDisplayBytes((uint64_t)capacity*(sizeof(SliceVertex)+sizeof(unsigned))*2);
+    array = new Array(capacity,capacity,Graphic3d_ArrayFlags_VertexNormal | Graphic3d_ArrayFlags_VertexTexel
+        | Graphic3d_ArrayFlags_AttribsMutable | Graphic3d_ArrayFlags_IndexesMutable);
+    for (int i = 0; i < capacity; ++i) { array->Indices()->SetIndex(i,i); }
+    return true;
+}
+uint64_t publishSlice(const Handle(Graphic3d_ArrayOfPrimitives)& array,const std::vector<SliceVertex>& vertices)
+{
+    if (array.IsNull()) { return 0; }
+    const bool countChanged = array->VertexNumber() != (int)vertices.size();
+    array->Attributes()->NbElements = (int)vertices.size(); array->Indices()->NbElements = (int)vertices.size();
+    if (!vertices.empty()) { std::memcpy(array->Attributes()->ChangeData(),vertices.data(),vertices.size()*sizeof(SliceVertex)); }
+    // OCCT updates draw counts only when consuming an invalidated range.
+    Handle(Graphic3d_AttribBuffer)::DownCast(array->Attributes())->Invalidate(0,(int)std::max<size_t>(1,vertices.size())-1);
+    if (countChanged) { Handle(Graphic3d_MutableIndexBuffer)::DownCast(array->Indices())->Invalidate(0,0); }
+    return std::max<size_t>(1,vertices.size())*sizeof(SliceVertex)+(countChanged ? array->Indices()->Stride : 0);
+}
 }
 
 namespace ViewCae {
@@ -94,7 +120,7 @@ void MeshCutGpuPresentation::Reset()
 {
     if (!myParent.IsNull() && !myParent->IsDeleted() && !myBodyStructure.IsNull()) { myParent->Disconnect(myBodyStructure.get()); }
     if (!myBodyStructure.IsNull()) { myBodyStructure->Remove(); }
-    myBodyStructure.Nullify(); myParent.Nullify(); mySliceGroup.Nullify();
+    myBodyStructure.Nullify(); myParent.Nullify(); mySliceGroup.Nullify(); mySliceEdgeGroup.Nullify();
     myBodyConnected = false;
 }
 
@@ -130,16 +156,20 @@ void MeshCutGpuPresentation::Update(const Handle(MeshPresentationScalar)& body,
             if (!array.IsNull() && parts((MeshPartType)i)->ToShow()) { inputs.push_back(array); }
         }
         bool rebuild = myBodyEpoch != cuts.Statistics().SourceEpoch || inputs.size() != bodyArrays.size();
-        for (size_t i = 0; !rebuild && i < inputs.size(); ++i) { rebuild |= inputs[i]->VertexNumber() != bodyArrays[i]->VertexNumber(); }
+        for (size_t i = 0; !rebuild && i < inputs.size(); ++i) {
+            rebuild |= inputs[i]->VertexNumber() != bodyArrays[i]->VertexNumber() || inputs[i]->Type() != bodyArrays[i]->Type();
+        }
         if (rebuild) { bodyArrays.clear(); }
         for (size_t i = 0; i < inputs.size(); ++i) {
             const auto input = inputs[i];
             const int count = input->VertexNumber();
             const int indices = input->Indices().IsNull() ? count : input->Indices()->NbElements;
             if (rebuild) {
-                Handle(Graphic3d_ArrayOfTriangles) array = new Graphic3d_ArrayOfTriangles(count,indices,
-                    Graphic3d_ArrayFlags_VertexNormal | Graphic3d_ArrayFlags_VertexTexel
-                    | Graphic3d_ArrayFlags_AttribsMutable | Graphic3d_ArrayFlags_AttribsDeinterleaved);
+                const auto flags = Graphic3d_ArrayFlags_VertexNormal | Graphic3d_ArrayFlags_VertexTexel
+                    | Graphic3d_ArrayFlags_AttribsMutable | Graphic3d_ArrayFlags_AttribsDeinterleaved;
+                Handle(Graphic3d_ArrayOfPrimitives) array;
+                if (input->Type() == Graphic3d_TOPA_SEGMENTS) { array = new Graphic3d_ArrayOfSegments(count,indices,flags); }
+                else { array = new Graphic3d_ArrayOfTriangles(count,indices,flags); }
                 for (int v = 1; v <= count; ++v) {
                     const auto p = input->Vertice(v);
                     array->SetVertice(v,(float)(p.X()-origin.x()),(float)(p.Y()-origin.y()),(float)(p.Z()-origin.z()));
@@ -167,6 +197,11 @@ void MeshCutGpuPresentation::Update(const Handle(MeshPresentationScalar)& body,
         }
     }
     std::vector<SliceVertex> vertices;
+    std::vector<SliceVertex> edgeVertices;
+    const int cap = (mask & 2) != 0 ? 1 : (mask & 1) != 0 ? 0 : 2;
+    const auto& capStyle = styles[cap];
+    const bool sliceFaces = capStyle.Mode != InteractiveCaeMeshPrsMode::MeshEdges;
+    const bool sliceEdges = capStyle.Mode != InteractiveCaeMeshPrsMode::FlatShaded;
     Bnd_Box sliceBounds;
     if (showSlice && !section.Portions[1].IsNull()) {
         const auto mesh = section.Portions[1]->GetMeshData();
@@ -204,7 +239,8 @@ void MeshCutGpuPresentation::Update(const Handle(MeshPresentationScalar)& body,
         } else {
             for (RWCae::MeshEntityId node = 0; node < mesh->NbNodes(); ++node) { prepareNode(0,(int)node); }
         }
-        vertices.reserve((size_t)mesh->NbElems2d()*6);
+        if (sliceFaces) { vertices.reserve((size_t)mesh->NbElems2d()*6); }
+        if (sliceEdges) { edgeVertices.reserve((size_t)mesh->NbElems2d()*8); }
         Graphic3d_Vec3 lower(std::numeric_limits<float>::max()), upper(std::numeric_limits<float>::lowest());
         Graphic3d_Vec3 normal((float)definition.Plane.x(),(float)definition.Plane.y(),(float)definition.Plane.z());
         if ((mask & 5) == 4) { normal = -normal; }
@@ -216,7 +252,7 @@ void MeshCutGpuPresentation::Update(const Handle(MeshPresentationScalar)& body,
                     elementUV = CaeMeshTools::GetUVCoords(values->Value(RWCae::MeshPropertyEntityInfo(element.GlobalIndex())),
                         minimum,maximum,CaeMeshTools::NbColorscaleColors);
                 }
-                auto add = [&](int index) {
+                auto add = [&](int index,std::vector<SliceVertex>& target) {
                     const auto node = element[index];
                     // Reconstruct original FE position in double before storing
                     // in the shared local GPU frame. Physical data stay unchanged.
@@ -230,40 +266,39 @@ void MeshCutGpuPresentation::Update(const Handle(MeshPresentationScalar)& body,
                         lower[axis] = std::min(lower[axis],vertex.Position[axis]);
                         upper[axis] = std::max(upper[axis],vertex.Position[axis]);
                     }
-                    vertices.push_back(vertex);
+                    target.push_back(vertex);
                 };
-                for (int n = 1; n+1 < element.NbNodes(); ++n) { add(0); add(n); add(n+1); }
+                if (sliceFaces) {
+                    for (int n = 1; n+1 < element.NbNodes(); ++n) { add(0,vertices); add(n,vertices); add(n+1,vertices); }
+                }
+                // FE section polygon perimeter, never the triangulation fan's diagonals.
+                if (sliceEdges) {
+                    for (int n = 0; n < element.NbNodes(); ++n) { add(n,edgeVertices); add((n+1)%element.NbNodes(),edgeVertices); }
+                }
             }
         };
         RWCae::MeshAdaptorsIterator2dElems::For(process,mesh);
-        if (!vertices.empty()) {
+        if (!vertices.empty() || !edgeVertices.empty()) {
             sliceBounds.Update(lower.x()+origin.x(),lower.y()+origin.y(),lower.z()+origin.z(),
                 upper.x()+origin.x(),upper.y()+origin.y(),upper.z()+origin.z());
         }
     }
-    if (vertices.size() > (size_t)std::numeric_limits<int>::max()/2) { throw std::length_error("Display slice exceeds buffer capacity"); }
     auto slice = mySlice;
     auto sliceLease = mySliceLease;
-    const bool realloc = !vertices.empty() && (slice.IsNull() || (size_t)slice->VertexNumberAllocated() < vertices.size());
-    if (realloc) {
-        const int capacity = (int)std::max<size_t>(256,vertices.size()*2);
-        // Reserve old + new during staging. No publication on budget failure.
-        sliceLease = cuts.ReserveDisplayBytes((uint64_t)capacity*(sizeof(SliceVertex)+sizeof(unsigned))*2);
-        slice = new Graphic3d_ArrayOfTriangles(capacity,capacity,
-            Graphic3d_ArrayFlags_VertexNormal | Graphic3d_ArrayFlags_VertexTexel
-            | Graphic3d_ArrayFlags_AttribsMutable | Graphic3d_ArrayFlags_IndexesMutable);
-        // Identity indices never change within this capacity. Initialize the
-        // reserved tail too so growth only updates OCCT's active draw count.
-        for (int i = 0; i < capacity; ++i) { slice->Indices()->SetIndex(i,i); }
-    }
+    auto sliceEdge = mySliceEdges;
+    auto sliceEdgeLease = mySliceEdgeLease;
+    const bool realloc = reserveSlice(slice,sliceLease,vertices.size(),cuts);
+    const bool edgeRealloc = reserveSlice(sliceEdge,sliceEdgeLease,edgeVertices.size(),cuts);
     if (!slice.IsNull() && !hasSliceLayout(slice->Attributes())) { throw std::runtime_error("Unexpected slice vertex buffer layout"); }
-    const bool sliceCountChanged = !slice.IsNull() && slice->VertexNumber() != (int)vertices.size();
+    if (!sliceEdge.IsNull() && !hasSliceLayout(sliceEdge->Attributes())) { throw std::runtime_error("Unexpected slice edge buffer layout"); }
     auto bodyShader = myBodyShader.IsNull() ? planeShader() : myBodyShader;
     auto sliceShader = mySliceShader.IsNull() ? planeShader() : mySliceShader;
+    auto bodyEdgeShader = myBodyEdgeShader.IsNull() ? planeShader() : myBodyEdgeShader;
+    auto sliceEdgeShader = mySliceEdgeShader.IsNull() ? planeShader() : mySliceEdgeShader;
     Handle(Graphic3d_AspectFillArea3d) bodyAspect = new Graphic3d_AspectFillArea3d();
     Handle(Graphic3d_AspectFillArea3d) sliceAspect = new Graphic3d_AspectFillArea3d();
-    const int cap = (mask & 2) != 0 ? 1 : (mask & 1) != 0 ? 0 : 2;
-    const auto& capStyle = styles[cap];
+    Handle(Graphic3d_AspectLine3d) bodyEdgeAspect = new Graphic3d_AspectLine3d(Quantity_Color(Quantity_NOC_GRAY20),Aspect_TOL_SOLID,styles[0].LineWidth);
+    Handle(Graphic3d_AspectLine3d) sliceEdgeAspect = new Graphic3d_AspectLine3d(Quantity_Color(Quantity_NOC_GRAY20),Aspect_TOL_SOLID,capStyle.LineWidth);
     auto configure = [&](const Handle(Graphic3d_AspectFillArea3d)& aspect,float opacity) {
         aspect->SetInteriorStyle(Aspect_IS_SOLID);
         aspect->SetInteriorColor(Quantity_ColorRGBA(Quantity_Color(Quantity_NOC_WHITE),opacity));
@@ -279,6 +314,9 @@ void MeshCutGpuPresentation::Update(const Handle(MeshPresentationScalar)& body,
     configure(bodyAspect,std::max(styles[0].Transparency,styles[2].Transparency) > 0 ? .5f : 1.0f);
     configure(sliceAspect,1-capStyle.Transparency);
     bodyAspect->SetShaderProgram(bodyShader); sliceAspect->SetShaderProgram(sliceShader);
+    bodyEdgeAspect->SetShaderProgram(bodyEdgeShader); sliceEdgeAspect->SetShaderProgram(sliceEdgeShader);
+    if (styles[0].Mode == InteractiveCaeMeshPrsMode::ShadedMeshEdges) { bodyAspect->SetPolygonOffsets(Aspect_POM_Fill,1,1); }
+    if (capStyle.Mode == InteractiveCaeMeshPrsMode::ShadedMeshEdges) { sliceAspect->SetPolygonOffsets(Aspect_POM_Fill,1,1); }
     // All potentially failing allocation/FE work precedes the paired publication.
     if (!cuts.IsCurrentRequest(cuts.RequestGeneration())) { throw std::runtime_error("Display frame cancelled"); }
     for (size_t i = 0; i < bodyUVs.size(); ++i) {
@@ -286,36 +324,33 @@ void MeshCutGpuPresentation::Update(const Handle(MeshPresentationScalar)& body,
         const auto buffer = Handle(Graphic3d_AttribBuffer)::DownCast(bodyArrays[i]->Attributes());
         buffer->Invalidate(buffer->FindAttribute(Graphic3d_TOA_UV));
     }
-    if (!slice.IsNull()) {
-        slice->Attributes()->NbElements = (int)vertices.size();
-        slice->Indices()->NbElements = (int)vertices.size();
-        if (!vertices.empty()) { std::memcpy(slice->Attributes()->ChangeData(),vertices.data(),vertices.size()*sizeof(SliceVertex)); }
-        // Invalidate one reserved entry for an empty frame too: OCCT updates
-        // draw counts only when consuming an invalidated mutable buffer range.
-        const int last = (int)std::max<size_t>(1,vertices.size())-1;
-        Handle(Graphic3d_AttribBuffer)::DownCast(slice->Attributes())->Invalidate(0,last);
-        if (sliceCountChanged) { Handle(Graphic3d_MutableIndexBuffer)::DownCast(slice->Indices())->Invalidate(0,0); }
-    }
+    const auto sliceBytes = publishSlice(slice,vertices)+publishSlice(sliceEdge,edgeVertices);
     auto localPlane = definition.Plane;
     localPlane.w() += localPlane.x()*origin.x()+localPlane.y()*origin.y()+localPlane.z()*origin.z();
     setUniforms(bodyShader,localPlane,styles[0],styles[2],!texture.IsNull(),origin,
         !showBody ? 0 : (mask & 5) == 1 ? 1 : (mask & 5) == 4 ? 2 : 3);
     setUniforms(sliceShader,localPlane,capStyle,capStyle,!texture.IsNull(),origin,3);
+    auto edgeStyle = capStyle; edgeStyle.Color = Quantity_Color(Quantity_NOC_GRAY20);
+    setUniforms(bodyEdgeShader,localPlane,edgeStyle,edgeStyle,false,origin,
+        !showBody ? 0 : (mask & 5) == 1 ? 1 : (mask & 5) == 4 ? 2 : 3,true);
+    setUniforms(sliceEdgeShader,localPlane,edgeStyle,edgeStyle,false,origin,3,true);
     const bool geometryBuild = bodyChanged && bodyUVs.empty();
-    myBodyChanged |= geometryBuild; mySliceChanged |= realloc;
+    myBodyChanged |= geometryBuild; mySliceChanged |= realloc || edgeRealloc;
     if (!body.IsNull()) { myBody = body; }
     myOrigin = origin; myBounds = bounds; mySourceEpoch = cuts.Statistics().SourceEpoch; myBodyArrays = std::move(bodyArrays);
     if (bodyChanged) { myBodyEpoch = mySourceEpoch; }
     myBodyAspect = bodyAspect; mySliceAspect = sliceAspect;
+    myBodyEdgeAspect = bodyEdgeAspect; mySliceEdgeAspect = sliceEdgeAspect;
     myBodyShader = bodyShader; mySliceShader = sliceShader;
+    myBodyEdgeShader = bodyEdgeShader; mySliceEdgeShader = sliceEdgeShader;
     mySlice = slice; mySliceBounds = sliceBounds; myBodyLease = bodyLease; mySliceLease = sliceLease;
-    myShowBody = showBody; myShowSlice = showSlice && !vertices.empty();
+    mySliceEdges = sliceEdge; mySliceEdgeLease = sliceEdgeLease;
+    myShowBody = showBody; myShowSlice = showSlice && (!vertices.empty() || !edgeVertices.empty());
     myPlane = definition.Plane; myMask = mask;
     statistics.BodyBuilds += geometryBuild ? 1 : 0;
-    statistics.SliceReallocations += realloc ? 1 : 0;
+    statistics.SliceReallocations += (realloc ? 1 : 0)+(edgeRealloc ? 1 : 0);
     statistics.SubmittedBodyBytes = bodyBytes;
-    statistics.SubmittedSliceBytes = slice.IsNull() ? 0 : std::max<size_t>(1,vertices.size())*sizeof(SliceVertex)
-        + (sliceCountChanged ? slice->Indices()->Stride : 0);
+    statistics.SubmittedSliceBytes = sliceBytes;
     updateStructures();
 }
 
@@ -326,7 +361,8 @@ void MeshCutGpuPresentation::updateStructures()
         myBodyStructure->Clear();
         for (const auto& array : myBodyArrays) {
             auto group = myBodyStructure->NewGroup();
-            group->SetGroupPrimitivesAspect(myBodyAspect);
+            if (array->Type() == Graphic3d_TOPA_SEGMENTS) { group->SetGroupPrimitivesAspect(myBodyEdgeAspect); }
+            else { group->SetGroupPrimitivesAspect(myBodyAspect); }
             group->AddPrimitiveArray(array);
             if (!myBounds.IsVoid()) {
                 const auto a = myBounds.CornerMin(), b = myBounds.CornerMax();
@@ -337,7 +373,9 @@ void MeshCutGpuPresentation::updateStructures()
         myBodyStructure->CalculateBoundBox();
     }
     for (int i = 1; i <= myBodyStructure->NumberOfGroups(); ++i) {
-        myBodyStructure->Groups().Value(i)->SetGroupPrimitivesAspect(myBodyAspect);
+        const auto group = myBodyStructure->Groups().Value(i);
+        if (myBodyArrays[i-1]->Type() == Graphic3d_TOPA_SEGMENTS) { group->SetGroupPrimitivesAspect(myBodyEdgeAspect); }
+        else { group->SetGroupPrimitivesAspect(myBodyAspect); }
     }
     myClip->SetEquation((myMask & 5) == 1 ? -myPlane : myPlane);
     myClip->SetCapping(false);
@@ -352,23 +390,27 @@ void MeshCutGpuPresentation::updateStructures()
         else { myParent->Disconnect(myBodyStructure.get()); }
         myBodyConnected = myShowBody;
     }
-    if (mySliceChanged || (mySliceGroup.IsNull() && !mySlice.IsNull())) {
-        if (!mySliceGroup.IsNull()) { mySliceGroup->Clear(); }
-        if (!mySlice.IsNull()) {
-            if (mySliceGroup.IsNull()) { mySliceGroup = myParent->NewGroup(); }
-            mySliceGroup->SetGroupPrimitivesAspect(mySliceAspect);
-            mySliceGroup->AddPrimitiveArray(mySlice);
+    const auto updateSliceGroup = [&](Handle(Graphic3d_Group)& group,const Handle(Graphic3d_ArrayOfPrimitives)& array,
+                                      const Handle(Graphic3d_Aspects)& aspect) {
+        if (mySliceChanged || (group.IsNull() && !array.IsNull())) {
+            if (!group.IsNull()) { group->Clear(); }
+            if (!array.IsNull()) {
+                if (group.IsNull()) { group = myParent->NewGroup(); }
+                group->SetGroupPrimitivesAspect(aspect);
+                group->AddPrimitiveArray(array);
+            }
         }
-        mySliceChanged = false;
-    }
-    if (!mySliceGroup.IsNull()) {
-        mySliceGroup->SetGroupPrimitivesAspect(mySliceAspect);
+        if (group.IsNull()) { return; }
+        group->SetGroupPrimitivesAspect(aspect);
         // Mutating vertices must refresh bounds as well as invalidate VBO data.
         if (!mySliceBounds.IsVoid()) {
             const auto a = mySliceBounds.CornerMin(), b = mySliceBounds.CornerMax();
-            mySliceGroup->SetMinMaxValues(a.X(),a.Y(),a.Z(),b.X(),b.Y(),b.Z());
+            group->SetMinMaxValues(a.X(),a.Y(),a.Z(),b.X(),b.Y(),b.Z());
         }
-    }
+    };
+    updateSliceGroup(mySliceGroup,mySlice,mySliceAspect);
+    updateSliceGroup(mySliceEdgeGroup,mySliceEdges,mySliceEdgeAspect);
+    mySliceChanged = false;
     // SetMinMaxValues changes only the group's box. Refresh the structure and
     // layer BVH too, otherwise FitAll/culling still use the previous section.
     if (!myParent.IsNull()) { myParent->CalculateBoundBox(); myManager->Update(myParent->GetZLayer()); }
@@ -383,13 +425,13 @@ void MeshCutGpuPresentation::Attach(const Handle(Prs3d_Presentation)& parent,con
         myClip = new Graphic3d_ClipPlane(myPlane); myClip->SetCapping(false);
         Handle(Graphic3d_SequenceOfHClipPlane) planes = new Graphic3d_SequenceOfHClipPlane(); planes->Append(myClip);
         myBodyStructure->SetClipPlanes(planes);
-        myBodyChanged = !myBody.IsNull(); mySliceChanged = !mySlice.IsNull();
+        myBodyChanged = !myBody.IsNull(); mySliceChanged = !mySlice.IsNull() || !mySliceEdges.IsNull();
     }
     myParent = parent;
     myBodyConnected = false;
     // Compute runs after the parent was cleared. Reattach the slice group;
     // warm plane edits do not request a parent recomputation.
-    mySliceGroup.Nullify(); mySliceChanged = !mySlice.IsNull();
+    mySliceGroup.Nullify(); mySliceEdgeGroup.Nullify(); mySliceChanged = !mySlice.IsNull() || !mySliceEdges.IsNull();
     updateStructures();
 }
 

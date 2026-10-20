@@ -124,6 +124,14 @@ scvcutview cut_view_vtk_demo visibility x 7
 
 确认 `renderinfo` 的实际 backend 为 `gpu_plane`；auto 可能因多 cut、透明度、向量或显示模式回退 CPU。只看切面时仍由 CPU slice 计算、GPU 绘制结果。
 
+云图、线框及云图＋线框的 Manager 示例可直接运行：
+
+```bash
+"$CUT_DRAWEXE" -i -f "$CUT_REPO/test/cae/cut_view_display_modes_demo.tcl"
+```
+
+进入 Debug 环境后，将同一条命令前加 `gdb --args` 即为调试启动。大模型输入、`displaymode cloud/wireframe/cloud_edges`、GPU 边线处理及完整测试命令见 [显示模式指南](cut-view-manager-display-modes.md)。
+
 ## 3. 调试运行：Debug 插件＋GDB
 
 ### 3.1 构建可调试的本项目

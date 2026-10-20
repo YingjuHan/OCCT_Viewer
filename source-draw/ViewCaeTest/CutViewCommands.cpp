@@ -403,6 +403,26 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
         } else if (action == "axes" && argc == 6) {
             ok = model.Native->SetReferenceAxes(argv[3],cutBoolean(argv[4]),cutReal(argv[5]));
             if (!ok) { throw std::invalid_argument(model.Native->LastError()); }
+        } else if (action == "displaymode" && (argc == 3 || argc == 4)) {
+            using Mode = ViewCae::InteractiveCaeMeshPrsMode;
+            if (argc == 3) {
+                const auto mode = model.View->Style((ViewCaeGeom::MeshCutPortion)0).Mode;
+                bool mixed = false;
+                for (int i = 0; i < 3; ++i) {
+                    const auto part = (ViewCaeGeom::MeshCutPortion)i;
+                    mixed |= model.View->Style(part).Mode != mode;
+                    for (const auto& cut : cuts.Definitions()) { mixed |= model.View->EffectiveStyle(cut.Id,part).Mode != mode; }
+                }
+                di << (mixed ? "mixed" : mode == Mode::FlatShaded ? "cloud" : mode == Mode::MeshEdges ? "wireframe"
+                    : mode == Mode::ShadedMeshEdges ? "cloud_edges" : "custom");
+                return 0;
+            }
+            const std::string mode(argv[3]);
+            if (mode != "cloud" && mode != "wireframe" && mode != "cloud_edges") {
+                throw std::invalid_argument("Display mode: cloud, wireframe or cloud_edges");
+            }
+            model.View->SetMeshDisplayMode(mode == "cloud" ? Mode::FlatShaded : mode == "wireframe" ? Mode::MeshEdges : Mode::ShadedMeshEdges);
+            ok = true;
         } else if (action == "cutstyle" && (argc == 5 || argc == 8)) {
             const int portion = cutInteger(argv[4]);
             if (portion < 0 || portion > 2) { throw std::invalid_argument("Style portion must be 0, 1 or 2"); }
@@ -1086,6 +1106,7 @@ void ViewCaeTest::CutViewCommands::Factory(Draw_Interpretor& di)
         "  | axes datum/global show length | nativeinfo | pickmode 0/1/2\n"
         "  | sessionsave file ?CAD-brep-source? | sessionload file | sessioninfo\n"
         "  | cutstyle id/defaults portion [transparency width mode] | clearstyle id portion\n"
+        "  | displaymode [cloud/wireframe/cloud_edges] (all portions; preserves other style settings)\n"
         "  | contour [automatic min max legend intervals] | probe id portion index node0/1\n"
         "  | vectors none / mapping field step scale sampling orientation show\n"
         "  | annotation id portion index node0/1 annotationId text | annotationsclear\n"

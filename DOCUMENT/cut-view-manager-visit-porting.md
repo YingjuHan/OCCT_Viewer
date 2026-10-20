@@ -228,7 +228,7 @@ public:
 2. **cap actor**：CPU 切面，按 generation 更新，拥有自己的 mapper / buffer 和物理来源。
 3. **guide actor**：平面工具 / 轮廓 / gizmo；仅表示交互，不承担 body clip。
 
-mask=2 隐藏 body；mask=5/7 body 不 clip；单侧模式 body 启用相应符号平面并补 cap。body 与 cap 使用同一 local origin / deformation / color range。初版只允许不透明 surface，其他风格明确 fallback。
+mask=2 隐藏 body；mask=5/7 body 不 clip；单侧模式 body 启用相应符号平面并补 cap。body 与 cap 使用同一 local origin / deformation / color range。迁移初版可先只允许不透明 surface，其他风格明确 fallback。参考项目现已支持三种不透明模式：云图、线框、云图＋线框；扩展阶段需将源体线段纳入同一 GPU 平面裁剪、从截面多边形周边生成边线，并给填充面设置深度偏移。参考 [显示模式指南](cut-view-manager-display-modes.md)，目标使用自身 OpenGL / mapper 实现，完全不引入 OCCT。
 
 ### 8.2 旧固定管线 mapper 的最小改造
 

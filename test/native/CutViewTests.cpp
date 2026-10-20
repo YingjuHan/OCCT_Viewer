@@ -699,6 +699,51 @@ static void gpuPlanePrimitives()
     require(!view->RenderStatistics().GpuPlane && view->RenderStatistics().FallbackReason == "non_plane_cut","Sphere rendering changed");
 }
 
+static void gpuPlaneWireframe()
+{
+    Handle(RWCae::MeshData) mesh = new RWCae::MeshData();
+    for (const auto& p : {Graphic3d_Vec3(0,0,0),Graphic3d_Vec3(1,0,0),Graphic3d_Vec3(1,1,0),Graphic3d_Vec3(0,1,0),
+                          Graphic3d_Vec3(0,0,1),Graphic3d_Vec3(1,0,1),Graphic3d_Vec3(1,1,1),Graphic3d_Vec3(0,1,1)}) { mesh->AddNodePosition(p); }
+    const RWCae::MeshEntityId nodes[] = {0,1,2,3,4,5,6,7};
+    mesh->AddElement(RWCae::MeshElementHexahedron(nodes));
+    Handle(ViewCae::InteractiveCaeCutView) view = new ViewCae::InteractiveCaeCutView(mesh);
+    auto& cuts = view->Cuts(); cuts.AddPlane("x",Graphic3d_Vec4d(1,0,0,-.37));
+    view->SetField(field("z",true,{0,0,0,0,1,1,1,1}));
+    using Mode = ViewCae::InteractiveCaeMeshPrsMode;
+    for (const auto mode : {Mode::MeshEdges,Mode::ShadedMeshEdges,Mode::FlatShaded,Mode::MeshEdges}) {
+        view->SetMeshDisplayMode(mode); cuts.SetVisibility("x",3); view->Synchronize();
+        require(view->RenderStatistics().GpuPlane,"Wireframe fell back to CPU");
+        auto triangles = view->SliceArray(); const auto edges = view->SliceEdgesArray();
+        require((triangles.IsNull() ? 0 : triangles->VertexNumber()) == (mode == Mode::MeshEdges ? 0 : 6),"Wrong section fill count");
+        require((edges.IsNull() ? 0 : edges->VertexNumber()) == (mode == Mode::FlatShaded ? 0 : 8),"Section edges contain fan diagonals");
+        if (mode != Mode::FlatShaded) {
+            for (int v = 1; v <= edges->VertexNumber(); v += 2) {
+                near(edges->Vertice(v+1).Distance(edges->Vertice(v)),1,"Section perimeter edge length");
+            }
+        }
+        const auto builds = view->RenderStatistics().BodyBuilds;
+        for (const unsigned mask : {0u,1u,2u,3u,4u,5u,6u,7u}) {
+            cuts.SetVisibility("x",mask); cuts.SetPlane("x",Graphic3d_Vec4d(1,0,0,-.41)); view->Synchronize();
+            require(view->RenderStatistics().SubmittedBodyBytes == 0 && view->RenderStatistics().BodyBuilds == builds,
+                "Warm wireframe plane edit uploaded source edges");
+            require(edges == view->SliceEdgesArray(),"Warm wireframe edit reallocated edge buffer");
+            require((edges.IsNull() ? 0 : edges->VertexNumber()) == (mode == Mode::FlatShaded || mask == 0 || mask == 5 ? 0 : 8),
+                "Wireframe mask left stale section edges");
+        }
+        cuts.SetVisibility("x",2); cuts.SetPlane("x",Graphic3d_Vec4d(1,0,0,-2)); view->Synchronize();
+        require(view->SliceEdgesArray().IsNull() || view->SliceEdgesArray()->VertexNumber() == 0,"Empty cut retained section edges");
+        cuts.SetPlane("x",Graphic3d_Vec4d(1,0,0,-.37));
+    }
+    auto style = view->Style(MeshCutPortion::On); style.LineWidth = 3;
+    view->SetStyle("x",MeshCutPortion::On,style);
+    view->SetMeshDisplayMode(Mode::ShadedMeshEdges);
+    require(view->EffectiveStyle("x",MeshCutPortion::On).LineWidth == 3
+        && view->EffectiveStyle("x",MeshCutPortion::On).Mode == Mode::ShadedMeshEdges,"Mode switch lost style override");
+    style.Mode = Mode::FlatShaded; view->SetStyle("x",MeshCutPortion::On,style); view->Synchronize();
+    require(!view->RenderStatistics().GpuPlane && view->RenderStatistics().FallbackReason == "mixed_display_modes",
+        "Mixed styles did not preserve CPU fallback");
+}
+
 int main()
 {
     try {
@@ -715,6 +760,7 @@ int main()
         defaultPlanes();
         displaySectionOnly();
         gpuPlanePrimitives();
+        gpuPlaneWireframe();
         std::cout << "Cut view numerical tests passed\n";
         return 0;
     } catch (const std::exception& error) {

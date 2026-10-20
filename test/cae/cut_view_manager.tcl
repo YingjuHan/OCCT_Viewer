@@ -32,6 +32,7 @@ namespace eval ::CutViewManager {
     variable on 1
     variable above 0
     variable cellmode constant
+    variable displaymode cloud
     variable fieldLabel "No Result"
     variable component 0
     variable recoveryThreshold 100
@@ -88,6 +89,7 @@ proc ::CutViewManager::refresh {{attach 0}} {
     set busy 1
     try {
         ::CutViewManager::refreshFields
+        set ::CutViewManager::displaymode [scvcutview $model displaymode]
         foreach cut $definitions {
             set id [dict get $cut id]
             lappend ids $id
@@ -531,6 +533,12 @@ proc ::CutViewManager::cellmode {} {
     refresh
 }
 
+proc ::CutViewManager::displaymode {} {
+    variable model; variable displaymode
+    scvcutview $model displaymode $displaymode
+    refresh
+}
+
 proc ::CutViewManager::save {} {
     variable model; variable w
     set path [tk_getSaveFile -parent $w -defaultextension .json -filetypes {{{Cut Definitions} {.json}}}]
@@ -662,8 +670,12 @@ proc scvcutmanager {theModel} {
     ttk::separator $w.separator
     pack $w.separator -fill x -padx 8
     ttk::frame $w.results -padding 8
-    ttk::frame $w.results.row0; ttk::frame $w.results.row1
-    pack $w.results.row0 $w.results.row1 -fill x -pady 3
+    ttk::frame $w.results.row0; ttk::frame $w.results.row1; ttk::frame $w.results.row2
+    pack $w.results.row0 $w.results.row1 $w.results.row2 -fill x -pady 3
+    ttk::label $w.results.modelabel -text Display -width 8
+    ttk::combobox $w.results.displaymode -state readonly -values {cloud wireframe cloud_edges} -textvariable ::CutViewManager::displaymode -width 18
+    pack $w.results.modelabel $w.results.displaymode -in $w.results.row2 -side left -padx 4
+    bind $w.results.displaymode <<ComboboxSelected>> {::CutViewManager::invoke ::CutViewManager::displaymode}
     ttk::label $w.results.label -text Result -width 8
     set ::CutViewManager::fields [scvcutview $theModel fields]
     set ::CutViewManager::fieldLabels [list "No Result"]

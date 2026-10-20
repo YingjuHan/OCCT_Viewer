@@ -345,11 +345,12 @@ Q = ∫S q·n dA
 
 ### 10.1 进入快速路径的条件
 
-`InteractiveCaeCutView::planeFallback` 要求：一个启用的 plane、纯体网格、无向量图、不透明、FlatShaded。否则回到已有 CPU 表示，并报告原因：
+`InteractiveCaeCutView::planeFallback` 要求：一个启用的 plane、纯体网格、无向量图、不透明，三个 portion 统一使用 FlatShaded / MeshEdges / ShadedMeshEdges。两侧线框的线宽也须相同。否则回到已有 CPU 表示，并报告原因：
 
 ```text
 requested_cpu / multiple_cuts / no_active_cut / non_plane_cut
 vectors / non_volume_mesh / transparent_style / display_mode
+mixed_display_modes / mixed_line_widths
 ```
 
 不要将“选择 auto”当作 GPU 必然启用；迁移诊断面板应显示实际 backend 和 fallback reason。GPU 裁剪不会消除 CPU 上的 BVH 遍历、切面拓扑、字段、trace、选择更新和上传。
@@ -358,9 +359,9 @@ vectors / non_volume_mesh / transparent_style / display_mode
 
 | 资源 | 内容 | 更新时机 |
 | --- | --- | --- |
-| body | 源模型外表面、法向、源字段 UV | 初次显示、网格 / 变形 epoch 改变；单纯平面移动不重建 |
+| body | 源模型外表面三角形和/或单元边线、法向、源字段 UV | 初次显示、模式切换、网格 / 变形 epoch 改变；单纯平面移动不重建 |
 | plane uniform | 局部平面、模式、颜色 | 每次有效平面请求 |
-| slice / cap | CPU 截面三角形位置、法向、UV | 平面 / 切割字段变化；只上传切面规模数据 |
+| slice / cap | CPU 截面三角形和/或多边形周边线的位置、法向、UV | 平面 / 切割字段变化；只上传切面规模数据 |
 | legend / style | 范围、纹理、标注 | 独立更新；不应触发全模型几何重建 |
 | selection | body owner、动态 cap 来源 | 分别按源 epoch / 切面 revision 更新 |
 
@@ -371,6 +372,8 @@ vectors / non_volume_mesh / transparent_style / display_mode
 `MeshCutGpuPresentation` 通过 `Graphic3d_ShaderProgram / ShaderObject` 写入 `CutPlane`、`CutMode` 等，片元按 side 丢弃。源码创建的 `Graphic3d_ClipPlane` 设置 `SetOn(false)`、`SetCapping(false)`；注释说明连接子结构的实例裁剪状态不适合这里的表示方式。
 
 因此不能将本实现描述成“打开 OCCT 自动 clipping+capping 即完成”。目标可以复用其已有 mapper clip planes，但语义、缓存更新与补面仍需自行接入。
+
+线框同样使用 shader 的平面 discard，源体边线常驻；截面边线来自求交多边形周边，不含扇形三角化对角线。叠加模式使用填充面的 polygon offset 减少边线闪烁。具体显示语义、CPU 合并网格的边线差异及可执行 Tcl 见 [三种显示模式指南](cut-view-manager-display-modes.md)。
 
 ### 10.4 动态缓冲区与发布
 

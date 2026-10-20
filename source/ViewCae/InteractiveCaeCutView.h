@@ -78,9 +78,12 @@ public:
     MeshCutRenderBackend RenderBackend() const { return myRenderBackend; }
     const MeshCutRenderStatistics& RenderStatistics() const { return myRenderStatistics; }
     Standard_EXPORT Handle(Graphic3d_ArrayOfTriangles) SliceArray() const;
+    Standard_EXPORT Handle(Graphic3d_ArrayOfSegments) SliceEdgesArray() const;
     ViewCaeGeom::MeshCutViewManager& Cuts() { return myCuts; }
     Standard_EXPORT void SetField(const Handle(RWCae::MeshNVecProperty)& theField, int theRawComponent = 0);
     Standard_EXPORT void SetStyle(ViewCaeGeom::MeshCutPortion thePortion, const MeshCutDisplayStyle& theStyle);
+    //! Set the mode of all portions, preserving colors, widths and overrides.
+    Standard_EXPORT void SetMeshDisplayMode(InteractiveCaeMeshPrsMode theMode);
     Standard_EXPORT void SetStyle(const std::string& cut, ViewCaeGeom::MeshCutPortion portion, const MeshCutDisplayStyle& style);
     Standard_EXPORT void ClearStyle(const std::string& cut, ViewCaeGeom::MeshCutPortion portion);
     Standard_EXPORT MeshCutDisplayStyle EffectiveStyle(const std::string& cut, ViewCaeGeom::MeshCutPortion portion) const;
@@ -133,6 +136,7 @@ private:
     Handle(MeshPresentationScalar) myBodyPresentation;
     uint64_t myBodySourceEpoch = 0, myBodyFieldEpoch = 0;
     int myBodyComponent = -1;
+    InteractiveCaeMeshPrsMode myBodyMode = InteractiveCaeMeshPrsMode::FlatShaded;
     ViewCaeGeom::MeshCutCellMode myBodyCellMode = ViewCaeGeom::MeshCutCellMode::Constant;
     std::array<std::vector<Handle(Select3D_SensitiveEntity)>,2> myBodySelection;
     uint64_t myBodySelectionEpoch = 0;
