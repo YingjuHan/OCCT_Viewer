@@ -22,6 +22,9 @@ public:
         const Graphic3d_Vec3d& axis, const Graphic3d_Vec3d& origin, double start, double end, size_t count);
     Standard_EXPORT static std::vector<MeshCutSliceSample> Path(const std::string& prefix,
         const std::vector<Graphic3d_Vec3d>& points, const Graphic3d_Vec3d& up);
+    //! Equal arc-length samples of a polyline, including both endpoints.
+    Standard_EXPORT static std::vector<MeshCutSliceSample> ResampledPath(const std::string& prefix,
+        const std::vector<Graphic3d_Vec3d>& points, const Graphic3d_Vec3d& up, size_t count);
 };
 }
 #endif

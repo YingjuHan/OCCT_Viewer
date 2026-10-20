@@ -113,4 +113,31 @@ std::vector<MeshCutSliceSample> MeshCutSlicing::Path(const std::string& prefix,
     }
     intervals(samples); return samples;
 }
+std::vector<MeshCutSliceSample> MeshCutSlicing::ResampledPath(const std::string& prefix,
+    const std::vector<Graphic3d_Vec3d>& points, const Graphic3d_Vec3d& up, size_t count)
+{
+    if (points.size()<2 || points.size()>10000 || count<2 || count>10000) { throw std::invalid_argument("Path resampling requires 2..10000 points and samples"); }
+    std::vector<double> lengths(points.size(),0);
+    for (size_t i=0;i<points.size();++i) {
+        finite(points[i]);
+        if (i) {
+            const double distance=(points[i]-points[i-1]).Modulus();
+            if (!std::isfinite(distance) || distance<=1e-12) { throw std::invalid_argument("Repeated/overflowing path segment"); }
+            lengths[i]=lengths[i-1]+distance;
+        }
+    }
+    if (!std::isfinite(lengths.back())) { throw std::invalid_argument("Path length overflow"); }
+    std::vector<Graphic3d_Vec3d> positions; positions.reserve(count); std::vector<double> coordinates;
+    size_t segment=1;
+    for (size_t i=0;i<count;++i) {
+        const double s=lengths.back()*((double)i/(count-1));
+        while (segment+1<points.size() && lengths[segment]<s) { ++segment; }
+        const double t=(s-lengths[segment-1])/(lengths[segment]-lengths[segment-1]);
+        positions.push_back(points[segment-1]*(1-t)+points[segment]*t); coordinates.push_back(s);
+    }
+    auto result=Path(prefix,positions,up);
+    // Preserve distance on the original polyline when a sample crosses a corner.
+    for(size_t i=0;i<count;++i) { result[i].Coordinate=coordinates[i]; }
+    intervals(result); return result;
+}
 }

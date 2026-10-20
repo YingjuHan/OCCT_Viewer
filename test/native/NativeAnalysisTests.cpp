@@ -21,6 +21,20 @@ int main()
         require(a.Reports().at("roundtrip").Total.Force.x()==reference,"JSON changed physical results");
         for(const auto& json:{"{}","[]","{\"cut\":0}","{\"cut\":\"p\",\"field\":{\"name\":\"stress\",\"nodal\":true,\"component\":0,\"step\":-1},\"sections\":{}}"}) { require(!a.SetJson("bad",json),"bad JSON accepted"); }
         require(a.Requests().size()==2,"invalid request publication");
+        const auto samples=ViewCaeGeom::MeshCutSlicing::Range(cuts.Definitions().front(),0,.25,3);
+        require(cuts.ReplaceSlices("scan","p",samples),"Slice collection creation");
+        const auto scene=cuts.DumpDefinitionsJson(); std::vector<ViewCaeGeom::MeshCutPhysicsReport> reports;
+        require(a.ScanSlices("scan",r,true,reports),native.LastError());
+        require(reports.size()==3 && cuts.DumpDefinitionsJson()==scene && a.Requests().size()==2,"Scan polluted scene/requests");
+        require(reports.front().IntervalEnd==.0625 && reports.back().IntervalEnd==.25 && reports.front().IntervalUnits=="model_length","Scan intervals/units");
+        require(std::abs(reports.back().MomentOrigin.x()-.5)<1e-8,"Path summation point");
+        auto broken=r; broken.Field.Name="missing";
+        require(!a.ScanSlices("scan",broken,false,reports) && reports.size()==3 && cuts.DumpDefinitionsJson()==scene,"Failed scan published partial reports");
+        require(cuts.EnableSlices("scan",true) && cuts.EvaluateVisible().size()==3,"Slicing did not replace source display");
+        ViewCaeGeom::MeshCutViewManager loaded(mesh);
+        require(loaded.RestoreDefinitionsJson(cuts.DumpDefinitionsJson()) && loaded.EvaluateVisible().size()==3,"Collection persistence");
+        require(!cuts.Remove("scan_0"),"Slice member deleted independently");
+        require(cuts.RemoveSlices("scan") && cuts.Definitions().size()==1,"Collection cleanup");
         Handle(RWCae::MeshNVecProperty) labels=new RWCae::MeshNVecProperty("sets",1,RWCae::MeshPropertyBase::MappingType::Elemental);
         labels->Init<RWCae::MeshGroupProperty>();
         auto group=Handle(RWCae::MeshGroupProperty)::DownCast(labels->GetRawComponent(0)); group->Init(mesh->NbIndexedElems()); group->SetGroups(0,std::vector<int>{1,4}); labels->UpdateComponents(); mesh->ChangeProperties().Append(labels);

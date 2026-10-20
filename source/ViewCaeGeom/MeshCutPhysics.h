@@ -63,6 +63,7 @@ struct MeshCutPhysicsReport {
     MeshCutFrame OutputFrame;
     std::vector<MeshCutDistributedResult> Distributed;
     double IntervalBegin = 0, IntervalEnd = 0;
+    std::string IntervalUnits = "model_length";
     Standard_EXPORT std::string Csv() const;
 };
 //! Independent physical fields and selected physical FE provenance only.

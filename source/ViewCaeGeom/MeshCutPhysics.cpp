@@ -362,7 +362,7 @@ std::vector<MeshCutPhysicsReport> MeshCutPhysics::Slices(MeshCutViewManager& man
     for (const auto& sample : samples) {
         if (!staged.AddPlane(sample.Definition.Id,sample.Definition.Plane)) { throw std::invalid_argument("Invalid distributed slice"); }
         if (!staged.SetTraceOptions(sample.Definition.Id,true,sample.Definition.PhysicalTrace)) { throw std::invalid_argument("Invalid distributed physical trace"); }
-        auto report = Stress(staged.EvaluatePhysical(sample.Definition.Id,field),components,options);
+        auto report = Stress(staged.EvaluatePhysicalSection(sample.Definition.Id,field),components,options);
         report.IntervalBegin = sample.IntervalBegin; report.IntervalEnd = sample.IntervalEnd; reports.push_back(report);
         staged.Remove(sample.Definition.Id);
     }
@@ -372,13 +372,13 @@ std::string MeshCutPhysicsReport::Csv() const
 {
     auto escaped = [](const std::string& text) { std::string result = "\""; for (char c : text) { if (c == '"') { result += '"'; } result += c; } return result+'"'; };
     std::ostringstream out; out << std::setprecision(17);
-    out << "cut,group,element,x_m,y_m,z_m,Fx_N,Fy_N,Fz_N,Mx_Nm,My_Nm,Mz_Nm,area_m2,heat_W,interval_begin,interval_end\n";
+    out << "cut,group,element,x_m,y_m,z_m,Fx_N,Fy_N,Fz_N,Mx_Nm,My_Nm,Mz_Nm,area_m2,heat_W,interval_begin,interval_end,interval_units\n";
     auto row = [&](const std::string& element,const Vec& p,const MeshCutResultant& result) {
         out << escaped(Cut) << ',' << escaped(Group) << ',' << element;
         for (int i = 0; i < 3; ++i) { out << ',' << p[i]; }
         for (int i = 0; i < 3; ++i) { out << ',' << result.Force[i]; }
         for (int i = 0; i < 3; ++i) { out << ',' << result.Moment[i]; }
-        out << ',' << result.Area << ',' << result.HeatFlow << ',' << IntervalBegin << ',' << IntervalEnd << '\n';
+        out << ',' << result.Area << ',' << result.HeatFlow << ',' << IntervalBegin << ',' << IntervalEnd << ',' << escaped(IntervalUnits) << '\n';
     };
     for (const auto& item : Distributed) { row(std::to_string(item.Element),item.Position,item.Result); }
     row("total",MomentOrigin,Total); return out.str();

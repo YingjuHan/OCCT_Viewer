@@ -317,6 +317,10 @@ if (TARGET ViewDraw)
       add_test (NAME draw_cut_view_material COMMAND "${OCCTV_DRAWEXE}" -i -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_material_test.tcl")
       add_test (NAME draw_cut_view_free_body COMMAND "${OCCTV_DRAWEXE}" -i -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_free_body_test.tcl")
       add_test (NAME draw_cut_view_iso_binding COMMAND "${OCCTV_DRAWEXE}" -i -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_iso_binding_test.tcl")
+      add_test (NAME draw_cut_view_slices COMMAND "${OCCTV_DRAWEXE}" -i -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_slices_test.tcl")
+      set_tests_properties (draw_cut_view_slices PROPERTIES
+        ENVIRONMENT "CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-slices"
+        PASS_REGULAR_EXPRESSION "CUT_VIEW_SLICES_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_SLICES_FAIL" TIMEOUT 180)
       set_tests_properties (draw_cut_view_iso_binding PROPERTIES
         ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-iso-binding"
         PASS_REGULAR_EXPRESSION "CUT_VIEW_ISO_BINDING_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_ISO_BINDING_FAIL"

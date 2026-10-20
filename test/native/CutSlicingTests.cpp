@@ -113,6 +113,9 @@ int main()
             closeTo(path[i].Definition.Plane.x()*p.x()+path[i].Definition.Plane.y()*p.y()+path[i].Definition.Plane.z()*p.z()+path[i].Definition.Plane.w(),0);
         }
         closeTo(path.back().Coordinate,4); closeTo(path[1].IntervalBegin,0.5); closeTo(path[2].IntervalEnd,3);
+        const auto resampled=MeshCutSlicing::ResampledPath("equal",{Graphic3d_Vec3d(0,0,0),Graphic3d_Vec3d(1,0,0),Graphic3d_Vec3d(1,3,0)},Graphic3d_Vec3d(0,0,1),4);
+        for(size_t i=0;i<resampled.size();++i) { closeTo(resampled[i].Coordinate,4.0*i/3); require(resampled[i].Frame.IsValid(),"Resampled frame"); }
+        closeTo(resampled[1].Frame.Origin.y(),1.0/3);
         Handle(RWCae::MeshData) tetra = new RWCae::MeshData();
         for (auto p : {Graphic3d_Vec3(0,0,0),Graphic3d_Vec3(1,0,0),Graphic3d_Vec3(0,1,0),Graphic3d_Vec3(0,0,1)}) { tetra->AddNodePosition(p); }
         RWCae::MeshEntityId ids[] = {0,1,2,3}; tetra->AddElement(RWCae::MeshElementTetrahedron(ids));

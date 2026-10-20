@@ -12,6 +12,10 @@ namespace eval CutViewTime {
     variable cut ""
     variable slicing range
     variable parameters {0 0.5 3}
+    variable collection ""
+    variable slicesVisible 0
+    variable sumOnPath 1
+    variable scanRequest ""
     variable status ""
     variable timer ""
     variable last 0
@@ -45,7 +49,35 @@ proc CutViewTime::material {} {
     variable datum; variable configuration; variable anchors; variable cut
     if {[execute materialframe $datum $configuration {*}$anchors]} { execute follow $cut $datum }
 }
-proc CutViewTime::slices {} { variable cut; variable slicing; variable parameters; execute slicing $cut $slicing {*}$parameters }
+proc CutViewTime::slices {} {
+    variable cut; variable slicing; variable parameters; variable collection; variable slicesVisible
+    if {[execute slicing $cut $slicing {*}$parameters]} {
+        set collection ${cut}_${slicing}; set slicesVisible 0
+        if {[winfo exists .scvcutmanager]} { CutViewManager::refresh }
+    }
+}
+proc CutViewTime::showSlices {} {
+    variable collection; variable slicesVisible
+    if {![execute sliceenable $collection $slicesVisible]} { set slicesVisible 0 }
+}
+proc CutViewTime::removeSlices {} {
+    variable collection; variable slicesVisible
+    if {[execute sliceremove $collection]} { set collection ""; set slicesVisible 0; if {[winfo exists .scvcutmanager]} { CutViewManager::refresh } }
+}
+proc CutViewTime::scan {} {
+    variable model; variable collection; variable cut; variable scanRequest; variable sumOnPath; variable status
+    if {[catch {
+        set request [expr {$scanRequest eq "" ? "viewcut/$cut" : $scanRequest}]
+        set csv [scvcutview $model slicescan $collection $request $sumOnPath]
+        set path [tk_getSaveFile -defaultextension .csv -filetypes {{{CSV report} {.csv}}}]
+        if {$path ne ""} {
+            set temporary ${path}.tmp
+            set stream [open $temporary w]
+            try { puts -nonewline $stream $csv } finally { close $stream }
+            file rename -force $temporary $path
+        }
+    } value]} { set status $value } else { set status "" }
+}
 proc CutViewTime::pause {} {
     variable timer
     if {$timer ne ""} { after cancel $timer; set timer "" }
@@ -91,10 +123,20 @@ proc scvcuttime {name} {
     ttk::combobox .scvcuttime.material.cut -state readonly -textvariable ::CutViewTime::cut -width 10
     ttk::button .scvcuttime.material.apply -text "Bind frame (step n0 n1 n2)" -command CutViewTime::material
     pack {*}[winfo children .scvcuttime.material] -side left
-    ttk::combobox .scvcuttime.slicing.mode -state readonly -values {regular range rotational path} -textvariable ::CutViewTime::slicing -width 12
+    ttk::combobox .scvcuttime.slicing.mode -state readonly -values {regular range rotational path path_regular} -textvariable ::CutViewTime::slicing -width 12
     ttk::entry .scvcuttime.slicing.parameters -textvariable ::CutViewTime::parameters -width 48
     ttk::button .scvcuttime.slicing.apply -text "Generate slices" -command CutViewTime::slices
     pack {*}[winfo children .scvcuttime.slicing] -side left
+    ttk::labelframe .scvcuttime.collection -text "Slice collection (saved in definitions/session)"
+    ttk::entry .scvcuttime.collection.id -textvariable ::CutViewTime::collection -width 25
+    ttk::checkbutton .scvcuttime.collection.show -text "Display slices" -variable ::CutViewTime::slicesVisible -command CutViewTime::showSlices
+    ttk::button .scvcuttime.collection.remove -text "Remove collection" -command CutViewTime::removeSlices
+    pack {*}[winfo children .scvcuttime.collection] -side left; pack .scvcuttime.collection -fill x -padx 6 -pady 3
+    ttk::labelframe .scvcuttime.scan -text "Free body scan (configure source Free Body first)"
+    ttk::entry .scvcuttime.scan.request -textvariable ::CutViewTime::scanRequest -width 25
+    ttk::checkbutton .scvcuttime.scan.path -text "Sum on path" -variable ::CutViewTime::sumOnPath
+    ttk::button .scvcuttime.scan.export -text "Scan / export CSV" -command CutViewTime::scan
+    pack {*}[winfo children .scvcuttime.scan] -side left; pack .scvcuttime.scan -fill x -padx 6 -pady 3
     ttk::label .scvcuttime.status -textvariable ::CutViewTime::status -wraplength 600; pack .scvcuttime.status -fill x
     ttk::button .scvcuttime.close -text Close -command CutViewTime::close; pack .scvcuttime.close -pady 6
     CutViewTime::refresh

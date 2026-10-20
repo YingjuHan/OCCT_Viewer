@@ -261,4 +261,32 @@ bool NativeCutAnalysis::Automatic(const std::string& id,const CutFieldBinding& f
         myAutomatic[id] = {field,mapping};
     });
 }
+bool NativeCutAnalysis::ScanSlices(const std::string& collection,const NativeCutAnalysisRequest& request,
+    bool sumOnPath,std::vector<ViewCaeGeom::MeshCutPhysicsReport>& reports)
+{
+    return myOwner->attempt([&] {
+        auto& original=myOwner->Display()->Cuts(); NativeCutView temporary(myOwner->Display()->SourceMesh());
+        auto& cuts=temporary.Display()->Cuts();
+        if(!cuts.ShareCacheFrom(original) || !cuts.SetCachePolicy(original.CachePolicy()) || !cuts.SetGeometryOptions(original.GeometryOptions())
+            || !cuts.SetDeformation(original.DeformationField(),original.DeformationScale())) { throw std::invalid_argument("Cannot stage slice scan configuration"); }
+        for(const auto& datum:myOwner->Datums()) { temporary.SetDatum(datum.first,datum.second); }
+        auto definitions=original.Definitions();
+        std::stable_sort(definitions.begin(),definitions.end(),[](const auto& a,const auto& b) { return a.SliceCoordinate<b.SliceCoordinate; });
+        std::vector<ViewCaeGeom::MeshCutPhysicsReport> prepared;
+        for(const auto& d:definitions) {
+            if(d.SliceCollection!=collection || collection.empty()) { continue; }
+            if(!cuts.AddPlane(d.Id,d.Plane) || !cuts.SetPlanePlacement(d.Id,d.Placement)
+                || !cuts.SetTraceOptions(d.Id,true,d.PhysicalTrace)) { throw std::invalid_argument("Invalid scan plane/provenance"); }
+            auto r=request; r.Cut=d.Id; r.Overlay=false; r.Enabled=true;
+            if(sumOnPath) { r.Options.SumPoint=ViewCaeGeom::MeshCutSummationPoint::UserDefined; r.Options.MomentOrigin=d.Placement.Origin; }
+            if(!temporary.Analysis().Set("scan",r)) { throw std::invalid_argument(temporary.LastError()); }
+            auto report=temporary.Analysis().Reports().at("scan"); report.IntervalBegin=d.SliceBegin; report.IntervalEnd=d.SliceEnd;
+            if(!request.Distributed) { report.Distributed.clear(); }
+            report.IntervalUnits=d.SliceUnits; prepared.push_back(std::move(report));
+            temporary.Analysis().Remove("scan"); cuts.Remove(d.Id);
+        }
+        if(prepared.empty()) { throw std::invalid_argument("Unknown/empty slice collection"); }
+        reports=std::move(prepared);
+    });
+}
 }

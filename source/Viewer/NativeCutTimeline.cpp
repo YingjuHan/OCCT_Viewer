@@ -236,6 +236,9 @@ bool NativeCutTimeline::prepare(int step, const CutFieldBinding& deformation, do
                 throw std::invalid_argument("Material reference cannot follow a remeshed/missing reference frame");
             }
         }
+        for(const auto& definition:definitions) {
+            if(!definition.SliceCollection.empty() && !candidate->Cuts().SetSliceMetadata(definition)) { throw std::invalid_argument("Invalid slice collection after step change"); }
+        }
         candidate->Cuts().ShareMaterialCacheFrom(oldCuts);
         for (int p = 0; p < 3; ++p) { candidate->SetStyle((ViewCaeGeom::MeshCutPortion)p,myOwner.Display()->Style((ViewCaeGeom::MeshCutPortion)p)); }
         for (const auto& style : myOwner.Display()->StyleOverrides()) { candidate->SetStyle(style.first.first,(ViewCaeGeom::MeshCutPortion)style.first.second,style.second); }

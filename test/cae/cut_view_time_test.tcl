@@ -77,6 +77,15 @@ proc time_run {} {
         time_entry .scvcuttime.slicing.parameters $parameters; time_click .scvcuttime.slicing.apply
         time_assert {$::CutViewTime::status eq ""} "$mode slicing failed: $::CutViewTime::status"
     }
+    time_entry .scvcuttime.collection.id p_path
+    time_click .scvcuttime.collection.show
+    time_assert {$::CutViewTime::status eq ""} "Show collection failed: $::CutViewTime::status"
+    time_entry .scvcuttime.scan.request missing_request
+    time_click .scvcuttime.scan.path
+    time_click .scvcuttime.scan.export
+    time_assert {$::CutViewTime::status ne ""} "Missing scan mapping was accepted"
+    time_click .scvcuttime.collection.remove
+    time_assert {$::CutViewTime::status eq ""} "Remove collection failed"
     time_click .scvcuttime.close
     foreach widget $expected { time_assert {$widget in $covered} "Untested time widget $widget" }
     puts "CUT_VIEW_TIME_COVERAGE [llength $expected]/[llength $expected]"

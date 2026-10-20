@@ -54,6 +54,9 @@ public:
     bool PrepareStep(const NativeCutAnalysis& source, int step, bool remesh);
     bool Automatic(const std::string& id, const CutFieldBinding& field,
         ViewCaeGeom::MeshCutAutomaticMapping mapping);
+    //! Sequential bounded scan. Failure preserves both scene and caller's reports.
+    bool ScanSlices(const std::string& collection, const NativeCutAnalysisRequest& request,
+        bool sumOnPath, std::vector<ViewCaeGeom::MeshCutPhysicsReport>& reports);
     struct AutomaticBinding { CutFieldBinding Field; ViewCaeGeom::MeshCutAutomaticMapping Mapping; };
     const std::map<std::string,AutomaticBinding>& AutomaticBindings() const { return myAutomatic; }
 private:

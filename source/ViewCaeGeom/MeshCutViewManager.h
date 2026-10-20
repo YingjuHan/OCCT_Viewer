@@ -56,6 +56,7 @@ class MeshVtkCutSource;
 class MeshCutTraceSource;
 struct MeshCutPresentation;
 struct MeshCutPrimitiveTrace;
+struct MeshCutSliceSample;
 
 //! Sampled numerical isosurface controls. Field tolerances have field units;
 //! geometry tolerances remain in model units. This is not a certified root isolation.
@@ -90,6 +91,9 @@ struct MeshCutDefinition {
     double IsoValue = 0.0;
     MeshCutRecoveryOptions IsoRecovery; //!< Snapshot, independent of subsequent contour averaging/tensor edits.
     bool IsoAveragingOverride = true; //!< Force 100 percent averaging; legacy binding behavior.
+    std::string SliceCollection, SliceSource;
+    double SliceCoordinate = 0, SliceBegin = 0, SliceEnd = 0;
+    std::string SliceUnits = "model_length";
     Graphic3d_Vec3d Center = Graphic3d_Vec3d(0.0);
     Graphic3d_Vec3d Axis = Graphic3d_Vec3d(0.0, 0.0, 1.0);
     double Radius = 1.0;
@@ -140,6 +144,12 @@ public:
     MeshCutViewManager& operator=(const MeshCutViewManager&) = delete;
 
     Standard_EXPORT bool AddPlane(const std::string& theId, const Graphic3d_Vec4d& thePlane);
+    //! Validate every sample in a temporary bounded manager, then replace one collection.
+    Standard_EXPORT bool ReplaceSlices(const std::string& collection, const std::string& source,
+        const std::vector<MeshCutSliceSample>& samples, const std::string& units = "model_length");
+    Standard_EXPORT bool RemoveSlices(const std::string& collection);
+    Standard_EXPORT bool EnableSlices(const std::string& collection, bool enabled);
+    Standard_EXPORT bool SetSliceMetadata(const MeshCutDefinition& definition);
     Standard_EXPORT bool SetPlane(const std::string& theId, const Graphic3d_Vec4d& thePlane);
     //! Complete placement update through the same geometry/cache path as SetPlane.
     Standard_EXPORT bool SetPlanePlacement(const std::string& id, const MeshCutPlanePlacement& placement);

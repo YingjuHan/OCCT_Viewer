@@ -405,7 +405,7 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             const auto definitions = cuts.Definitions();
             const auto base = std::find_if(definitions.begin(),definitions.end(),[&](const auto& d) { return d.Id == argv[3]; });
             if (base == definitions.end() || base->Shape != ViewCaeGeom::MeshCutShape::Plane) { throw std::invalid_argument("Slicing requires a selected plane"); }
-            auto definition = *base; definition.Id += "_"+std::string(argv[4])+"_"+std::to_string(model.Native->Generation());
+            auto definition = *base; definition.Id += "_"+std::string(argv[4]);
             std::vector<ViewCaeGeom::MeshCutSliceSample> samples; const std::string mode(argv[4]);
             auto count = [&](const char* value) { const int n = cutInteger(value); if (n < 1 || n > 10000) { throw std::invalid_argument("Slice count outside 1..10000"); } return (size_t)n; };
             if (mode == "regular" && argc == 8) { samples = ViewCaeGeom::MeshCutSlicing::Regular(definition,cutReal(argv[5]),cutReal(argv[6]),count(argv[7])); }
@@ -416,16 +416,31 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             } else if (mode == "path" && argc >= 14 && (argc-8)%3 == 0) {
                 std::vector<Graphic3d_Vec3d> points; for (int i = 8; i < argc; i += 3) { points.emplace_back(cutReal(argv[i]),cutReal(argv[i+1]),cutReal(argv[i+2])); }
                 samples = ViewCaeGeom::MeshCutSlicing::Path(definition.Id,points,Graphic3d_Vec3d(cutReal(argv[5]),cutReal(argv[6]),cutReal(argv[7])));
+            } else if (mode == "path_regular" && argc >= 15 && (argc-9)%3 == 0) {
+                std::vector<Graphic3d_Vec3d> points; for(int i=9;i<argc;i+=3) { points.emplace_back(cutReal(argv[i]),cutReal(argv[i+1]),cutReal(argv[i+2])); }
+                samples=ViewCaeGeom::MeshCutSlicing::ResampledPath(definition.Id,points,Graphic3d_Vec3d(cutReal(argv[6]),cutReal(argv[7]),cutReal(argv[8])),count(argv[5]));
             } else { throw std::invalid_argument("Invalid slicing mode/parameters"); }
-            ViewCaeGeom::MeshCutViewManager staged(model.Mesh);
-            if (!staged.RestoreDefinitionsJson(cuts.DumpDefinitionsJson()) || !staged.SetDeformation(cuts.DeformationField(),cuts.DeformationScale())) { throw std::invalid_argument("Cannot stage slicing configuration"); }
-            for (const auto& sample : samples) {
-                if (!staged.AddPlane(sample.Definition.Id,sample.Definition.Plane)
-                    || !staged.SetPlanePlacement(sample.Definition.Id,sample.Definition.Placement)) { throw std::invalid_argument("Cannot stage slice definition"); }
-                staged.Evaluate(sample.Definition.Id,model.Field);
-            }
-            if (!cuts.RestoreDefinitionsJson(staged.DumpDefinitionsJson())) { throw std::invalid_argument("Cannot publish staged slicing definitions"); }
+            if(!cuts.ReplaceSlices(definition.Id,base->Id,samples,mode=="rotational"?"radian":"model_length")) { throw std::invalid_argument("Cannot replace bounded spatial slice collection"); }
             ok = true;
+        } else if(action=="slicelist" && argc==3) {
+            std::map<std::string,std::vector<ViewCaeGeom::MeshCutDefinition>> groups;
+            for(const auto& d:cuts.Definitions()) { if(!d.SliceCollection.empty()) { groups[d.SliceCollection].push_back(d); } }
+            for(const auto& group:groups) {
+                const auto& d=group.second.front(); di<<"{id"; di.AppendElement(group.first.c_str());
+                di<<" source"; di.AppendElement(d.SliceSource.c_str()); di<<" count "<<(int)group.second.size()<<" enabled "<<(d.Enabled?1:0)<<" units "; di.AppendElement(d.SliceUnits.c_str()); di<<"} ";
+            } return 0;
+        } else if(action=="sliceremove" && argc==4) { ok=cuts.RemoveSlices(argv[3]);
+        } else if(action=="sliceenable" && argc==5) {
+            ok=cuts.EnableSlices(argv[3],cutBoolean(argv[4]));
+            if(!ok) { throw std::invalid_argument("Display slicing requires one active source cut and an existing collection"); }
+        } else if(action=="slicescan" && argc==6) {
+            auto& analysis=model.Native->Analysis(); const auto request=analysis.Requests().find(argv[4]);
+            const auto configuration=request==analysis.Requests().end()?analysis.ReadRequestJson(argv[4]):request->second;
+            std::vector<ViewCaeGeom::MeshCutPhysicsReport> reports;
+            if(!analysis.ScanSlices(argv[3],configuration,cutBoolean(argv[5]),reports)) { throw std::invalid_argument(model.Native->LastError()); }
+            std::string csv;
+            for(const auto& report:reports) { const auto rows=report.Csv(); csv+=csv.empty()?rows:rows.substr(rows.find('\n')+1); }
+            di<<csv.c_str(); return 0;
         } else if (action == "datums" && argc == 3) {
             di.AppendElement("global");
             for (const auto& datum : model.Native->Datums()) { di.AppendElement(datum.first.c_str()); }
@@ -627,6 +642,8 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
                 di << "{id"; di.AppendElement(cut.Id.c_str());
                 di << " name"; di.AppendElement(cut.Name.c_str());
                 di << " enabled " << (int)cut.Enabled << " visibility " << (int)cut.Visibility;
+                di << " sliceCollection"; di.AppendElement(cut.SliceCollection.c_str());
+                di << " sliceSource"; di.AppendElement(cut.SliceSource.c_str());
                 di << " material " << (int)cut.FollowDeformation << " reference_step " << cut.ReferenceStep
                    << " reference_scale " << cut.ReferenceScale << " reference_displacement";
                 di.AppendElement(cut.ReferenceDisplacement.c_str());
@@ -1253,6 +1270,8 @@ void ViewCaeTest::CutViewCommands::Factory(Draw_Interpretor& di)
         "  | materialframe name reference/updated {step n0 n1 n2}... | follow cut datum\n"
         "  | material cut on/off First/Last/Current | materialstats cut | materialinfo cut\n"
         "  | slicing plane regular/range start spacing/end count | rotational ax ay az ox oy oz start end count | path ux uy uz {x y z}...\n"
+        "  | slicing plane path_regular count ux uy uz {x y z}... | slicelist | sliceremove collection | sliceenable collection 0/1\n"
+        "  | slicescan collection requestId/explicitMappingJson sumOnPath0/1 (CSV, scene unchanged)\n"
         "  | localmove id datum a b c d (plane) / cx cy cz ax ay az radius (quadric)\n"
         "  | axes datum/global show length | nativeinfo | pickmode 0/1/2\n"
         "  | sessionsave file ?CAD-brep-source? | sessionload file | sessioninfo\n"
