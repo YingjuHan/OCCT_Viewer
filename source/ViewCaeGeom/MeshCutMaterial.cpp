@@ -53,6 +53,9 @@ MeshGeometryMaterial::MeshGeometryMaterial(const Handle(MeshBvhData)& bvh,
 {}
 void MeshGeometryMaterial::generateMeshData()
 {
+    mySamplingLeases.clear(); myRefined = false; Tolerance = Residual = 0; Depth = 0;
+    myElementTraces.clear(); myLineTraces.clear(); myNormals.clear(); myLineNormals.clear();
+    try {
     const auto& reference = myReference->Get(myPortion);
     const auto geometry = reference.Portions[myPortion]; const auto input = geometry->GetMeshData();
     myBoundary = reference.BoundaryMesh;
@@ -64,6 +67,14 @@ void MeshGeometryMaterial::generateMeshData()
         if (!geometry->OriginNode(n,origin)) { throw std::runtime_error("Material reference has no FE node weights"); }
         Graphic3d_Vec3d sum(0);
         for (const auto& w : origin.BaseNodes()) {
+            if (w.second == 0) { continue; }
+            for (const auto* manager : {&myAccounting,myReference->Cuts.get()}) {
+                const auto& field = manager->DeformationField();
+                if (!field.IsNull() && manager->DeformationScale() != 0) {
+                    Graphic3d_Vec3d value; field->GetVector(RWCae::MeshPropertyEntityInfo(w.first),value);
+                    for (int a = 0; a < 3; ++a) { if (!std::isfinite(value[a])) { throw std::invalid_argument("Nonfinite material displacement"); } }
+                }
+            }
             auto p = source->Nodes()[w.first]; myCurrent->ModifyNode(w.first,p);
             for (int a = 0; a < 3; ++a) { if (!std::isfinite(p[a])) { throw std::invalid_argument("Nonfinite material deformation"); } }
             sum += Graphic3d_Vec3d(p)*w.second;
@@ -83,7 +94,13 @@ void MeshGeometryMaterial::generateMeshData()
     const auto slice = Handle(MeshGeometrySlice)::DownCast(geometry);
     myLines = slice.IsNull() ? std::vector<MeshSliceLine>() : slice->Lines();
     myMeshData = mapped; myNodesMap.Exchange(nodes); myElementsMap.Exchange(elements);
-    RetainCacheLease(lease); ++myReference->MappingBuilds; myReference->MappedNodes += input->NbNodes();
+    if (myPortion == 1) { refineSection(reference); }
+    RetainCacheLease(lease);
+    ++myReference->MappingBuilds; myReference->MappedNodes += myMeshData->NbNodes();
+    } catch (...) {
+        mySamplingLeases.clear(); myMeshData.Nullify(); myNodesMap.Clear(); myElementsMap.Clear();
+        throw;
+    }
 }
 bool MeshGeometryMaterial::acceptElement(const Handle(RWCae::MeshData)&, RWCae::MeshEntityId e, const MeshGeometry* geometry) const
 {

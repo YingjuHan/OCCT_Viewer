@@ -4,6 +4,7 @@ set (SRCFILES
   MeshCutViewManager.cpp
   MeshCutFrame.cpp
   MeshCutMaterial.cpp
+    MeshCutMaterialSampling.cpp
   MeshCutSlicing.cpp
   MeshCutPhysics.cpp
   MeshCutAutomatic.cpp

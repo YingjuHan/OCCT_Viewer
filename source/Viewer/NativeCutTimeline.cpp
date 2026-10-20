@@ -109,8 +109,30 @@ bool NativeCutTimeline::FollowDeformation(const std::string& id, bool enabled, c
         if (enabled && myCutFrames.count(id)) { throw std::invalid_argument("Remove rigid datum following before enabling material deformation"); }
         auto& cuts = myOwner.Display()->Cuts();
         const std::string field = cuts.DeformationField().IsNull() ? "" : cuts.DeformationField()->Name().ToCString();
+        const auto definitions = cuts.Definitions();
+        const auto previous = std::find_if(definitions.begin(),definitions.end(),[&](const auto& d) { return d.Id == id; });
+        if (previous == definitions.end()) { throw std::invalid_argument("Unknown material cut"); }
+        // Validate geometry, fields, current Jacobians and budgets before changing live metadata.
+        ViewCaeGeom::MeshCutViewManager staged(myOwner.Display()->SourceMesh());
+        staged.SetMaterialSource(mySource);
+        if (!staged.ShareCacheFrom(cuts) || !staged.SetGeometryOptions(cuts.GeometryOptions())
+            || !staged.SetIsoOptions(cuts.IsoOptions()) || !staged.SetRecoveryOptions(cuts.RecoveryOptions())
+            || !staged.RestoreDefinitionsJson(cuts.DumpDefinitionsJson())
+            || !staged.SetDeformation(cuts.DeformationField(),cuts.DeformationScale())
+            || !staged.SetFollowDeformation(id,enabled,step,field,cuts.DeformationScale())) {
+            throw std::invalid_argument("Cannot stage material reference configuration");
+        }
+        staged.ShareMaterialCacheFrom(cuts);
+        staged.EvaluateSectionForDisplay(id,myOwner.Display()->Field());
         if (!cuts.SetFollowDeformation(id,enabled,step,field,cuts.DeformationScale())) {
             throw std::invalid_argument("Material follow requires a plane, matching FE topology, and reference displacement field");
+        }
+        cuts.ShareMaterialCacheFrom(staged);
+        staged.InvalidateGeometry(); // Keep shared reference; release temporary mapped output before publication.
+        if (!myOwner.Refresh(false)) {
+            const auto error = myOwner.LastError();
+            cuts.SetFollowDeformation(id,previous->FollowDeformation,previous->ReferenceStep,previous->ReferenceDisplacement,previous->ReferenceScale);
+            throw std::runtime_error(error);
         }
     });
 }

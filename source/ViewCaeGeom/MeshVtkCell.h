@@ -29,7 +29,11 @@ public:
     std::vector<std::array<Graphic3d_Vec3d,4>> ParameterSimplices() const;
     MeshInterpolatedNode EvaluateParameter(const Graphic3d_Vec3d& theParameter,
         Graphic3d_Vec3d& thePosition) const;
-    Standard_EXPORT MeshInterpolatedNode Origin(const Graphic3d_Vec3d& thePosition) const;
+    Standard_EXPORT MeshInterpolatedNode Origin(const Graphic3d_Vec3d& thePosition,
+        Graphic3d_Vec3d* parameter = nullptr) const;
+    //! FE Jacobian columns at a reference position, optionally in a mapped configuration.
+    Standard_EXPORT std::array<Graphic3d_Vec3d,3> Differential(
+        const Graphic3d_Vec3d& position, const MeshGeometry* mapped = nullptr) const;
     //! Original node IDs on faces, surface edges or curve endpoints.
     std::vector<std::vector<RWCae::MeshEntityId>> BoundaryNodes() const;
     int Dimension() const { return myCell->GetCellDimension(); }

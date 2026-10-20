@@ -392,6 +392,11 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             di.AppendElement("global");
             for (const auto& datum : model.Native->Datums()) { di.AppendElement(datum.first.c_str()); }
             return 0;
+        } else if (action == "materialinfo" && argc == 4) {
+            const auto result = cuts.EvaluateSectionForDisplay(argv[3],model.Field);
+            const auto mesh = result.Portions[1]->GetMeshData();
+            di << "tolerance " << result.MaterialTolerance << " residual " << result.MaterialResidual << " depth " << result.MaterialDepth
+               << " nodes " << (int)mesh->NbNodes() << " primitives " << (int)mesh->NbIndexedElems(); return 0;
         } else if (action == "placement" && argc == 13) {
             ViewCaeGeom::MeshCutPlanePlacement p;
             if (!p.Define(Graphic3d_Vec3d(cutReal(argv[4]),cutReal(argv[5]),cutReal(argv[6])),
@@ -1191,7 +1196,7 @@ void ViewCaeTest::CutViewCommands::Factory(Draw_Interpretor& di)
         "  | physics requestId explicitMappingJson | physicsremove/physicsreport/physicscsv requestId\n"
         "  | automatic id crack/density nodalField component threshold sign minimum maximum visibility\n"
         "  | materialframe name reference/updated {step n0 n1 n2}... | follow cut datum\n"
-        "  | material cut on/off First/Last/Current | materialstats cut\n"
+        "  | material cut on/off First/Last/Current | materialstats cut | materialinfo cut\n"
         "  | slicing plane regular/range start spacing/end count | rotational ax ay az ox oy oz start end count | path ux uy uz {x y z}...\n"
         "  | localmove id datum a b c d (plane) / cx cy cz ax ay az radius (quadric)\n"
         "  | axes datum/global show length | nativeinfo | pickmode 0/1/2\n"

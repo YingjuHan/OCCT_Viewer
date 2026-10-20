@@ -70,6 +70,27 @@ void tests()
         require(!remap.SwitchStep(1) && remapped.Display()==previous && remap.Step()==0,"Material remesh partially published");
     }
     {
+        const auto data=series(); const auto invalid=data->SeriesSteps()[1].Mesh;
+        const auto u=invalid->Properties()[1];
+        for(RWCae::MeshEntityId n=0;n<invalid->NbNodes();++n) {
+            u->GetComponent(2)->SetValue(RWCae::MeshPropertyEntityInfo(n),-20*invalid->Nodes()[n].z());
+        }
+        u->UpdateComponents();
+        Viewer::NativeCutView native(data); Viewer::NativeCutTimeline time(native);
+        native.Display()->Cuts().AddPlane("p",Graphic3d_Vec4d(1,0,0,-.25));
+        require(time.FollowDeformation("p",true,"First") && time.BindDeformation({"displacement",true,0,0},2),native.LastError());
+        const auto before=native.Display(); const auto definitions=before->Cuts().DumpDefinitionsJson(); const auto generation=native.Generation();
+        require(!time.SwitchStep(1) && time.Step()==0 && native.Display()==before && native.Generation()==generation,"Inverted frame replaced material display");
+        require(before->Cuts().DumpDefinitionsJson()==definitions,"Rejected inversion changed material definition");
+        const auto last=data->SeriesSteps()[2].Mesh;
+        for(auto& p:last->ChangeNodes()) { p.x()-=.4f; p.z()=-p.z(); }
+        Viewer::NativeCutView ref(data); Viewer::NativeCutTimeline refTime(ref);
+        ref.Display()->Cuts().AddPlane("p",Graphic3d_Vec4d(1,0,0,-.25));
+        const auto refBefore=ref.Display()->Cuts().DumpDefinitionsJson();
+        require(!refTime.FollowDeformation("p",true,"Last"),"Inverted reference committed");
+        require(ref.Display()->Cuts().DumpDefinitionsJson()==refBefore,"Failed reference Apply was not atomic");
+    }
+    {
         Viewer::NativeCutView absolute(series()); Viewer::NativeCutTimeline time(absolute);
         auto& cuts = absolute.Display()->Cuts();
         require(cuts.AddPlane("p",Graphic3d_Vec4d(1,0,0,-.25)),"Absolute timeline fixture");

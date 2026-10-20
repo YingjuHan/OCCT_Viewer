@@ -1364,6 +1364,14 @@ MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
             aResult.Volumes[i] = general->Volume(); aResult.Areas[i] = general->Area(); aResult.BoundaryMesh = true;
             aResult.SourceApproximate = generalSource()->Work.NumericalCells > 0;
         }
+        if (auto material = dynamic_cast<MeshGeometryMaterial*>(aResult.Portions[i].get())) {
+            aResult.BoundaryMesh = material->BoundaryMesh();
+            aResult.SourceApproximate |= anEntry->Material->Get((unsigned)i).SourceApproximate || material->Refined();
+            if (i == 1) {
+                aResult.MaterialTolerance = material->Tolerance; aResult.MaterialResidual = material->Residual; aResult.MaterialDepth = material->Depth;
+                aResult.MaterialNormal = [geometry = Handle(MeshGeometryMaterial)(material)](size_t primitive,bool lines) { return geometry->CurrentNormal(primitive,lines); };
+            }
+        }
         anEntry->CachedMask |= 1u << i;
         if (i == 1) {
             if (anEntry->TraceSection.IsNull() || anEntry->TraceRevision != anEntry->Revision) {
@@ -1549,7 +1557,7 @@ void MeshCutViewManager::reserveSource()
 }
 uint64_t MeshCutViewManager::EstimatedSourceBytes() const
 {
-    const bool materialCap = !needsGeneralPlane() && std::any_of(myEntries.begin(),myEntries.end(),[](const auto& e) { return e.second->Definition.Enabled; })
+    const bool materialCap = std::any_of(myEntries.begin(),myEntries.end(),[](const auto& e) { return e.second->Definition.Enabled; })
         && std::all_of(myEntries.begin(),myEntries.end(),[](const auto& e) {
             const auto& d = e.second->Definition; return !d.Enabled || (d.FollowDeformation && (d.Visibility & 5) == 0);
         });

@@ -135,7 +135,7 @@ template<size_t N, class Evaluate> MeshCutPhysicsReport integrate(const MeshCutR
     const std::array<int,N>& components, const MeshCutPhysicsOptions& options, Evaluate evaluate)
 {
     validate(cut,options);
-    if (cut.Definition.FollowDeformation && !options.Normal && options.ElementNormals.empty()) {
+    if (cut.Definition.FollowDeformation && !cut.MaterialNormal && !options.Normal && options.ElementNormals.empty()) {
         throw std::invalid_argument("Material section physics requires current-configuration local normals");
     }
     MeshCutPhysicsReport report; report.Cut = cut.Definition.Id; report.Group = options.GroupName;
@@ -156,12 +156,17 @@ template<size_t N, class Evaluate> MeshCutPhysicsReport integrate(const MeshCutR
                 const Id ids[] = {elem[0],elem[i],elem[i+1]}; Vec p[] = {Vec(mesh->Nodes()[ids[0]]),Vec(mesh->Nodes()[ids[1]]),Vec(mesh->Nodes()[ids[2]])};
                 const double area = Vec::Cross(p[1]-p[0],p[2]-p[0]).Modulus()/2;
                 if (area <= 0) { continue; }
+                auto localNormal = [&](const Vec& position) {
+                    if (!cut.Definition.FollowDeformation || options.Normal || !options.ElementNormals.empty()) { return normal(cut.Definition,origin,position,options); }
+                    auto n = unit(Vec::Cross(p[1]-p[0],p[2]-p[0]));
+                    return n.Dot(cut.MaterialNormal(elem.GlobalIndex(),false)) < 0 ? -n : n;
+                };
                 MeshCutDistributedResult item; item.Element = origin; item.Position = (p[0]+p[1]+p[2])/3;
-                item.Normal = normal(cut.Definition,origin,item.Position,options);
+                item.Normal = localNormal(item.Position);
                 item.Result.Area = area*options.Units.LengthToSI*options.Units.LengthToSI;
                 for (const auto& w : quadrature) {
                     const auto position = p[0]*w[0]+p[1]*w[1]+p[2]*w[2];
-                    evaluate(item.Result,normal(cut.Definition,origin,position,options),position,
+                    evaluate(item.Result,localNormal(position),position,
                         values(field,components,elem.GlobalIndex(),{{ids[0],w[0]},{ids[1],w[1]},{ids[2],w[2]}}),area/3,options.FieldFrame);
                 }
                 add(report,item,options);
@@ -189,7 +194,9 @@ template<size_t N, class Evaluate> MeshCutPhysicsReport integrate(const MeshCutR
             for(Id node:support) { if(std::abs((point(node)-p0).Dot(mapping.Frame.Z))>1e-6*std::max(1.0,(p1-p0).Modulus())) { throw std::invalid_argument("Nonplanar shell needs an explicit varying section adapter"); } }
             const auto a = Vec(mesh->Nodes()[line.Nodes[0]]), b = Vec(mesh->Nodes()[line.Nodes[1]]);
             const auto tangent = unit(b-a); auto coNormal = unit(Vec::Cross(tangent,mapping.Frame.Z));
-            if (coNormal.Dot(normal(cut.Definition,origin,(a+b)/2,options)) < 0) { coNormal = -coNormal; }
+            const auto direction = cut.Definition.FollowDeformation && cut.MaterialNormal && !options.Normal && options.ElementNormals.empty()
+                ? cut.MaterialNormal(l,true) : normal(cut.Definition,origin,(a+b)/2,options);
+            if (coNormal.Dot(direction) < 0) { coNormal = -coNormal; }
             const double length = (b-a).Modulus(); MeshCutDistributedResult item; item.Element = origin; item.Position = (a+b)/2;
             item.Normal = coNormal;
             // Two-point Gauss is exact for linear membrane force and its quadratic moment.
@@ -227,6 +234,7 @@ template<size_t N, class Evaluate> MeshCutPhysicsReport integrate(const MeshCutR
         if (!included(options,e) || (mapping.Kind != MeshCutSectionKind::BeamStress && mapping.Kind != MeshCutSectionKind::BeamResultants)) { continue; }
         if constexpr (N != 9) { throw std::invalid_argument("Beam heat flow requires an explicit flux section adapter"); }
         else {
+            if (cut.Definition.FollowDeformation) { throw std::invalid_argument("Material beam physics requires reference crossing weights"); }
             if (cut.Definition.Shape != MeshCutShape::Plane || options.SourceGeometry.IsNull()) { throw std::invalid_argument("Beam physics requires a plane and explicit source configuration"); }
             std::vector<Id> nodes; source->ElementNodes(e,nodes);
             const auto& indexed = source->IndexedElements()[e];

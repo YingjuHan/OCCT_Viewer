@@ -20,7 +20,7 @@ ViewCaeGeom::MeshCutResultant integrate(const ViewCaeGeom::MeshCutResult& cut,
     const std::array<int, N>& components, Evaluate evaluate)
 {
     if (cut.PresentationOnly) { throw std::invalid_argument("Physical integration requires an independent numerical cut"); }
-    if (cut.Definition.FollowDeformation || cut.Definition.Shape != ViewCaeGeom::MeshCutShape::Plane) {
+    if ((cut.Definition.FollowDeformation && !cut.MaterialNormal) || cut.Definition.Shape != ViewCaeGeom::MeshCutShape::Plane) {
         throw std::invalid_argument("Non-planar section integration requires local-normal mapping");
     }
     constexpr size_t on = (size_t)ViewCaeGeom::MeshCutPortion::On;
@@ -57,6 +57,11 @@ ViewCaeGeom::MeshCutResultant integrate(const ViewCaeGeom::MeshCutResult& cut,
                     Graphic3d_Vec3d(mesh->Nodes()[nodes[1]]), Graphic3d_Vec3d(mesh->Nodes()[nodes[2]])};
                 const double area = Graphic3d_Vec3d::Cross(positions[1]-positions[0], positions[2]-positions[0]).Modulus()/2;
                 if (area == 0.0) { continue; }
+                auto localNormal = normal;
+                if (cut.Definition.FollowDeformation) {
+                    localNormal = Graphic3d_Vec3d::Cross(positions[1]-positions[0],positions[2]-positions[0])/(2*area);
+                    if (localNormal.Dot(cut.MaterialNormal(elem.GlobalIndex(),false)) < 0) { localNormal = -localNormal; }
+                }
                 result.Area += area;
                 for (const auto& w : weights) {
                     std::array<double, N> values{};
@@ -71,7 +76,7 @@ ViewCaeGeom::MeshCutResultant integrate(const ViewCaeGeom::MeshCutResult& cut,
                             values[c] += value*w[n];
                         }
                     }
-                    evaluate(result, normal, position, values, area/3);
+                    evaluate(result, localNormal, position, values, area/3);
                 }
             }
         }

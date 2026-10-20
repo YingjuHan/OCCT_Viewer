@@ -170,7 +170,8 @@ void selections(bool surface, bool iso, bool reversed, bool deformed)
         invalid.replace(at,replacements.first.size(),replacements.second);
         require(!manager.RestoreDefinitionsJson(invalid) && manager.DumpDefinitionsJson() == saved,"Invalid trace JSON was not atomic");
     }
-    auto legacy = saved; legacy.replace(legacy.find("\"version\":7"),11,"\"version\":6");
+    auto legacy = saved; const auto versionEnd = legacy.find(',',legacy.find("\"version\":"));
+    legacy.replace(legacy.find("\"version\":"),versionEnd-legacy.find("\"version\":"),"\"version\":6");
     require(manager.RestoreDefinitionsJson(legacy),"JSON v6 migration failed");
     require(manager.Definitions()[0].DisplayTrace.Policy == MeshCutTracePolicy::Lowest
         && manager.Definitions()[0].PhysicalTrace.Policy == MeshCutTracePolicy::Lowest,"JSON v6 trace defaults changed");

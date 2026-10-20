@@ -1,5 +1,6 @@
 #include <ViewCaeGeom/MeshCutTrace.h>
 #include <ViewCaeGeom/MeshCutViewManager.h>
+#include <ViewCaeGeom/MeshCutMaterial.h>
 #include <RWCae/MeshAdaptorsIterator.h>
 #include <RWCae/MeshScalarProperty.h>
 #include <RWCae/MeshNodeVecProperty.h>
@@ -455,11 +456,14 @@ MeshGeometryTraceSection::MeshGeometryTraceSection(const Handle(MeshBvhData)& bv
     const Handle(MeshGeometry)& source) : MeshGeometrySlice(bvh), mySource(source)
 {
     myMeshData = mapped->GetMeshData(); myInput = myMeshData; myIsUpdated = true;
-    myElementTraces = reference.myElementTraces; myLineTraces = reference.myLineTraces; myLines = reference.myLines;
-    for (NodesMap::Iterator i(reference.myNodesMap); i.More(); i.Next()) {
+    const auto material = dynamic_cast<MeshGeometryMaterial*>(mapped.get());
+    const bool refined = material && material->Refined();
+    myElementTraces = refined ? material->ElementTraces() : reference.myElementTraces;
+    myLineTraces = refined ? material->LineTraces() : reference.myLineTraces; myLines = mapped->Lines();
+    for (NodesMap::Iterator i(mapped->GetNodesMap()); i.More(); i.Next()) {
         myNodesMap.Bind(i.Key(),std::make_pair(source.get(),i.Value().second));
     }
-    for (ElementsMap::Iterator i(reference.myElementsMap); i.More(); i.Next()) {
+    for (ElementsMap::Iterator i(mapped->GetElementsMap()); i.More(); i.Next()) {
         myElementsMap.Bind(i.Key(),std::make_pair(source.get(),i.Value().second));
     }
 }

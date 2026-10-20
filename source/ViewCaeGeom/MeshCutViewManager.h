@@ -116,6 +116,10 @@ struct MeshCutResult {
     bool SourceApproximate = false;
     bool DisplayRecovered = false;
     bool TensorDerived = false; //!< Display component is zero; PhysicalFields still retain original tensors.
+    //! Current material facet/co-normal, oriented from reference Below to Above.
+    std::function<Graphic3d_Vec3d(size_t,bool)> MaterialNormal;
+    double MaterialTolerance = 0, MaterialResidual = 0;
+    int MaterialDepth = 0;
     double IsoFieldTolerance = 0;
     double TraceTolerance = 0; //!< Same model/field-unit tolerance used by independent trace selection.
     double IsoFieldResidual = 0;

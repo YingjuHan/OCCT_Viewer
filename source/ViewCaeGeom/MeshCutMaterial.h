@@ -23,17 +23,29 @@ public:
         const Handle(MeshGeometry)& current, MeshCutViewManager& accounting);
     bool IsModifier() const override { return myPortion != 1 && !myBoundary; }
     MeshGeometryType Type() const override { return myPortion == 1 ? MeshGeometryType::Slice : MeshGeometryType::Clip; }
+    const std::vector<std::vector<MeshCutPrimitiveTrace>>& ElementTraces() const { return myElementTraces; }
+    const std::vector<std::vector<MeshCutPrimitiveTrace>>& LineTraces() const { return myLineTraces; }
+    bool Refined() const { return myRefined; }
+    bool BoundaryMesh() const { return myBoundary; }
+    Graphic3d_Vec3d CurrentNormal(size_t primitive, bool lines) const { return (lines ? myLineNormals : myNormals).at(primitive); }
+    double Tolerance = 0, Residual = 0;
+    int Depth = 0;
 protected:
     Standard_EXPORT void generateMeshData() override;
     Standard_EXPORT bool acceptElement(const Handle(RWCae::MeshData)&, RWCae::MeshEntityId,
         const MeshGeometry*) const override;
     Standard_EXPORT bool acceptNode(RWCae::MeshEntityId, const MeshGeometry*, const Graphic3d_Vec3&) const override;
 private:
+    void refineSection(const MeshCutResult& reference);
     std::shared_ptr<MeshCutMaterialCache> myReference;
     unsigned myPortion;
     Handle(MeshGeometry) myCurrent;
     MeshCutViewManager& myAccounting;
     bool myBoundary = false;
+    bool myRefined = false;
+    std::vector<std::vector<MeshCutPrimitiveTrace>> myElementTraces, myLineTraces;
+    std::vector<Graphic3d_Vec3d> myNormals, myLineNormals;
+    std::vector<std::shared_ptr<void>> mySamplingLeases;
 };
 //! Copies topology in indexed order, including explicit generated boundary faces.
 Standard_EXPORT Handle(RWCae::MeshData) CopyCutTopology(const Handle(RWCae::MeshData)& input,

@@ -1,8 +1,12 @@
 #include <ViewCaeGeom/MeshCutMaterial.h>
+#include <ViewCaeGeom/MeshCutPhysics.h>
+#include <RWCae/MeshTools.h>
 #include <RWCae/MeshScalarProperty.h>
 #include <iostream>
 #include <cmath>
 #include <stdexcept>
+#include <limits>
+#include <map>
 using namespace ViewCaeGeom;
 namespace {
 void require(bool value,const char* message) { if (!value) { throw std::runtime_error(message); } }
@@ -29,6 +33,81 @@ Handle(RWCae::MeshNVecProperty) displacement(const Handle(RWCae::MeshData)& m)
         for (RWCae::MeshEntityId n=0;n<m->NbNodes();++n) { const auto p=m->Nodes()[n]; v->SetValue(RWCae::MeshPropertyEntityInfo(n),c==2 ? .2*p.x()*p.x() : 0); }
     }
     f->UpdateComponents(); return f;
+}
+Handle(RWCae::MeshNVecProperty) vectorField(const Handle(RWCae::MeshData)& m,
+    const std::function<Graphic3d_Vec3d(const Graphic3d_Vec3d&)>& value)
+{
+    auto f = displacement(m);
+    for (RWCae::MeshEntityId n=0;n<m->NbNodes();++n) {
+        const auto v=value(Graphic3d_Vec3d(m->Nodes()[n]));
+        for (int c=0;c<3;++c) { f->GetComponent(c)->SetValue(RWCae::MeshPropertyEntityInfo(n),v[c]); }
+    }
+    f->UpdateComponents(); return f;
+}
+Handle(RWCae::MeshData) quadraticTetra()
+{
+    Handle(RWCae::MeshData) m=new RWCae::MeshData();
+    for (auto p:{Graphic3d_Vec3(0,0,0),Graphic3d_Vec3(1,0,0),Graphic3d_Vec3(0,1,0),Graphic3d_Vec3(0,0,1),
+        Graphic3d_Vec3(.5,0,0),Graphic3d_Vec3(.5,.5,0),Graphic3d_Vec3(0,.5,0),Graphic3d_Vec3(0,0,.5),Graphic3d_Vec3(.5,0,.5),Graphic3d_Vec3(0,.5,.5)}) { m->AddNodePosition(p); }
+    const RWCae::MeshEntityId ids[]={0,1,2,3,4,5,6,7,8,9}; m->AddElement(RWCae::MeshElementTetrahedron2nd(ids)); return m;
+}
+void curvedMaterial()
+{
+    const auto m=quadraticTetra();
+    const auto u=vectorField(m,[](const auto& p) { return Graphic3d_Vec3d(0,0,.6*p.x()*p.x()); });
+    const auto flux=vectorField(m,[](const auto&) { return Graphic3d_Vec3d(0,0,1); });
+    MeshCutViewManager cuts(m); auto options=cuts.GeometryOptions(); options.RelativeTolerance=0; options.AbsoluteTolerance=2e-4;
+    require(cuts.SetGeometryOptions(options) && cuts.AddPlane("p",Graphic3d_Vec4d(0,0,1,-.3)),"Curved reference");
+    require(cuts.SetFollowDeformation("p",true),"Curved material");
+    auto base=cuts.Evaluate("p",scalar(m)); const auto count=base.Portions[1]->GetMeshData()->NbNodes();
+    require(cuts.SetDeformation(u,.8),"Curved deformation"); const double k=.6*cuts.EffectiveDeformationScale();
+    auto result=cuts.Evaluate("p",scalar(m)); auto cap=result.Portions[1]->GetMeshData();
+    require(cap->NbNodes()>count && result.MaterialDepth>0 && result.MaterialResidual<=result.MaterialTolerance,"Curved interior was not sampled to tolerance");
+    std::map<std::pair<RWCae::MeshEntityId,RWCae::MeshEntityId>,int> incidence;
+    for(RWCae::MeshEntityId e=0;e<cap->NbIndexedElems();++e) {
+        std::vector<RWCae::MeshEntityId> ids; cap->ElementNodes(e,ids); require(ids.size()==3,"Refined surface is not triangular");
+        for(int a=0;a<3;++a) { ++incidence[{std::min(ids[a],ids[(a+1)%3]),std::max(ids[a],ids[(a+1)%3])}]; }
+        for(const auto& b:{Graphic3d_Vec3d(1./3,1./3,1./3),Graphic3d_Vec3d(.2,.3,.5),Graphic3d_Vec3d(.6,.2,.2)}) {
+            Graphic3d_Vec3d p(0); for(int a=0;a<3;++a) { p+=Graphic3d_Vec3d(cap->Nodes()[ids[a]])*b[a]; }
+            require(std::abs(p.z()-(.3+k*p.x()*p.x()))<=result.MaterialTolerance*1.1,"Independent current curvature residual");
+        }
+    }
+    for(const auto& e:incidence) {
+        require(e.second==1||e.second==2,"Nonmanifold refinement");
+        if(e.second==1) {
+            const auto a=cap->Nodes()[e.first.first],b=cap->Nodes()[e.first.second];
+            require((std::abs(a.x())<2e-6&&std::abs(b.x())<2e-6)||(std::abs(a.y())<2e-6&&std::abs(b.y())<2e-6)
+                ||(std::abs(a.x()+a.y()-.7)<2e-6&&std::abs(b.x()+b.y()-.7)<2e-6),"Hanging material edge inside cap");
+        }
+    }
+    auto physical=cuts.EvaluatePhysical("p",flux);
+    closeTo(MeshCutPhysics::HeatFlux(physical,{{0,1,2}},{}).Total.HeatFlow,.245);
+    closeTo(MeshCutIntegration::HeatFlux(physical,{{0,1,2}}).HeatFlow,.245);
+    require(cuts.MaterialStatistics("p")[0]==1,"Adaptive refinement reintersected reference");
+    base=MeshCutResult(); result=MeshCutResult(); physical=MeshCutResult(); cap.Nullify();
+    // Strict limits fail explicitly, rather than silently accepting a coarse curved section.
+    options.FaceSubdivisionLimit=0; require(cuts.SetGeometryOptions(options),"Zero depth setting");
+    bool rejected=false; try { cuts.Evaluate("p"); } catch(const std::runtime_error&) { rejected=true; }
+    require(rejected,"Unresolved curvature accepted at depth limit");
+    const auto retained=cuts.CacheStatistics().ResultReserved;
+    for(int retry=0;retry<4;++retry) {
+        rejected=false; try { cuts.Evaluate("p"); } catch(const std::runtime_error&) { rejected=true; }
+        require(rejected && cuts.CacheStatistics().ResultReserved==retained,"Failed sampling retained another allocation");
+    }
+    options.FaceSubdivisionLimit=7; options.MaxSourcePrimitives=2; cuts.SetGeometryOptions(options);
+    rejected=false; try { cuts.Evaluate("p"); } catch(const std::runtime_error&) { rejected=true; }
+    require(rejected,"Unbounded material refinement");
+    // Nonfinite displacement and volume reversal are never treated as undeformed nodes.
+    options.MaxSourcePrimitives=2000000; cuts.SetGeometryOptions(options);
+    auto bad=vectorField(m,[](const auto&) { return Graphic3d_Vec3d(0); });
+    bad->GetComponent(2)->SetValue(RWCae::MeshPropertyEntityInfo(4),std::numeric_limits<double>::quiet_NaN()); bad->UpdateComponents();
+    cuts.SetDeformation(bad,.5); rejected=false;
+    try { cuts.Evaluate("p"); } catch(const std::invalid_argument&) { rejected=true; }
+    require(rejected,"Missing material displacement was silently skipped");
+    bad=vectorField(m,[](const auto& p) { return Graphic3d_Vec3d(0,0,-2*p.z()); });
+    cuts.SetDeformation(bad,1/RWCae::MeshTools::ComputeVectorTrsfRatio(m,bad)); rejected=false;
+    try { cuts.Evaluate("p"); } catch(const std::invalid_argument&) { rejected=true; }
+    require(rejected,"Inverted material volume accepted");
 }
 void tests()
 {
@@ -94,7 +173,7 @@ void tests()
 }
 }
 int main() {
-    try { tests(); std::cout<<"CUT_MATERIAL_PASS\n"; return 0; }
+    try { tests(); curvedMaterial(); std::cout<<"CUT_MATERIAL_PASS\n"; return 0; }
     catch(const Standard_Failure& e) { std::cerr<<"CUT_MATERIAL_FAIL "<<e.GetMessageString()<<'\n'; }
     catch(const std::exception& e) { std::cerr<<"CUT_MATERIAL_FAIL "<<e.what()<<'\n'; }
     return 1;

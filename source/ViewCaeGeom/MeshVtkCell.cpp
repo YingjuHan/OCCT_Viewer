@@ -222,7 +222,7 @@ MeshInterpolatedNode MeshVtkCell::EvaluateParameter(const Graphic3d_Vec3d& param
     return result;
 }
 
-MeshInterpolatedNode MeshVtkCell::Origin(const Graphic3d_Vec3d& position) const
+MeshInterpolatedNode MeshVtkCell::Origin(const Graphic3d_Vec3d& position, Graphic3d_Vec3d* parameter) const
 {
     const double p[] = {position.x(),position.y(),position.z()};
     double closest[3], parametric[3], distance;
@@ -305,6 +305,30 @@ MeshInterpolatedNode MeshVtkCell::Origin(const Graphic3d_Vec3d& position) const
     if (std::abs(sum-1) > 1e-5) { throw std::runtime_error("VTK interpolation does not form a partition of unity"); }
     for (size_t n = 0; n < weights.size(); ++n) {
         if (std::abs(weights[n]) > 1e-14) { result.AddBaseNode(myNodes[n],weights[n]/sum); }
+    }
+    if (parameter) { *parameter = Graphic3d_Vec3d(parametric[0],parametric[1],parametric[2]); }
+    return result;
+}
+
+std::array<Graphic3d_Vec3d,3> MeshVtkCell::Differential(
+    const Graphic3d_Vec3d& position, const MeshGeometry* mapped) const
+{
+    const int type = myCell->GetCellType();
+    if (type == 4 || type == 6 || type == 7 || type == 36 || type == 41 || type == 42 || Dimension() == 0) {
+        throw std::invalid_argument("Material Jacobian requires a parametric FE cell");
+    }
+    Graphic3d_Vec3d parameter; Origin(position,&parameter);
+    const double q[] = {parameter.x(),parameter.y(),parameter.z()};
+    std::vector<double> derivatives(myNodes.size()*3);
+    myCell->InterpolateDerivs(q,derivatives.data());
+    std::array<Graphic3d_Vec3d,3> result = {{Graphic3d_Vec3d(0),Graphic3d_Vec3d(0),Graphic3d_Vec3d(0)}};
+    for (size_t n = 0; n < myNodes.size(); ++n) {
+        Graphic3d_Vec3d p;
+        if (mapped) {
+            auto point = const_cast<MeshGeometry*>(mapped)->GetMeshData()->Nodes()[myNodes[n]];
+            mapped->ModifyNode(myNodes[n],point); p = Graphic3d_Vec3d(point);
+        } else { const auto point = myCell->GetPoints()->GetPoint((int)n); p = Graphic3d_Vec3d(point[0],point[1],point[2]); }
+        for (int a = 0; a < Dimension(); ++a) { result[a] += p*derivatives[a*myNodes.size()+n]; }
     }
     return result;
 }
