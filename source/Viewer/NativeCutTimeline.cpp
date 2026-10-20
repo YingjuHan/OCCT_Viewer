@@ -25,7 +25,9 @@ bool sameTopology(const Handle(RWCae::MeshData)& a, const Handle(RWCae::MeshData
 }
 ViewCaeGeom::MeshCutDefinition localDefinition(ViewCaeGeom::MeshCutDefinition definition, const ViewCaeGeom::MeshCutFrame& frame)
 {
-    if (definition.Shape == ViewCaeGeom::MeshCutShape::Plane) { definition.Plane = frame.PlaneToLocal(definition.Plane); }
+    if (definition.Shape == ViewCaeGeom::MeshCutShape::Plane) {
+        definition.Placement = frame.PlacementToLocal(definition.Placement); definition.Plane = definition.Placement.Equation();
+    }
     else { definition.Center = frame.PointToLocal(definition.Center); definition.Axis = frame.VectorToLocal(definition.Axis); }
     return definition;
 }
@@ -153,7 +155,9 @@ bool NativeCutTimeline::prepare(int step, const CutFieldBinding& deformation, do
                 const auto& name = myCutFrames.at(definition.Id);
                 definition = localDefinition(definition,myOwner.Datums().at(name));
                 const auto& datum = datums.at(name);
-                if (definition.Shape == ViewCaeGeom::MeshCutShape::Plane) { definition.Plane = datum.PlaneToGlobal(definition.Plane); }
+                if (definition.Shape == ViewCaeGeom::MeshCutShape::Plane) {
+                    definition.Placement = datum.PlacementToGlobal(definition.Placement); definition.Plane = definition.Placement.Equation();
+                }
                 else { definition.Center = datum.PointToGlobal(definition.Center); definition.Axis = datum.VectorToGlobal(definition.Axis); }
             }
             const auto traceStep = myTraceSteps.find(step);
@@ -164,7 +168,9 @@ bool NativeCutTimeline::prepare(int step, const CutFieldBinding& deformation, do
             }
             bool added = false;
             switch (definition.Shape) {
-                case ViewCaeGeom::MeshCutShape::Plane: added = candidate->Cuts().AddPlane(definition.Id,definition.Plane); break;
+                case ViewCaeGeom::MeshCutShape::Plane:
+                    added = candidate->Cuts().AddPlane(definition.Id,definition.Plane)
+                        && candidate->Cuts().SetPlanePlacement(definition.Id,definition.Placement); break;
                 case ViewCaeGeom::MeshCutShape::Sphere: added = candidate->Cuts().AddSphere(definition.Id,definition.Center,definition.Radius); break;
                 case ViewCaeGeom::MeshCutShape::Cylinder: added = candidate->Cuts().AddCylinder(definition.Id,definition.Center,definition.Axis,definition.Radius); break;
                 case ViewCaeGeom::MeshCutShape::Isosurface: {

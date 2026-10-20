@@ -5,6 +5,7 @@
 | 文档 | 内容与阅读顺序 |
 | --- | --- |
 | [Abaqus 对标需求与开发台账](cut-view-manager-abaqus-parity.md) | 官方行为基线、26 项差距与验收条件、A01–A10 开发顺序、真正随变形截面的设计约束 |
+| [平面坐标系与绝对运动](cut-view-manager-plane-motion.md) | Key-in/CSYS、原点和面内轴、局部绝对旋转、精细平移、JSON 8 兼容与 Windows/Linux 测试入口 |
 | [Linux 直接运行、GDB 调试与测试](cut-view-manager-linux-run-test.md) | 本项目现有 Cut View Manager 的 Release / Debug 构建、DRAW 启动、CTest、337.5 万单元拖动与接缝测试命令 |
 | [6×6 正弦薄板回归与交互复现](cut-view-manager-sine-plate-test.md) | 单层六面体、temperature=z、周期采样、分离截面、两侧体积与 GPU/CPU 比较，含 Windows / Linux 命令 |
 | [云图、线框与实时平面切割](cut-view-manager-display-modes.md) | 可执行 Tcl、Manager 的 Display 切换、GPU 边线裁剪、截面周边线、Linux 直接/调试运行与 337.5 万单元拖动测试 |

@@ -25,6 +25,7 @@ set (SRCFILES
 )
 set (INCFILES
   MeshCutViewManager.h
+  MeshCutPlanePlacement.h
   MeshCutFrame.h
   MeshCutSlicing.h
   MeshCutPhysics.h

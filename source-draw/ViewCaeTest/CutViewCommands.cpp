@@ -375,11 +375,42 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             ViewCaeGeom::MeshCutViewManager staged(model.Mesh);
             if (!staged.RestoreDefinitionsJson(cuts.DumpDefinitionsJson()) || !staged.SetDeformation(cuts.DeformationField(),cuts.DeformationScale())) { throw std::invalid_argument("Cannot stage slicing configuration"); }
             for (const auto& sample : samples) {
-                if (!staged.AddPlane(sample.Definition.Id,sample.Definition.Plane)) { throw std::invalid_argument("Cannot stage slice definition"); }
+                if (!staged.AddPlane(sample.Definition.Id,sample.Definition.Plane)
+                    || !staged.SetPlanePlacement(sample.Definition.Id,sample.Definition.Placement)) { throw std::invalid_argument("Cannot stage slice definition"); }
                 staged.Evaluate(sample.Definition.Id,model.Field);
             }
             if (!cuts.RestoreDefinitionsJson(staged.DumpDefinitionsJson())) { throw std::invalid_argument("Cannot publish staged slicing definitions"); }
             ok = true;
+        } else if (action == "datums" && argc == 3) {
+            di.AppendElement("global");
+            for (const auto& datum : model.Native->Datums()) { di.AppendElement(datum.first.c_str()); }
+            return 0;
+        } else if (action == "placement" && argc == 13) {
+            ViewCaeGeom::MeshCutPlanePlacement p;
+            if (!p.Define(Graphic3d_Vec3d(cutReal(argv[4]),cutReal(argv[5]),cutReal(argv[6])),
+                Graphic3d_Vec3d(cutReal(argv[7]),cutReal(argv[8]),cutReal(argv[9])),
+                Graphic3d_Vec3d(cutReal(argv[10]),cutReal(argv[11]),cutReal(argv[12])))) {
+                throw std::invalid_argument("Origin must be finite; normal and axis2 must be nonzero and perpendicular");
+            }
+            ok = cuts.SetPlanePlacement(argv[3],p);
+        } else if (action == "fromcsys" && argc == 6) {
+            ViewCaeGeom::MeshCutFrame frame;
+            const std::string datum(argv[4]);
+            if (datum != "global") {
+                const auto datumEntry = model.Native->Datums().find(datum);
+                if (datumEntry == model.Native->Datums().end()) { throw std::invalid_argument("Unknown datum"); }
+                frame = datumEntry->second;
+            }
+            const int axis = cutInteger(argv[5]);
+            if (axis < 1 || axis > 3) { throw std::invalid_argument("CSYS normal axis must be 1, 2 or 3"); }
+            const std::array<Graphic3d_Vec3d,3> axes = {frame.X,frame.Y,frame.Z};
+            ViewCaeGeom::MeshCutPlanePlacement p;
+            if (!p.Define(frame.Origin,axes[axis-1],axes[axis%3])) { throw std::invalid_argument("Invalid CSYS"); }
+            ok = cuts.SetPlanePlacement(argv[3],p);
+        } else if (action == "translate" && argc == 5) {
+            ok = cuts.TranslatePlane(argv[3],cutReal(argv[4]));
+        } else if (action == "absrotate" && argc == 6) {
+            ok = cuts.RotatePlane(argv[3],cutInteger(argv[4]),cutReal(argv[5]));
         } else if (action == "datum" && argc == 16) {
             ViewCaeGeom::MeshCutFrame frame;
             for (int i = 0; i < 3; ++i) {
@@ -549,6 +580,11 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
                 if (cut.Shape == ViewCaeGeom::MeshCutShape::Plane) {
                     di << " shape plane plane {" << cut.Plane.x() << " " << cut.Plane.y() << " "
                        << cut.Plane.z() << " " << cut.Plane.w() << "}";
+                    const auto& p = cut.Placement;
+                    di << " origin {" << p.Origin.x() << " " << p.Origin.y() << " " << p.Origin.z()
+                       << "} normal {" << p.Normal.x() << " " << p.Normal.y() << " " << p.Normal.z()
+                       << "} axis2 {" << p.Axis2.x() << " " << p.Axis2.y() << " " << p.Axis2.z()
+                       << "} offset " << p.Offset << " angle " << p.Angle << " rotation_axis " << p.RotationAxis;
                 } else if (cut.Shape == ViewCaeGeom::MeshCutShape::Sphere || cut.Shape == ViewCaeGeom::MeshCutShape::Cylinder) {
                     di << " shape " << (cut.Shape == ViewCaeGeom::MeshCutShape::Sphere ? "sphere" : "cylinder")
                        << " center {" << cut.Center.x() << " " << cut.Center.y() << " " << cut.Center.z()
@@ -673,7 +709,7 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             const auto min = model.Bounds.CornerMin(), max = model.Bounds.CornerMax();
             di << min.X() << " " << min.Y() << " " << min.Z() << " " << max.X() << " " << max.Y() << " " << max.Z();
             return 0;
-        } else if (action == "range" && argc == 4) {
+        } else if ((action == "range" || action == "motionrange") && argc == 4) {
             for (const auto& cut : cuts.Definitions()) {
                 if (cut.Id != argv[3]) { continue; }
                 if (cut.Shape == ViewCaeGeom::MeshCutShape::Isosurface) {
@@ -693,7 +729,9 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
                     const double a = cut.Plane[i] * min.Coord(i+1), b = cut.Plane[i] * max.Coord(i+1);
                     lower += std::min(a,b); upper += std::max(a,b);
                 }
-                di << lower << " " << upper;
+                const auto& p = cut.Placement;
+                const double shift = action == "motionrange" ? p.CurrentNormal().Dot(p.Origin) : 0;
+                di << lower-shift << " " << upper-shift;
                 return 0;
             }
         } else if (action == "handle" && (argc == 5 || argc == 6)) {
@@ -1137,6 +1175,8 @@ void ViewCaeTest::CutViewCommands::Factory(Draw_Interpretor& di)
         "  | renderbackend [auto/cpu] | renderinfo (submitted bytes are not measured GPU traffic)\n"
         "  | handle id 0/1 [gizmo0/1] | handleinfo | fit | field none\n"
         "  | datum name originX originY originZ Xx Xy Xz Yx Yy Yz Zx Zy Zz\n"
+        "  | datums | placement id ox oy oz nx ny nz axis2x axis2y axis2z | fromcsys id datum normalAxis1/2/3\n"
+        "  | translate id absoluteOffset | absrotate id localAxis2/3 degrees | motionrange id\n"
         "  | timeinfo | step index | timeddeform name/none scale | play period/speed loop restart timestamps | pause | tick seconds\n"
         "  | physics requestId explicitMappingJson | physicsremove/physicsreport/physicscsv requestId\n"
         "  | automatic id crack/density nodalField component threshold sign minimum maximum visibility\n"

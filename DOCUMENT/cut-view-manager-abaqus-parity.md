@@ -31,10 +31,10 @@
 | R02 | 选中项与激活项分离（S1/S3） | 已有；`selected` 与 `Enabled` 分离 | 非激活项选择、编辑、重命名不激活；关闭窗口不改显示 |
 | R03 | Below/On/Above 的全部组合（S4） | 已有；mask 0..7，单平面 GPU 特殊路径 | 8 种 mask、空截面、正负法向、薄板断开截面、三显示模式均正确 |
 | R04 | 多 cut 独立显示（S5） | 部分；加性分支与 OR presentation，不做串联裁剪 | 对照 S5 的多 cut 模式只显示切面/自由体限制；明确兼容模式与本项目扩展，不能直接认定 OR 已完全等价 |
-| R05 | Key-in 原点、法向、平面内第二轴（S2） | 部分；仅持久化平面方程，不能恢复原点与绕法向的姿态 | 持久化完整局部 frame，校验正交/退化输入，恢复后手柄及位置含义一致 |
-| R06 | 从 CSYS 创建与编辑（S2） | 部分；`NativeCutView::SetDatum/Edit`、`localmove`，在 Viewer Tools 输入 | Manager 中可选 CSYS/法向轴，局部/全局往返且 datum 更新可追踪 |
-| R07 | 平移、精细灵敏度、位置输入（S3） | 部分；实时滑块与输入已有，缺 1/10/100 精度范围 | 未激活 cut 的滑块禁用；输入仍可编辑；缩小范围以当前位置为中心，范围重置不跳变 |
-| R08 | 关于原始局部 2/3 轴的绝对旋转（S3） | 部分；当前按全局轴增量旋转，未完整保留定义轴和原点 | 旋转轴/原点与初始定义一致；按官方规则处理平移；重复设同角度不累计误差；Escape 恢复 |
+| R05 | Key-in 原点、法向、平面内第二轴（S2） | A02 已验收；完整 Placement、手柄、JSON 8 和旧版迁移 | `cut_placement`、`draw_cut_view_placement`、鼠标交互回归通过 |
+| R06 | 从 CSYS 创建与编辑（S2） | A02 已提供 Manager 的 CSYS/法向轴入口；Apply 获取 datum 快照 | 改 datum 后重新 Apply；显式刚性 follow 独立存在。自动关联 datum 后续扩展，不能声称已实现 |
+| R07 | 平移、精细灵敏度、位置输入（S3） | A02 已验收；1/10/100、非激活输入、禁用滑块 | 范围以当前位置为中心；切换精度与运动模式不编辑几何 |
+| R08 | 关于原始局部 2/3 轴的绝对旋转（S3） | A02 已验收；保留定义轴/pivot，绝对角度，旋转清除平移 | 重复角度、切轴、Escape、跨帧与 session 回归通过 |
 | R09 | 柱、球的中心/轴/半径（S2/S3） | 已有入口；自研通用单元内核 | 保持既有非平面路径，径向 Below=内部；适用单元、容差、退化轴明确报告 |
 | R10 | Isosurface 绑定创建时的变量（S1/S2） | 部分；独立 field/component/step/value 已持久化 | 改云图不改切面；显式 Edit 才重绑；等值范围、派生不变量及 averaging override 独立验收 |
 | R11 | 三部分渲染方式、边线、颜色、透明度（S7） | 部分；`Style/EffectiveStyle` 与 Viewer Tools 简单入口 | Manager 三页选项；默认值与单 cut 扩展覆盖可查询；边色/线型、面色/云图来源、继承 plot options 后续补齐 |
@@ -59,7 +59,7 @@
 | 工作包 | 优先级 | 本轮状态 | 内容 / 依赖 |
 | --- | --- | --- | --- |
 | A01 Manager 显示与对象管理入口 | P0 | 本包完成 | R01/R11 的独立 Rename、Options 三页、样式覆盖查询/颜色输入、复制/删除样式生命周期；不代表 R11 全部收敛 |
-| A02 完整坐标系和运动模型 | P0 | 待开发 | R05/R06/R07/R08；先持久化 origin/frame/translation/rotation，后做 UI；避免继续仅累加改平面方程 |
+| A02 完整坐标系和运动模型 | P0 | 本包完成，CSYS 为显式快照 | R05/R07/R08 验收；R06 创建编辑入口完成，动态 datum 关联保留为扩展边界；见平面运动指南 |
 | A03 真正随变形截面 | P0 | 待开发 | R14/R15；依赖 A02 的参考帧定义；先线性体单元，再高阶/壳/梁；单独性能预算 |
 | A04 Manager 自由体工作流 | P1 | 待开发 | R16..R20；求和点/法向/积分域/独立开关；与 A03 的参考/当前面积语义联验 |
 | A05 Isosurface 完整绑定与 averaging | P1 | 待开发 | R10；派生量与单独平均配置、显式编辑重绑；沿用已有非平面路径 |
@@ -167,3 +167,5 @@ export CUTVIEW_OUTPUT_DIR="$CUT_REPO/build/plot-options-large"
 - A01 已完成实现与验收：`ViewDraw` Release 构建通过；9 项相关 CTest 通过（`cut_view`、`cut_display`、`native_session`、`draw_cut_view_controls`、`draw_cut_view_tools`、`draw_cut_view_plot_options`、`draw_cut_view_gpu_plane`、`draw_cut_view_display_modes`、`draw_cut_view_deformation`）。补充完整 session 的 RGB/覆盖往返、未显示模型删除后的 ID 重用、输入格式修正后，新回归再次通过。新面板截图已人工检查；Windows 截图辅助进程曾导致测试超时，已将其移出自动回归，保留实际渲染的面色/云图图像比较。
 - 百万单元：3,375,000 六面体、倍率 0.1，三模式 × mask 2/3/7 共 9 组完成 `CUT_PLOT_OPTIONS_LARGE_PASS`。打开 Options 不触发同步求交；Apply/恢复继承后 GPU 路径保留，后续 4 步切面移动均无主体重建/上传，源准备次数不增加。逻辑预算始终为 source `1,460,965,248`、result `17,010,275,392` 字节，限额仍为 4/16 GiB。它是预算与缓存回归，不是新的鼠标 FPS 基准。
 - 本地验证产物：`build/cut-parity-large/run.log`、`plot-options-large.png`，以及 `build/mingw-deformation/test/native/draw-plot-options/` 的面色/云图图像；不纳入 Git。OCCT inventory 检查通过。下一工作包为 A02：完整定义 frame、局部绝对运动、滑块精度和持久化兼容；随后 A03 实现真正随材料变形的截面。
+- A02 已完成：完整平面 Placement、局部 2/3 轴绝对旋转、Offset 平移、1/10/100 灵敏度、定义编辑器、JSON 8/旧版迁移、session 与时间轴保留。CSYS 在 Apply 时取快照；没有宣称自动关联 datum。详见 [平面运动指南](cut-view-manager-plane-motion.md)。修复私有 OCCT SDK 多边形拾取三角扇越界，项目派生类显式生成 n−2 个三角形，未修改外部 SDK。
+- A02 最终 Release 构建通过，17 项 CTest 全通过（包含版本 7 迁移、非零运动跨帧、Manager 与实际鼠标交互）。337.5 万单元最终验收 `CUT_PLACEMENT_LARGE_PASS`：三显示模式 × mask 2/3/7，重复绝对旋转和平移，主体上传/重建均为 0，源准备次数不变；source/result 预算稳定为 `1,460,965,248` / `17,010,275,392` 字节。记录在 `build/a02-tests.log`、`build/cut-placement-large/run.log`；没有将命令批次耗时当成鼠标 FPS。下一包 A03。

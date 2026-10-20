@@ -44,6 +44,22 @@ Handle(RWCae::MeshData) series(bool missing = false, bool remesh = false)
 void tests()
 {
     {
+        Viewer::NativeCutView absolute(series()); Viewer::NativeCutTimeline time(absolute);
+        auto& cuts = absolute.Display()->Cuts();
+        require(cuts.AddPlane("p",Graphic3d_Vec4d(1,0,0,-.25)),"Absolute timeline fixture");
+        auto p = cuts.Definitions()[0].Placement; p.Origin = Graphic3d_Vec3d(.25,.1,.2);
+        p.Axis2 = Graphic3d_Vec3d(0,0,1); p.Angle = 30; p.RotationAxis = 3; p.Offset = .05;
+        require(cuts.SetPlanePlacement("p",p),"Absolute timeline placement");
+        const auto saved = cuts.DumpDefinitionsJson();
+        require(time.SwitchStep(1) && absolute.Display()->Cuts().DumpDefinitionsJson() == saved,"Spatial step lost absolute motion");
+        Viewer::CutMaterialFrame binding; binding.Configuration = Viewer::CutFrameConfiguration::Updated;
+        binding.Anchors = {{0,{0,1,2}},{1,{0,1,2}},{2,{0,1,2}}};
+        require(time.SetMaterialFrame("moving",binding) && time.BindCutFrame("p","moving") && time.SwitchStep(2),absolute.LastError());
+        const auto moved = absolute.Display()->Cuts().Definitions()[0].Placement;
+        closeTo(moved.Origin.x(),.45); closeTo(moved.Origin.y(),.1); closeTo(moved.Axis2.z(),1);
+        closeTo(moved.Angle,30); closeTo(moved.Offset,.05);
+    }
+    {
         Viewer::NativeCutView bounded(series()); Viewer::NativeCutTimeline time(bounded);
         auto& cuts=bounded.Display()->Cuts();
         require(cuts.AddPlane("p",Graphic3d_Vec4d(1,0,0,-.25))&&bounded.BindField({"contour",true,0,0}),"Bounded drag fixture");
@@ -58,6 +74,9 @@ void tests()
     Viewer::NativeCutView native(series()); Viewer::NativeCutTimeline timeline(native);
     require(native.Display()->Cuts().AddPlane("p",Graphic3d_Vec4d(1,0,0,-0.25)),"Timeline plane");
     require(native.BindField({"contour",true,0,0}),native.LastError());
+    auto placement = native.Display()->Cuts().Definitions()[0].Placement;
+    placement.Origin = Graphic3d_Vec3d(.25,.1,.2); placement.Axis2 = Graphic3d_Vec3d(0,0,1);
+    require(native.Display()->Cuts().SetPlanePlacement("p",placement),"Timeline full frame");
     const auto initial = native.Display();
     auto style = initial->Style(ViewCaeGeom::MeshCutPortion::On); style.Transparency = 0.35f;
     initial->SetStyle("p",ViewCaeGeom::MeshCutPortion::On,style);
@@ -77,6 +96,8 @@ void tests()
     require(native.Display() != initial && initial->Cuts().Definitions().empty(),"Old display/handles remain live");
     closeTo(native.Datums().at("moving").Origin.x(),0.2); closeTo(native.Datums().at("fixed").Origin.x(),0);
     closeTo(native.Display()->Cuts().Definitions()[0].Plane.w(),-0.45);
+    const auto movedPlacement = native.Display()->Cuts().Definitions()[0].Placement;
+    closeTo(movedPlacement.Origin.x(),.45); closeTo(movedPlacement.Origin.y(),.1); closeTo(movedPlacement.Axis2.z(),1);
     closeTo(native.Display()->EffectiveStyle("p",ViewCaeGeom::MeshCutPortion::On).Transparency,0.35);
     require(native.Display()->ContourOptions().ShowLegend && native.Display()->VectorOrientation(),"Step lost display options");
     require(native.Display()->VectorField()->TimeStep() == 1,"Stale vector step");

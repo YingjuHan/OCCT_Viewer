@@ -17,6 +17,9 @@ public:
     Standard_EXPORT bool SetBounds(const Bnd_Box& theBounds);
     Standard_EXPORT gp_Ax2 Frame() const;
     Standard_EXPORT bool ApplyTransformation(bool theCommit);
+    //! Explicit convex-polygon triangulation avoids SDK triangle-fan index overflow.
+    Standard_EXPORT void ComputeSelection(const Handle(SelectMgr_Selection)& selection,
+        Standard_Integer mode) override;
     bool IsDragging() const { return myDragging; }
     int DragUpdates() const { return myDragUpdates; }
     void NotifyDrag(AIS_DragAction action) { myCutView->NotifyDrag(action); }
@@ -26,10 +29,12 @@ public:
 
 private:
     bool updateCut(const gp_Pln& thePlane);
+    bool updatePlacement(const ViewCaeGeom::MeshCutPlanePlacement& placement);
     Handle(InteractiveCaeCutView) myCutView;
     std::string myId;
     bool myDragging = false;
     int myDragUpdates = 0;
+    ViewCaeGeom::MeshCutPlanePlacement myBaseline;
 };
 
 //! Recomputes mesh intersections and fields during each OCCT manipulation update.

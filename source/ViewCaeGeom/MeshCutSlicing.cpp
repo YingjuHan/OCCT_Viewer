@@ -64,6 +64,7 @@ std::vector<MeshCutSliceSample> MeshCutSlicing::Range(const MeshCutDefinition& p
         if (!std::isfinite(distance)) { throw std::invalid_argument("Slice offset overflows model units"); }
         sample.Definition.Plane = Graphic3d_Vec4d(normal.x(),normal.y(),normal.z(),-distance);
         sample.Frame = frame(normal*distance,normal);
+        sample.Definition.Placement.Define(sample.Frame.Origin,normal,sample.Frame.X);
     }
     intervals(samples); return samples;
 }
@@ -80,6 +81,7 @@ std::vector<MeshCutSliceSample> MeshCutSlicing::Rotational(const MeshCutDefiniti
         const auto n = rotate(normal,direction,sample.Coordinate), p = origin+rotate(point-origin,direction,sample.Coordinate);
         sample.Definition = plane; sample.Definition.Id = plane.Id+"_"+std::to_string(i); sample.Definition.Name = sample.Definition.Id;
         sample.Definition.Plane = Graphic3d_Vec4d(n.x(),n.y(),n.z(),-n.Dot(p)); sample.Frame = frame(p,n);
+        sample.Definition.Placement.Define(p,n,sample.Frame.X);
         if (!sample.Frame.IsValid() || !std::isfinite(sample.Definition.Plane.w())) { throw std::invalid_argument("Rotation frame overflow"); }
     }
     intervals(samples); return samples;
@@ -106,6 +108,7 @@ std::vector<MeshCutSliceSample> MeshCutSlicing::Path(const std::string& prefix,
         if (!sample.Frame.IsValid() || !std::isfinite(sample.Coordinate)) { throw std::invalid_argument("Invalid path frame"); }
         sample.Definition.Id = prefix+"_"+std::to_string(i); sample.Definition.Name = sample.Definition.Id;
         sample.Definition.Plane = Graphic3d_Vec4d(normal.x(),normal.y(),normal.z(),-normal.Dot(points[i]));
+        sample.Definition.Placement.Define(points[i],normal,sample.Frame.X);
         if (!std::isfinite(sample.Definition.Plane.w())) { throw std::invalid_argument("Path plane offset overflow"); }
     }
     intervals(samples); return samples;

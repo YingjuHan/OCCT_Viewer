@@ -75,7 +75,7 @@ proc run_cut_view_interaction {} {
     ::CutViewManager::refresh 1
     .scvcutmanager.controls.translate set 0.4
     update
-    interaction_near [lindex [dict get [interaction_cut x] plane] 3] -0.4 "Manager translation"
+    interaction_near [dict get [interaction_cut x] offset] 0.4 "Manager translation"
     interaction_check_section
 
     # Drag the OCCT rotation ring, then the normal-axis arrow, using real event routing.
@@ -117,7 +117,8 @@ proc run_cut_view_interaction {} {
     ::CutViewManager::refresh
     interaction_check_section
     interaction_image mouse_arrow.png
-    set ::CutViewManager::axis Y; set ::CutViewManager::lastAngle 0
+    scvcutview cut_view_demo placement x .25 .25 .25 1 0 0 0 1 0
+    set ::CutViewManager::axis 2; set ::CutViewManager::lastAngle 0
     ::CutViewManager::rotate 20
     set plane [dict get [interaction_cut x] plane]
     interaction_near [lindex $plane 0] [expr {cos(20*acos(-1)/180)}] "Manager rotation normal"
@@ -151,7 +152,7 @@ proc run_cut_view_interaction {} {
     set info [scvcutview cut_view_demo handleinfo]
     interaction_assert {![dict get $info dragging] && [dict get $info updates] >= $before+6} "Mouse drag lifecycle failed"
     ::CutViewManager::refresh
-    interaction_near $::CutViewManager::position [expr {-$previous}] "Manager did not follow mouse position"
+    interaction_near $::CutViewManager::position [dict get [interaction_cut x] offset] "Manager did not follow mouse position"
 
     # Abort must restore both geometry and interpolated values, not only the positioning aid.
     set saved [dict get [interaction_cut x] plane]

@@ -6,6 +6,9 @@
 #include <algorithm>
 #include <BRepPrimAPI_MakeSphere.hxx>
 #include <BRepPrimAPI_MakeCylinder.hxx>
+#include <Prs3d_BndBox.hxx>
+#include <Select3D_SensitivePrimitiveArray.hxx>
+#include <SelectMgr_Selection.hxx>
 
 IMPLEMENT_STANDARD_RTTIEXT(ViewCae::InteractiveCaeCutPlane, AIS_ClippingPlanes)
 IMPLEMENT_STANDARD_RTTIEXT(ViewCae::InteractiveCaeCutManipulator, AIS_Manipulator)
@@ -44,6 +47,7 @@ bool InteractiveCaeCutPlane::Refresh()
     if (myDragging) { return true; }
     for (const auto& cut : myCutView->Cuts().Definitions()) {
         if (cut.Id == myId && cut.Shape == ViewCaeGeom::MeshCutShape::Plane) {
+            myBaseline = cut.Placement;
             ResetTransformation();
             DisplayedPlane()->SetEquation(cut.Plane);
             SetToUpdate();
@@ -55,11 +59,9 @@ bool InteractiveCaeCutPlane::Refresh()
 
 gp_Ax2 InteractiveCaeCutPlane::Frame() const
 {
-    const auto plane = DisplayedPlane()->ToPlane().Transformed(LocalTransformation());
-    const gp_Pnt center((GetSceneBox().CornerMin().XYZ() + GetSceneBox().CornerMax().XYZ()) * 0.5);
-    const auto normal = plane.Axis().Direction();
-    const double distance = gp_Vec(plane.Location(), center).Dot(gp_Vec(normal));
-    return gp_Ax2(center.Translated(gp_Vec(normal) * -distance), normal);
+    const auto p = myBaseline.CurrentOrigin(), n = myBaseline.CurrentNormal(), a = myBaseline.CurrentAxis2();
+    return gp_Ax2(gp_Pnt(p.x(),p.y(),p.z()),gp_Dir(n.x(),n.y(),n.z()),gp_Dir(a.x(),a.y(),a.z()))
+        .Transformed(LocalTransformation());
 }
 
 bool InteractiveCaeCutPlane::updateCut(const gp_Pln& thePlane)
@@ -67,6 +69,42 @@ bool InteractiveCaeCutPlane::updateCut(const gp_Pln& thePlane)
     double a, b, c, d;
     thePlane.Coefficients(a, b, c, d);
     if (!myCutView->Cuts().SetPlane(myId, Graphic3d_Vec4d(a,b,c,d))) { return false; }
+    // The equation-only plane guide has no in-plane rotation. The manager keeps
+    // the frame for parallel motion and transports it for a changed normal.
+    myCutView->Synchronize();
+    if (!GetContext().IsNull()) {
+        if (myCutView->RenderStatistics().GpuPlane) { GetContext()->Update(myCutView, false); }
+        else { GetContext()->Redisplay(myCutView, false); }
+    }
+    ++myDragUpdates;
+    return true;
+}
+
+void InteractiveCaeCutPlane::ComputeSelection(const Handle(SelectMgr_Selection)& selection, Standard_Integer mode)
+{
+    if (mode != 0 || myCachedBox.IsVoid()) { return; }
+    const auto segments = Prs3d_BndBox::FillSegments(myCachedBox);
+    auto nodes = GetPlaneQuadNodes(myBndBoxPlanes,segments,DisplayedPlane()->ToPlane());
+    ClipPolygonByPlanes(nodes,ManagedPlanes(),DisplayedPlane());
+    if (nodes.Size() < 3) { return; }
+    const auto normal = DisplayedPlane()->ToPlane().Axis().Direction();
+    const auto extent = (myCachedBox.CornerMax().XYZ()-myCachedBox.CornerMin().XYZ())*.01;
+    const auto offset = normal.XYZ()*(-std::abs(normal.XYZ().Dot(extent)));
+    Handle(Graphic3d_ArrayOfTriangles) triangles = new Graphic3d_ArrayOfTriangles(nodes.Size(),(nodes.Size()-2)*3);
+    for (const auto& node : nodes) { triangles->AddVertex(node.XYZ()+offset); }
+    // A plane/box intersection is convex. Do not use AddTriangleFanEdges:
+    // the installed SDK emits an extra degenerate triangle for this helper.
+    for (int i = 2; i < nodes.Size(); ++i) { triangles->AddEdges(1,i,i+1); }
+    Handle(AIS_ClippingPlanesOwner) owner = new AIS_ClippingPlanesOwner(this,DisplayedPlane(),nullptr);
+    Handle(Select3D_SensitivePrimitiveArray) sensitive = new Select3D_SensitivePrimitiveArray(owner);
+    sensitive->SetSensitivityFactor(0);
+    sensitive->InitTriangulation(triangles->Attributes(),triangles->Indices(),TopLoc_Location());
+    selection->Add(sensitive);
+}
+
+bool InteractiveCaeCutPlane::updatePlacement(const ViewCaeGeom::MeshCutPlanePlacement& placement)
+{
+    if (!myCutView->Cuts().SetPlanePlacement(myId,placement)) { return false; }
     myCutView->Synchronize();
     if (!GetContext().IsNull()) {
         if (myCutView->RenderStatistics().GpuPlane) { GetContext()->Update(myCutView, false); }
@@ -78,11 +116,19 @@ bool InteractiveCaeCutPlane::updateCut(const gp_Pln& thePlane)
 
 bool InteractiveCaeCutPlane::ApplyTransformation(bool theCommit)
 {
-    const auto plane = DisplayedPlane()->ToPlane().Transformed(LocalTransformation());
-    if (!updateCut(plane)) { return false; }
+    auto placement = myBaseline;
+    const auto transform = LocalTransformation();
+    const auto& o = placement.Origin; const auto& n = placement.Normal; const auto& a = placement.Axis2;
+    const auto origin = gp_Pnt(o.x(),o.y(),o.z()).Transformed(transform);
+    const auto normal = gp_Dir(n.x(),n.y(),n.z()).Transformed(transform);
+    const auto axis2 = gp_Dir(a.x(),a.y(),a.z()).Transformed(transform);
+    placement.Origin = Graphic3d_Vec3d(origin.X(),origin.Y(),origin.Z());
+    placement.Normal = Graphic3d_Vec3d(normal.X(),normal.Y(),normal.Z());
+    placement.Axis2 = Graphic3d_Vec3d(axis2.X(),axis2.Y(),axis2.Z());
+    if (!updatePlacement(placement)) { return false; }
     if (theCommit) {
         ResetTransformation();
-        DisplayedPlane()->SetEquation(plane);
+        DisplayedPlane()->SetEquation(placement.Equation()); myBaseline = placement;
         SetToUpdate();
         if (!GetContext().IsNull()) { GetContext()->Redisplay(this, false); }
     }
@@ -96,9 +142,12 @@ Standard_Boolean InteractiveCaeCutPlane::ProcessDragging(const Handle(AIS_Intera
     const bool accepted = AIS_ClippingPlanes::ProcessDragging(theCtx, theView, theOwner, theFrom, theTo, theAction);
     if (!accepted) { return false; }
     myDragging = theAction == AIS_DragAction_Start || theAction == AIS_DragAction_Update;
-    if (theAction == AIS_DragAction_Update || theAction == AIS_DragAction_Abort) {
+    if (theAction == AIS_DragAction_Abort) {
+        if (!updatePlacement(myBaseline)) { return false; }
+    } else if (theAction == AIS_DragAction_Update) {
         if (!updateCut(DisplayedPlane()->ToPlane())) { return false; }
     }
+    if (theAction == AIS_DragAction_Stop || theAction == AIS_DragAction_Abort) { Refresh(); }
     NotifyDrag(theAction);
     return true;
 }

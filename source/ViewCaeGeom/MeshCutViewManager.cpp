@@ -238,6 +238,7 @@ bool MeshCutViewManager::AddPlane(const std::string& theId, const Graphic3d_Vec4
     anEntry->Definition.Id = theId;
     anEntry->Definition.Name = theId;
     anEntry->Definition.Plane = aPlane;
+    if (!anEntry->Definition.Placement.FromEquation(aPlane)) { return false; }
     myEntries.emplace(theId, std::move(anEntry));
     return true;
 }
@@ -248,6 +249,48 @@ bool MeshCutViewManager::SetPlane(const std::string& theId, const Graphic3d_Vec4
     Graphic3d_Vec4d aPlane;
     if (anEntry == nullptr || anEntry->Definition.Shape != MeshCutShape::Plane
         || !normalizePlane(thePlane, aPlane)) { return false; }
+    if (anEntry->Definition.Plane == aPlane) { return true; }
+    auto placement = anEntry->Definition.Placement;
+    const Graphic3d_Vec3d normal(aPlane.x(),aPlane.y(),aPlane.z());
+    if ((normal-placement.CurrentNormal()).Modulus() < 1e-12) {
+        placement.Offset = -aPlane.w()-normal.Dot(placement.Origin);
+    } else {
+        // A legacy world-equation edit explicitly redefines orientation. Preserve
+        // the previous pivot's tangential position and transport its in-plane axis.
+        const auto origin = placement.CurrentOrigin();
+        auto tangent = placement.CurrentAxis2(); tangent -= normal*normal.Dot(tangent);
+        if (tangent.Modulus() < 1e-10) {
+            if (!placement.FromEquation(aPlane)) { return false; }
+            tangent = placement.Axis2;
+        }
+        if (!placement.Define(origin-normal*(normal.Dot(origin)+aPlane.w()),normal,tangent.Normalized())) { return false; }
+    }
+    return SetPlanePlacement(theId,placement);
+}
+
+bool MeshCutViewManager::SetPlanePlacement(const std::string& id, const MeshCutPlanePlacement& placement)
+{
+    auto entry = find(id); Graphic3d_Vec4d plane;
+    if (!entry || entry->Definition.Shape != MeshCutShape::Plane || !placement.IsValid()
+        || !normalizePlane(placement.Equation(),plane)) { return false; }
+    if (!setPlaneEquation(*entry,plane)) { return false; }
+    entry->Definition.Placement = placement;
+    return true;
+}
+bool MeshCutViewManager::TranslatePlane(const std::string& id, double offset)
+{
+    auto entry = find(id); if (!entry) { return false; }
+    auto p = entry->Definition.Placement; p.Offset = offset; return SetPlanePlacement(id,p);
+}
+bool MeshCutViewManager::RotatePlane(const std::string& id, int axis, double degrees)
+{
+    auto entry = find(id); if (!entry) { return false; }
+    auto p = entry->Definition.Placement; p.RotationAxis = axis; p.Angle = degrees; p.Offset = 0;
+    return SetPlanePlacement(id,p);
+}
+bool MeshCutViewManager::setPlaneEquation(Entry& entry, const Graphic3d_Vec4d& aPlane)
+{
+    auto anEntry = &entry;
     if (anEntry->Definition.Plane == aPlane) { return true; }
     if (needsGeneralPlane()) {
         release(*anEntry); anEntry->Definition.Plane = aPlane; ++anEntry->Revision;
@@ -713,7 +756,7 @@ std::string MeshCutViewManager::DumpDefinitionsJson() const
     rapidjson::OStreamWrapper wrapper(stream);
     RWBase::JsonHelper::Writer writer(wrapper);
     writer.StartObject();
-    writer.Key("version"); writer.Int(7);
+    writer.Key("version"); writer.Int(8);
     writer.Key("isoOptions"); writer.StartObject();
     writer.Key("absolute"); writer.Double(myIsoOptions.AbsoluteTolerance);
     writer.Key("relative"); writer.Double(myIsoOptions.RelativeTolerance);
@@ -745,6 +788,15 @@ std::string MeshCutViewManager::DumpDefinitionsJson() const
             writer.Key("plane"); writer.StartArray();
             for (int i = 0; i < 4; ++i) { writer.Double(definition.Plane[i]); }
             writer.EndArray();
+            const auto& p = definition.Placement;
+            writer.Key("placement"); writer.StartObject();
+            auto vector = [&](const char* key, const Graphic3d_Vec3d& v) {
+                writer.Key(key); writer.StartArray(); for (int i = 0; i < 3; ++i) { writer.Double(v[i]); } writer.EndArray();
+            };
+            vector("origin",p.Origin); vector("normal",p.Normal); vector("axis2",p.Axis2);
+            writer.Key("offset"); writer.Double(p.Offset);
+            writer.Key("angle"); writer.Double(p.Angle);
+            writer.Key("rotationAxis"); writer.Int(p.RotationAxis); writer.EndObject();
         } else if (definition.Shape == MeshCutShape::Cylinder || definition.Shape == MeshCutShape::Sphere) {
             writer.Key("center"); writer.StartArray();
             for (int a = 0; a < 3; ++a) { writer.Double(definition.Center[a]); }
@@ -783,7 +835,7 @@ bool MeshCutViewManager::RestoreDefinitionsJson(const std::string& theJson)
     rapidjson::Document document;
     document.Parse<rapidjson::kParseFullPrecisionFlag>(theJson.data(), theJson.size());
     if (document.HasParseError() || !document.IsObject() || !document.HasMember("version")
-        || !document["version"].IsInt() || document["version"].GetInt() < 1 || document["version"].GetInt() > 7
+        || !document["version"].IsInt() || document["version"].GetInt() < 1 || document["version"].GetInt() > 8
         || !document.HasMember("cuts") || !document["cuts"].IsArray()) { return false; }
     std::map<std::string, std::unique_ptr<Entry>> entries;
     MeshCutIsoOptions isoOptions;
@@ -865,6 +917,29 @@ bool MeshCutViewManager::RestoreDefinitionsJson(const std::string& theJson)
                 definition.Plane[i] = cut["plane"][i].GetDouble();
             }
             if (!normalizePlane(definition.Plane, definition.Plane)) { return false; }
+            auto& p = definition.Placement;
+            if (document["version"].GetInt() < 8) {
+                if (!p.FromEquation(definition.Plane)) { return false; }
+            } else {
+                if (!cut.HasMember("placement") || !cut["placement"].IsObject()) { return false; }
+                const auto& value = cut["placement"];
+                auto vector = [&](const char* key, Graphic3d_Vec3d& v) {
+                    if (!value.HasMember(key) || !value[key].IsArray() || value[key].Size() != 3) { return false; }
+                    for (int i = 0; i < 3; ++i) {
+                        if (!value[key][i].IsNumber()) { return false; } v[i] = value[key][i].GetDouble();
+                    } return true;
+                };
+                if (!vector("origin",p.Origin) || !vector("normal",p.Normal) || !vector("axis2",p.Axis2)
+                    || !value.HasMember("offset") || !value["offset"].IsNumber()
+                    || !value.HasMember("angle") || !value["angle"].IsNumber()
+                    || !value.HasMember("rotationAxis") || !value["rotationAxis"].IsInt()) { return false; }
+                p.Offset = value["offset"].GetDouble(); p.Angle = value["angle"].GetDouble(); p.RotationAxis = value["rotationAxis"].GetInt();
+                Graphic3d_Vec4d derived;
+                if (!p.IsValid() || !normalizePlane(p.Equation(),derived)) { return false; }
+                for (int i = 0; i < 4; ++i) {
+                    if (std::abs(derived[i]-definition.Plane[i]) > 1e-10*std::max(1.0,std::abs(derived[i]))) { return false; }
+                }
+            }
         } else if (shape == "sphere" || shape == "cylinder") {
             if (document["version"].GetInt() < 3 || !cut.HasMember("center") || !cut["center"].IsArray()
                 || cut["center"].Size() != 3 || !cut.HasMember("axis") || !cut["axis"].IsArray()

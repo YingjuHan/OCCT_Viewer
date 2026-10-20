@@ -6,6 +6,7 @@
 #include <ViewCaeGeom/MeshCutRecovery.h>
 #include <ViewCaeGeom/MeshCutTraceOptions.h>
 #include <ViewCaeGeom/MeshCutCache.h>
+#include <ViewCaeGeom/MeshCutPlanePlacement.h>
 #include <Bnd_Box.hxx>
 
 #include <array>
@@ -71,6 +72,7 @@ struct MeshCutDefinition {
     std::string Id;
     std::string Name;
     Graphic3d_Vec4d Plane;
+    MeshCutPlanePlacement Placement;
     unsigned Visibility = 2; //!< bits: negative=1, on=2, positive=4
     bool Enabled = true;
     MeshCutCellMode CellMode = MeshCutCellMode::Constant;
@@ -129,6 +131,11 @@ public:
 
     Standard_EXPORT bool AddPlane(const std::string& theId, const Graphic3d_Vec4d& thePlane);
     Standard_EXPORT bool SetPlane(const std::string& theId, const Graphic3d_Vec4d& thePlane);
+    //! Complete placement update through the same geometry/cache path as SetPlane.
+    Standard_EXPORT bool SetPlanePlacement(const std::string& id, const MeshCutPlanePlacement& placement);
+    Standard_EXPORT bool TranslatePlane(const std::string& id, double offset);
+    //! Absolute rotation about the original local axis 2/3; discards translation.
+    Standard_EXPORT bool RotatePlane(const std::string& id, int axis, double degrees);
     //! Creates inactive central X/Y/Z planes only when no definitions exist.
     Standard_EXPORT bool EnsureDefaultPlanes();
     //! Scalar cutting; VTK chart cells use bounded original-FE numerical refinement.
@@ -224,6 +231,7 @@ private:
         bool theDisplay, unsigned theRequestedMask = 8);
     struct Entry;
     Entry* find(const std::string& theId);
+    bool setPlaneEquation(Entry& entry, const Graphic3d_Vec4d& plane);
     void release(Entry& theEntry);
     void initialize(Entry& theEntry);
     Handle(MeshGeometry) makeSourceGeometry(bool theBoundary = true);

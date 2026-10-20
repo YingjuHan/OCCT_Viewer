@@ -256,7 +256,7 @@ python -B -X utf8 DOCUMENT/tools/build_cut_view_occt_inventory.py --check
 
 ## 扫描范围与完整直接头文件清单
 
-扫描 185 个项目源文件，发现 146 种直接 `.hxx` 依赖。
+扫描 186 个项目源文件，发现 149 种直接 `.hxx` 依赖。
 这是指定范围的词法依赖清单，不是完整运行时调用图。头文件可能只提供类型，
 不能据此断言该算法每帧执行。OCCT 内部传递调用、虚函数调度和模板展开未展开。
 核心功能与成员方法的人工核对见前文；引用位置由下面的列表覆盖。
@@ -318,6 +318,7 @@ python -B -X utf8 DOCUMENT/tools/build_cut_view_occt_inventory.py --check
 | GPU / 图形结构 | `Graphic3d_TextureParams.hxx` | — | [MeshColorMapper](../source/ViewCae/MeshColorMapper.cpp) |
 | GPU / 图形结构 | `Graphic3d_TextureSetBits.hxx` | — | [MeshCutGpuPresentation](../source/ViewCae/MeshCutGpuPresentation.cpp) |
 | GPU / 图形结构 | `Graphic3d_TransformPers.hxx` | — | [InteractiveCaeCutView](../source/ViewCae/InteractiveCaeCutView.cpp) |
+| GPU / 图形结构 | `Graphic3d_Vec.hxx` | — | [MeshCutPlanePlacement](../source/ViewCaeGeom/MeshCutPlanePlacement.h) |
 | GPU / 图形结构 | `Graphic3d_Vec2.hxx` | — | [MeshNVecProperty](../source/RWCae/MeshNVecProperty.cpp) |
 | GPU / 图形结构 | `Graphic3d_Vec3.hxx` | `Cross` | [MeshInfo](../source/RWCae/MeshInfo.h)、[MeshCellKernel](../source/ViewCaeGeom/MeshCellKernel.cpp) |
 | XML | `LDOMParser.hxx` | — | [VtkBaseXMLReader](../source/RWVtk/VtkBaseXMLReader.h)、[VtkMultiBlockDataReader](../source/RWVtk/VtkMultiBlockDataReader.h)、[VtkReferenceStager](../source/RWVtk/VtkReferenceStager.cpp)、[VtkUnstructuredDataReader](../source/RWVtk/VtkUnstructuredDataReader.h)、[NativeCutSession](../source/Viewer/NativeCutSession.cpp) |
@@ -354,7 +355,7 @@ python -B -X utf8 DOCUMENT/tools/build_cut_view_occt_inventory.py --check
 | 基础运行时 | `Standard_ArrayStreamBuffer.hxx` | — | [MeshDataBlock](../source/RWCae/MeshDataBlock.cpp)、[VtkDataArray](../source/RWVtk/VtkDataArray.cpp) |
 | 基础运行时 | `Standard_Atomic.hxx` | — | [MeshData](../source/RWCae/MeshData.cpp)、[MeshPropertyBase](../source/RWCae/MeshPropertyBase.cpp)、[MeshPresentationBase](../source/ViewCae/MeshPresentationBase.cpp)、[MeshPropertyData](../source/ViewCae/MeshPropertyData.cpp)、[MeshGeometry](../source/ViewCaeGeom/MeshGeometry.cpp) |
 | 基础运行时 | `Standard_Condition.hxx` | — | [TaskManager](../source/RWBase/TaskManager.h) |
-| 基础运行时 | `Standard_Macro.hxx` | — | [MeshDracoCompressionHelper](../source/RWCae/MeshDracoCompressionHelper.h)、[MeshCellKernel](../source/ViewCaeGeom/MeshCellKernel.h)、[MeshCutCache](../source/ViewCaeGeom/MeshCutCache.h)、[MeshCutTraceOptions](../source/ViewCaeGeom/MeshCutTraceOptions.h)、[NativeCutDigest](../source/Viewer/NativeCutDigest.h) |
+| 基础运行时 | `Standard_Macro.hxx` | — | [MeshDracoCompressionHelper](../source/RWCae/MeshDracoCompressionHelper.h)、[MeshCellKernel](../source/ViewCaeGeom/MeshCellKernel.h)、[MeshCutCache](../source/ViewCaeGeom/MeshCutCache.h)、[MeshCutPlanePlacement](../source/ViewCaeGeom/MeshCutPlanePlacement.h)、[MeshCutTraceOptions](../source/ViewCaeGeom/MeshCutTraceOptions.h)、[NativeCutDigest](../source/Viewer/NativeCutDigest.h) |
 | 基础运行时 | `Standard_Mutex.hxx` | — | [TaskManager](../source/RWBase/TaskManager.h) |
 | 基础运行时 | `Standard_NotImplemented.hxx` | — | [MeshGroupProperty](../source/RWCae/MeshGroupProperty.cpp) |
 | 基础运行时 | `Standard_WarningsDisable.hxx` | — | [MeshBinWriter](../source/RWCae/MeshBinWriter.h)、[MeshDataBlock](../source/RWCae/MeshDataBlock.cpp)、[MeshDracoCompressionHelper](../source/RWCae/MeshDracoCompressionHelper.cpp)、[MeshDracoCompressionHelper](../source/RWCae/MeshDracoCompressionHelper.h)、[MeshFieldMapping](../source/RWCae/MeshFieldMapping.h) |
@@ -390,13 +391,15 @@ python -B -X utf8 DOCUMENT/tools/build_cut_view_occt_inventory.py --check
 | 拓扑数据与遍历 | `TopoDS_Shape.hxx` | — | [MeshVtkCutSource](../source/ViewCaeGeom/MeshVtkCutSource.h) |
 | 拾取 | `Select3D_SensitiveEntity.hxx` | — | [InteractiveCaeCutView](../source/ViewCae/InteractiveCaeCutView.h) |
 | 拾取 | `Select3D_SensitivePoint.hxx` | — | [InteractiveCaeCutView](../source/ViewCae/InteractiveCaeCutView.cpp) |
+| 拾取 | `Select3D_SensitivePrimitiveArray.hxx` | — | [InteractiveCaeCutPlane](../source/ViewCae/InteractiveCaeCutPlane.cpp) |
 | 拾取 | `Select3D_SensitiveSegment.hxx` | — | [InteractiveCaeCutView](../source/ViewCae/InteractiveCaeCutView.cpp) |
 | 拾取 | `Select3D_SensitiveTriangle.hxx` | — | [InteractiveCaeCutView](../source/ViewCae/InteractiveCaeCutView.cpp) |
 | 拾取 | `SelectMgr_EntityOwner.hxx` | — | [InteractiveCaeCutView](../source/ViewCae/InteractiveCaeCutView.h) |
-| 拾取 | `SelectMgr_Selection.hxx` | — | [InteractiveCaeCutView](../source/ViewCae/InteractiveCaeCutView.cpp) |
+| 拾取 | `SelectMgr_Selection.hxx` | — | [InteractiveCaeCutPlane](../source/ViewCae/InteractiveCaeCutPlane.cpp)、[InteractiveCaeCutView](../source/ViewCae/InteractiveCaeCutView.cpp) |
 | 日志 | `Message.hxx` | `SendFail`, `SendInfo`, `SendWarning` | [TaskManager](../source/RWBase/TaskManager.h)、[MeshBinReader](../source/RWCae/MeshBinReader.cpp)、[MeshBinWriter](../source/RWCae/MeshBinWriter.cpp)、[MeshFieldMapping](../source/RWCae/MeshFieldMapping.cpp)、[MeshGroupProperty](../source/RWCae/MeshGroupProperty.cpp)、[MeshTools](../source/RWCae/MeshTools.h)、[MeshLoader](../source/RWMeshConv/MeshLoader.cpp)、[VtkBaseReader](../source/RWVtk/VtkBaseReader.cpp)、[VtkBaseXMLReader](../source/RWVtk/VtkBaseXMLReader.cpp)、[VtkMultiBlockDataReader](../source/RWVtk/VtkMultiBlockDataReader.cpp)、[VtkPolyDataReader](../source/RWVtk/VtkPolyDataReader.cpp)、[VtkUnstructuredDataReader](../source/RWVtk/VtkUnstructuredDataReader.cpp)、[VtkUnstructuredGridReader](../source/RWVtk/VtkUnstructuredGridReader.cpp)、[CaeMeshTools](../source/ViewCae/CaeMeshTools.cpp)、[MeshPresentationTools](../source/ViewCae/MeshPresentationTools.cpp)、[MeshGeometryTools](../source/ViewCaeGeom/MeshGeometryTools.cpp) |
 | 日志 | `Message_Messenger.hxx` | — | [MeshBinReader](../source/RWCae/MeshBinReader.cpp)、[MeshBinWriter](../source/RWCae/MeshBinWriter.cpp)、[MeshFieldMapping](../source/RWCae/MeshFieldMapping.cpp)、[VtkBaseReader](../source/RWVtk/VtkBaseReader.cpp)、[VtkBaseXMLReader](../source/RWVtk/VtkBaseXMLReader.cpp)、[VtkMultiBlockDataReader](../source/RWVtk/VtkMultiBlockDataReader.cpp)、[VtkPolyDataReader](../source/RWVtk/VtkPolyDataReader.cpp)、[VtkUnstructuredDataReader](../source/RWVtk/VtkUnstructuredDataReader.cpp)、[VtkUnstructuredGridReader](../source/RWVtk/VtkUnstructuredGridReader.cpp)、[MeshPresentationTools](../source/ViewCae/MeshPresentationTools.cpp)、[MeshGeometryTools](../source/ViewCaeGeom/MeshGeometryTools.cpp) |
 | 日志 | `Message_ProgressRange.hxx` | — | [MeshBinWriter](../source/RWCae/MeshBinWriter.h) |
+| 显示属性与图元 | `Prs3d_BndBox.hxx` | `FillSegments` | [InteractiveCaeCutPlane](../source/ViewCae/InteractiveCaeCutPlane.cpp) |
 | 纹理与截图 | `Image_AlienPixMap.hxx` | — | [CutViewCommands](../source-draw/ViewCaeTest/CutViewCommands.cpp) |
 | 纹理与截图 | `Image_SupportedFormats.hxx` | — | [InteractiveCaeCutView](../source/ViewCae/InteractiveCaeCutView.cpp)、[MeshColorMapper](../source/ViewCae/MeshColorMapper.cpp)、[MeshColorScaleMapper](../source/ViewCae/MeshColorScaleMapper.cpp)、[MeshPartGeneralCells](../source/ViewCae/MeshPartGeneralCells.cpp) |
 | 线程 / 文件系统 | `OSD_FileSystem.hxx` | `DefaultFileSystem` | [MeshBinReader](../source/RWCae/MeshBinReader.cpp)、[MeshBinWriter](../source/RWCae/MeshBinWriter.cpp)、[MeshFieldMapping](../source/RWCae/MeshFieldMapping.cpp)、[MeshLoader](../source/RWMeshConv/MeshLoader.cpp)、[MeshLoader](../source/RWMeshConv/MeshLoader.h)、[VtkBaseReader](../source/RWVtk/VtkBaseReader.cpp)、[VtkBaseXMLReader](../source/RWVtk/VtkBaseXMLReader.cpp)、[NativeCutSession](../source/Viewer/NativeCutSession.cpp)、[CutBenchmarkCommands](../source-draw/ViewCaeTest/CutBenchmarkCommands.cpp) |
@@ -544,6 +547,7 @@ python -B -X utf8 DOCUMENT/tools/build_cut_view_occt_inventory.py --check
 - [source/ViewCaeGeom/MeshCutIntegration.h](../source/ViewCaeGeom/MeshCutIntegration.h)
 - [source/ViewCaeGeom/MeshCutPhysics.cpp](../source/ViewCaeGeom/MeshCutPhysics.cpp)
 - [source/ViewCaeGeom/MeshCutPhysics.h](../source/ViewCaeGeom/MeshCutPhysics.h)
+- [source/ViewCaeGeom/MeshCutPlanePlacement.h](../source/ViewCaeGeom/MeshCutPlanePlacement.h)
 - [source/ViewCaeGeom/MeshCutRecovery.cpp](../source/ViewCaeGeom/MeshCutRecovery.cpp)
 - [source/ViewCaeGeom/MeshCutRecovery.h](../source/ViewCaeGeom/MeshCutRecovery.h)
 - [source/ViewCaeGeom/MeshCutSlicing.cpp](../source/ViewCaeGeom/MeshCutSlicing.cpp)

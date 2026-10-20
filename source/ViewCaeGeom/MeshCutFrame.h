@@ -17,6 +17,8 @@ struct MeshCutFrame {
     Standard_EXPORT Graphic3d_Vec3d PointToLocal(const Graphic3d_Vec3d& value) const;
     Standard_EXPORT Graphic3d_Vec4d PlaneToGlobal(const Graphic3d_Vec4d& value) const;
     Standard_EXPORT Graphic3d_Vec4d PlaneToLocal(const Graphic3d_Vec4d& value) const;
+    Standard_EXPORT MeshCutPlanePlacement PlacementToGlobal(MeshCutPlanePlacement value) const;
+    Standard_EXPORT MeshCutPlanePlacement PlacementToLocal(MeshCutPlanePlacement value) const;
     //! Uses the manager's validation/revision path, also used by mouse manipulators.
     Standard_EXPORT bool Edit(MeshCutViewManager& manager, const MeshCutDefinition& local) const;
 };

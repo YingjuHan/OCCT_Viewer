@@ -54,6 +54,9 @@ add_test (NAME cut_display COMMAND cut_display_tests)
 add_executable (cut_slicing_tests CutSlicingTests.cpp)
 target_link_libraries (cut_slicing_tests PRIVATE ViewCaeGeom)
 add_test (NAME cut_slicing COMMAND cut_slicing_tests)
+add_executable (cut_placement_tests CutPlacementTests.cpp)
+target_link_libraries (cut_placement_tests PRIVATE ViewCaeGeom)
+add_test (NAME cut_placement COMMAND cut_placement_tests)
 add_executable (cut_sine_plate_tests CutSinePlateTests.cpp)
 target_link_libraries (cut_sine_plate_tests PRIVATE RWVtk ViewCaeGeom)
 target_compile_definitions (cut_sine_plate_tests PRIVATE SINE_PLATE_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/fixtures")
@@ -307,6 +310,11 @@ if (TARGET ViewDraw)
       add_test (NAME draw_cut_view_controls COMMAND "${OCCTV_DRAWEXE}" -i -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_controls.tcl")
       add_test (NAME draw_cut_view_tools COMMAND "${OCCTV_DRAWEXE}" -i -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_tools_test.tcl")
       add_test (NAME draw_cut_view_plot_options COMMAND "${OCCTV_DRAWEXE}" -i -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_plot_options_test.tcl")
+      add_test (NAME draw_cut_view_placement COMMAND "${OCCTV_DRAWEXE}" -i -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_placement_test.tcl")
+      set_tests_properties (draw_cut_view_placement PROPERTIES
+        ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-placement"
+        PASS_REGULAR_EXPRESSION "CUT_VIEW_PLACEMENT_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_PLACEMENT_FAIL"
+        RUN_SERIAL TRUE TIMEOUT 120)
       set_tests_properties (draw_cut_view_plot_options PROPERTIES
         ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-plot-options"
         PASS_REGULAR_EXPRESSION "CUT_VIEW_PLOT_OPTIONS_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_PLOT_OPTIONS_FAIL"

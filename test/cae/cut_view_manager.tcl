@@ -9,7 +9,9 @@ namespace eval ::CutViewManager {
     variable multiple 1
     variable gizmo 1
     variable motion Translate
-    variable axis Y
+    variable axis 2
+    variable sensitivity 1
+    variable lastPlacement {}
     variable angle 0
     variable lastAngle 0
     variable position 0
@@ -68,6 +70,7 @@ source [file join [file dirname [info script]] cut_view_physics.tcl]
 source [file join [file dirname [info script]] cut_view_cache_panel.tcl]
 source [file join [file dirname [info script]] cut_view_session.tcl]
 source [file join [file dirname [info script]] cut_view_plot_options.tcl]
+source [file join [file dirname [info script]] cut_view_placement.tcl]
 
 proc ::CutViewManager::invoke {command args} {
     variable status
@@ -81,7 +84,7 @@ proc ::CutViewManager::refresh {{attach 0}} {
     variable enabled; variable below; variable on; variable above; variable cellmode
     variable angle; variable lastAngle; variable gizmo
     variable shape; variable lastShape; variable motion; variable isoFieldLabel; variable isoComponent; variable fields; variable fieldLabels
-    variable generation; variable lastBounds
+    variable generation; variable lastBounds; variable lastPlacement; variable sensitivity; variable axis
     if {$busy || ![winfo exists $w]} { return }
     if {[catch {scvcutview $model info} info]} { ::CutViewManager::close; return }
     if {[dict get $info generation] != $generation} { scvcutmanager $model; return }
@@ -104,7 +107,7 @@ proc ::CutViewManager::refresh {{attach 0}} {
         foreach id [$w.cuts children {}] { if {$id ni $ids} { $w.cuts delete $id } }
         if {$selected ni $ids} { set selected [lindex $ids 0]; set attach 1 }
         foreach widget [list $w.controls.apply $w.controls.translate $w.controls.rotate $w.controls.show $w.actions.copy $w.actions.delete $w.actions.rename \
-            $w.controls.name $w.controls.nx $w.controls.ny $w.controls.nz $w.controls.cx $w.controls.cy $w.controls.cz $w.controls.position $w.controls.gizmo \
+            $w.controls.definition $w.controls.name $w.controls.nx $w.controls.ny $w.controls.nz $w.controls.cx $w.controls.cy $w.controls.cz $w.controls.position $w.controls.gizmo \
             $w.controls.below $w.controls.on $w.controls.above $w.controls.isocomponent] {
             $widget configure -state [expr {$selected eq "" ? "disabled" : "normal"}]
         }
@@ -127,7 +130,9 @@ proc ::CutViewManager::refresh {{attach 0}} {
         }
         set info [scvcutview $model handleinfo]
         set dragging [dict get $info dragging]
-        set changed [expr {$plane ne $lastPlane}]
+        set placement {}
+        if {$shape eq "plane"} { set placement [list [dict get $cut origin] [dict get $cut normal] [dict get $cut axis2] [dict get $cut offset] [dict get $cut angle] [dict get $cut rotation_axis]] }
+        set changed [expr {$plane ne $lastPlane || $placement ne $lastPlacement}]
         set bounds [scvcutview $model bounds]
         if {$changed || $attach || $bounds ne $lastBounds} {
             if {$shape eq "plane"} { set normal [lrange $plane 0 2] }
@@ -137,7 +142,10 @@ proc ::CutViewManager::refresh {{attach 0}} {
                 if {$shape eq "plane"} {
                     lassign $normal nx ny nz
                     foreach var {nx ny nz} { set $var [format %.10g [set $var]] }
-                    set position [expr {-[lindex $plane 3]}]
+                    set position [dict get $cut offset]
+                    set storedAngle [dict get $cut angle]
+                    $w.controls.rotate configure -from [expr {min(-180,$storedAngle)}] -to [expr {max(180,$storedAngle)}]
+                    set angle $storedAngle; set lastAngle $angle; set axis [dict get $cut rotation_axis]
                 } elseif {$shape in {sphere cylinder}} {
                     lassign [dict get $cut center] cx cy cz
                     lassign [dict get $cut axis] nx ny nz
@@ -157,13 +165,10 @@ proc ::CutViewManager::refresh {{attach 0}} {
                         }
                     }
                 }
-                set positionText [format %.12g $position]
+                set positionText [format %.12g [expr {$shape eq "plane" && $motion eq "Rotate" ? $angle : $position}]]
                 set name [dict get $cut name]
             }
-            lassign [scvcutview $model range $selected] lower upper
-            set lower [expr {min($lower,$position)}]; set upper [expr {max($upper,$position)}]
-            if {$upper <= $lower} { set upper [expr {$lower+1}] }
-            $w.controls.translate configure -from $lower -to $upper
+            if {$attach || $bounds ne $lastBounds || $sensitivity == 1} { ::CutViewManager::sliderRange }
             if {$shape ne $lastShape} {
                 pack forget $w.controls.nx $w.controls.ny $w.controls.nz $w.controls.isofield $w.controls.isocomponent
                 pack forget $w.controls.rowcenter
@@ -173,6 +178,8 @@ proc ::CutViewManager::refresh {{attach 0}} {
                     $w.controls.label2 configure -text Position
                     foreach widget {nx ny nz} { pack $w.controls.$widget -in $w.controls.row1 -side left -fill x -expand 1 -padx 2 }
                     $w.controls.motion configure -state readonly -values {Translate Rotate}
+                    $w.controls.axis configure -values {2 3}
+                    set axis [dict get $cut rotation_axis]
                     if {$motion ni {Translate Rotate}} { set motion Translate }
                 } elseif {$shape in {sphere cylinder}} {
                     $w.controls.label1 configure -text Axis
@@ -187,6 +194,8 @@ proc ::CutViewManager::refresh {{attach 0}} {
                         $w.controls.motion configure -state readonly -values {Radius}
                     }
                     set motion Radius
+                    $w.controls.axis configure -values {X Y Z}
+                    if {$axis ni {X Y Z}} { set axis Y }
                 } else {
                     pack $w.controls.row1 -after $w.controls.row0 -fill x -pady 3
                     $w.controls.label1 configure -text "Cut Field"
@@ -208,11 +217,13 @@ proc ::CutViewManager::refresh {{attach 0}} {
         set below [expr {($mask & 1) != 0}]; set on [expr {($mask & 2) != 0}]; set above [expr {($mask & 4) != 0}]
         set cellmode [dict get $cut cellmode]
         ::CutViewManager::traceRefresh
-        if {$attach} { set angle 0; set lastAngle 0 }
+        $w.controls.definition configure -state [expr {$shape eq "plane" ? "normal" : "disabled"}]
+        foreach slider {translate rotate} { $w.controls.$slider configure -state [expr {$enabled ? "normal" : "disabled"}] }
+        if {$attach && $shape ne "plane"} { set angle 0; set lastAngle 0 }
         if {!$dragging && ($attach || $changed || $lastDragging)} {
             scvcutview $model handle $selected [expr {$shape ne "isosurface"}] $gizmo
         }
-        set lastPlane $plane; set lastShape $shape; set lastBounds $bounds; set lastDragging $dragging
+        set lastPlane $plane; set lastPlacement $placement; set lastShape $shape; set lastBounds $bounds; set lastDragging $dragging
     } finally { set busy 0 }
 }
 
@@ -281,16 +292,16 @@ proc ::CutViewManager::translate {value} {
     if {$shape eq "isosurface"} { scvcutview $model isovalue $selected $value } elseif {$shape in {sphere cylinder}} {
         scvcutview $model radius $selected $value
     } else {
-        scvcutview $model move $selected {*}$normal [expr {-$value}]
+        scvcutview $model translate $selected $value
     }
     set positionText [format %.12g $value]
     refresh
 }
 
-proc ::CutViewManager::sliderBegin {} {
+proc ::CutViewManager::sliderBegin {{slider translate}} {
     variable sliderSnapshot; variable model; variable w
     set sliderSnapshot [scvcutview $model snapshot]
-    focus -force $w.controls.translate
+    focus -force $w.controls.$slider
 }
 proc ::CutViewManager::sliderEnd {} {
     variable sliderSnapshot; set sliderSnapshot ""
@@ -305,17 +316,30 @@ proc ::CutViewManager::sliderAbort {} {
 }
 
 proc ::CutViewManager::rotate {value} {
-    variable busy; variable model; variable selected; variable axis; variable lastAngle
+    variable busy; variable model; variable selected; variable axis; variable lastAngle; variable shape; variable positionText
     if {$busy || $selected eq "" || [dict get [scvcutview $model handleinfo] dragging]} { return }
-    set delta [expr {$value-$lastAngle}]
-    scvcutview $model rotate $selected [lsearch -exact {X Y Z} $axis] $delta
+    if {$shape eq "plane"} {
+        # Tk also schedules scale callbacks after programmatic variable refresh.
+        # Such a refresh must not discard a translation or modify another cut.
+        foreach cut [scvcutview $model list] { if {[dict get $cut id] eq $selected} { break } }
+        if {[dict get $cut angle] == $value && [dict get $cut rotation_axis] == $axis} { return }
+        scvcutview $model absrotate $selected $axis $value
+        set positionText [format %.12g $value]
+    } else {
+        set delta [expr {$value-$lastAngle}]
+        scvcutview $model rotate $selected [lsearch -exact {X Y Z} $axis] $delta
+    }
     set lastAngle $value
     refresh
 }
 
 proc ::CutViewManager::motion {} {
-    variable w; variable motion; variable angle; variable lastAngle
-    set angle 0; set lastAngle 0
+    variable w; variable motion; variable angle; variable lastAngle; variable shape; variable position; variable positionText
+    if {$shape ne "plane"} { set angle 0; set lastAngle 0 }
+    if {$shape eq "plane"} {
+        $w.controls.label2 configure -text [expr {$motion eq "Rotate" ? "Angle" : "Position"}]
+        set positionText [format %.12g [expr {$motion eq "Rotate" ? $angle : $position}]]
+    }
     pack forget $w.controls.translate $w.controls.rotate
     if {$motion ne "Rotate"} {
         pack $w.controls.translate -in $w.controls.row4 -fill x
@@ -324,12 +348,14 @@ proc ::CutViewManager::motion {} {
 
 proc ::CutViewManager::apply {} {
     variable model; variable selected; variable nx; variable ny; variable nz; variable name; variable positionText
-    variable shape; variable cx; variable cy; variable cz
+    variable shape; variable cx; variable cy; variable cz; variable motion; variable axis
     if {$selected eq ""} { return }
     if {[string trim $name] eq ""} { error "Cut name must not be empty" }
     set desiredName $name
     set position [::CutViewManager::number $positionText Position]
-    if {$shape eq "isosurface"} { ::CutViewManager::isoBinding $position } elseif {$shape in {sphere cylinder}} {
+    if {$shape eq "plane" && $motion eq "Rotate"} {
+        scvcutview $model absrotate $selected $axis $position
+    } elseif {$shape eq "isosurface"} { ::CutViewManager::isoBinding $position } elseif {$shape in {sphere cylinder}} {
         set x [::CutViewManager::number $cx "Center X"]
         set y [::CutViewManager::number $cy "Center Y"]
         set z [::CutViewManager::number $cz "Center Z"]
@@ -347,7 +373,13 @@ proc ::CutViewManager::apply {} {
         set z [::CutViewManager::number $nz "Normal Z"]
         set length [expr {sqrt($x*$x+$y*$y+$z*$z)}]
         if {$length < 1.0e-12} { error "Plane normal must be nonzero" }
-        scvcutview $model move $selected $x $y $z [expr {-$position*$length}]
+        set requested [list [expr {$x/$length}] [expr {$y/$length}] [expr {$z/$length}]]
+        set same 1
+        foreach a $requested b $::CutViewManager::normal { if {abs($a-$b) > 1e-10} { set same 0 } }
+        if {$same} { scvcutview $model translate $selected $position } else {
+            # Explicit normal edits redefine orientation; use Definition for an exact pivot/axis2.
+            scvcutview $model move $selected $x $y $z [expr {-$position*$length}]
+        }
     }
     scvcutview $model rename $selected $desiredName
     refresh 1
@@ -403,6 +435,7 @@ proc ::CutViewManager::create {{copy 0}} {
     } else {
         lassign [scvcutview $model bounds] xmin ymin zmin xmax ymax zmax
         scvcutview $model add $id 1 0 0 [expr {-($xmin+$xmax)/2.0}]
+        scvcutview $model placement $id [expr {($xmin+$xmax)/2.0}] [expr {($ymin+$ymax)/2.0}] [expr {($zmin+$zmax)/2.0}] 1 0 0 0 1 0
         scvcutview $model visibility $id 3
     }
     scvcutview $model rename $id "Cut-$serial"
@@ -572,6 +605,7 @@ proc ::CutViewManager::load {} {
 proc ::CutViewManager::close {} {
     catch {destroy .scvcutoptions}
     catch {destroy .scvcutrename}
+    catch {destroy .scvcutplacement}
     if {[winfo exists .scvcutsession]} { destroy .scvcutsession }
     if {[winfo exists .scvcutcache]} { destroy .scvcutcache }
     if {[winfo exists .scvcutphysics]} { destroy .scvcutphysics }
@@ -635,7 +669,9 @@ proc scvcutmanager {theModel} {
         pack $w.controls.label$row -in $w.controls.row$row -side left -padx 4
     }
     ttk::entry $w.controls.name -textvariable ::CutViewManager::name
-    pack $w.controls.name -in $w.controls.row0 -fill x -expand 1
+    ttk::button $w.controls.definition -text "Definition..." -command {::CutViewManager::invoke ::CutViewPlacement::open}
+    pack $w.controls.definition -in $w.controls.row0 -side right -padx 4
+    pack $w.controls.name -in $w.controls.row0 -side left -fill x -expand 1
     foreach widget {nx ny nz} column {1 2 3} {
         ttk::entry $w.controls.$widget -width 10 -textvariable ::CutViewManager::$widget
         pack $w.controls.$widget -in $w.controls.row1 -side left -fill x -expand 1 -padx 2
@@ -660,18 +696,25 @@ proc scvcutmanager {theModel} {
     ttk::checkbutton $w.controls.show -text Show -variable ::CutViewManager::enabled -command {::CutViewManager::invoke ::CutViewManager::visibility}
     pack $w.controls.show -in $w.controls.row2 -side left -padx 4
     ttk::combobox $w.controls.motion -state readonly -values {Translate Rotate} -textvariable ::CutViewManager::motion -width 12
-    ttk::combobox $w.controls.axis -state readonly -values {X Y Z} -textvariable ::CutViewManager::axis -width 4
+    ttk::combobox $w.controls.axis -state readonly -values {2 3} -textvariable ::CutViewManager::axis -width 4
     pack $w.controls.motion -in $w.controls.row3 -side left -fill x -expand 1
     pack $w.controls.axis -in $w.controls.row3 -side left -padx 4
     ttk::checkbutton $w.controls.gizmo -text Manipulator -variable ::CutViewManager::gizmo -command {::CutViewManager::invoke ::CutViewManager::refresh 1}
     pack $w.controls.gizmo -in $w.controls.row3 -side left -padx 4
     bind $w.controls.motion <<ComboboxSelected>> {::CutViewManager::invoke ::CutViewManager::motion}
-    bind $w.controls.axis <<ComboboxSelected>> {::CutViewManager::invoke ::CutViewManager::motion}
+    bind $w.controls.axis <<ComboboxSelected>> {::CutViewManager::invoke ::CutViewManager::rotate $::CutViewManager::angle}
     ::tk::scale $w.controls.translate -orient horizontal -showvalue 0 -resolution -1 -digits 17 -variable ::CutViewManager::position -command {::CutViewManager::invoke ::CutViewManager::translate}
     bind $w.controls.translate <ButtonPress-1> +{::CutViewManager::sliderBegin}
     bind $w.controls.translate <ButtonRelease-1> +{::CutViewManager::sliderEnd}
     bind $w.controls.translate <Escape> {::CutViewManager::invoke ::CutViewManager::sliderAbort}
-    ::tk::scale $w.controls.rotate -orient horizontal -from -180 -to 180 -resolution 0.5 -showvalue 1 -variable ::CutViewManager::angle -command {::CutViewManager::invoke ::CutViewManager::rotate}
+    ::tk::scale $w.controls.rotate -orient horizontal -from -180 -to 180 -resolution -1 -digits 17 -showvalue 0 -variable ::CutViewManager::angle -command {::CutViewManager::invoke ::CutViewManager::rotate}
+    bind $w.controls.rotate <ButtonPress-1> {+::CutViewManager::sliderBegin rotate}
+    bind $w.controls.rotate <ButtonRelease-1> +{::CutViewManager::sliderEnd}
+    bind $w.controls.rotate <Escape> {::CutViewManager::invoke ::CutViewManager::sliderAbort}
+    ttk::label $w.controls.sensitivityLabel -text Sensitivity
+    ttk::combobox $w.controls.sensitivity -state readonly -values {1 10 100} -textvariable ::CutViewManager::sensitivity -width 5
+    pack $w.controls.sensitivityLabel $w.controls.sensitivity -in $w.controls.row5 -side right -padx 2
+    bind $w.controls.sensitivity <<ComboboxSelected>> {::CutViewManager::invoke ::CutViewManager::sliderRange}
     ::CutViewManager::motion
     foreach widget {below on above} label {Below On Above} column {1 2 3} {
         ttk::checkbutton $w.controls.$widget -text $label -variable ::CutViewManager::$widget -command {::CutViewManager::invoke ::CutViewManager::visibility}

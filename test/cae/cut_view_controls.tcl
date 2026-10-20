@@ -144,7 +144,7 @@ proc ui_controls {parent} {
 proc ui_check_section {id} {
     set presentation [scvcutview $::ui_model presentation $id]
     set result [scvcutview $::ui_model eval $id]
-    ui_assert {[dict get $presentation revision] == [dict get $result revision]} "Geometry evaluated but display was not synchronized"
+    ui_assert {[dict get $presentation revision] == [dict get $result revision]} "Geometry evaluated but display was not synchronized: $presentation / [dict get $result revision], status=$::CutViewManager::status, cut=[ui_cut $id]"
     foreach value [dict get $result section values] {
         lassign $value x y z scalar
         lassign [dict get [ui_cut $id] plane] a b c d
@@ -245,17 +245,17 @@ proc ui_run {} {
     }
     ui_click .scvcutmanager.controls.apply
     ui_ok
-    ui_near [lindex [dict get [ui_cut x] plane] 3] -0.3 "Numeric plane Apply"
+    ui_near [dict get [ui_cut x] offset] 0.3 "Numeric plane Apply"
     ui_assert {[dict get [ui_cut x] name] eq {Plane {A} with spaces}} "Name quoting failed"
     ui_entry .scvcutmanager.controls.position 0.35 1
-    ui_near [lindex [dict get [ui_cut x] plane] 3] -0.35 "Position Return binding"
+    ui_near [dict get [ui_cut x] offset] 0.35 "Position Return binding"
     set saved [scvcutview $ui_model snapshot]
     foreach value {{} nonsense NaN Inf -Inf} {
         ui_entry .scvcutmanager.controls.position $value 1
         ui_assert {$::CutViewManager::status ne "" && [scvcutview $ui_model snapshot] eq $saved} "Invalid position changed the cut: $value"
     }
     ui_entry .scvcutmanager.controls.position -0.1 1
-    ui_near [lindex [dict get [ui_cut x] plane] 3] 0.1 "Negative position input"
+    ui_near [dict get [ui_cut x] offset] -0.1 "Negative position input"
     ui_entry .scvcutmanager.controls.position 0.35 1
     set saved [scvcutview $ui_model snapshot]
     ui_entry .scvcutmanager.controls.nx 0
@@ -273,6 +273,13 @@ proc ui_run {} {
     ui_assert {$::CutViewManager::nx == 0 && $::CutViewManager::ny == 1} "Selected plane kept stale focused entries"
     ui_tree x
 
+    ui_click .scvcutmanager.controls.definition
+    ui_assert {[winfo exists .scvcutplacement]} "Missing plane definition editor"
+    ui_click .scvcutplacement.body.close
+    set saved [scvcutview $ui_model snapshot]
+    ui_combo .scvcutmanager.controls.sensitivity 100
+    ui_assert {[scvcutview $ui_model snapshot] eq $saved} "Sensitivity moved the plane"
+    ui_combo .scvcutmanager.controls.sensitivity 1
     ui_combo .scvcutmanager.controls.motion Translate
     ui_mark .scvcutmanager.controls.translate
     set w .scvcutmanager.controls.translate
@@ -282,14 +289,14 @@ proc ui_run {} {
         lassign [$w coords $target] x y
         event generate $w <B1-Motion> -x $x -y $y -state 256
         ui_pump
-        ui_near [lindex [dict get [ui_cut x] plane] 3] [expr {-[$w get]}] "Slider did not recompute before release"
+        ui_near [dict get [ui_cut x] offset] [$w get] "Slider did not recompute before release"
         ui_check_section x
     }
     event generate $w <ButtonRelease-1> -x $x -y $y
     ui_pump
     ui_combo .scvcutmanager.controls.motion Rotate
     ui_mark .scvcutmanager.controls.rotate
-    foreach axis {X Y Z} {
+    foreach axis {2 3} {
         scvcutview $ui_model move x 1 1 1 -0.6
         ::CutViewManager::refresh 1
         ui_combo .scvcutmanager.controls.axis $axis

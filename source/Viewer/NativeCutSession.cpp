@@ -46,7 +46,7 @@ bool boolean(const V& v) { if(!v.IsBool()) { throw std::invalid_argument("Invali
 const V& array(const V& v,size_t max=10000) { if(!v.IsArray()||v.Size()>max) { throw std::invalid_argument("Invalid/oversized session array"); } return v; }
 void text(W& w,const std::string& s) { w.String(s.data(),(rapidjson::SizeType)s.size()); }
 std::string json(const V& v) { rapidjson::StringBuffer b; W w(b); v.Accept(w); return {b.GetString(),b.GetSize()}; }
-void raw(W& w,const std::string& s) { rapidjson::Document d; d.Parse(s.data(),s.size()); if(d.HasParseError()) { throw std::invalid_argument("Invalid nested session JSON"); } d.Accept(w); }
+void raw(W& w,const std::string& s) { rapidjson::Document d; d.Parse<rapidjson::kParseFullPrecisionFlag>(s.data(),s.size()); if(d.HasParseError()) { throw std::invalid_argument("Invalid nested session JSON"); } d.Accept(w); }
 void validateTree(const V& v,int depth=0)
 {
     if(depth>64) { throw std::invalid_argument("Session JSON nesting exceeds 64 levels"); }
