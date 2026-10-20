@@ -5,6 +5,7 @@
 | 文档 | 内容与阅读顺序 |
 | --- | --- |
 | [Linux 直接运行、GDB 调试与测试](cut-view-manager-linux-run-test.md) | 本项目现有 Cut View Manager 的 Release / Debug 构建、DRAW 启动、CTest、337.5 万单元拖动与接缝测试命令 |
+| [6×6 正弦薄板回归与交互复现](cut-view-manager-sine-plate-test.md) | 单层六面体、temperature=z、周期采样、分离截面、两侧体积与 GPU/CPU 比较，含 Windows / Linux 命令 |
 | [架构、设计、算法与实现](cut-view-manager-migration-guide.md) | 先读：源网格、有限元来源、求交、BVH、缓存、GPU、物理计算及代码入口 |
 | [OCCT 功能和依赖清单](cut-view-manager-occt-api-inventory.md) | 源项目的 OCCT 职责、调用位置与目标迁移时的替换责任；含可重新生成的直接依赖清单 |
 | [无 OCCT 的 VisIt / CentOS 7.9 迁移实施手册](cut-view-manager-visit-porting.md) | 再读：目标完全不使用 OCCT；包含实际入口、接口草案、替换表、ABI、工作包和验收标准 |

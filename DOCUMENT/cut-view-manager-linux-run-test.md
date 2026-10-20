@@ -273,6 +273,8 @@ xvfb-run -a -s '-screen 0 1280x1024x24' \
 
 虚拟显示仍需可用 GLX / OpenGL；若 renderer 是软件实现，不比较生产 FPS。已有 CTest 图像用例可通过 `OCCTV_TEST_DRAW_VISUAL=ON` 注册后运行，但其中 smoke 数据不能替代第 5 节的大数据测试。
 
+36 个非结构化六面体的正弦薄板几何回归另见 [正弦薄板测试指南](cut-view-manager-sine-plate-test.md)：包含可直接打开 Manager 的命令、调试启动、两侧体积守恒及 CPU/GPU 图像对比，专门区分分离截面、缺片与周期采样混叠。
+
 ## 7. 常见启动问题
 
 | 现象 | 检查命令 / 处理 |
