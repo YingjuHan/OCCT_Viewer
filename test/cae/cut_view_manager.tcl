@@ -58,6 +58,7 @@ namespace eval ::CutViewManager {
     variable fields {}
     variable fieldLabels {}
     variable status ""
+    variable savedStates {}
     variable lastPlane {}
     variable lastShape ""
     variable lastBounds {}
@@ -634,6 +635,7 @@ proc ::CutViewManager::load {} {
 }
 
 proc ::CutViewManager::close {} {
+    ::CutViewManager::remember
     catch {destroy .scvcutoptions}
     catch {destroy .scvcutrename}
     catch {destroy .scvcutplacement}
@@ -653,12 +655,29 @@ proc ::CutViewManager::close {} {
     set model ""; set selected ""
 }
 
+proc ::CutViewManager::stateKey {} {
+    variable model
+    if {$model eq ""} { return "" }
+    return [list $model [dict get [scvcutview $model info] generation] [scvcutview $model viewid]]
+}
+proc ::CutViewManager::remember {} {
+    variable savedStates; variable w
+    if {![winfo exists $w] || [catch {stateKey} key] || $key eq ""} { return }
+    set state {}
+    foreach keyName {selected motion axis sensitivity gizmo} { lappend state $keyName [set ::CutViewManager::$keyName] }
+    dict set savedStates $key $state
+}
+
 proc scvcutmanager {theModel} {
     package require Tk
     ::CutViewManager::close
     namespace eval ::CutViewManager { set lastPlane {}; set lastShape ""; set lastDragging 0; set selected ""; set status "" }
     set ::CutViewManager::model $theModel
     set ::CutViewManager::generation [dict get [scvcutview $theModel info] generation]
+    set restored {}
+    set key [::CutViewManager::stateKey]
+    if {[dict exists $::CutViewManager::savedStates $key]} { set restored [dict get $::CutViewManager::savedStates $key] }
+    foreach {name value} $restored { set ::CutViewManager::$name $value }
     set w $::CutViewManager::w
     set definitions [scvcutview $theModel list]
     if {[llength $definitions] == 0} { scvcutview $theModel defaults }
@@ -867,6 +886,12 @@ proc scvcutmanager {theModel} {
     wm protocol $w WM_DELETE_WINDOW ::CutViewManager::close
     ::CutViewManager::refresh 1
     ::CutViewManager::field 1
+    if {$restored ne ""} {
+        foreach {name value} $restored { if {$name ne "selected"} { set ::CutViewManager::$name $value } }
+        ::CutViewManager::motion
+        ::CutViewManager::sliderRange
+        ::CutViewManager::refresh 1
+    }
     ::CutViewManager::poll
     update idletasks
     wm minsize $w [winfo reqwidth $w] [expr {[winfo reqheight $w]-3*([font metrics TkDefaultFont -linespace]+10)}]

@@ -39,6 +39,13 @@ public:
     bool Remove(const std::string& id);
     bool SetEnabled(const std::string& id, bool enabled);
     bool SetCutEnabled(const std::string& cut, bool enabled);
+    //! Templates are independent snapshots; application validates the target FE section.
+    bool CaptureDefault(const std::string& request);
+    bool SetDefault(const NativeCutAnalysisRequest& request);
+    bool ApplyDefault(const std::string& cut, const std::string& request, bool enabled = false);
+    bool HasDefault() const { return myHasDefault; }
+    const NativeCutAnalysisRequest& DefaultRequest() const { return myDefault; }
+    void ClearDefault() { myHasDefault=false; myDefault={}; }
     //! Capture the actual source-element visibility of an existing presentation; independent of its result field.
     bool CaptureDisplayGroup(const std::string& id, const Handle(ViewCae::InteractiveCaeMesh)& mesh,
         const std::string& presentation);
@@ -75,6 +82,8 @@ private:
     std::map<std::string,std::vector<Handle(AIS_Shape)>> myOverlays;
     std::map<int,std::map<std::string,NativeCutAnalysisRequest>> mySteps;
     std::map<std::string,AutomaticBinding> myAutomatic;
+    NativeCutAnalysisRequest myDefault;
+    bool myHasDefault = false;
 };
 }
 #endif

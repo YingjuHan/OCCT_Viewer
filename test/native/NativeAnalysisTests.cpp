@@ -18,6 +18,12 @@ int main()
         auto invalid=r; invalid.Options.Units.LengthToSI=0; require(!a.Set("force",invalid),"invalid units accepted");
         require(a.Overlays().at("force")==old && a.Reports().at("force").Total.Force.x()==reference,"failed request changed reports or overlays");
         require(a.SetJson("roundtrip",Viewer::NativeCutAnalysis::RequestJson(r)),native.LastError());
+        require(a.CaptureDefault("force") && a.HasDefault() && a.DefaultRequest().Cut.empty(),native.LastError());
+        require(cuts.AddPlane("template",Graphic3d_Vec4d(0,1,0,-.25)),"template target");
+        require(a.ApplyDefault("template","inherited",false) && !a.Requests().at("inherited").Enabled,native.LastError());
+        require(a.DefaultRequest().Field.Name=="stress" && a.Requests().at("inherited").Cut=="template","Template became a cut override");
+        require(!a.ApplyDefault("missing","invalid",false) && !a.Requests().count("invalid"),"Disabled template application bypassed FE validation");
+        require(a.Remove("inherited") && cuts.Remove("template"),native.LastError());
         require(a.Reports().at("roundtrip").Total.Force.x()==reference,"JSON changed physical results");
         for(const auto& json:{"{}","[]","{\"cut\":0}","{\"cut\":\"p\",\"field\":{\"name\":\"stress\",\"nodal\":true,\"component\":0,\"step\":-1},\"sections\":{}}"}) { require(!a.SetJson("bad",json),"bad JSON accepted"); }
         require(a.Requests().size()==2,"invalid request publication");

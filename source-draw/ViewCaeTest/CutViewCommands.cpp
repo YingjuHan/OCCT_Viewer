@@ -10,6 +10,7 @@
 #include <ViewerTest_EventManager.hxx>
 #include <AIS_InteractiveContext.hxx>
 #include <V3d_View.hxx>
+#include <Graphic3d_CView.hxx>
 #include <gp_Ax1.hxx>
 #include <Draw.hxx>
 #include <Image_AlienPixMap.hxx>
@@ -230,6 +231,16 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
     try {
         if (argc < 3) { throw std::invalid_argument("scvcutview name action arguments"); }
         const std::string name(argv[1]), action(argv[2]);
+        if(action=="share" && argc==4) {
+            const auto source=models.find(argv[3]);
+            if(models.count(name) || source==models.end()) { throw std::invalid_argument("Share requires a new name and an existing source model"); }
+            CutModel model; model.Mesh=source->second.Mesh; model.Source=source->second.Source; model.Bounds=source->second.Bounds;
+            model.ImportReport=source->second.ImportReport; model.Generation=++nextGeneration;
+            model.Native=std::make_shared<Viewer::NativeCutView>(model.Mesh);
+            model.Timeline=std::make_shared<Viewer::NativeCutTimeline>(*model.Native);
+            model.Session=std::make_shared<Viewer::NativeCutSession>(*model.Native,*model.Timeline);
+            model.View=model.Native->Display(); models.emplace(name,std::move(model)); return 0;
+        }
         if ((action == "read" || action == "replace") && argc == 4) {
             if (action == "read" && models.count(name)) { throw std::invalid_argument("Cut model already exists"); }
             const std::string path(argv[3]);
@@ -300,7 +311,7 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             if(!model.Session->Load(argv[3])) { throw std::invalid_argument(model.Native->LastError()); }
             model.Source=model.Session->Source(); model.Generation=++nextGeneration; refreshStep(); return 0;
         } else if(action=="sessioninfo" && argc==3) {
-            di<<"version 3 source"; di.AppendElement(model.Source.c_str()); di<<" cad"; di.AppendElement(model.Session->CadSource().c_str()); return 0;
+            di<<"version 4 source"; di.AppendElement(model.Source.c_str()); di<<" cad"; di.AppendElement(model.Session->CadSource().c_str()); return 0;
         } else if(action=="cacheinfo" && argc==3) {
             const auto policy=cuts.CachePolicy(); const auto stats=cuts.CacheStatistics();
             di<<"sourceLimit "<<std::to_string(policy.SourceBytes).c_str()<<" resultLimit "<<std::to_string(policy.ResultBytes).c_str()<<" sourceReserved "<<std::to_string(stats.SourceReserved).c_str()<<" resultReserved "<<std::to_string(stats.ResultReserved).c_str()<<" sourceEstimate "<<std::to_string(cuts.EstimatedSourceBytes()).c_str()<<" resultEstimate "<<std::to_string(cuts.EstimatedResultBytes(model.Field)).c_str()<<" evictions "<<std::to_string(stats.Evictions).c_str()<<" request "<<std::to_string(cuts.RequestGeneration()).c_str(); return 0;
@@ -309,6 +320,17 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             if(!cuts.SetCachePolicy({(uint64_t)s*1024*1024,(uint64_t)r*1024*1024})) { throw std::invalid_argument("Cache limit is below currently retained geometry reservations"); } return 0;
         } else if(action=="request" && argc==3) { cuts.BeginRequest(std::make_shared<ViewCaeGeom::MeshCutCancellation>()); return 0;
         } else if(action=="cancelrequest" && argc==3) { cuts.CancelRequest(); return 0;
+        } else if(action=="viewid" && argc==3) {
+            const auto view=model.Native->Viewport(); di<<(view.IsNull()?-1:view->View()->Identification()); return 0;
+        } else if(action=="physicsdefault" && (argc==3 || argc==4)) {
+            auto& analysis=model.Native->Analysis();
+            if(argc==3) { di<<(analysis.HasDefault()?1:0); return 0; }
+            if(std::string(argv[3])=="clear") { analysis.ClearDefault(); }
+            else if(!analysis.CaptureDefault(argv[3])) { throw std::invalid_argument(model.Native->LastError()); }
+            return 0;
+        } else if(action=="physicsapplydefault" && (argc==5 || argc==6)) {
+            if(!model.Native->Analysis().ApplyDefault(argv[3],argv[4],argc==6?cutBoolean(argv[5]):false)) { throw std::invalid_argument(model.Native->LastError()); }
+            ok=true;
         } else if (action == "physics" && argc == 5) {
             if(!model.Native->Analysis().SetJson(argv[3],argv[4])) { throw std::invalid_argument(model.Native->LastError()); } ok=true;
         } else if(action == "physicsremove" && argc == 4) {
@@ -1286,6 +1308,7 @@ void ViewCaeTest::CutViewCommands::Factory(Draw_Interpretor& di)
         "  | physicsdisplaygroup requestId sourceMeshObject presentationId\n"
         "  | automatic id crack/density nodalField component threshold sign minimum maximum visibility\n"
         "  | automaticsync provider metadataJSON (version 1 full provider snapshot)\n"
+        "  | share sourceModel | viewid | physicsdefault [requestId/clear] | physicsapplydefault cut requestId [enabled]\n"
         "  | materialframe name reference/updated {step n0 n1 n2}... | follow cut datum\n"
         "  | material cut on/off First/Last/Current | materialstats cut | materialinfo cut\n"
         "  | slicing plane regular/range start spacing/end count | rotational ax ay az ox oy oz start end count | path ux uy uz {x y z}...\n"

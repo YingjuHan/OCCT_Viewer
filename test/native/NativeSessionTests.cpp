@@ -144,6 +144,7 @@ void tests()
     ViewCaeGeom::MeshCutFrame datum; datum.Origin=Graphic3d_Vec3d(.1,.2,.3); require(native.SetDatum("datum",datum)&&native.SetReferenceAxes("datum",true,2),native.LastError());
     ViewCae::MeshCutProbe point; point.Position=Graphic3d_Vec3d(.25,.1,.2); require(native.AddAnnotation("note",point,"Physical heat flux"),native.LastError());
     Viewer::NativeCutAnalysisRequest r; r.Cut="p"; r.Heat=true; r.Field={"heat_flux",true,0,-1}; r.Components={{0,1,2,0,0,0,0,0,0}}; require(native.Analysis().Set("heat",r),native.LastError());
+    require(native.Analysis().CaptureDefault("heat"),native.LastError());
     const double heat=native.Analysis().Reports().at("heat").Total.HeatFlow;
     const auto cad=BRepPrimAPI_MakeBox(1,1,1).Shape(); const auto cadfile=out/"source.brep"; BRepTools::Write(cad,cadfile.string().c_str());
     require(native.SetCadSection(cad,"p",true),native.LastError());
@@ -156,6 +157,8 @@ void tests()
     require(native.Datums().size()==1&&native.ReferenceDatum()=="datum"&&native.Annotations().size()==1,"frames/annotations roundtrip");
     require(!native.CadSection().IsNull()&&!native.GlobalClip().IsNull()&&!native.GlobalClip()->IsOn(),"CAD/clip roundtrip");
     require(std::abs(native.Analysis().Reports().at("heat").Total.HeatFlow-heat)<1e-9,"physical roundtrip");
+    require(native.Analysis().HasDefault() && native.Analysis().DefaultRequest().Cut.empty()
+        && native.Analysis().DefaultRequest().Field.Name=="heat_flux","common physics template roundtrip");
     require(session.Save(file.string(),session.Source(),session.CadSource()),native.LastError()); require(session.Load(file.string()),native.LastError());
     const auto current=read(file);
     {
@@ -202,8 +205,16 @@ void tests()
         require(native.Display()->Cuts().Definitions().size()==1,"legacy definition migration");
     }
     // Older full-session versions migrate missing additions to native defaults.
+    {
+        rapidjson::Document d; d.Parse(current.c_str()); d["version"].SetInt(3);
+        d.RemoveMember("physicsDefault"); d.RemoveMember("plotStyle");
+        auto& definitions=d["definitions"]; definitions["version"].SetInt(12);
+        for(auto& cut:definitions["cuts"].GetArray()) { for(const auto key:{"origin","provider","automaticMin","automaticMax"}) { cut.RemoveMember(key); } }
+        write(out/"v3.json",json(d)); require(session.Load((out/"v3.json").string()),native.LastError());
+        require(!native.Analysis().HasDefault(),"v3 migration invented a common template");
+    }
     for(int version:{1,2}) { rapidjson::Document d; d.Parse(current.c_str()); d["version"].SetInt(version);
-        for(const auto key:{"deformation","deformationScale","styles","overrides","contour","vectors","datums","axes","materialFrames","following","recoverySteps","traceSteps","playback","analysis","analysisSteps","automatic","annotations","cad","clip","camera","cache","geometry"}) { d.RemoveMember(key); }
+        for(const auto key:{"deformation","deformationScale","styles","overrides","contour","vectors","datums","axes","materialFrames","following","recoverySteps","traceSteps","playback","analysis","analysisSteps","automatic","annotations","cad","clip","camera","cache","geometry","physicsDefault","plotStyle"}) { d.RemoveMember(key); }
         write(out/"legacy.json",json(d)); require(session.Load((out/"legacy.json").string()),native.LastError()); require(native.Datums().empty()&&native.Annotations().empty(),"legacy defaults");
     }
     write(file,current); const auto relocated=out/("relocated-"+std::to_string(std::chrono::steady_clock::now().time_since_epoch().count())); fs::create_directories(relocated); fs::copy_file(file,relocated/file.filename());

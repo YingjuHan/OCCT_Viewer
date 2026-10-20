@@ -25,6 +25,7 @@ public:
     NativeCutView(const NativeCutView&) = delete;
     NativeCutView& operator=(const NativeCutView&) = delete;
     const Handle(ViewCae::InteractiveCaeCutView)& Display() const { return myDisplay; }
+    const Handle(V3d_View)& Viewport() const { return myViewport; }
     const std::string& LastError() const { return myError; }
     uint64_t Generation() const { return myGeneration; }
     bool IsDragging() const { return !myDragSnapshot.empty(); }
@@ -68,6 +69,7 @@ private:
     Handle(RWCae::MeshNVecProperty) resolveField(const CutFieldBinding& binding) const;
     void event(CutEditEvent value);
     void synchronized();
+    void displayOwned(const Handle(AIS_InteractiveObject)& object);
     void adopt(NativeCutView& staged);
     Handle(ViewCae::InteractiveCaeCutView) myDisplay;
     Handle(AIS_InteractiveContext) myContext;

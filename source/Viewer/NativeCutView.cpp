@@ -1,5 +1,6 @@
 #include <Viewer/NativeCutView.h>
 #include <Viewer/NativeCutAnalysis.h>
+#include <Graphic3d_ViewAffinity.hxx>
 #include <BRepBuilderAPI_Copy.hxx>
 #include <AIS_InteractiveContext.hxx>
 #include <BRepAlgoAPI_Section.hxx>
@@ -137,6 +138,7 @@ bool NativeCutView::Attach(const Handle(AIS_InteractiveContext)& context, const 
     return attempt([&] {
         if (context.IsNull()) { throw std::invalid_argument("Native cut view needs an AIS context"); }
         if (!viewport.IsNull() && viewport->View()->IsRemoved()) { throw std::invalid_argument("Native viewport has been removed"); }
+        if (!viewport.IsNull() && viewport->Viewer()!=context->CurrentViewer()) { throw std::invalid_argument("Native viewport belongs to another AIS viewer"); }
         myDisplay->Synchronize(); Detach(); myContext = context; myViewport = viewport;
         if (!myViewport.IsNull() && !myGlobalClip.IsNull()) { myViewport->AddClipPlane(myGlobalClip); myDisplay->SetClipPlanes(nullptr); }
         if (!Refresh(false)) { throw std::runtime_error(myError); }
@@ -190,10 +192,11 @@ bool NativeCutView::ShowHandle(const std::string& id, bool gizmo)
             quadric = new ViewCae::InteractiveCaeCutQuadric(myDisplay,id,bounds); guide = quadric;
             if (gizmo) { manipulator = new ViewCae::InteractiveCaeCutQuadricManipulator(quadric); }
         }
-        ClearHandle(); myContext->Display(guide,false);
+        ClearHandle(); displayOwned(guide);
         if (!manipulator.IsNull()) {
             manipulator->Attach(guide,AIS_Manipulator::OptionsForAttach().SetAdjustPosition(false));
             manipulator->SetPosition(!plane.IsNull() ? plane->Frame() : quadric->Frame());
+            displayOwned(manipulator);
         }
         myPlane = plane; myQuadric = quadric; myManipulator = manipulator;
     });
@@ -228,22 +231,33 @@ void NativeCutView::adopt(NativeCutView& staged)
     staged.myCadSection.Nullify(); staged.myCadSource.Nullify(); staged.myGlobalClip.Nullify();
     myAnalysis=std::move(staged.myAnalysis); if(myAnalysis) { myAnalysis->myOwner=this; }
 }
+void NativeCutView::displayOwned(const Handle(AIS_InteractiveObject)& object)
+{
+    if(object.IsNull() || myContext.IsNull()) { return; }
+    object->ViewAffinity()->SetVisible(myViewport.IsNull());
+    if(!myViewport.IsNull()) { object->ViewAffinity()->SetVisible(myViewport->View()->Identification(),true); }
+    myContext->Display(object,false);
+    // AIS resets the mask to all-visible when first registering an object.
+    // Reapply ownership after Display, before any redraw can publish it.
+    object->ViewAffinity()->SetVisible(myViewport.IsNull());
+    if(!myViewport.IsNull()) { myContext->SetViewAffinity(object,myViewport,true); }
+}
 bool NativeCutView::Refresh(bool redraw)
 {
     return attempt([&] {
         if (!myViewport.IsNull() && myViewport->View()->IsRemoved()) { Detach(); throw std::invalid_argument("Native viewport has been removed"); }
         myDisplay->Synchronize();
         if (myContext.IsNull()) { return; }
-        myContext->Display(myDisplay,false);
+        displayOwned(myDisplay);
         // Redisplay unconditionally marks every presentation dirty. Mutable
         // GPU sections already changed their buffers and need only an Update.
         if (myDisplay->RenderStatistics().GpuPlane) { myContext->Update(myDisplay,false); }
         else { myContext->Redisplay(myDisplay,false); }
         if (myDisplay->ContourOptions().ShowLegend) {
-            myContext->Display(myDisplay->Legend(),false); myContext->Redisplay(myDisplay->Legend(),false);
+            displayOwned(myDisplay->Legend()); myContext->Redisplay(myDisplay->Legend(),false);
         } else { myContext->Erase(myDisplay->Legend(),false); }
-        for (const auto& annotation : myAnnotations) { myContext->Display(annotation.second,false); }
-        if (!myCadSection.IsNull()) { myContext->Display(myCadSection,false); }
+        for (const auto& annotation : myAnnotations) { displayOwned(annotation.second); }
+        if (!myCadSection.IsNull()) { displayOwned(myCadSection); }
         if (redraw) { myContext->UpdateCurrentViewer(); }
     });
 }
@@ -263,7 +277,7 @@ void NativeCutView::synchronized()
     }
     if (!myContext.IsNull()) {
         if (myDisplay->ContourOptions().ShowLegend) {
-            myContext->Display(myDisplay->Legend(),false); myContext->Redisplay(myDisplay->Legend(),false);
+            displayOwned(myDisplay->Legend()); myContext->Redisplay(myDisplay->Legend(),false);
         } else { myContext->Erase(myDisplay->Legend(),false); }
     }
 }
@@ -289,7 +303,7 @@ bool NativeCutView::AddAnnotation(const std::string& id, const ViewCae::MeshCutP
         const auto old = myAnnotations.find(id);
         if (old != myAnnotations.end() && !myContext.IsNull()) { myContext->Remove(old->second,false); }
         myAnnotations[id] = label;
-        if (!myContext.IsNull()) { myContext->Display(label,false); }
+        if (!myContext.IsNull()) { displayOwned(label); }
     });
 }
 void NativeCutView::ClearAnnotations()
@@ -343,7 +357,7 @@ bool NativeCutView::SetCadSection(const TopoDS_Shape& shape, const std::string& 
         }
         Handle(AIS_Shape) display = new AIS_Shape(section); display->SetColor(Quantity_Color(Quantity_NOC_BLACK)); display->SetWidth(3);
         if (syncClip && !SetGlobalClip(definition->Plane,true)) { throw std::runtime_error(myError); }
-        if (!myContext.IsNull()) { if (!myCadSection.IsNull()) { myContext->Remove(myCadSection,false); } myContext->Display(display,false); }
+        if (!myContext.IsNull()) { if (!myCadSection.IsNull()) { myContext->Remove(myCadSection,false); } displayOwned(display); }
         myCadSection = display; myCadSource = preserved; myCadCut = id; mySyncClip = syncClip;
     });
 }

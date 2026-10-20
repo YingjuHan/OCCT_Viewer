@@ -1,4 +1,5 @@
 #include <ViewCae/MeshCutGpuPresentation.h>
+#include <Graphic3d_CStructure.hxx>
 #include <ViewCae/CaeMeshTools.h>
 #include <RWCae/MeshAdaptorsIterator.h>
 #include <Graphic3d_AttribBuffer.hxx>
@@ -440,6 +441,7 @@ void MeshCutGpuPresentation::Attach(const Handle(Prs3d_Presentation)& parent,con
         myBodyChanged = !myBodyArrays.empty(); mySliceChanged = !mySlice.IsNull() || !mySliceEdges.IsNull();
     }
     myParent = parent;
+    myBodyStructure->CStructure()->ViewAffinity=parent->CStructure()->ViewAffinity;
     myBodyConnected = false;
     // Compute runs after the parent was cleared. Reattach the slice group;
     // warm plane edits do not request a parent recomputation.

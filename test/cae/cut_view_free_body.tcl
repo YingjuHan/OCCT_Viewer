@@ -50,6 +50,17 @@ proc ::CutViewFreeBody::capture {} {
     scvcutfreebody $model $cut
     return "Captured source display group; recapture after source visibility changes"
 }
+proc ::CutViewFreeBody::captureDefault {} {
+    variable model; variable id
+    scvcutview $model physicsdefault $id
+    return "Captured common template; cut overrides remain independent"
+}
+proc ::CutViewFreeBody::useDefault {} {
+    variable model; variable cut; variable id
+    scvcutview $model physicsapplydefault $cut $id 0
+    scvcutfreebody $model $cut
+    return "Validated common template for this cut; enable when ready"
+}
 proc scvcutfreebody {theModel {theCut ""}} {
     package require Tk
     if {$theCut eq ""} { set theCut $::CutViewManager::selected }
@@ -60,6 +71,9 @@ proc scvcutfreebody {theModel {theCut ""}} {
     set w $::CutViewFreeBody::w; catch {destroy $w}
     set ::CutViewFreeBody::model $theModel; set ::CutViewFreeBody::cut $theCut
     set ::CutViewFreeBody::id "viewcut/$theCut"; set ::CutViewFreeBody::status ""
+    if {![dict get [scvcutview $theModel physicsstate $theCut] configured] && [scvcutview $theModel physicsdefault]} {
+        scvcutview $theModel physicsapplydefault $theCut $::CutViewFreeBody::id 0
+    }
     foreach {key value} {
         field "" mapping point components {0 3 4 3 1 5 4 5 2} heat 0 beam 0 overlay 1 scale 0.1
         group all elements {} absolute 0 units {1 1 1 1 1} origin {0 0 0}
@@ -105,6 +119,8 @@ proc scvcutfreebody {theModel {theCut ""}} {
     ttk::frame $w.actions; pack $w.actions -fill x -padx 8 -pady 4
     ttk::button $w.actions.apply -text Apply -command {::CutViewFreeBody::call apply}
     ttk::button $w.actions.close -text Close -command [list destroy $w]
-    pack $w.actions.apply $w.actions.close -side left -padx 4
+    ttk::button $w.actions.captureDefault -text "Capture common template" -command {::CutViewFreeBody::call captureDefault}
+    ttk::button $w.actions.useDefault -text "Use common template" -command {::CutViewFreeBody::call useDefault}
+    pack $w.actions.apply $w.actions.captureDefault $w.actions.useDefault $w.actions.close -side left -padx 4
     ttk::label $w.status -textvariable ::CutViewFreeBody::status -wraplength 850; pack $w.status -fill x -padx 8 -pady 4
 }

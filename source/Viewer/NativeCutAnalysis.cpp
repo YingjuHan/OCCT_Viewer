@@ -110,7 +110,7 @@ void NativeCutAnalysis::publish(const std::string& id, const NativeCutAnalysisRe
 {
     const auto context = myOwner->myContext;
     if (!context.IsNull()) {
-        try { for (const auto& display : overlays) { context->Display(display,false); } }
+        try { for (const auto& display : overlays) { myOwner->displayOwned(display); } }
         catch (...) { for (const auto& display : overlays) { context->Remove(display,false); } throw; }
         if (myOverlays.count(id)) { for (const auto& display : myOverlays.at(id)) { context->Remove(display,false); } }
     }
@@ -142,6 +142,40 @@ bool NativeCutAnalysis::SetEnabled(const std::string& id,bool enabled)
         if (!Set(id,request)) { throw std::invalid_argument(myOwner->LastError()); }
     });
 }
+bool NativeCutAnalysis::SetDefault(const NativeCutAnalysisRequest& request)
+{
+    return myOwner->attempt([&] {
+        const auto field=myOwner->resolveField(request.Field);
+        if(field.IsNull() || !request.Options.Units.IsValid() || !request.Options.FieldFrame.IsValid()
+            || !request.Options.OutputFrame.IsValid() || request.Options.Normal || request.Options.DomainContains
+            || !std::isfinite(request.ArrowScale) || request.ArrowScale<=0 || !std::isfinite(request.DomainValue)
+            || (request.Options.NormalSign!=1 && request.Options.NormalSign!=-1)
+            || (int)request.Resolution<0 || (int)request.Resolution>2) { throw std::invalid_argument("Invalid common physics template"); }
+        for(int c=0;c<(request.Heat?3:request.Beam?6:9);++c) {
+            if(request.Components[c]<0 || request.Components[c]>=field->NbRawComponents()) { throw std::invalid_argument("Template component outside physical field"); }
+        }
+        if(!request.DomainField.Name.empty()) { const auto domain=myOwner->resolveField(request.DomainField); if(domain.IsNull() || domain->IsNodal()) { throw std::invalid_argument("Template domain requires cell labels"); } }
+        for(auto e:request.Options.Elements) { if(e>=myOwner->Display()->SourceMesh()->NbIndexedElems()) { throw std::invalid_argument("Template element outside source"); } }
+        if(!request.Cut.empty()) { compute(request); }
+        myDefault=request; myDefault.Cut.clear(); myHasDefault=true;
+    });
+}
+bool NativeCutAnalysis::CaptureDefault(const std::string& id)
+{
+    return myOwner->attempt([&] {
+        const auto found=myRequests.find(id);
+        if(found==myRequests.end() || !SetDefault(found->second)) { throw std::invalid_argument("Capture requires a valid configured physical request: "+myOwner->LastError()); }
+    });
+}
+bool NativeCutAnalysis::ApplyDefault(const std::string& cut,const std::string& id,bool enabled)
+{
+    return myOwner->attempt([&] {
+        if(!myHasDefault) { throw std::invalid_argument("No common free-body template is configured"); }
+        auto request=myDefault; request.Cut=cut; request.Enabled=enabled;
+        if(!enabled) { compute(request); }
+        if(!Set(id,request)) { throw std::invalid_argument(myOwner->LastError()); }
+    });
+}
 bool NativeCutAnalysis::SetCutEnabled(const std::string& cut,bool enabled)
 {
     return myOwner->attempt([&] {
@@ -157,7 +191,7 @@ bool NativeCutAnalysis::SetCutEnabled(const std::string& cut,bool enabled)
         // Stage every AIS presentation before replacing any live request.
         const auto context = myOwner->myContext;
         if (!context.IsNull()) {
-            try { for (const auto& c : candidates) { for (const auto& display : c.Overlays) { context->Display(display,false); } } }
+            try { for (const auto& c : candidates) { for (const auto& display : c.Overlays) { myOwner->displayOwned(display); } } }
             catch (...) { for (const auto& c : candidates) { for (const auto& display : c.Overlays) { context->Remove(display,false); } } throw; }
             for (const auto& c : candidates) { for (const auto& display : myOverlays[c.Id]) { context->Remove(display,false); } }
         }
@@ -205,7 +239,7 @@ bool NativeCutAnalysis::Refresh()
         }
         const auto context = myOwner->myContext;
         if (!context.IsNull()) {
-            try { for (const auto& entry : overlays) { for (const auto& display : entry.second) { context->Display(display,false); } } }
+            try { for (const auto& entry : overlays) { for (const auto& display : entry.second) { myOwner->displayOwned(display); } } }
             catch (...) { for (const auto& entry : overlays) { for (const auto& display : entry.second) { context->Remove(display,false); } } throw; }
         }
         Detach();
@@ -229,11 +263,23 @@ void NativeCutAnalysis::Detach()
     if (myOwner->myContext.IsNull()) { return; }
     for (const auto& entry : myOverlays) { for (const auto& display : entry.second) { myOwner->myContext->Remove(display,false); } }
 }
-void NativeCutAnalysis::Close() { Detach(); myRequests.clear(); myReports.clear(); myOverlays.clear(); mySteps.clear(); myAutomatic.clear(); }
+void NativeCutAnalysis::Close() { Detach(); myRequests.clear(); myReports.clear(); myOverlays.clear(); mySteps.clear(); myAutomatic.clear(); ClearDefault(); }
 bool NativeCutAnalysis::PrepareStep(const NativeCutAnalysis& source,int step,bool remesh)
 {
     return myOwner->attempt([&] {
         mySteps = source.mySteps;
+        if(source.myHasDefault) {
+            auto request=source.myDefault;
+            if(remesh && (!request.Options.Elements.empty() || !request.Options.Sections.empty() || !request.Options.ElementNormals.empty())) {
+                throw std::invalid_argument("Remeshed common physics template requires explicit rebinding");
+            }
+            request.Field.Step=step; if(!request.DomainField.Name.empty()) { request.DomainField.Step=step; }
+            for(auto& section:request.Options.Sections) { for(auto& layer:section.second.Layers) {
+                if(layer.Field.IsNull()) { throw std::invalid_argument("Missing template layer field"); }
+                layer.Field=myOwner->resolveField({layer.Field->Name().ToCString(),layer.Field->IsNodal(),0,step});
+            } }
+            if(!SetDefault(request)) { throw std::invalid_argument(myOwner->LastError()); }
+        }
         for (const auto& entry : source.Requests()) {
             auto request = entry.second;
             if (mySteps.count(step) && mySteps.at(step).count(entry.first)) { request = mySteps.at(step).at(entry.first); }

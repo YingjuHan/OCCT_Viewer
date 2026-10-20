@@ -66,7 +66,7 @@
 | A06 切片集合与报告 | P1 | 本包完成（空间平面集合） | R21/R22；规则/范围/旋转/路径等弧长、成组替换与删除、JSON11/session/时间轴、逐片 FE 扫描及 CSV；337.5 万单元三切片门禁通过 |
 | A07 全部 plot options 与多 cut 兼容 | P1 | 本包完成 | R04/R11；动态 plot 继承、独立面/边色与线型、single/abaqus/project 策略；图案边走 CPU，壳云图切线仍连续，见显示指南 |
 | A08 自动 cut 与数据适配 | P2 | 本包完成（显式元数据） | R23；provider 快照、自动移除、定义保护、XFEM 特殊显示和优化阈值、跨帧/session；ODB 发现和有限裂纹域适配不在通用零等值面契约内 |
-| A09 持久化与视口隔离 | P1 | 待开发 | R24/R25；增量版本迁移、完整 session、视口配置与共享源数据拆分 |
+| A09 持久化与视口隔离 | P1 | 本包完成 | R24/R25；session 4/definitions 13、旧版迁移、公共物理模板、共享只读源与独立 BVH、全部自有 AIS 对象/GPU 结构 affinity、Manager 临时状态隔离 |
 | A10 大规模性能及对照验收 | 持续 | 已有基线 | R26 和每包性能门禁；最终再做有 Abaqus 环境的同输入数值/画面对照 |
 
 每包结束单独提交；矩阵按实际测试更新。总进度按通过验收的需求条目统计，当前不提供缺少分母与验收证据的百分比。
@@ -173,3 +173,4 @@ export CUTVIEW_OUTPUT_DIR="$CUT_REPO/build/plot-options-large"
 - A03 最终验收：三个 portion 的当前 FE 采样、共边细分、局部法向、NaN/相对反演拒绝、失败重试释放预算、参考 Apply 原子验证已完成；二次实体/壳、非仿射 hex、梁交点、空截面与 8 个 mask 已覆盖。19 项交互回归及物理/界面/追踪回归通过。最终单独运行 337.5 万单元门禁再次通过，参考求交 1 次，每步 22,801 个节点，source/result 为 `1,461,030,784` / `445,418,560` 字节；三模式四步批次约 1.57/1.70/2.60 秒，不是鼠标 FPS。公共边界采样距离按两侧容差之和验收，没有宣称全域零误差或无反演证明。开始 A04：Manager 自由体、积分域、形心/自定义求和点和分量坐标系。
 - A07 已完成：Release 构建与 12 项相关 CTest 通过；修复 CPU 单色属性容器崩溃及图案边被重置问题。337.5 万单元三模式 × mask 2/3/7 门禁通过，plot 继承和单色切换后暖移动无主体重建/上传，source/result 保留 1,460,965,248 / 597,683,072 字节，限额仍为 4/16 GiB。日志 build/a07-final-tests.log、build/cut-plot-parity-large/run.log；索引已 full+persistence 刷新，OCCT inventory 检查通过。详见 [显示与多 cut 指南](cut-view-manager-plot-parity.md)。
 - A08 已完成：8 项数值、session、时间轴与 Manager 回归通过。337.5 万单元两个优化阈值整批替换并撤销成功，批次 17,715.690 ms，source/result 保留 1,460,965,248 / 460,855,296 字节，4/16 GiB 限额不变；不是鼠标 FPS。修正了 nodal scalar 绑定预验证按完整裁剪结果预留预算的问题，验证只借用标量句柄。日志 build/a08-final-tests.log、build/cut-automatic-large/run.log；持久索引已刷新。详见 [自动切面契约与限制](cut-view-manager-automatic-cuts.md)。
+- A09 已完成：10 项初步回归及扩大后的 7 项回归通过，覆盖 session 1/2/3 迁移、模板跨帧、双视口实际图像、CAD/标注/自由体覆盖和 session 恢复。修复 OCCT 首次 Display 注册时将 affinity 重置为所有视口可见的串显根因。337.5 万单元双视口门禁通过，A 四次暖移动批次 743.501 ms、主体上传为 0，B 定义/预算完全不变；每视口 source 1,460,965,248，A/B result 597,683,072 / 561,011,072 字节。日志 build/a09-scope-fix-tests.log、build/cut-scope-large/run.log；索引已持久刷新，OCCT inventory 已核对。详见 [会话与多视口指南](cut-view-manager-session-scope.md)。

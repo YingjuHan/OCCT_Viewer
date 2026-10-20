@@ -256,7 +256,7 @@ python -B -X utf8 DOCUMENT/tools/build_cut_view_occt_inventory.py --check
 
 ## 扫描范围与完整直接头文件清单
 
-扫描 189 个项目源文件，发现 150 种直接 `.hxx` 依赖。
+扫描 189 个项目源文件，发现 152 种直接 `.hxx` 依赖。
 这是指定范围的词法依赖清单，不是完整运行时调用图。头文件可能只提供类型，
 不能据此断言该算法每帧执行。OCCT 内部传递调用、虚函数调度和模板展开未展开。
 核心功能与成员方法的人工核对见前文；引用位置由下面的列表覆盖。
@@ -307,7 +307,8 @@ python -B -X utf8 DOCUMENT/tools/build_cut_view_occt_inventory.py --check
 | GPU / 图形结构 | `Graphic3d_AspectMarker3d.hxx` | — | [InteractiveCaeCutView](../source/ViewCae/InteractiveCaeCutView.h)、[MeshPresentation](../source/ViewCae/MeshPresentation.h) |
 | GPU / 图形结构 | `Graphic3d_AttribBuffer.hxx` | — | [MeshCutGpuPresentation](../source/ViewCae/MeshCutGpuPresentation.cpp) |
 | GPU / 图形结构 | `Graphic3d_Buffer.hxx` | — | [MeshData](../source/RWCae/MeshData.cpp)、[MeshData](../source/RWCae/MeshData.h) |
-| GPU / 图形结构 | `Graphic3d_CView.hxx` | — | [NativeCutView](../source/Viewer/NativeCutView.cpp) |
+| GPU / 图形结构 | `Graphic3d_CStructure.hxx` | — | [MeshCutGpuPresentation](../source/ViewCae/MeshCutGpuPresentation.cpp) |
+| GPU / 图形结构 | `Graphic3d_CView.hxx` | — | [NativeCutView](../source/Viewer/NativeCutView.cpp)、[CutViewCommands](../source-draw/ViewCaeTest/CutViewCommands.cpp) |
 | GPU / 图形结构 | `Graphic3d_Camera.hxx` | — | [NativeCutSession](../source/Viewer/NativeCutSession.cpp) |
 | GPU / 图形结构 | `Graphic3d_ClipPlane.hxx` | — | [MeshAdaptor](../source/RWCae/MeshAdaptor.h)、[MeshBvhData](../source/ViewCaeGeom/MeshBvhData.h)、[MeshGeometryBlock](../source/ViewCaeGeom/MeshGeometryBlock.h)、[MeshGeometryClip](../source/ViewCaeGeom/MeshGeometryClip.h) |
 | GPU / 图形结构 | `Graphic3d_Group.hxx` | `AddPrimitiveArray` | [InteractiveCaeCutView](../source/ViewCae/InteractiveCaeCutView.cpp)、[MeshCutGpuPresentation](../source/ViewCae/MeshCutGpuPresentation.h)、[MeshPartGeneralCells](../source/ViewCae/MeshPartGeneralCells.cpp) |
@@ -322,6 +323,7 @@ python -B -X utf8 DOCUMENT/tools/build_cut_view_occt_inventory.py --check
 | GPU / 图形结构 | `Graphic3d_Vec.hxx` | — | [MeshCutPlanePlacement](../source/ViewCaeGeom/MeshCutPlanePlacement.h) |
 | GPU / 图形结构 | `Graphic3d_Vec2.hxx` | — | [MeshNVecProperty](../source/RWCae/MeshNVecProperty.cpp) |
 | GPU / 图形结构 | `Graphic3d_Vec3.hxx` | `Cross` | [MeshInfo](../source/RWCae/MeshInfo.h)、[MeshCellKernel](../source/ViewCaeGeom/MeshCellKernel.cpp) |
+| GPU / 图形结构 | `Graphic3d_ViewAffinity.hxx` | — | [NativeCutView](../source/Viewer/NativeCutView.cpp) |
 | XML | `LDOMParser.hxx` | — | [VtkBaseXMLReader](../source/RWVtk/VtkBaseXMLReader.h)、[VtkMultiBlockDataReader](../source/RWVtk/VtkMultiBlockDataReader.h)、[VtkReferenceStager](../source/RWVtk/VtkReferenceStager.cpp)、[VtkUnstructuredDataReader](../source/RWVtk/VtkUnstructuredDataReader.h)、[NativeCutSession](../source/Viewer/NativeCutSession.cpp) |
 | XML | `LDOM_XmlWriter.hxx` | — | [VtkReferenceStager](../source/RWVtk/VtkReferenceStager.cpp) |
 | 交互与对象生命周期 | `AIS_ClippingPlanes.hxx` | `ProcessDragging` | [InteractiveCaeCutPlane](../source/ViewCae/InteractiveCaeCutPlane.h) |

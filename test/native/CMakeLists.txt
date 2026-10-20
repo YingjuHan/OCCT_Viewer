@@ -320,6 +320,11 @@ if (TARGET ViewDraw)
       add_test (NAME draw_cut_view_slices COMMAND "${OCCTV_DRAWEXE}" -i -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_slices_test.tcl")
       add_test (NAME draw_cut_view_plot_parity COMMAND "${OCCTV_DRAWEXE}" -i -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_plot_parity_test.tcl")
       add_test (NAME draw_cut_view_automatic COMMAND "${OCCTV_DRAWEXE}" -i -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_automatic_test.tcl")
+      add_test (NAME draw_cut_view_scope COMMAND "${OCCTV_DRAWEXE}" -i -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_scope_test.tcl")
+      set_tests_properties (draw_cut_view_scope PROPERTIES
+        ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-scope"
+        PASS_REGULAR_EXPRESSION "CUT_VIEW_SCOPE_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_SCOPE_FAIL"
+        RUN_SERIAL TRUE TIMEOUT 120)
       set_tests_properties (draw_cut_view_automatic PROPERTIES
         ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-automatic"
         PASS_REGULAR_EXPRESSION "CUT_VIEW_AUTOMATIC_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_AUTOMATIC_FAIL"

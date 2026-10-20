@@ -3,7 +3,7 @@
 #include <Viewer/NativeCutTimeline.h>
 #include <RWVtk/VtkResourceLimits.h>
 namespace Viewer {
-//! Version 3 native sessions reference frozen source bundles with SHA-256 identities.
+//! Version 4 native sessions reference frozen source bundles with SHA-256 identities.
 //! All resolution, validation and AIS preparation completes before live publication.
 class Standard_EXPORT NativeCutSession {
 public:

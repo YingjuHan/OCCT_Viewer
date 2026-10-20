@@ -137,8 +137,10 @@ void tests()
     require(timeline.BindCutFrame("p","moving"),native.LastError());
     Viewer::NativeCutAnalysisRequest heat; heat.Cut="p"; heat.Heat=true; heat.Field={"displacement",true,0,0}; heat.Components={{0,1,2,0,0,0,0,0,0}};
     require(native.Analysis().Set("heat",heat),native.LastError());
+    require(native.Analysis().CaptureDefault("heat"),native.LastError());
     require(timeline.SwitchStep(1),native.LastError());
     require(native.Analysis().Requests().at("heat").Field.Step==1,"Stale physical step binding");
+    require(native.Analysis().HasDefault() && native.Analysis().DefaultRequest().Field.Step==1,"Stale common template step binding");
     closeTo(native.Analysis().Reports().at("heat").Total.HeatFlow,.28125);
     require(native.Display() != initial && initial->Cuts().Definitions().empty(),"Old display/handles remain live");
     closeTo(native.Datums().at("moving").Origin.x(),0.2); closeTo(native.Datums().at("fixed").Origin.x(),0);
