@@ -434,6 +434,14 @@ proc ::CutViewManager::field {{selectionChanged 0}} {
     if {$component > $max} {
         if {$selectionChanged} { set component 0 } else { error "Result component is outside the selected field" }
     }
+    # Opening/reopening the manager initializes widgets, not the field itself.
+    # Query live metadata: the cached UI list can predate a recent selection.
+    foreach current [scvcutview $model fields] {
+        if {[dict get $current active] && [dict get $current component] == $component
+            && [dict get $current name] eq [dict get $field name]
+            && [dict get $current mapping] eq [dict get $field mapping]
+            && [dict get $current step] == [dict get $field step]} { return }
+    }
     scvcutview $model field [dict get $field mapping] [dict get $field name] $component [dict get $field step]
 }
 

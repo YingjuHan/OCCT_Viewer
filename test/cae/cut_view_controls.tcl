@@ -155,6 +155,10 @@ proc ui_check_section {id} {
 proc ui_run {} {
     global controls_dir controls_output ui_model
     source [file join $controls_dir cut_view_demo.tcl]
+    set beforeOpen [dict get [scvcutview $ui_model presentation x] revision]
+    ::CutViewManager::close
+    scvcutmanager $ui_model
+    ui_assert {[dict get [scvcutview $ui_model presentation x] revision] == $beforeOpen} "Reopening manager invalidated the active field"
     if {$::tcl_platform(platform) eq "windows"} {
         # Exercise real Tk dialogs with the same options and widget assertions.
         # Windows shell dialogs do not expose Tk widgets to event generate.

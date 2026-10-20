@@ -744,6 +744,32 @@ static void gpuPlaneWireframe()
         "Mixed styles did not preserve CPU fallback");
 }
 
+static void gpuBodyBudgetReuse()
+{
+    Handle(ViewCae::InteractiveCaeCutView) view = new ViewCae::InteractiveCaeCutView(tetra());
+    auto& cuts = view->Cuts(); cuts.AddPlane("x",Graphic3d_Vec4d(1,0,0,-.25)); cuts.SetVisibility("x",3);
+    const auto initial = field("x",true,{0,1,0,0}); view->SetField(initial); view->Synchronize();
+    const auto used = cuts.CacheStatistics();
+    const auto limit = used.ResultReserved+65536;
+    require(cuts.SetCachePolicy({cuts.CachePolicy().SourceBytes,limit}),"Set tight GPU budget");
+    using Mode = ViewCae::InteractiveCaeMeshPrsMode;
+    for (int repeat = 0; repeat < 3; ++repeat) {
+        // Explicit SetField remains a valid way to refresh an in-place edit.
+        initial->GetComponent(0)->SetValue(RWCae::MeshPropertyEntityInfo(1),2+repeat);
+        initial->UpdateComponents(); view->SetField(initial); view->Synchronize();
+        require(view->RenderStatistics().SubmittedBodyBytes > 0,"Explicit same-field update lost UV submission");
+        const auto section = cuts.EvaluateSectionForDisplay("x",initial);
+        near(section.Fields[1]->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(0)),.25*(2+repeat),
+            "In-place field refresh left stale slice values");
+        for (const auto mode : {Mode::MeshEdges,Mode::ShadedMeshEdges,Mode::FlatShaded}) {
+            view->SetMeshDisplayMode(mode); view->Synchronize();
+            require(view->RenderStatistics().GpuPlane && cuts.CacheStatistics().ResultReserved <= limit,
+                "Mode switch duplicated the resident body reservation");
+        }
+    }
+    require(cuts.CacheStatistics().ResultReserved <= used.ResultReserved+18432,"Repeated field/mode edits grew body reservations");
+}
+
 int main()
 {
     try {
@@ -761,6 +787,7 @@ int main()
         displaySectionOnly();
         gpuPlanePrimitives();
         gpuPlaneWireframe();
+        gpuBodyBudgetReuse();
         std::cout << "Cut view numerical tests passed\n";
         return 0;
     } catch (const std::exception& error) {

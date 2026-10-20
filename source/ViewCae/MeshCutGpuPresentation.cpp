@@ -141,14 +141,22 @@ void MeshCutGpuPresentation::Update(const Handle(MeshPresentationScalar)& body,
         if (!bounds.IsVoid()) { const auto a = bounds.CornerMin(), b = bounds.CornerMax(); origin = Graphic3d_Vec3d((a.X()+b.X())/2,(a.Y()+b.Y())/2,(a.Z()+b.Z())/2); }
     }
     auto bodyLease = myBodyLease;
+    auto bodyReserved = myBodyReserved;
     auto bodyArrays = myBodyArrays;
     uint64_t bodyBytes = 0;
     std::vector<std::vector<Graphic3d_Vec2>> bodyUVs;
     if (bodyChanged) {
         const auto data = body->GetMeshGeometry()->GetLastNotModifierChild()->GetMeshData();
-        // Preflight before primitive construction, including old/new coexistence.
+        // The conservative bound covers resident + staged CPU/GPU primitives
+        // for every body mode. Field/style edits reuse that capacity; charging
+        // a second full body lease would reject unchanged geometry near budget.
         const uint64_t bound = (uint64_t)(data->NbSurfElems()+data->NbElems2d())*64*(sizeof(SliceVertex)+sizeof(unsigned))+65536;
-        bodyLease = cuts.ReserveDisplayBytes(bound);
+        if (bound > bodyReserved) {
+            auto extra = cuts.ReserveDisplayBytes(bound-bodyReserved);
+            if (!bodyLease) { bodyLease = std::move(extra); }
+            else { bodyLease = std::make_shared<std::pair<std::shared_ptr<void>,std::shared_ptr<void>>>(bodyLease,std::move(extra)); }
+            bodyReserved = bound;
+        }
         const auto& parts = body->GetParts();
         std::vector<Handle(Graphic3d_ArrayOfPrimitives)> inputs;
         for (int i = 0; i < MeshNbPartTypes; ++i) {
@@ -344,6 +352,7 @@ void MeshCutGpuPresentation::Update(const Handle(MeshPresentationScalar)& body,
     myBodyShader = bodyShader; mySliceShader = sliceShader;
     myBodyEdgeShader = bodyEdgeShader; mySliceEdgeShader = sliceEdgeShader;
     mySlice = slice; mySliceBounds = sliceBounds; myBodyLease = bodyLease; mySliceLease = sliceLease;
+    myBodyReserved = bodyReserved;
     mySliceEdges = sliceEdge; mySliceEdgeLease = sliceEdgeLease;
     myShowBody = showBody; myShowSlice = showSlice && (!vertices.empty() || !edgeVertices.empty());
     myPlane = definition.Plane; myMask = mask;

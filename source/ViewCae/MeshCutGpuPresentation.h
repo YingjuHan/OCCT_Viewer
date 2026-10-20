@@ -31,6 +31,7 @@ private:
     Graphic3d_Vec3d myOrigin = Graphic3d_Vec3d(0);
     uint64_t mySourceEpoch = 0;
     uint64_t myBodyEpoch = 0;
+    uint64_t myBodyReserved = 0;
     Bnd_Box myBounds;
     Bnd_Box mySliceBounds;
     Handle(Graphic3d_ArrayOfTriangles) mySlice;

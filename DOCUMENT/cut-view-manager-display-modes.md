@@ -123,3 +123,29 @@ Windows / MinGW Release，i7-1165G7，DRAW 1000×720，无 GDB，`hex_150.vtu` �
 7 组均通过 `CUT_DRAG_BENCHMARK_PASS`，包含释放/取消和像素变化验证。原始日志、CSV 与图像在本地 `build/cut-modes-large/<模式>-<mask>/`；这些构建产物不纳入 Git。
 
 6 项 CTest 通过：`cut_view`、`cut_display`、`draw_cut_view_gpu_plane`、`draw_cut_view_display_modes`、`draw_cut_view_controls`、`draw_cut_view_interaction`。另外直接运行演示脚本并触发三种 Manager Display 回调，验证通过。线框回归检查四边截面只有 4 条周边线、没有扇形对角线，模式切换与空截面没有遗留图元。Linux 命令已列出，当前环境未实际执行 Linux / CentOS 构建。
+
+## 6. 直接启动大模型的缓存预算回归
+
+初版三模式演示存在一条漏测路径：先显示源体，再打开 Manager。Manager 初始化 Result 控件时又绑定了一次已经激活的 `temperature`，触发字段失效；GPU 层把字段更新当成新的源体预算，再预留约 297 MiB。结果预算已保守记账至 17,010,275,392 字节，再申请 311,105,536 字节会超过默认 16 GiB 上限。该数值是逻辑预算预留，不能解释为进程实际占用 16 GiB。
+
+修复包含两点：Manager 用实时字段元数据判断绑定是否已匹配，只初始化控件时不重复绑定；源体图元预算按已预留容量复用，字段/模式更新不再重复收取整份源体预算，容量增长才申请差额。此容量边界已包含暂存与当前 CPU/GPU 图元；仍在构造前检查预算，未提高上限。显式重新绑定同一字段仍可刷新原地修改的字段值。
+
+此前的大数据拖动基准在显示源体前先打开仅切面的 Manager，没有覆盖此启动顺序。新增 [cut_view_display_modes_large.tcl](../test/cae/cut_view_display_modes_large.tcl) 直接运行用户演示入口，强制至少百万单元，随后反复打开 Manager、切换三种模式、重绑节点/单元字段，再移动切面；检查预算稳定和源体零重复提交。
+
+Windows 设置前文运行环境后执行：
+
+```powershell
+& 'D:\workspace\OpenCASCADE\OCCT_private\install\mingw\win64\gcc\bin\DRAWEXE.exe' -i -f 'D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_display_modes_large.tcl'
+```
+
+Linux 设置 Release 环境后执行：
+
+```bash
+export CUTVIEW_BENCHMARK_FILE="$CUT_REPO/build/large-vtk/hex_150.vtu"
+export CUTVIEW_OUTPUT_DIR="$CUT_REPO/build/cut-modes-large-budget"
+"$CUT_DRAWEXE" -i -f "$CUT_REPO/test/cae/cut_view_display_modes_large.tcl"
+```
+
+修复后 Windows 上用 3,375,000 单元完成该测试，输出 `CUT_MODES_LARGE_PASS`。默认 source/result 限额仍为 4/16 GiB；三轮字段和模式切换后结果预留仍为 17,010,275,392 字节。另通过 `cut_view` 的紧预算及原地字段刷新回归、`cut_cache`、`draw_cut_view_controls`、`draw_cut_view_gpu_plane` 和 `draw_cut_view_display_modes`。
+
+已经加载旧 DLL 的 DRAW 需要重启，再使用 `build/mingw-release/bin/viewdraw-runtime.tcl`；重新 `source` 只能更新 Tcl，不能替换进程中已加载的 C++ DLL。
