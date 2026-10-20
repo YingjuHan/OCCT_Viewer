@@ -47,6 +47,19 @@ void tests()
     closeTo(report.Total.Area,0.28125); closeTo(report.Total.Force.x(),1.125);
     closeTo(report.Total.Moment.y(),0.28125); closeTo(report.Total.Moment.z(),-0.28125);
     require(!report.Distributed.empty() && report.Csv().find("Fx_N") != std::string::npos && report.Csv().find("total") != std::string::npos,"Distributed CSV report");
+    options.SumPoint=MeshCutSummationPoint::Centroid;
+    const auto centred=MeshCutPhysics::Stress(cut,components,options);
+    for(int c=0;c<3;++c) { closeTo(centred.Centroid[c],.25); closeTo(centred.MomentOrigin[c],.25); closeTo(centred.Total.Moment[c],0); }
+    closeTo(centred.MeanNormal.x(),1); closeTo(centred.Total.Force.x(),1.125);
+    options.NormalSign=-1; const auto reverse=MeshCutPhysics::Stress(cut,components,options);
+    closeTo(reverse.Total.Force.x(),-centred.Total.Force.x()); closeTo(reverse.MeanNormal.x(),-1);
+    closeTo(MeshCutPhysics::HeatFlux(manager.EvaluatePhysical("p",flux(volume,Graphic3d_Vec3d(0),false)),{{0,1,2}},options).Total.HeatFlow,-.5625);
+    options.SumPoint=MeshCutSummationPoint::UserDefined; options.NormalSign=1; options.MomentOrigin=Graphic3d_Vec3d(.1,.2,.3);
+    const auto shifted=MeshCutPhysics::Stress(cut,components,options);
+    const auto expected=report.Total.Moment-Graphic3d_Vec3d::Cross(options.MomentOrigin,report.Total.Force);
+    for(int c=0;c<3;++c) { closeTo(shifted.Total.Moment[c],expected[c]); }
+    options.NormalSign=0; rejects([&] { MeshCutPhysics::Stress(cut,components,options); });
+    options=MeshCutPhysicsOptions();
     options.GroupName = "part"; options.Elements = {0}; options.Units.Length = "mm"; options.Units.LengthToSI = 0.001;
     options.Units.Stress = "MPa"; options.Units.StressToSI = 1e6;
     options.OutputFrame.X = Graphic3d_Vec3d(0,1,0); options.OutputFrame.Y = Graphic3d_Vec3d(-1,0,0);
@@ -71,6 +84,10 @@ void tests()
     MeshCutSectionMapping mapping; mapping.Kind = MeshCutSectionKind::ShellStress; mapping.Thickness = 0.2; options.Sections[0] = mapping;
     auto shellReport = MeshCutPhysics::Stress(shellCut,components,options);
     closeTo(shellReport.Total.Force.x(),0.6); closeTo(shellReport.Total.Area,0.15); closeTo(shellReport.Total.Moment.z(),-0.225);
+    options.SumPoint=MeshCutSummationPoint::Centroid;
+    const auto shellCentre=MeshCutPhysics::Stress(shellCut,components,options);
+    closeTo(shellCentre.MomentOrigin.x(),.25); closeTo(shellCentre.MomentOrigin.y(),.375); closeTo(shellCentre.Total.Moment.z(),0);
+    options.SumPoint=MeshCutSummationPoint::UserDefined;
     mapping.Kind = MeshCutSectionKind::CompositeStress;
     MeshCutLayer layer; layer.Field = shellField; layer.Thickness = 0.1; layer.Offset = 0.05;
     MeshCutLayer second = layer; second.Field = tensor(shell,8); second.Offset = -0.05;
@@ -87,6 +104,17 @@ void tests()
     closeTo(MeshCutPhysics::Beam(beamPlane,beamField,components,options).Total.Force.x(),2);
     mapping.Kind = MeshCutSectionKind::BeamResultants; options.Sections[0] = mapping;
     const auto preintegrated = MeshCutPhysics::Beam(beamPlane,beamField,components,options); closeTo(preintegrated.Total.Force.x(),4); closeTo(preintegrated.Total.Moment.y(),4);
+    Handle(RWCae::MeshNVecProperty) displacement=new RWCae::MeshNVecProperty("U",3,RWCae::MeshPropertyBase::MappingType::Nodal,RWCae::MeshNVecPropertyType::Vector);
+    displacement->Init<RWCae::MeshScalarProperty>();
+    for(int c=0;c<3;++c) { auto v=Handle(RWCae::MeshScalarProperty)::DownCast(displacement->GetComponent(c)); v->Init(beam->NbNodes()); for(RWCae::MeshEntityId n=0;n<beam->NbNodes();++n) { v->SetValue(RWCae::MeshPropertyEntityInfo(n),c==0?1:0); } }
+    displacement->UpdateComponents();
+    options.ReferenceGeometry=beamManager.SourceGeometry();
+    MeshCutViewManager currentBeam(beam); require(currentBeam.SetDeformation(displacement,1),"Beam deformation"); options.SourceGeometry=currentBeam.SourceGeometry();
+    beamPlane.FollowDeformation=true; options.SumPoint=MeshCutSummationPoint::Centroid;
+    const auto materialBeam=MeshCutPhysics::Beam(beamPlane,beamField,components,options);
+    closeTo(materialBeam.Total.Force.x(),4); closeTo(materialBeam.Centroid.x(),1.25);
+    options.ReferenceGeometry.Nullify(); rejects([&] { MeshCutPhysics::Beam(beamPlane,beamField,components,options); });
+    options.ReferenceGeometry=beamManager.SourceGeometry(); beamPlane.FollowDeformation=false; options.SourceGeometry=beamManager.SourceGeometry(); options.SumPoint=MeshCutSummationPoint::UserDefined;
     mapping.BeamComponents[5]=99; options.Sections[0]=mapping; rejects([&] { MeshCutPhysics::Beam(beamPlane,beamField,components,options); });
     mapping=MeshCutSectionMapping(); mapping.Kind=MeshCutSectionKind::ShellStress; mapping.Thickness=.1; options.Sections[0]=mapping; rejects([&] { MeshCutPhysics::Beam(beamPlane,beamField,components,options); });
     options = MeshCutPhysicsOptions();

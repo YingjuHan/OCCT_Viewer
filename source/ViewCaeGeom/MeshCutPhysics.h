@@ -7,6 +7,7 @@
 
 namespace ViewCaeGeom {
 enum class MeshCutSummation { Signed, AbsoluteContributions };
+enum class MeshCutSummationPoint { UserDefined, Centroid };
 enum class MeshCutSectionKind { Volume, ShellStress, CompositeStress, BeamStress, BeamResultants };
 //! All factors convert the explicitly named input units to SI; output is N, Nm, m2, W.
 struct MeshCutUnits {
@@ -32,13 +33,17 @@ struct MeshCutSectionMapping {
 struct MeshCutPhysicsOptions {
     std::string GroupName = "all";
     std::set<RWCae::MeshEntityId> Elements; //!< Empty only means all for GroupName == "all".
+    std::function<bool(RWCae::MeshEntityId)> DomainContains; //!< Explicit live domain adapter; false never means whole model.
     MeshCutUnits Units;
     MeshCutFrame OutputFrame; //!< Result vectors and positions expressed in this frame.
     MeshCutFrame FieldFrame; //!< Input vector/tensor frame.
     Graphic3d_Vec3d MomentOrigin = Graphic3d_Vec3d(0); //!< Global, input length units.
+    MeshCutSummationPoint SumPoint = MeshCutSummationPoint::UserDefined;
+    int NormalSign = 1; //!< +1 Below -> Above; -1 Above -> Below.
     MeshCutSummation Summation = MeshCutSummation::Signed;
     std::map<RWCae::MeshEntityId,MeshCutSectionMapping> Sections;
     Handle(MeshGeometry) SourceGeometry; //!< Explicit configuration for beam intersection positions.
+    Handle(MeshGeometry) ReferenceGeometry; //!< Material beam reference crossing; current position still uses SourceGeometry.
     //! Isosurfaces require explicit normal mapping; sphere/cylinder use analytic outward normals.
     std::function<Graphic3d_Vec3d(RWCae::MeshEntityId,const Graphic3d_Vec3d&)> Normal;
     std::map<RWCae::MeshEntityId,Graphic3d_Vec3d> ElementNormals; //!< Explicit serializable normals, e.g. planar distance fields.
@@ -52,6 +57,10 @@ struct MeshCutDistributedResult {
 struct MeshCutPhysicsReport {
     std::string Cut, Group;
     MeshCutResultant Total;
+    Graphic3d_Vec3d Centroid = Graphic3d_Vec3d(0); //!< Output-frame coordinates, metres.
+    Graphic3d_Vec3d MomentOrigin = Graphic3d_Vec3d(0); //!< Actual summation point, output frame/metres.
+    Graphic3d_Vec3d MeanNormal = Graphic3d_Vec3d(0); //!< Oriented area-weighted direction, output frame.
+    MeshCutFrame OutputFrame;
     std::vector<MeshCutDistributedResult> Distributed;
     double IntervalBegin = 0, IntervalEnd = 0;
     Standard_EXPORT std::string Csv() const;

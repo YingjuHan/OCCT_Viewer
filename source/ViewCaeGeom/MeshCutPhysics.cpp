@@ -35,7 +35,9 @@ void validate(const MeshCutResult& cut, const MeshCutPhysicsOptions& options)
 {
     if (cut.PresentationOnly || cut.Portions[1].IsNull() || cut.Roots[1].IsNull()
         || !options.Units.IsValid() || !options.OutputFrame.IsValid() || !options.FieldFrame.IsValid()
-        || options.GroupName.empty() || (options.GroupName != "all" && options.Elements.empty())
+        || options.GroupName.empty() || (options.GroupName != "all" && options.Elements.empty() && !options.DomainContains)
+        || (options.NormalSign != -1 && options.NormalSign != 1)
+        || (options.SumPoint != MeshCutSummationPoint::UserDefined && options.SumPoint != MeshCutSummationPoint::Centroid)
         || (options.Summation != MeshCutSummation::Signed && options.Summation != MeshCutSummation::AbsoluteContributions)) {
         throw std::invalid_argument("Physics requires a numerical section, explicit group, units and frames");
     }
@@ -74,20 +76,20 @@ void validate(const MeshCutResult& cut, const MeshCutPhysicsOptions& options)
         }
     }
 }
-bool included(const MeshCutPhysicsOptions& options, Id e) { return options.Elements.empty() || options.Elements.count(e); }
+bool included(const MeshCutPhysicsOptions& options, Id e) { return (!options.DomainContains || options.DomainContains(e)) && (options.Elements.empty() || options.Elements.count(e)); }
 Vec normal(const MeshCutDefinition& definition, Id e, const Vec& p, const MeshCutPhysicsOptions& options)
 {
-    if (options.Normal) { return unit(options.Normal(e,p)); }
+    if (options.Normal) { return unit(options.Normal(e,p))*options.NormalSign; }
     if (!options.ElementNormals.empty()) {
         const auto found = options.ElementNormals.find(e);
         if (found == options.ElementNormals.end()) { throw std::invalid_argument("Missing explicit physical normal for source element"); }
-        return unit(found->second);
+        return unit(found->second)*options.NormalSign;
     }
-    if (definition.Shape == MeshCutShape::Plane) { return unit(Vec(definition.Plane.x(),definition.Plane.y(),definition.Plane.z())); }
+    if (definition.Shape == MeshCutShape::Plane) { return unit(Vec(definition.Plane.x(),definition.Plane.y(),definition.Plane.z()))*options.NormalSign; }
     auto n = p-definition.Center;
     if (definition.Shape == MeshCutShape::Cylinder) { n -= definition.Axis*n.Dot(definition.Axis); }
     else if (definition.Shape != MeshCutShape::Sphere) { throw std::invalid_argument("Isosurface physics requires explicit local normal mapping"); }
-    return unit(n);
+    return unit(n)*options.NormalSign;
 }
 template<size_t N> std::array<double,N> values(const Handle(RWCae::MeshNVecProperty)& field,
     const std::array<int,N>& components, Id primitive, const std::vector<std::pair<Id,double>>& weights)
@@ -119,10 +121,6 @@ void add(MeshCutPhysicsReport& report, MeshCutDistributedResult item, const Mesh
     item.Result.Force = options.OutputFrame.VectorToLocal(item.Result.Force);
     item.Result.Moment = options.OutputFrame.VectorToLocal(item.Result.Moment);
     item.Normal = options.OutputFrame.VectorToLocal(item.Normal);
-    if (options.Summation == MeshCutSummation::AbsoluteContributions) {
-        for (int c = 0; c < 3; ++c) { item.Result.Force[c] = std::abs(item.Result.Force[c]); item.Result.Moment[c] = std::abs(item.Result.Moment[c]); }
-        item.Result.HeatFlow = std::abs(item.Result.HeatFlow);
-    }
     report.Total.Force += item.Result.Force; report.Total.Moment += item.Result.Moment;
     report.Total.Area += item.Result.Area; report.Total.HeatFlow += item.Result.HeatFlow;
     for (int c = 0; c < 3; ++c) {
@@ -131,11 +129,45 @@ void add(MeshCutPhysicsReport& report, MeshCutDistributedResult item, const Mesh
     if (!std::isfinite(report.Total.Area) || !std::isfinite(report.Total.HeatFlow)) { throw std::invalid_argument("Physical scalar resultant overflow"); }
     report.Distributed.push_back(item);
 }
+void finish(MeshCutPhysicsReport& report,const MeshCutPhysicsOptions& options)
+{
+    report.OutputFrame = options.OutputFrame;
+    const auto oldOrigin = options.OutputFrame.PointToLocal(options.MomentOrigin)*options.Units.LengthToSI;
+    double area = 0; Vec weighted(0), normal(0);
+    for (const auto& item : report.Distributed) {
+        area += item.Result.Area; weighted += item.Position*item.Result.Area; normal += item.Normal*item.Result.Area;
+    }
+    if (area > 0) { report.Centroid = weighted/area; }
+    else if (!report.Distributed.empty()) {
+        // Beam crossings have no surface area; their connectivity-line locations define the centre.
+        for (const auto& item : report.Distributed) { report.Centroid += item.Position; normal += item.Normal; }
+        report.Centroid /= (double)report.Distributed.size();
+    } else if (options.SumPoint == MeshCutSummationPoint::Centroid) {
+        throw std::invalid_argument("Empty cut/domain has no section centroid");
+    }
+    const double normalLength = normal.Modulus();
+    const double normalWeight = area > 0 ? area : (double)report.Distributed.size();
+    report.MeanNormal = normalLength > normalWeight*1e-12 ? normal/normalLength : Vec(0);
+    report.MomentOrigin = options.SumPoint == MeshCutSummationPoint::Centroid ? report.Centroid : oldOrigin;
+    report.Total = MeshCutResultant();
+    for (auto& item : report.Distributed) {
+        item.Result.Moment += Vec::Cross(oldOrigin-report.MomentOrigin,item.Result.Force);
+        if (options.Summation == MeshCutSummation::AbsoluteContributions) {
+            for (int c = 0; c < 3; ++c) { item.Result.Force[c] = std::abs(item.Result.Force[c]); item.Result.Moment[c] = std::abs(item.Result.Moment[c]); }
+            item.Result.HeatFlow = std::abs(item.Result.HeatFlow);
+        }
+        report.Total.Area += item.Result.Area; report.Total.Force += item.Result.Force;
+        report.Total.Moment += item.Result.Moment; report.Total.HeatFlow += item.Result.HeatFlow;
+    }
+    for (const auto& vector : {report.Centroid,report.MomentOrigin,report.Total.Force,report.Total.Moment}) {
+        for (int c = 0; c < 3; ++c) { if (!std::isfinite(vector[c])) { throw std::invalid_argument("Physical summation overflow"); } }
+    }
+}
 template<size_t N, class Evaluate> MeshCutPhysicsReport integrate(const MeshCutResult& cut,
     const std::array<int,N>& components, const MeshCutPhysicsOptions& options, Evaluate evaluate)
 {
     validate(cut,options);
-    if (cut.Definition.FollowDeformation && !cut.MaterialNormal && !options.Normal && options.ElementNormals.empty()) {
+    if (cut.Definition.FollowDeformation && !cut.MaterialNormal && options.ReferenceGeometry.IsNull() && !options.Normal && options.ElementNormals.empty()) {
         throw std::invalid_argument("Material section physics requires current-configuration local normals");
     }
     MeshCutPhysicsReport report; report.Cut = cut.Definition.Id; report.Group = options.GroupName;
@@ -159,7 +191,7 @@ template<size_t N, class Evaluate> MeshCutPhysicsReport integrate(const MeshCutR
                 auto localNormal = [&](const Vec& position) {
                     if (!cut.Definition.FollowDeformation || options.Normal || !options.ElementNormals.empty()) { return normal(cut.Definition,origin,position,options); }
                     auto n = unit(Vec::Cross(p[1]-p[0],p[2]-p[0]));
-                    return n.Dot(cut.MaterialNormal(elem.GlobalIndex(),false)) < 0 ? -n : n;
+                    return (n.Dot(cut.MaterialNormal(elem.GlobalIndex(),false)) < 0 ? -n : n)*options.NormalSign;
                 };
                 MeshCutDistributedResult item; item.Element = origin; item.Position = (p[0]+p[1]+p[2])/3;
                 item.Normal = localNormal(item.Position);
@@ -195,7 +227,7 @@ template<size_t N, class Evaluate> MeshCutPhysicsReport integrate(const MeshCutR
             const auto a = Vec(mesh->Nodes()[line.Nodes[0]]), b = Vec(mesh->Nodes()[line.Nodes[1]]);
             const auto tangent = unit(b-a); auto coNormal = unit(Vec::Cross(tangent,mapping.Frame.Z));
             const auto direction = cut.Definition.FollowDeformation && cut.MaterialNormal && !options.Normal && options.ElementNormals.empty()
-                ? cut.MaterialNormal(l,true) : normal(cut.Definition,origin,(a+b)/2,options);
+                ? cut.MaterialNormal(l,true)*options.NormalSign : normal(cut.Definition,origin,(a+b)/2,options);
             if (coNormal.Dot(direction) < 0) { coNormal = -coNormal; }
             const double length = (b-a).Modulus(); MeshCutDistributedResult item; item.Element = origin; item.Position = (a+b)/2;
             item.Normal = coNormal;
@@ -234,18 +266,28 @@ template<size_t N, class Evaluate> MeshCutPhysicsReport integrate(const MeshCutR
         if (!included(options,e) || (mapping.Kind != MeshCutSectionKind::BeamStress && mapping.Kind != MeshCutSectionKind::BeamResultants)) { continue; }
         if constexpr (N != 9) { throw std::invalid_argument("Beam heat flow requires an explicit flux section adapter"); }
         else {
-            if (cut.Definition.FollowDeformation) { throw std::invalid_argument("Material beam physics requires reference crossing weights"); }
+            if (cut.Definition.FollowDeformation && options.ReferenceGeometry.IsNull()) { throw std::invalid_argument("Material beam physics requires reference crossing weights"); }
             if (cut.Definition.Shape != MeshCutShape::Plane || options.SourceGeometry.IsNull()) { throw std::invalid_argument("Beam physics requires a plane and explicit source configuration"); }
             std::vector<Id> nodes; source->ElementNodes(e,nodes);
             const auto& indexed = source->IndexedElements()[e];
             if (indexed.Type != RWCae::MeshElemType::Generic || source->GenericCells().at(indexed.Index).Type != 3 || nodes.size() != 2) { throw std::invalid_argument("Beam adapter currently requires a VTK_LINE linear segment"); }
             Graphic3d_Vec3 pa = source->Nodes()[nodes[0]], pb = source->Nodes()[nodes[1]];
             options.SourceGeometry->ModifyNode(nodes[0],pa); options.SourceGeometry->ModifyNode(nodes[1],pb);
-            const Vec a(pa), b(pb), n = normal(cut.Definition,e,a,options);
+            const Vec a(pa), b(pb); Vec n = normal(cut.Definition,e,a,options);
             if(std::abs(unit(b-a).Dot(mapping.Frame.X))<1-1e-6) { throw std::invalid_argument("Beam frame X must follow the source beam axis"); }
             const auto& plane = cut.Definition.Plane;
-            const double sa = plane.x()*a.x()+plane.y()*a.y()+plane.z()*a.z()+plane.w();
-            const double sb = plane.x()*b.x()+plane.y()*b.y()+plane.z()*b.z()+plane.w();
+            Vec crossingA=a,crossingB=b;
+            if (cut.Definition.FollowDeformation) {
+                if (options.ReferenceGeometry->GetMeshData()->NbNodes() != source->NbNodes()) { throw std::invalid_argument("Material beam reference correspondence mismatch"); }
+                auto ra=options.ReferenceGeometry->GetMeshData()->Nodes()[nodes[0]], rb=options.ReferenceGeometry->GetMeshData()->Nodes()[nodes[1]];
+                options.ReferenceGeometry->ModifyNode(nodes[0],ra); options.ReferenceGeometry->ModifyNode(nodes[1],rb);
+                crossingA=Vec(ra); crossingB=Vec(rb);
+                const double sign = n.Dot(unit(crossingB-crossingA));
+                if (std::abs(sign)<1e-12) { throw std::invalid_argument("Material beam lies in reference plane"); }
+                n=unit(b-a)*(sign>0?1:-1);
+            }
+            const double sa = plane.x()*crossingA.x()+plane.y()*crossingA.y()+plane.z()*crossingA.z()+plane.w();
+            const double sb = plane.x()*crossingB.x()+plane.y()*crossingB.y()+plane.z()*crossingB.z()+plane.w();
             if ((sa < 0 && sb < 0) || (sa > 0 && sb > 0)) { continue; }
             if (std::abs(sa-sb) <= 1e-12) { throw std::invalid_argument("Beam lies in plane; section crossing is ambiguous"); }
             const double t = sa/(sa-sb); const Vec p = a*(1-t)+b*t;
@@ -264,7 +306,7 @@ template<size_t N, class Evaluate> MeshCutPhysicsReport integrate(const MeshCutR
             add(report,item,options);
         }
     }
-    return report;
+    finish(report,options); return report;
 }
 }
 namespace ViewCaeGeom {
@@ -339,6 +381,6 @@ std::string MeshCutPhysicsReport::Csv() const
         out << ',' << result.Area << ',' << result.HeatFlow << ',' << IntervalBegin << ',' << IntervalEnd << '\n';
     };
     for (const auto& item : Distributed) { row(std::to_string(item.Element),item.Position,item.Result); }
-    row("total",Vec(0),Total); return out.str();
+    row("total",MomentOrigin,Total); return out.str();
 }
 }

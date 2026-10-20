@@ -6,6 +6,7 @@
 #include <RWCae/MeshAdaptorsIterator.h>
 #include <RWMeshConv/MeshLoader.h>
 #include <ViewerTest.hxx>
+#include <ViewerTest_DoubleMapOfInteractiveAndName.hxx>
 #include <ViewerTest_EventManager.hxx>
 #include <AIS_InteractiveContext.hxx>
 #include <V3d_View.hxx>
@@ -18,6 +19,9 @@
 #include <Viewer/NativeCutSession.h>
 #include <ViewCaeGeom/MeshCutSlicing.h>
 #include <DBRep.hxx>
+#include <rapidjson/document.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/stringbuffer.h>
 
 #include <cmath>
 #include <map>
@@ -26,6 +30,7 @@
 #include <limits>
 #include <sstream>
 namespace ViewCaeTest { void RegisterCutBenchmarkCommands(Draw_Interpretor&); }
+extern ViewerTest_DoubleMapOfInteractiveAndName& GetMapOfAIS();
 
 namespace {
 int64_t cutInt64(const std::string& argument)
@@ -308,11 +313,44 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
             if(!model.Native->Analysis().SetJson(argv[3],argv[4])) { throw std::invalid_argument(model.Native->LastError()); } ok=true;
         } else if(action == "physicsremove" && argc == 4) {
             if(!model.Native->Analysis().Remove(argv[3])) { throw std::invalid_argument(model.Native->LastError()); } ok=true;
+        } else if(action == "physicsenabled" && argc == 5) {
+            if(!model.Native->Analysis().SetCutEnabled(argv[3],cutBoolean(argv[4]))) { throw std::invalid_argument(model.Native->LastError()); } ok=true;
+        } else if(action == "physicsdisplaygroup" && argc == 6) {
+            Handle(AIS_InteractiveObject) object; GetMapOfAIS().Find2(argv[4],object);
+            if(!model.Native->Analysis().CaptureDisplayGroup(argv[3],Handle(ViewCae::InteractiveCaeMesh)::DownCast(object),argv[5])) { throw std::invalid_argument(model.Native->LastError()); } ok=true;
+        } else if(action == "physicsstate" && argc == 4) {
+            unsigned count=0, enabled=0;
+            for(const auto& r:model.Native->Analysis().Requests()) { if(r.second.Cut==argv[3]) { ++count; enabled+=r.second.Enabled?1:0; } }
+            di<<"configured "<<(count?1:0)<<" enabled "<<(enabled?1:0)<<" count "<<(int)count; return 0;
+        } else if(action == "physicsconfig" && argc == 4) {
+            const auto& requests=model.Native->Analysis().Requests(); const auto foundRequest=requests.find(argv[3]);
+            if(foundRequest==requests.end()) { throw std::invalid_argument("Unknown physical configuration"); }
+            const auto& r=foundRequest->second; const auto& o=r.Options;
+            auto str=[&](const char* key,const std::string& value) { di<<" "<<key; di.AppendElement(value.c_str()); };
+            di<<"enabled "<<(r.Enabled?1:0)<<" overlay "<<(r.Overlay?1:0)<<" heat "<<(r.Heat?1:0)<<" beam "<<(r.Beam?1:0)
+              <<" distributed "<<(r.Distributed?1:0)<<" componentVectors "<<(r.ComponentVectors?1:0)<<" resolution "<<(int)r.Resolution<<" scale "<<r.ArrowScale;
+            str("cut",r.Cut); str("field",r.Field.Name); str("mapping",r.Field.Nodal?"point":"cell"); str("datum",r.Datum); str("group",o.GroupName);
+            str("sumPoint",o.SumPoint==ViewCaeGeom::MeshCutSummationPoint::Centroid?"centroid":"user");
+            str("domainField",r.DomainField.Name); str("domainSource",r.DomainSource);
+            di<<" domainValue "<<r.DomainValue<<" domainMask "<<(r.DomainMask?1:0)<<" domainComponent "<<r.DomainField.Component;
+            di<<" normalSign "<<o.NormalSign<<" absolute "<<(o.Summation==ViewCaeGeom::MeshCutSummation::AbsoluteContributions?1:0);
+            di<<" components {"; for(int c:r.Components) { di<<c<<" "; } di<<"} elements {"; for(auto e:o.Elements) { di<<(int)e<<" "; }
+            di<<"} tangent {"<<r.TangentY.x()<<" "<<r.TangentY.y()<<" "<<r.TangentY.z()<<"} origin {"<<o.MomentOrigin.x()<<" "<<o.MomentOrigin.y()<<" "<<o.MomentOrigin.z()<<"} frame {";
+            for(const auto& v:{o.FieldFrame.Origin,o.FieldFrame.X,o.FieldFrame.Y,o.FieldFrame.Z}) { for(int c=0;c<3;++c) { di<<v[c]<<" "; } }
+            di<<"} units {"<<o.Units.LengthToSI<<" "<<o.Units.StressToSI<<" "<<o.Units.FluxToSI<<" "<<o.Units.ForceToSI<<" "<<o.Units.MomentToSI<<"}";
+            di<<" outputFrame {"; for(const auto& v:{o.OutputFrame.Origin,o.OutputFrame.X,o.OutputFrame.Y,o.OutputFrame.Z}) { for(int c=0;c<3;++c) { di<<v[c]<<" "; } } di<<"}";
+            const auto json=Viewer::NativeCutAnalysis::RequestJson(r);
+            rapidjson::Document doc; doc.Parse(json.c_str());
+            for(const char* key:{"sections","normals"}) { rapidjson::StringBuffer b; rapidjson::Writer<rapidjson::StringBuffer> writer(b); doc[key].Accept(writer); str(key,b.GetString()); }
+            str("json",json); return 0;
         } else if(action == "physicsreport" && argc == 4) {
             const auto& reports=model.Native->Analysis().Reports(); const auto r=reports.find(argv[3]);
             if(r==reports.end()) { throw std::invalid_argument("Unknown physical report"); }
             const auto& t=r->second.Total;
-            di<<"area "<<t.Area<<" force {"<<t.Force.x()<<" "<<t.Force.y()<<" "<<t.Force.z()<<"} moment {"<<t.Moment.x()<<" "<<t.Moment.y()<<" "<<t.Moment.z()<<"} heatFlow "<<t.HeatFlow<<" samples "<<(int)r->second.Distributed.size()<<" overlays "<<(int)model.Native->Analysis().Overlays().at(argv[3]).size(); return 0;
+            const auto& p=r->second;
+            di<<"area "<<t.Area<<" force {"<<t.Force.x()<<" "<<t.Force.y()<<" "<<t.Force.z()<<"} moment {"<<t.Moment.x()<<" "<<t.Moment.y()<<" "<<t.Moment.z()<<"} heatFlow "<<t.HeatFlow<<" samples "<<(int)p.Distributed.size()<<" overlays "<<(int)model.Native->Analysis().Overlays().at(argv[3]).size()
+              <<" centroid {"<<p.Centroid.x()<<" "<<p.Centroid.y()<<" "<<p.Centroid.z()<<"} sumPoint {"<<p.MomentOrigin.x()<<" "<<p.MomentOrigin.y()<<" "<<p.MomentOrigin.z()<<"} normal {"<<p.MeanNormal.x()<<" "<<p.MeanNormal.y()<<" "<<p.MeanNormal.z()<<"} outputFrame {";
+            for(const auto& v:{p.OutputFrame.Origin,p.OutputFrame.X,p.OutputFrame.Y,p.OutputFrame.Z}) { for(int c=0;c<3;++c) { di<<v[c]<<" "; } } di<<"}"; return 0;
         } else if(action == "physicscsv" && argc == 4) {
             const auto& reports=model.Native->Analysis().Reports(); const auto r=reports.find(argv[3]); if(r==reports.end()) { throw std::invalid_argument("Unknown physical report"); }
             di<<r->second.Csv().c_str(); return 0;
@@ -1194,6 +1232,8 @@ void ViewCaeTest::CutViewCommands::Factory(Draw_Interpretor& di)
         "  | translate id absoluteOffset | absrotate id localAxis2/3 degrees | motionrange id\n"
         "  | timeinfo | step index | timeddeform name/none scale | play period/speed loop restart timestamps | pause | tick seconds\n"
         "  | physics requestId explicitMappingJson | physicsremove/physicsreport/physicscsv requestId\n"
+        "  | physicsenabled cutId 0/1 | physicsstate cutId | physicsconfig requestId\n"
+        "  | physicsdisplaygroup requestId sourceMeshObject presentationId\n"
         "  | automatic id crack/density nodalField component threshold sign minimum maximum visibility\n"
         "  | materialframe name reference/updated {step n0 n1 n2}... | follow cut datum\n"
         "  | material cut on/off First/Last/Current | materialstats cut | materialinfo cut\n"

@@ -150,6 +150,8 @@ public:
     Standard_EXPORT bool SetMaterialSource(const Handle(RWCae::MeshData)& source);
     Standard_EXPORT void ShareMaterialCacheFrom(const MeshCutViewManager& other);
     Standard_EXPORT std::array<uint64_t,3> MaterialStatistics(const std::string& id) const;
+    //! Reference configuration for section adapters retaining original crossing weights.
+    Standard_EXPORT Handle(MeshGeometry) MaterialReferenceGeometry(const std::string& id);
     //! Creates inactive central X/Y/Z planes only when no definitions exist.
     Standard_EXPORT bool EnsureDefaultPlanes();
     //! Scalar cutting; VTK chart cells use bounded original-FE numerical refinement.
@@ -200,6 +202,9 @@ public:
     //! Map only original physical components, independent of display recovery/measures.
     Standard_EXPORT MeshCutResult EvaluatePhysical(const std::string& theId,
         const Handle(RWCae::MeshNVecProperty)& theField);
+    //! Independent numerical On-only evaluation, including inactive definitions.
+    Standard_EXPORT MeshCutResult EvaluatePhysicalSection(const std::string& id,
+        const Handle(RWCae::MeshNVecProperty)& field);
     Standard_EXPORT std::vector<MeshCutResult> EvaluateVisible(
         const Handle(RWCae::MeshNVecProperty)& theField = nullptr);
     //! Actual OR of visible regions; independent numerical cuts remain cached separately.

@@ -256,7 +256,7 @@ python -B -X utf8 DOCUMENT/tools/build_cut_view_occt_inventory.py --check
 
 ## 扫描范围与完整直接头文件清单
 
-扫描 189 个项目源文件，发现 149 种直接 `.hxx` 依赖。
+扫描 189 个项目源文件，发现 150 种直接 `.hxx` 依赖。
 这是指定范围的词法依赖清单，不是完整运行时调用图。头文件可能只提供类型，
 不能据此断言该算法每帧执行。OCCT 内部传递调用、虚函数调度和模板展开未展开。
 核心功能与成员方法的人工核对见前文；引用位置由下面的列表覆盖。
@@ -296,6 +296,7 @@ python -B -X utf8 DOCUMENT/tools/build_cut_view_occt_inventory.py --check
 | DRAW 测试宿主 | `Draw.hxx` | `ParseReal` | [CutViewCommands](../source-draw/ViewCaeTest/CutViewCommands.cpp) |
 | DRAW 测试宿主 | `Draw_Interpretor.hxx` | — | [CutBenchmarkCommands](../source-draw/ViewCaeTest/CutBenchmarkCommands.cpp)、[CutViewCommands](../source-draw/ViewCaeTest/CutViewCommands.h) |
 | DRAW 测试宿主 | `ViewerTest.hxx` | `CurrentEventManager`, `CurrentView`, `Display`, `GetAISContext` | [CutBenchmarkCommands](../source-draw/ViewCaeTest/CutBenchmarkCommands.cpp)、[CutViewCommands](../source-draw/ViewCaeTest/CutViewCommands.cpp) |
+| DRAW 测试宿主 | `ViewerTest_DoubleMapOfInteractiveAndName.hxx` | — | [CutViewCommands](../source-draw/ViewCaeTest/CutViewCommands.cpp) |
 | DRAW 测试宿主 | `ViewerTest_EventManager.hxx` | — | [CutViewCommands](../source-draw/ViewCaeTest/CutViewCommands.cpp) |
 | GPU / 图形结构 | `Graphic3d_ArrayOfPoints.hxx` | — | [CaeMeshTools](../source/ViewCae/CaeMeshTools.h)、[InteractiveCaeCutView](../source/ViewCae/InteractiveCaeCutView.h) |
 | GPU / 图形结构 | `Graphic3d_ArrayOfPrimitives.hxx` | — | [MeshPart](../source/ViewCae/MeshPart.h) |

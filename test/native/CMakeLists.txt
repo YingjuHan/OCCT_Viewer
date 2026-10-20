@@ -315,6 +315,11 @@ if (TARGET ViewDraw)
       add_test (NAME draw_cut_view_plot_options COMMAND "${OCCTV_DRAWEXE}" -i -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_plot_options_test.tcl")
       add_test (NAME draw_cut_view_placement COMMAND "${OCCTV_DRAWEXE}" -i -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_placement_test.tcl")
       add_test (NAME draw_cut_view_material COMMAND "${OCCTV_DRAWEXE}" -i -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_material_test.tcl")
+      add_test (NAME draw_cut_view_free_body COMMAND "${OCCTV_DRAWEXE}" -i -f "${PROJECT_SOURCE_DIR}/test/cae/cut_view_free_body_test.tcl")
+      set_tests_properties (draw_cut_view_free_body PROPERTIES
+        ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-free-body"
+        PASS_REGULAR_EXPRESSION "CUT_VIEW_FREE_BODY_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_FREE_BODY_FAIL"
+        RUN_SERIAL TRUE TIMEOUT 120)
       set_tests_properties (draw_cut_view_material PROPERTIES
         ENVIRONMENT "${DRAW_TEST_ENV};CUTVIEW_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/draw-material"
         PASS_REGULAR_EXPRESSION "CUT_VIEW_MATERIAL_PASS" FAIL_REGULAR_EXPRESSION "CUT_VIEW_MATERIAL_FAIL"

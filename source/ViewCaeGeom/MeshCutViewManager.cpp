@@ -1226,6 +1226,14 @@ void MeshCutViewManager::initializeMaterial(Entry& entry)
     }
 }
 
+Handle(MeshGeometry) MeshCutViewManager::MaterialReferenceGeometry(const std::string& id)
+{
+    const auto found = myEntries.find(id);
+    if (found == myEntries.end() || !found->second->Definition.FollowDeformation) { throw std::invalid_argument("Material reference requires a material-follow cut"); }
+    if (!found->second->Material) { initializeMaterial(*found->second); }
+    return found->second->Material->Cuts->SourceGeometry();
+}
+
 Handle(RWCae::MeshNVecProperty) MeshCutViewManager::project(const Handle(RWCae::MeshNVecProperty)& theField)
 {
     if (myProjectedSource == theField && !myProjectedField.IsNull()) { return myProjectedField; }
@@ -1291,6 +1299,13 @@ MeshCutResult MeshCutViewManager::EvaluatePhysical(const std::string& theId,
 {
     return evaluate(theId,theField,false);
 }
+MeshCutResult MeshCutViewManager::EvaluatePhysicalSection(const std::string& theId,
+    const Handle(RWCae::MeshNVecProperty)& theField)
+{
+    // Integration only consumes On. Below/Above presentation masks must not
+    // force retained-volume construction or its field allocations.
+    return evaluate(theId,theField,false,2);
+}
 
 MeshCutResult MeshCutViewManager::EvaluateSectionForDisplay(const std::string& theId,
     const Handle(RWCae::MeshNVecProperty)& theField)
@@ -1314,7 +1329,7 @@ MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
     aResult.Definition = anEntry->Definition;
     aResult.Revision = anEntry->Revision;
     const unsigned mask = requestedMask == 8 ? anEntry->Definition.Visibility : requestedMask;
-    if (!anEntry->Definition.Enabled || (mask == 0 && requestedMask != 0)) { return aResult; }
+    if ((!anEntry->Definition.Enabled && (display || requestedMask == 8)) || (mask == 0 && requestedMask != 0)) { return aResult; }
     if (mask != 0 && !anEntry->Definition.FollowDeformation) { prepareCache(*anEntry,theField,mask); }
     if (!theField.IsNull()) { CutFieldTools::Validate(myMesh,theField); }
     using Clock=std::chrono::steady_clock;
@@ -1608,15 +1623,16 @@ void MeshCutViewManager::prepareCache(Entry& entry,const Handle(RWCae::MeshNVecP
 {
     if(EstimatedSourceBytes()>mySourceReserved && !myCache.CanReserve(EstimatedSourceBytes()-mySourceReserved,true)) { throw std::length_error("Cut source cache budget exceeded before preparation"); }
     uint64_t estimate = EstimatedResultBytes(field);
-    if (myNativeSectionBudget && mask == 2 && field.IsNull() && !needsGeneralPlane()
+    if (mask == 2 && entry.Definition.Shape == MeshCutShape::Plane && !needsGeneralPlane()
         && myMesh->NbElems(RWCae::MeshElemType::Polygon) == 0 && myMesh->NbElems(RWCae::MeshElemType::Polyhedron) == 0) {
         if (!entry.SectionBytes) {
             const auto source = makeSourceGeometry(false);
-            try { entry.SectionBytes = 65536 + MeshGeometrySlice::CountPlaneCandidates(myBvh,source,entry.Definition.Plane)*8192; }
+            try { entry.SectionBytes = MeshGeometrySlice::CountPlaneCandidates(myBvh,source,entry.Definition.Plane); }
             catch (...) { myBvh->RemoveBvhBoxSet(source); source->RemoveChildren(); throw; }
             myBvh->RemoveBvhBoxSet(source); source->RemoveChildren();
         }
-        estimate = std::min(estimate,entry.SectionBytes);
+        const uint64_t components = field.IsNull() ? 0 : field->NbRawComponents();
+        estimate = std::min(estimate,65536+entry.SectionBytes*(8192+components*2048));
     }
     if(!entry.Lease) {
         const auto bytes=estimate;

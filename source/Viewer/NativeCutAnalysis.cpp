@@ -6,32 +6,81 @@
 #include <cmath>
 #include <stdexcept>
 #include <algorithm>
+#include <RWCae/MeshGroupProperty.h>
 
 namespace Viewer {
 NativeCutAnalysis::~NativeCutAnalysis() { Close(); }
 ViewCaeGeom::MeshCutPhysicsReport NativeCutAnalysis::compute(const NativeCutAnalysisRequest& request) const
 {
     if (request.Cut.empty() || request.Field.Name.empty() || !std::isfinite(request.ArrowScale) || request.ArrowScale <= 0
-        || request.Options.Normal) { throw std::invalid_argument("Native physics requires cut/field/positive arrow scale and serializable analytic normals"); }
+        || request.Options.Normal || request.Options.DomainContains || (int)request.Resolution < 0 || (int)request.Resolution > 2
+        || (request.DomainSource != "explicit" && request.DomainSource != "element_set" && request.DomainSource != "display_snapshot")) { throw std::invalid_argument("Native physics requires cut/field/positive arrow scale and serializable analytic normals/domains"); }
     const auto field = myOwner->resolveField(request.Field);
     auto options = request.Options; options.SourceGeometry = myOwner->Display()->Cuts().SourceGeometry();
+    if (!request.DomainField.Name.empty()) {
+        const auto domain = myOwner->resolveField(request.DomainField);
+        if (domain.IsNull() || domain->IsNodal() || domain->HasNodeVecComponents() || !domain->IsInitialized()
+            || domain->NbValues() != (int)myOwner->Display()->SourceMesh()->NbIndexedElems()
+            || request.DomainField.Component < 0 || request.DomainField.Component >= domain->NbRawComponents()
+            || !std::isfinite(request.DomainValue)) { throw std::invalid_argument("Element set requires an initialized cell label field with matching tuples"); }
+        const auto component = domain->GetRawComponent(request.DomainField.Component);
+        const auto group = Handle(RWCae::MeshGroupProperty)::DownCast(component);
+        if (request.DomainMask && (group.IsNull() || request.DomainValue < 0 || request.DomainValue >= RWCae::MeshGroupProperty::MaxNbGroups || std::trunc(request.DomainValue) != request.DomainValue)) { throw std::invalid_argument("Group mask domain requires an explicit valid MeshGroupProperty bit"); }
+        options.GroupName = "element_set/"+request.DomainField.Name;
+        options.DomainContains = [component,group,value=request.DomainValue,mask=request.DomainMask](RWCae::MeshEntityId e) {
+            return mask ? RWCae::MeshGroupProperty::IsInGroup(group->GetGroups((int)e),(int)value)
+                        : component->Value(RWCae::MeshPropertyEntityInfo(e)) == value;
+        };
+    }
+    if (request.Resolution == CutComponentResolution::Datum) {
+        if (request.Datum == "global") { options.OutputFrame = ViewCaeGeom::MeshCutFrame(); }
+        else {
+            const auto datum = myOwner->Datums().find(request.Datum);
+            if (datum == myOwner->Datums().end()) { throw std::invalid_argument("Unknown free-body component coordinate system"); }
+            options.OutputFrame = datum->second;
+        }
+    } else if (request.Resolution == CutComponentResolution::NormalTangential) { options.OutputFrame = ViewCaeGeom::MeshCutFrame(); }
+    ViewCaeGeom::MeshCutPhysicsReport report;
     if (request.Beam) {
         const auto definitions = myOwner->Display()->Cuts().Definitions();
         const auto plane = std::find_if(definitions.begin(),definitions.end(),[&](const auto& d) { return d.Id == request.Cut; });
         if (plane == definitions.end()) { throw std::invalid_argument("Unknown physical beam cut"); }
-        return ViewCaeGeom::MeshCutPhysics::Beam(*plane,field,request.Components,options);
+        if (plane->FollowDeformation) { options.ReferenceGeometry = myOwner->Display()->Cuts().MaterialReferenceGeometry(request.Cut); }
+        report = ViewCaeGeom::MeshCutPhysics::Beam(*plane,field,request.Components,options);
+    } else {
+        const auto cut = myOwner->Display()->Cuts().EvaluatePhysicalSection(request.Cut,field);
+        report = request.Heat ? ViewCaeGeom::MeshCutPhysics::HeatFlux(cut,{{request.Components[0],request.Components[1],request.Components[2]}},options)
+            : ViewCaeGeom::MeshCutPhysics::Stress(cut,request.Components,options);
     }
-    const auto cut = myOwner->Display()->Cuts().EvaluatePhysical(request.Cut,field);
-    if (request.Heat) { return ViewCaeGeom::MeshCutPhysics::HeatFlux(cut,{{request.Components[0],request.Components[1],request.Components[2]}},options); }
-    return ViewCaeGeom::MeshCutPhysics::Stress(cut,request.Components,options);
+    if (request.Resolution == CutComponentResolution::NormalTangential) {
+        auto& frame = report.OutputFrame; frame.X = report.MeanNormal;
+        const double length = frame.X.Modulus();
+        if (!std::isfinite(length) || length < 1e-12) { throw std::invalid_argument("Cut has no unique mean normal; choose an explicit CSYS"); }
+        frame.X /= length;
+        auto tangent = request.TangentY;
+        for (int c=0;c<3;++c) { if(!std::isfinite(tangent[c])) { throw std::invalid_argument("Invalid free-body tangent direction"); } }
+        tangent -= frame.X*tangent.Dot(frame.X);
+        if (tangent.Modulus() <= 1e-12) { throw std::invalid_argument("Free-body tangent must not be parallel to the section normal"); }
+        frame.Y = tangent/tangent.Modulus(); frame.Z = Graphic3d_Vec3d::Cross(frame.X,frame.Y);
+        // Re-sum in the resolved frame: absolute contributions must be taken in that frame.
+        auto resolved = request; resolved.Resolution = CutComponentResolution::DefinedFrame; resolved.Options.OutputFrame = frame;
+        return compute(resolved);
+    }
+    return report;
 }
 std::vector<Handle(AIS_Shape)> NativeCutAnalysis::arrows(const NativeCutAnalysisRequest& request,
     const ViewCaeGeom::MeshCutPhysicsReport& report) const
 {
     std::vector<Handle(AIS_Shape)> result;
-    if (!request.Overlay) { return result; }
-    const auto& frame = request.Options.OutputFrame;
-    for (const auto& item : report.Distributed) {
+    if (!request.Overlay || !request.Enabled) { return result; }
+    const auto definitions = myOwner->Display()->Cuts().Definitions();
+    if (std::none_of(definitions.begin(),definitions.end(),[&](const auto& d) { return d.Id == request.Cut && d.Enabled; })) { return result; }
+    const auto& frame = report.OutputFrame;
+    std::vector<ViewCaeGeom::MeshCutDistributedResult> total;
+    if (!request.Distributed) {
+        ViewCaeGeom::MeshCutDistributedResult item; item.Position = report.MomentOrigin; item.Normal = report.MeanNormal; item.Result = report.Total; total.push_back(item);
+    } else if (report.Distributed.size() > 1024) { throw std::invalid_argument("Distributed arrows exceed 1024 samples; use one resultant per cut or slicing"); }
+    for (const auto& item : request.Distributed ? report.Distributed : total) {
         const auto position = frame.PointToGlobal(item.Position/request.Options.Units.LengthToSI);
         auto draw = [&](Graphic3d_Vec3d vector, Quantity_NameOfColor color) {
             vector = frame.VectorToGlobal(vector)*request.ArrowScale;
@@ -46,7 +95,12 @@ std::vector<Handle(AIS_Shape)> NativeCutAnalysis::arrows(const NativeCutAnalysis
             for (double sign : {-1.0,1.0}) { builder.Add(shape,BRepBuilderAPI_MakeEdge(point(tip),point(tip-vector*0.2+side*(sign*length*0.08))).Shape()); }
             Handle(AIS_Shape) display = new AIS_Shape(shape); display->SetColor(Quantity_Color(color)); display->SetWidth(3); result.push_back(display);
         };
-        draw(item.Result.Force,Quantity_NOC_RED); draw(item.Result.Moment,Quantity_NOC_BLUE);
+        if (request.ComponentVectors) {
+            for (int c = 0; c < 3; ++c) {
+                Graphic3d_Vec3d force(0), moment(0); force[c] = item.Result.Force[c]; moment[c] = item.Result.Moment[c];
+                draw(force,Quantity_NOC_RED); draw(moment,Quantity_NOC_BLUE);
+            }
+        } else { draw(item.Result.Force,Quantity_NOC_RED); draw(item.Result.Moment,Quantity_NOC_BLUE); }
         if (request.Heat) { draw(item.Normal*item.Result.HeatFlow,Quantity_NOC_ORANGE); }
     }
     return result;
@@ -60,13 +114,74 @@ void NativeCutAnalysis::publish(const std::string& id, const NativeCutAnalysisRe
         catch (...) { for (const auto& display : overlays) { context->Remove(display,false); } throw; }
         if (myOverlays.count(id)) { for (const auto& display : myOverlays.at(id)) { context->Remove(display,false); } }
     }
-    myRequests[id] = request; myReports[id] = report; myOverlays[id] = overlays;
+    myRequests[id] = request; myOverlays[id] = overlays;
+    if (request.Enabled) { myReports[id] = report; } else { myReports.erase(id); }
 }
 bool NativeCutAnalysis::Set(const std::string& id,const NativeCutAnalysisRequest& request)
 {
     return myOwner->attempt([&] {
         if (id.empty() || id.size() > 256) { throw std::invalid_argument("Invalid native physics request ID"); }
-        const auto report = compute(request); publish(id,request,report,arrows(request,report));
+        if (!request.Enabled) {
+            const auto definitions = myOwner->Display()->Cuts().Definitions();
+            if (std::none_of(definitions.begin(),definitions.end(),[&](const auto& d) { return d.Id == request.Cut; })
+                || request.Field.Name.empty() || !request.Options.Units.IsValid() || !std::isfinite(request.ArrowScale) || request.ArrowScale <= 0
+                || request.Options.Normal || request.Options.DomainContains || !request.Options.FieldFrame.IsValid() || !request.Options.OutputFrame.IsValid()
+                || (int)request.Resolution < 0 || (int)request.Resolution > 2 || !std::isfinite(request.DomainValue)
+                || (request.Options.NormalSign != 1 && request.Options.NormalSign != -1)) { throw std::invalid_argument("Invalid disabled free-body configuration"); }
+            publish(id,request,{},{});
+        } else {
+            const auto report = compute(request); publish(id,request,report,arrows(request,report));
+        }
+    });
+}
+bool NativeCutAnalysis::SetEnabled(const std::string& id,bool enabled)
+{
+    return myOwner->attempt([&] {
+        const auto found = myRequests.find(id); if (found == myRequests.end()) { throw std::invalid_argument("Configure free-body fields before enabling this cut"); }
+        auto request = found->second; request.Enabled = enabled;
+        if (!Set(id,request)) { throw std::invalid_argument(myOwner->LastError()); }
+    });
+}
+bool NativeCutAnalysis::SetCutEnabled(const std::string& cut,bool enabled)
+{
+    return myOwner->attempt([&] {
+        struct Candidate { std::string Id; NativeCutAnalysisRequest Request; ViewCaeGeom::MeshCutPhysicsReport Report; std::vector<Handle(AIS_Shape)> Overlays; };
+        std::vector<Candidate> candidates;
+        for (const auto& entry : myRequests) {
+            if (entry.second.Cut != cut) { continue; }
+            Candidate c; c.Id = entry.first; c.Request = entry.second; c.Request.Enabled = enabled;
+            if (enabled) { c.Report = compute(c.Request); c.Overlays = arrows(c.Request,c.Report); }
+            candidates.push_back(std::move(c));
+        }
+        if (enabled && candidates.empty()) { throw std::invalid_argument("Open Free Body options and configure the physical field first"); }
+        // Stage every AIS presentation before replacing any live request.
+        const auto context = myOwner->myContext;
+        if (!context.IsNull()) {
+            try { for (const auto& c : candidates) { for (const auto& display : c.Overlays) { context->Display(display,false); } } }
+            catch (...) { for (const auto& c : candidates) { for (const auto& display : c.Overlays) { context->Remove(display,false); } } throw; }
+            for (const auto& c : candidates) { for (const auto& display : myOverlays[c.Id]) { context->Remove(display,false); } }
+        }
+        for (const auto& c : candidates) {
+            myRequests[c.Id] = c.Request; myOverlays[c.Id] = c.Overlays;
+            if (enabled) { myReports[c.Id] = c.Report; } else { myReports.erase(c.Id); }
+        }
+    });
+}
+bool NativeCutAnalysis::CaptureDisplayGroup(const std::string& id,const Handle(ViewCae::InteractiveCaeMesh)& mesh,const std::string& presentation)
+{
+    return myOwner->attempt([&] {
+        const auto found = myRequests.find(id);
+        if (found == myRequests.end() || mesh.IsNull() || mesh->GetMeshData() != myOwner->Display()->SourceMesh()) { throw std::invalid_argument("Display group must belong to the same source mesh and a configured free body"); }
+        const auto prs = mesh->Presentation(presentation.c_str());
+        if (prs.IsNull()) { throw std::invalid_argument("Unknown source display-group presentation"); }
+        const auto geometry = prs->GetMeshGeometry(); geometry->GetMeshData();
+        auto request = found->second; request.DomainField = {}; request.DomainSource = "display_snapshot";
+        request.Options.Elements.clear(); request.Options.GroupName = "display/"+presentation;
+        if (prs->VisProps()->IsVisible()) {
+            for (RWCae::MeshEntityId e=0;e<mesh->GetMeshData()->NbIndexedElems();++e) { if (geometry->AcceptElement(e)) { request.Options.Elements.insert(e); } }
+        }
+        if (request.Options.Elements.empty()) { throw std::invalid_argument("Selected display group is empty; whole-model fallback is forbidden"); }
+        if (!Set(id,request)) { throw std::invalid_argument(myOwner->LastError()); }
     });
 }
 bool NativeCutAnalysis::Remove(const std::string& id)
@@ -85,6 +200,7 @@ bool NativeCutAnalysis::Refresh()
         std::map<std::string,std::vector<Handle(AIS_Shape)>> overlays;
         for (const auto& entry : myRequests) {
             if (std::none_of(definitions.begin(),definitions.end(),[&](const auto& d) { return d.Id == entry.second.Cut; })) { continue; }
+            if (!entry.second.Enabled || std::none_of(definitions.begin(),definitions.end(),[&](const auto& d) { return d.Id == entry.second.Cut && d.Enabled; })) { continue; }
             reports[entry.first] = compute(entry.second); overlays[entry.first] = arrows(entry.second,reports.at(entry.first));
         }
         const auto context = myOwner->myContext;
@@ -94,7 +210,7 @@ bool NativeCutAnalysis::Refresh()
         }
         Detach();
         for (auto entry = myRequests.begin(); entry != myRequests.end();) {
-            if (!reports.count(entry->first)) { entry = myRequests.erase(entry); } else { ++entry; }
+            if (std::none_of(definitions.begin(),definitions.end(),[&](const auto& d) { return d.Id == entry->second.Cut; })) { entry = myRequests.erase(entry); } else { ++entry; }
         }
         myReports = std::move(reports); myOverlays = std::move(overlays);
         for(auto entry=myAutomatic.begin();entry!=myAutomatic.end();) {
@@ -117,6 +233,7 @@ bool NativeCutAnalysis::PrepareStep(const NativeCutAnalysis& source,int step,boo
             if (mySteps.count(step) && mySteps.at(step).count(entry.first)) { request = mySteps.at(step).at(entry.first); }
             else if (remesh && (!request.Options.Elements.empty() || !request.Options.Sections.empty() || !request.Options.ElementNormals.empty())) { throw std::invalid_argument("Remeshed physics needs an explicit per-step group/section/normal mapping"); }
             request.Field.Step = step;
+            if (!request.DomainField.Name.empty()) { request.DomainField.Step = step; }
             for (auto& section : request.Options.Sections) {
                 for (auto& layer : section.second.Layers) {
                     if(layer.Field.IsNull()) { throw std::invalid_argument("Missing step layer binding"); }

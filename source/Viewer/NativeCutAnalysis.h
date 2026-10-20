@@ -3,8 +3,10 @@
 #include <Viewer/NativeCutView.h>
 #include <ViewCaeGeom/MeshCutPhysics.h>
 #include <ViewCaeGeom/MeshCutAutomatic.h>
+#include <ViewCae/InteractiveCaeMesh.h>
 
 namespace Viewer {
+enum class CutComponentResolution { DefinedFrame, NormalTangential, Datum };
 struct NativeCutAnalysisRequest {
     std::string Cut;
     CutFieldBinding Field;
@@ -13,7 +15,17 @@ struct NativeCutAnalysisRequest {
     std::array<int,9> Components = {{0,1,2,3,4,5,6,7,8}};
     ViewCaeGeom::MeshCutPhysicsOptions Options;
     bool Overlay = true;
+    bool Enabled = true;
+    bool Distributed = false;
+    bool ComponentVectors = false;
+    CutComponentResolution Resolution = CutComponentResolution::DefinedFrame;
+    std::string Datum = "global";
+    Graphic3d_Vec3d TangentY = Graphic3d_Vec3d(0,1,0);
     double ArrowScale = 0.1; //!< Model length units per SI resultant unit.
+    CutFieldBinding DomainField; //!< Cell scalar labels, or a MeshGroupProperty group bit. Empty uses Options.Elements.
+    double DomainValue = 0;
+    bool DomainMask = false;
+    std::string DomainSource = "explicit"; //!< explicit / element_set / display_snapshot.
 };
 //! Owned by NativeCutView. Recomputes requests from physical FE fields on edits.
 class Standard_EXPORT NativeCutAnalysis {
@@ -25,6 +37,11 @@ public:
     NativeCutAnalysisRequest ReadRequestJson(const std::string& json) const;
     static std::string RequestJson(const NativeCutAnalysisRequest& request);
     bool Remove(const std::string& id);
+    bool SetEnabled(const std::string& id, bool enabled);
+    bool SetCutEnabled(const std::string& cut, bool enabled);
+    //! Capture the actual source-element visibility of an existing presentation; independent of its result field.
+    bool CaptureDisplayGroup(const std::string& id, const Handle(ViewCae::InteractiveCaeMesh)& mesh,
+        const std::string& presentation);
     bool Refresh();
     void Detach();
     void Close();

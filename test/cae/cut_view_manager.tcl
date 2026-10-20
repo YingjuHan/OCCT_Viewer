@@ -67,6 +67,7 @@ namespace eval ::CutViewManager {
 source [file join [file dirname [info script]] cut_view_tools.tcl]
 source [file join [file dirname [info script]] cut_view_time.tcl]
 source [file join [file dirname [info script]] cut_view_physics.tcl]
+source [file join [file dirname [info script]] cut_view_free_body.tcl]
 source [file join [file dirname [info script]] cut_view_cache_panel.tcl]
 source [file join [file dirname [info script]] cut_view_session.tcl]
 source [file join [file dirname [info script]] cut_view_plot_options.tcl]
@@ -100,6 +101,7 @@ proc ::CutViewManager::refresh {{attach 0}} {
             set mask [dict get $cut visibility]
             set values [list [expr {[dict get $cut enabled] ? "\u2713" : ""}]]
             foreach bit {1 2 4} { lappend values [expr {($mask & $bit) ? "\u2713" : ""}] }
+            lappend values [expr {[dict get [scvcutview $model physicsstate $id] enabled] ? "\u2713" : ""}]
             if {[$w.cuts exists $id]} { $w.cuts item $id -text [dict get $cut name] -values $values } else {
                 $w.cuts insert {} end -id $id -text [dict get $cut name] -values $values
             }
@@ -255,6 +257,10 @@ proc ::CutViewManager::toggleCell {x y} {
             foreach other [scvcutview $model list] { scvcutview $model enable [dict get $other id] 0 }
         }
         scvcutview $model enable $id $active
+    } elseif {$column eq "#5"} {
+        set state [scvcutview $model physicsstate $id]
+        if {![dict get $state configured]} { scvcutfreebody $model $id; return }
+        scvcutview $model physicsenabled $id [expr {![dict get $state enabled]}]
     } else {
         set bit [expr {1 << ([string range $column 1 end]-2)}]
         scvcutview $model visibility $id [expr {[dict get $cut visibility] ^ $bit}]
@@ -606,6 +612,7 @@ proc ::CutViewManager::close {} {
     catch {destroy .scvcutoptions}
     catch {destroy .scvcutrename}
     catch {destroy .scvcutplacement}
+    catch {destroy .scvcutfreebody}
     if {[winfo exists .scvcutsession]} { destroy .scvcutsession }
     if {[winfo exists .scvcutcache]} { destroy .scvcutcache }
     if {[winfo exists .scvcutphysics]} { destroy .scvcutphysics }
@@ -640,9 +647,9 @@ proc scvcutmanager {theModel} {
     pack $w.header.model -side left
     pack $w.header.multiple -side right
     pack $w.header -fill x
-    ttk::treeview $w.cuts -columns {show below on above} -height 2 -selectmode browse -style CutView.Treeview
+    ttk::treeview $w.cuts -columns {show below on above freebody} -height 2 -selectmode browse -style CutView.Treeview
     $w.cuts heading #0 -text Name; $w.cuts column #0 -width 220 -minwidth 100
-    foreach column {show below on above} label {Show Below On Above} {
+    foreach column {show below on above freebody} label {Show Below On Above {Free Body}} {
         set width [expr {[font measure TkHeadingFont $label]+24}]
         $w.cuts heading $column -text $label; $w.cuts column $column -width $width -minwidth $width -stretch 0 -anchor center
     }
@@ -819,7 +826,10 @@ proc scvcutmanager {theModel} {
     ttk::button $w.tools -text "Viewer Tools" -command [list scvcuttools $theModel]
     pack $w.tools -fill x -padx 8 -pady 3
     ttk::button $w.options -text "View Cut Options..." -command {::CutViewManager::invoke scvcutoptions $::CutViewManager::model}
-    pack $w.options -fill x -padx 8 -pady 3
+    ttk::button $w.freebody -text "Free Body Options..." -command {::CutViewManager::invoke scvcutfreebody $::CutViewManager::model}
+    ttk::frame $w.optionButtons
+    pack $w.optionButtons -fill x -padx 8 -pady 3
+    pack $w.options $w.freebody -in $w.optionButtons -side left -fill x -expand 1 -padx 2
     ttk::label $w.status -textvariable ::CutViewManager::status -wraplength 530 -foreground #a02020
     pack $w.status -fill x -padx 8
     ttk::button $w.close -text Close -command ::CutViewManager::close

@@ -478,6 +478,9 @@ proc ui_run {} {
         ui_click .scvcutmanager.actions.delete
     }
 
+    ui_click .scvcutmanager.freebody
+    ui_assert {[winfo exists .scvcutfreebody]} "Manager free-body options did not open"
+    .scvcutfreebody.actions.close invoke
     # Deleting the last cut disables every cut-scoped control; Create remains usable.
     foreach cut [scvcutview $ui_model list] { scvcutview $ui_model remove [dict get $cut id] }
     ::CutViewManager::refresh

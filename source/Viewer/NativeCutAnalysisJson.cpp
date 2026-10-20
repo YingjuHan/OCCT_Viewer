@@ -30,16 +30,29 @@ NativeCutAnalysisRequest NativeCutAnalysis::ReadRequestJson(const std::string& j
     if (json.size()>4*1024*1024) { throw std::invalid_argument("Physics request is too large"); }
     rapidjson::Document doc; doc.Parse(json.data(),json.size());
     if (doc.HasParseError() || !doc.IsObject()) { throw std::invalid_argument("Invalid physics request JSON"); }
+    if (doc.HasMember("version") && (integer(doc["version"]) < 1 || integer(doc["version"]) > 2)) { throw std::invalid_argument("Unsupported physics request version"); }
     NativeCutAnalysisRequest r; r.Cut=string(member(doc,"cut")); r.Field=binding(member(doc,"field"));
     if(doc.HasMember("heat")) { r.Heat=boolean(doc["heat"]); }
     if(doc.HasMember("beam")) { r.Beam=boolean(doc["beam"]); }
     if(doc.HasMember("components")) { components(doc["components"],r.Components); }
     if(doc.HasMember("overlay")) { r.Overlay=boolean(doc["overlay"]); }
+    if(doc.HasMember("enabled")) { r.Enabled=boolean(doc["enabled"]); }
+    if(doc.HasMember("distributed")) { r.Distributed=boolean(doc["distributed"]); }
+    if(doc.HasMember("componentVectors")) { r.ComponentVectors=boolean(doc["componentVectors"]); }
+    if(doc.HasMember("resolution")) { const int mode=integer(doc["resolution"]); if(mode<0||mode>2) { throw std::invalid_argument("Invalid component resolution"); } r.Resolution=(CutComponentResolution)mode; }
+    if(doc.HasMember("datum")) { r.Datum=string(doc["datum"]); }
+    if(doc.HasMember("tangentY")) { const auto& v=doc["tangentY"]; if(!v.IsArray()||v.Size()!=3) { throw std::invalid_argument("Tangent direction requires three numbers"); } for(int c=0;c<3;++c) { r.TangentY[c]=number(v[c]); } }
     if(doc.HasMember("arrowScale")) { r.ArrowScale=number(doc["arrowScale"]); }
+    if(doc.HasMember("domainField")) { r.DomainField=binding(doc["domainField"]); }
+    if(doc.HasMember("domainValue")) { r.DomainValue=number(doc["domainValue"]); }
+    if(doc.HasMember("domainMask")) { r.DomainMask=boolean(doc["domainMask"]); }
+    if(doc.HasMember("domainSource")) { r.DomainSource=string(doc["domainSource"]); }
     auto& o=r.Options;
     if(doc.HasMember("group")) { o.GroupName=string(doc["group"]); }
     if(doc.HasMember("elements")) { const auto& e=doc["elements"]; if(!e.IsArray()) { throw std::invalid_argument("Group must be an element list"); } for(const auto& v:e.GetArray()) { const int id=integer(v); if(id<0 || !o.Elements.insert(id).second) { throw std::invalid_argument("Invalid/duplicate group element"); } } }
     if(doc.HasMember("absolute")) { o.Summation=boolean(doc["absolute"]) ? ViewCaeGeom::MeshCutSummation::AbsoluteContributions : ViewCaeGeom::MeshCutSummation::Signed; }
+    if(doc.HasMember("normalSign")) { o.NormalSign=integer(doc["normalSign"]); }
+    if(doc.HasMember("sumPoint")) { const auto point=string(doc["sumPoint"]); if(point!="centroid"&&point!="user") { throw std::invalid_argument("Summation point must be centroid/user"); } o.SumPoint=point=="centroid"?ViewCaeGeom::MeshCutSummationPoint::Centroid:ViewCaeGeom::MeshCutSummationPoint::UserDefined; }
     if(doc.HasMember("fieldFrame")) { o.FieldFrame=frame(doc["fieldFrame"]); }
     if(doc.HasMember("outputFrame")) { o.OutputFrame=frame(doc["outputFrame"]); }
     if(doc.HasMember("momentOrigin")) { const auto& p=doc["momentOrigin"]; if(!p.IsArray()||p.Size()!=3) { throw std::invalid_argument("Moment origin requires three numbers"); } for(int c=0;c<3;++c) { o.MomentOrigin[c]=number(p[c]); } }
@@ -69,9 +82,13 @@ bool NativeCutAnalysis::SetJson(const std::string& id,const std::string& json)
 }
 std::string NativeCutAnalysis::RequestJson(const NativeCutAnalysisRequest& r)
 {
-    rapidjson::StringBuffer b; W w(b); w.StartObject(); w.Key("cut"); text(w,r.Cut); w.Key("field"); binding(w,r.Field);
+    rapidjson::StringBuffer b; W w(b); w.StartObject(); w.Key("version"); w.Int(2); w.Key("cut"); text(w,r.Cut); w.Key("field"); binding(w,r.Field);
     w.Key("heat"); w.Bool(r.Heat); w.Key("beam"); w.Bool(r.Beam); w.Key("components"); components(w,r.Components); w.Key("overlay"); w.Bool(r.Overlay); w.Key("arrowScale"); w.Double(r.ArrowScale);
+    w.Key("enabled"); w.Bool(r.Enabled); w.Key("distributed"); w.Bool(r.Distributed); w.Key("componentVectors"); w.Bool(r.ComponentVectors);
+    w.Key("resolution"); w.Int((int)r.Resolution); w.Key("datum"); text(w,r.Datum); w.Key("tangentY"); w.StartArray(); for(int c=0;c<3;++c) { w.Double(r.TangentY[c]); } w.EndArray();
+    w.Key("domainField"); binding(w,r.DomainField); w.Key("domainValue"); w.Double(r.DomainValue); w.Key("domainMask"); w.Bool(r.DomainMask); w.Key("domainSource"); text(w,r.DomainSource);
     const auto& o=r.Options; w.Key("group"); text(w,o.GroupName); w.Key("elements"); w.StartArray(); for(auto e:o.Elements) { w.Uint(e); } w.EndArray();
+    w.Key("normalSign"); w.Int(o.NormalSign); w.Key("sumPoint"); text(w,o.SumPoint==ViewCaeGeom::MeshCutSummationPoint::Centroid?"centroid":"user");
     w.Key("absolute"); w.Bool(o.Summation==ViewCaeGeom::MeshCutSummation::AbsoluteContributions); w.Key("fieldFrame"); frame(w,o.FieldFrame); w.Key("outputFrame"); frame(w,o.OutputFrame);
     w.Key("momentOrigin"); w.StartArray(); for(int c=0;c<3;++c) { w.Double(o.MomentOrigin[c]); } w.EndArray(); w.Key("units"); w.StartObject();
     auto unit=[&](const char* key,const std::string& name,double factor) { w.Key(key); w.StartArray(); text(w,name); w.Double(factor); w.EndArray(); };
