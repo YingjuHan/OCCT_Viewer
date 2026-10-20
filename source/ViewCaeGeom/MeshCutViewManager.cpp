@@ -1367,8 +1367,10 @@ MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
         if (auto material = dynamic_cast<MeshGeometryMaterial*>(aResult.Portions[i].get())) {
             aResult.BoundaryMesh = material->BoundaryMesh();
             aResult.SourceApproximate |= anEntry->Material->Get((unsigned)i).SourceApproximate || material->Refined();
+            aResult.MaterialTolerance = std::max(aResult.MaterialTolerance,material->Tolerance);
+            aResult.MaterialResidual = std::max(aResult.MaterialResidual,material->Residual);
+            aResult.MaterialDepth = std::max(aResult.MaterialDepth,material->Depth);
             if (i == 1) {
-                aResult.MaterialTolerance = material->Tolerance; aResult.MaterialResidual = material->Residual; aResult.MaterialDepth = material->Depth;
                 aResult.MaterialNormal = [geometry = Handle(MeshGeometryMaterial)(material)](size_t primitive,bool lines) { return geometry->CurrentNormal(primitive,lines); };
             }
         }

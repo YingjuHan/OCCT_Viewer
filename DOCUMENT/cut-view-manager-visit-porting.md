@@ -509,3 +509,16 @@ CentOS 上还要执行窗口关闭中计算、换模型中取消、内存预算�
 平面坐标变换与固定管线 clipping 可参考 [Khronos OpenGL 1.1 规范](https://registry.khronos.org/OpenGL/specs/gl/glspec11.pdf)。它解释裁剪平面的变换语义；目标 mapper 对该规则的具体封装仍应以本地源码和非均匀缩放算例为准。
 
 编译边界参考 [GCC libstdc++ dual ABI 文档](https://gcc.gnu.org/onlinedocs/libstdc%2B%2B/manual/using_dual_abi.html)。本手册的目标版本和接口判断来自 `D:\workspace\visit` 实际分支，没有用新版 VisIt 手册替代旧分支源码。
+
+## 17. 增量：参考构形与材料曲面（A03）
+
+本项目新增的实现见 [材料切面工程说明](cut-view-manager-material-sections.md)、`MeshCutMaterial.cpp`、`MeshCutMaterialSampling.cpp` 和 `CutMaterialTests.cpp`。迁移目标仍然**不链接 OCCT**，应按下面的数学协议重写目标侧实现，不能把这些文件包含的 OCCT 类型或几何对象直接复制进 VisIt。
+
+1. 在 Apply 时将 First/Last/Current 解析为固定 step。参考构形先求交，缓存单元 ID 和各点的完整原 FE 权重；当前时间、位移倍率和云图字段独立。参考字段/构形、平面或容差改变时重建参考交点。
+2. 当前点用 `sum(N_i * currentNode_i)` 更新。材料侧别沿用参考构形；弯曲材料截面不能继续用一个世界平面 clip。目标渲染适配必须单独识别 spatial 与 material，并按实际能力选择 CPU 边界，不能伪称材料模式也使用平面 GPU clipping。
+3. 用参考节点和当前节点拟合仿射映射。严格残差内的线性单元直接更新；其他单元调用自研 FE chart。在参考空间的边中点/重心处逆映射求形函数，检查当前三角形弦误差。对所有命中的相邻三角形共用边标记与中点，使用 2/3/4 子三角形模板。Below/Above 外边界与 On 均使用相同的参考模型尺度和容差。
+4. 用目标侧小型矩阵运算实现 Jacobian 的秩、行列式和相对取向检查；不要移植 `math_Gauss` 依赖。核对 `MeshCellKernel` 的文件格式节点序、阶次和有理权重。矩阵求解器、向量和容器分别替换为既有数学库或标准 C++ 类型。检查位移原始值的有限性，不能依靠某个 deformation modifier 跳过 NaN 后的坐标。
+5. 形变后物理积分使用当前面积与定向局部法向，保留参考侧的原 FE/界面 provenance。恢复显示平均的云图不能直接用于物理积分；壳厚度/层、梁截面和输入坐标系继续走显式适配。
+6. 参考缓存、临时候选帧和已发布帧共享预算；只映射截面时不建当前整模型 BVH/节点副本。采样失败立即释放临时分配，候选成功才发布。重网格没有材料对应表则拒绝；MPI 的 owner/domain 映射必须同时参与缓存键和对应校验。
+
+直接迁移验收夹具：二次四面体 `z=0.3+k*x²`（热流投影积分为 `0.245`）、非仿射六面体、弯曲二次壳线、参考/当前反演、NaN 位移、空截面、8 种显示 mask、多次失败预算稳定。公共边界采样距离按两侧容差之和验收；当前算法不提供任意阶 FE 的全域误差/无反演证明。大规模门禁继续使用不少于百万单元的数据，单独计时、无 GDB。

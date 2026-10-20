@@ -40,8 +40,8 @@ struct Cell {
     double Tolerance;
     Cell(const MeshCutResult& reference, const Handle(MeshGeometry)& current,
         const MeshCutViewManager& currentManager, const MeshCutViewManager& referenceManager,
-        MaterialId element, double tolerance)
-        : Reference(reference.Roots[1]), Current(current), Mesh(Reference->GetMeshData()), Element(element),
+        MaterialId element, double tolerance, unsigned portion)
+        : Reference(reference.Roots[portion]), Current(current), Mesh(Reference->GetMeshData()), Element(element),
           Options(currentManager.GeometryOptions()), Tolerance(tolerance)
     {
         const auto& e = Mesh->IndexedElements()[element];
@@ -156,34 +156,75 @@ Edge edge(MaterialId a,MaterialId b) { return {std::min(a,b),std::max(a,b)}; }
 
 void MeshGeometryMaterial::refineSection(const MeshCutResult& reference)
 {
-    const auto traced = Handle(MeshGeometryTraceSection)::DownCast(reference.Portions[1]);
-    if (traced.IsNull()) { throw std::invalid_argument("Material section requires reference FE traces"); }
-    const auto input = reference.Portions[1]->GetMeshData(); const auto& options = myAccounting.GeometryOptions();
-    const auto box = input->BoundingBox();
+    const auto geometry = reference.Portions[myPortion];
+    const auto traced = Handle(MeshGeometryTraceSection)::DownCast(geometry);
+    if (myPortion == 1 && traced.IsNull()) { throw std::invalid_argument("Material section requires reference FE traces"); }
+    const auto input = geometry->GetMeshData(); const auto& options = myAccounting.GeometryOptions();
+    const auto box = myReference->Cuts->SourceBounds();
     Tolerance = options.Tolerance(box.IsVoid() ? 0 : (box.CornerMax().XYZ()-box.CornerMin().XYZ()).Modulus());
     // Charge sparse scratch/charts before allocating. No current full-source node array or BVH.
-    mySamplingLeases.push_back(myAccounting.ReserveDisplayBytes(65536+(uint64_t)input->NbNodes()*768+(uint64_t)(input->NbIndexedElems()+traced->Lines().size())*2048));
+    const auto slice = Handle(MeshGeometrySlice)::DownCast(geometry);
+    const auto refLines = slice.IsNull() ? std::vector<MeshSliceLine>() : slice->Lines();
+    mySamplingLeases.push_back(myAccounting.ReserveDisplayBytes(65536+(uint64_t)input->NbNodes()*768+(uint64_t)(input->NbIndexedElems()+input->NbSurfElems()+refLines.size())*2048));
+    struct Primitive {
+        MeshGeomElem Key; std::vector<MaterialId> Nodes;
+        const std::vector<MeshCutPrimitiveTrace>* ReferenceTraces = nullptr;
+        std::vector<MeshCutPrimitiveTrace> Traces;
+        const std::vector<MeshCutPrimitiveTrace>& Records() const { return ReferenceTraces ? *ReferenceTraces : Traces; }
+    };
+    std::vector<Primitive> primitives;
+    auto addPrimitive = [&](const MeshGeomElem& key,const std::vector<MaterialId>& nodes,size_t indexed) {
+        Primitive p; p.Key = key; p.Nodes = nodes;
+        if (myPortion == 1) { p.ReferenceTraces = &traced->ElementTraces().at(indexed); }
+        else {
+            MeshCutPrimitiveTrace trace;
+            if (!geometry->OriginElement(key,trace.Element)) { throw std::invalid_argument("Material boundary lacks original FE owner"); }
+            for (auto n : nodes) {
+                MeshInterpolatedNode weights;
+                if (!geometry->OriginNode(n,weights)) { throw std::invalid_argument("Material boundary lacks original FE weights"); }
+                trace.Weights.emplace(n,std::move(weights));
+            }
+            p.Traces.push_back(std::move(trace));
+        }
+        primitives.push_back(std::move(p));
+    };
+    for (MaterialId e = 0; e < input->NbIndexedElems(); ++e) {
+        const auto& indexed = input->IndexedElements()[e];
+        if (myPortion != 1 && (int)indexed.Type >= RWCae::MeshElem3dLowerType) { continue; }
+        std::vector<MaterialId> nodes; input->ElementNodes(e,nodes);
+        addPrimitive(MeshGeomElem(indexed.Index,indexed.Type,false),nodes,e);
+    }
+    if (myPortion != 1) {
+        RWCae::MeshAdaptorsIterator2dElems::For([&](const auto& a) {
+            for (MaterialId e = 0; e < a.NbElements(); ++e) {
+                const auto& element = a.GetElement(e); std::vector<MaterialId> nodes;
+                for (RWCae::MeshElemEntityId n = 0; n < element.NbNodes(); ++n) { nodes.push_back(element[n]); }
+                addPrimitive(MeshGeomElem(e,a.GetElementType(),true),nodes,0);
+            }
+        },input,true);
+    }
+    const auto lineTraces = myPortion == 1 ? traced->LineTraces() : std::vector<std::vector<MeshCutPrimitiveTrace>>();
     const Vec normal(reference.Definition.Plane.x(),reference.Definition.Plane.y(),reference.Definition.Plane.z());
     std::unordered_map<MaterialId,std::unique_ptr<Cell>> cells;
     auto cell = [&](MaterialId owner) -> Cell& {
         auto found = cells.find(owner);
-        if (found == cells.end()) { found = cells.emplace(owner,std::make_unique<Cell>(reference,myCurrent,myAccounting,*myReference->Cuts,owner,Tolerance)).first; }
+        if (found == cells.end()) { found = cells.emplace(owner,std::make_unique<Cell>(reference,myCurrent,myAccounting,*myReference->Cuts,owner,Tolerance,myPortion)).first; }
         return *found->second;
     };
     std::vector<Vec> positions; positions.reserve(input->NbNodes());
     for (const auto& p : input->Nodes()) { positions.emplace_back(p); }
     std::vector<Triangle> triangles; std::vector<Line> lines;
-    for (MaterialId e = 0; e < input->NbIndexedElems(); ++e) {
-        for (const auto& trace : traced->ElementTraces().at(e)) { cell(trace.Element); }
-        std::vector<MaterialId> nodes; input->ElementNodes(e,nodes);
+    for (size_t e = 0; e < primitives.size(); ++e) {
+        for (const auto& trace : primitives[e].Records()) { cell(trace.Element); }
+        const auto& nodes = primitives[e].Nodes;
         if (nodes.size() == 1) { continue; }
         for (size_t i = 1; i+1 < nodes.size(); ++i) { triangles.push_back({{{nodes[0],nodes[i],nodes[i+1]}},e}); }
     }
-    for (size_t l = 0; l < traced->Lines().size(); ++l) {
-        for (const auto& trace : traced->LineTraces().at(l)) { cell(trace.Element); }
-        lines.push_back({traced->Lines()[l].Nodes,l});
+    for (size_t l = 0; l < refLines.size(); ++l) {
+        for (const auto& trace : lineTraces.at(l)) { cell(trace.Element); }
+        lines.push_back({refLines[l].Nodes,l});
     }
-    auto owner = [&](size_t p,bool line) { return (line ? traced->LineTraces() : traced->ElementTraces()).at(p).front().Element; };
+    auto owner = [&](size_t p,bool line) { return (line ? lineTraces.at(p) : primitives.at(p).Records()).front().Element; };
     auto cancelled = [&]() { if (myCancellation && myCancellation->Cancelled.load()) { throw std::runtime_error("Material sampling cancelled"); } };
     const int limit = std::max(options.FaceSubdivisionLimit,options.LineSubdivisionLimit);
     for (int iteration = 0; iteration <= limit; ++iteration) {
@@ -216,14 +257,14 @@ void MeshGeometryMaterial::refineSection(const MeshCutResult& reference)
         }
         if (splits.empty()) { Residual = residual; break; }
         myRefined = true; Depth = iteration+1;
-        uint64_t primitives = lines.size();
+        uint64_t predicted = lines.size();
         for (const auto& t : triangles) {
             unsigned count = 0;
             for (int a = 0; a < 3; ++a) { count += splits.count(edge(t.Nodes[a],t.Nodes[(a+1)%3])) ? 1 : 0; }
-            primitives += count+1;
+            predicted += count+1;
         }
-        for (const auto& l : lines) { primitives += splits.count(edge(l.Nodes[0],l.Nodes[1])) ? 1 : 0; }
-        if (primitives > options.MaxSourcePrimitives) { throw std::runtime_error("Material sampling primitive budget exceeded"); }
+        for (const auto& l : lines) { predicted += splits.count(edge(l.Nodes[0],l.Nodes[1])) ? 1 : 0; }
+        if (predicted > options.MaxSourcePrimitives) { throw std::runtime_error("Material sampling primitive budget exceeded"); }
         mySamplingLeases.push_back(myAccounting.ReserveDisplayBytes((uint64_t)splits.size()*2048+(uint64_t)(triangles.size()+lines.size())*512));
         auto midpoint = [&](MaterialId a,MaterialId b,MaterialId element) -> MaterialId {
             auto& id = splits.at(edge(a,b)); if (id) { return id; }
@@ -262,7 +303,7 @@ void MeshGeometryMaterial::refineSection(const MeshCutResult& reference)
         for (const auto& p : myMeshData->Nodes()) { output->AddNodePosition(p); }
         ElementsMap elements;
         auto traces = [&](size_t parent,const std::vector<MaterialId>& nodes,bool line) {
-            auto records = (line ? traced->LineTraces() : traced->ElementTraces()).at(parent);
+            auto records = line ? lineTraces.at(parent) : primitives.at(parent).Records();
             for (auto& record : records) {
                 const auto previous = std::move(record.Weights); record.Weights = MeshCutTraceWeights(); record.Weights.reserve(nodes.size());
                 for (MaterialId n : nodes) {
@@ -272,24 +313,39 @@ void MeshGeometryMaterial::refineSection(const MeshCutResult& reference)
             }
             return records;
         };
+        if (myPortion != 1) {
+            // Retain replacement volume topology while replacing its explicit boundary faces.
+            for (const auto& indexed : input->IndexedElements()) {
+                if ((int)indexed.Type < RWCae::MeshElem3dLowerType) { continue; }
+                const auto local = output->NbElems(indexed.Type);
+                if (!RWCae::MeshAdaptorsIteratorAllElems::Switch(indexed.Type,[&](const auto& a) {
+                    output->AddElement(a.GetElement(indexed.Index)); return true;
+                },input)) { throw std::invalid_argument("Unsupported material replacement volume"); }
+                elements.Bind(MeshGeomElem(local,indexed.Type,false),myElementsMap.Find(MeshGeomElem(indexed.Index,indexed.Type,false)));
+            }
+        }
         for (const auto& t : triangles) {
-            const auto local = output->NbElems(RWCae::MeshElemType::Triangle); output->AddElement(RWCae::MeshElementTriangle(t.Nodes.data()));
+            const bool surface = primitives[t.Parent].Key.IsSurface;
+            const auto local = surface ? output->NbSurfElems(RWCae::MeshElemType::Triangle) : output->NbElems(RWCae::MeshElemType::Triangle);
+            if (surface) { output->AddSurfaceElement(RWCae::MeshElementTriangle(t.Nodes.data())); }
+            else { output->AddElement(RWCae::MeshElementTriangle(t.Nodes.data())); }
             const auto e = owner(t.Parent,false); const auto& original = myCurrent->GetMeshData()->IndexedElements()[e];
-            elements.Bind(MeshGeomElem(local,RWCae::MeshElemType::Triangle,false),std::make_pair(myCurrent.get(),MeshGeomElem(original.Index,original.Type,false)));
-            myElementTraces.push_back(traces(t.Parent,{t.Nodes.begin(),t.Nodes.end()},false));
+            elements.Bind(MeshGeomElem(local,RWCae::MeshElemType::Triangle,surface),std::make_pair(myCurrent.get(),MeshGeomElem(original.Index,original.Type,false)));
+            if (myPortion == 1) { myElementTraces.push_back(traces(t.Parent,{t.Nodes.begin(),t.Nodes.end()},false)); }
         }
         // Preserve isolated beam/point crossings when surface primitives coexist.
-        for (MaterialId e = 0; e < input->NbIndexedElems(); ++e) {
-            std::vector<MaterialId> nodes; input->ElementNodes(e,nodes); if (nodes.size() != 1) { continue; }
+        for (size_t e = 0; e < primitives.size(); ++e) {
+            const auto& nodes = primitives[e].Nodes; if (nodes.size() != 1) { continue; }
             const auto local = output->NbElems(RWCae::MeshElemType::Elem0d); output->AddElement(RWCae::MeshElement0d(nodes.data()));
             const auto& original = myCurrent->GetMeshData()->IndexedElements()[owner(e,false)];
             elements.Bind(MeshGeomElem(local,RWCae::MeshElemType::Elem0d,false),std::make_pair(myCurrent.get(),MeshGeomElem(original.Index,original.Type,false)));
-            myElementTraces.push_back(traces(e,nodes,false));
+            if (myPortion == 1) { myElementTraces.push_back(traces(e,nodes,false)); }
         }
         myLines.clear();
         for (const auto& l : lines) { myLines.push_back({l.Nodes,owner(l.Parent,true)}); myLineTraces.push_back(traces(l.Parent,{l.Nodes.begin(),l.Nodes.end()},true)); }
         myMeshData = output; myElementsMap.Exchange(elements);
     }
+    if (myPortion != 1) { return; }
     // Normals use current facet geometry and reference orientation; no world-plane fallback.
     myNormals.resize(myMeshData->NbIndexedElems(),normal);
     for (MaterialId e = 0; e < myMeshData->NbIndexedElems(); ++e) {

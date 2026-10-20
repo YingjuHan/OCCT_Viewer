@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <limits>
 #include <map>
+#include <RWCae/MeshAdaptorsIterator.h>
 using namespace ViewCaeGeom;
 namespace {
 void require(bool value,const char* message) { if (!value) { throw std::runtime_error(message); } }
@@ -51,6 +52,53 @@ Handle(RWCae::MeshData) quadraticTetra()
         Graphic3d_Vec3(.5,0,0),Graphic3d_Vec3(.5,.5,0),Graphic3d_Vec3(0,.5,0),Graphic3d_Vec3(0,0,.5),Graphic3d_Vec3(.5,0,.5),Graphic3d_Vec3(0,.5,.5)}) { m->AddNodePosition(p); }
     const RWCae::MeshEntityId ids[]={0,1,2,3,4,5,6,7,8,9}; m->AddElement(RWCae::MeshElementTetrahedron2nd(ids)); return m;
 }
+double distanceToTriangle(const Graphic3d_Vec3d& p,const std::array<Graphic3d_Vec3d,3>& t)
+{
+    using V=Graphic3d_Vec3d; const auto a=t[1]-t[0],b=t[2]-t[0],v=p-t[0]; const auto n=V::Cross(a,b);
+    const double aa=a.Dot(a),ab=a.Dot(b),bb=b.Dot(b),det=aa*bb-ab*ab;
+    if(det>0) {
+        const double u=(bb*v.Dot(a)-ab*v.Dot(b))/det,w=(aa*v.Dot(b)-ab*v.Dot(a))/det;
+        if(u>=0&&w>=0&&u+w<=1) { return std::abs(v.Dot(n))/n.Modulus(); }
+    }
+    double d=std::numeric_limits<double>::infinity();
+    for(int i=0;i<3;++i) {
+        const auto direction=t[(i+1)%3]-t[i]; const double length=direction.Dot(direction);
+        const double q=length>0?std::max(0.,std::min(1.,(p-t[i]).Dot(direction)/length)):0;
+        d=std::min(d,(p-t[i]-direction*q).Modulus());
+    }
+    return d;
+}
+void gapBound(const MeshCutResult& cut)
+{
+    if(cut.Portions[1].IsNull()) { return; }
+    const auto cap=cut.Portions[1]->GetMeshData();
+    std::map<std::pair<RWCae::MeshEntityId,RWCae::MeshEntityId>,int> edges;
+    for(RWCae::MeshEntityId e=0;e<cap->NbIndexedElems();++e) {
+        std::vector<RWCae::MeshEntityId> ids; cap->ElementNodes(e,ids);
+        for(size_t i=0;i<ids.size();++i) { ++edges[{std::min(ids[i],ids[(i+1)%ids.size()]),std::max(ids[i],ids[(i+1)%ids.size()])}]; }
+    }
+    for(unsigned side:{0u,2u}) {
+        if(cut.Portions[side].IsNull()) { continue; }
+        const auto data=cut.Portions[side]->GetMeshData(); std::vector<std::array<Graphic3d_Vec3d,3>> faces;
+        auto collect=[&](const auto& a) {
+            for(RWCae::MeshEntityId e=0;e<a.NbElements();++e) {
+                const auto& f=a.GetElement(e);
+                for(RWCae::MeshElemEntityId n=1;n+1<f.NbNodes();++n) { faces.push_back({{Graphic3d_Vec3d(data->Nodes()[f[0]]),Graphic3d_Vec3d(data->Nodes()[f[n]]),Graphic3d_Vec3d(data->Nodes()[f[n+1]])}}); }
+            }
+        };
+        RWCae::MeshAdaptorsIterator2dElems::For(collect,data); RWCae::MeshAdaptorsIterator2dElems::For(collect,data,true);
+        require(!faces.empty(),"Missing material boundary faces for gap check");
+        for(const auto& edge:edges) {
+            if(edge.second!=1) { continue; }
+            const auto a=Graphic3d_Vec3d(cap->Nodes()[edge.first.first]),b=Graphic3d_Vec3d(cap->Nodes()[edge.first.second]);
+            for(double t:{.25,.5,.75}) {
+                const auto p=a*(1-t)+b*t; double distance=std::numeric_limits<double>::infinity();
+                for(const auto& face:faces) { distance=std::min(distance,distanceToTriangle(p,face)); }
+                require(distance<=2*cut.MaterialTolerance+2e-6,"Material cap/body sampled gap exceeds combined tolerance");
+            }
+        }
+    }
+}
 void curvedMaterial()
 {
     const auto m=quadraticTetra();
@@ -85,6 +133,23 @@ void curvedMaterial()
     closeTo(MeshCutIntegration::HeatFlux(physical,{{0,1,2}}).HeatFlow,.245);
     require(cuts.MaterialStatistics("p")[0]==1,"Adaptive refinement reintersected reference");
     base=MeshCutResult(); result=MeshCutResult(); physical=MeshCutResult(); cap.Nullify();
+    // Curved retained boundaries use the same FE map/tolerance as the cap.
+    for(unsigned mask:{3u,6u,1u,4u,5u,7u}) {
+        cuts.SetVisibility("p",mask); auto all=cuts.Evaluate("p",scalar(m));
+        require(all.MaterialResidual<=all.MaterialTolerance,"Retained boundary did not satisfy sampled tolerance");
+        gapBound(all);
+        for(unsigned part=0;part<3;++part) {
+            if (!(mask&(1u<<part))) { continue; }
+            const auto data=all.Portions[part]->GetMeshData();
+            for(RWCae::MeshEntityId n=0;n<data->NbNodes();++n) {
+                MeshInterpolatedNode weights; require(all.Portions[part]->OriginNode(n,weights),"Retained boundary lost FE provenance");
+                double refZ=0;
+                for(const auto& w:weights.BaseNodes()) { refZ+=m->Nodes()[w.first].z()*w.second; }
+                closeTo(data->Nodes()[n].z(),refZ+k*data->Nodes()[n].x()*data->Nodes()[n].x());
+            }
+        }
+    }
+    cuts.SetVisibility("p",2);
     // Strict limits fail explicitly, rather than silently accepting a coarse curved section.
     options.FaceSubdivisionLimit=0; require(cuts.SetGeometryOptions(options),"Zero depth setting");
     bool rejected=false; try { cuts.Evaluate("p"); } catch(const std::runtime_error&) { rejected=true; }
@@ -108,6 +173,44 @@ void curvedMaterial()
     cuts.SetDeformation(bad,1/RWCae::MeshTools::ComputeVectorTrsfRatio(m,bad)); rejected=false;
     try { cuts.Evaluate("p"); } catch(const std::invalid_argument&) { rejected=true; }
     require(rejected,"Inverted material volume accepted");
+}
+void warpedHexBoundary()
+{
+    const auto m=mesh(); const auto u=vectorField(m,[](const auto& p) { return Graphic3d_Vec3d(0,0,.3*p.x()*p.y()); }), t=scalar(m);
+    MeshCutViewManager cuts(m); auto options=cuts.GeometryOptions(); options.AbsoluteTolerance=1e-3; options.RelativeTolerance=0;
+    cuts.SetGeometryOptions(options); cuts.AddPlane("p",Graphic3d_Vec4d(0,0,1,-.5)); cuts.SetFollowDeformation("p",true);
+    cuts.SetDeformation(u,.4);
+    for(unsigned mask:{3u,6u,7u}) {
+        cuts.SetVisibility("p",mask); const auto cut=cuts.Evaluate("p",t);
+        require(!cut.BoundaryMesh && cut.MaterialResidual<=cut.MaterialTolerance,"Native retained volume boundary metadata");
+        gapBound(cut);
+        for(unsigned part=0;part<3;++part) {
+            if(!(mask&(1u<<part))) { continue; }
+            const auto data=cut.Portions[part]->GetMeshData();
+            for(RWCae::MeshEntityId n=0;n<data->NbNodes();++n) {
+                MeshInterpolatedNode weights; require(cut.Portions[part]->OriginNode(n,weights),"Lost native FE boundary map");
+                double value=0; for(const auto& w:weights.BaseNodes()) { value+=w.second*t->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(w.first)); }
+                closeTo(cut.Fields[part]->GetComponent(0)->Value(RWCae::MeshPropertyEntityInfo(n)),value);
+            }
+        }
+    }
+    cuts.SetPlane("p",Graphic3d_Vec4d(0,0,1,-20));
+    const auto empty=cuts.Evaluate("p",t);
+    require(empty.Portions[1]->GetMeshData()->NbNodes()==0,"Empty material cap retained old facets");
+}
+void curvedShell()
+{
+    Handle(RWCae::MeshData) m=new RWCae::MeshData();
+    for(auto p:{Graphic3d_Vec3(0,0,0),Graphic3d_Vec3(1,0,0),Graphic3d_Vec3(1,1,0),Graphic3d_Vec3(0,1,0),
+        Graphic3d_Vec3(.5,0,0),Graphic3d_Vec3(1,.5,0),Graphic3d_Vec3(.5,1,0),Graphic3d_Vec3(0,.5,0)}) { m->AddNodePosition(p); }
+    const RWCae::MeshEntityId ids[]={0,1,2,3,4,5,6,7}; m->AddElement(RWCae::MeshElementQuad2nd(ids));
+    const auto u=vectorField(m,[](const auto& p) { return Graphic3d_Vec3d(0,0,.4*p.y()*p.y()); });
+    MeshCutViewManager cuts(m); auto options=cuts.GeometryOptions(); options.AbsoluteTolerance=2e-4; options.RelativeTolerance=0;
+    cuts.SetGeometryOptions(options); cuts.AddPlane("p",Graphic3d_Vec4d(1,0,0,-.3)); cuts.SetFollowDeformation("p",true); cuts.SetDeformation(u,.8);
+    const auto result=cuts.Evaluate("p",scalar(m)); const auto slice=Handle(MeshGeometrySlice)::DownCast(result.Portions[1]);
+    const auto data=slice->GetMeshData(); require(slice->Lines().size()>1,"Quadratic material shell line was not refined");
+    for(const auto& p:data->Nodes()) { closeTo(p.x(),.3); closeTo(p.z(),.4*cuts.EffectiveDeformationScale()*p.y()*p.y()); }
+    for(size_t l=0;l<slice->Lines().size();++l) { const auto normal=result.MaterialNormal(l,true); closeTo(normal.x(),1); closeTo(normal.y(),0); }
 }
 void tests()
 {
@@ -173,7 +276,7 @@ void tests()
 }
 }
 int main() {
-    try { tests(); curvedMaterial(); std::cout<<"CUT_MATERIAL_PASS\n"; return 0; }
+    try { tests(); curvedMaterial(); warpedHexBoundary(); curvedShell(); std::cout<<"CUT_MATERIAL_PASS\n"; return 0; }
     catch(const Standard_Failure& e) { std::cerr<<"CUT_MATERIAL_FAIL "<<e.GetMessageString()<<'\n'; }
     catch(const std::exception& e) { std::cerr<<"CUT_MATERIAL_FAIL "<<e.what()<<'\n'; }
     return 1;

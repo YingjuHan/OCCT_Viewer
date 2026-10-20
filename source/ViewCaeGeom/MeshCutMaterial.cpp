@@ -94,7 +94,7 @@ void MeshGeometryMaterial::generateMeshData()
     const auto slice = Handle(MeshGeometrySlice)::DownCast(geometry);
     myLines = slice.IsNull() ? std::vector<MeshSliceLine>() : slice->Lines();
     myMeshData = mapped; myNodesMap.Exchange(nodes); myElementsMap.Exchange(elements);
-    if (myPortion == 1) { refineSection(reference); }
+    refineSection(reference);
     RetainCacheLease(lease);
     ++myReference->MappingBuilds; myReference->MappedNodes += myMeshData->NbNodes();
     } catch (...) {
