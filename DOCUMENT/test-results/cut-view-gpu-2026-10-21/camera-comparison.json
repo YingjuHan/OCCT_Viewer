@@ -1,0 +1,62 @@
+{
+  "MX450": {
+    "manifest": {
+      "gpu": "MX450",
+      "mode": "Camera",
+      "started": "2026-10-21T11:50:46.8786730+08:00",
+      "frames": 2,
+      "repetitions": 1,
+      "repository": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer",
+      "build": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\mingw-deformation",
+      "executable": "D:\\workspace\\OpenCASCADE\\OCCT_private\\install\\mingw\\win64\\gcc\\bin\\DRAWEXE.exe",
+      "model": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\large-vtk-deformed\\hex_150.vtu",
+      "revision": "78fa2d5bf2370ac05c70ceee0195f4beb63f7ede",
+      "succeeded": true,
+      "preferenceBefore": {
+        "kind": "",
+        "exists": false,
+        "value": null
+      },
+      "preferenceDuring": "GpuPreference=2;",
+      "cameraCompleted": true,
+      "preferenceRestored": true,
+      "finished": "2026-10-21T11:51:25.0400382+08:00"
+    },
+    "camera": {
+      "crossing": "ProjType:   orthographic\nFOVy:       45\nFOVx:       62.307692307692307\nFOV2d:      180\nDistance:   259.8076211353316\nIOD:        0.050000000000000003\nIODType:    relative\nZFocus:     1\nZFocusType: relative\nZNear:      129.90352065067361\nZFar:       389.71173687877865\n\nCUT_CAMERA_INFO crossing vviewparams: Scale:  4.04206\nAspect: 1.38462\nProj:        0.57735     -0.57735      0.57735\nUp:        -0.408248     0.408248     0.816497\nAt:               75           75           75\nEye:             225          -75          225\nOrientMat:        0.707107     0.707107            0     -106.066\n                 -0.408248     0.408248     0.816497     -61.2372\n                   0.57735     -0.57735      0.57735     -303.109\n                         0            0            0            1\nProjMat:        0.00583853            0            0           -0\n                         0   0.00808412            0           -0\n                         0            0  -0.00769799           -2\n                         0            0            0            1",
+      "rotating": "ProjType:   orthographic\nFOVy:       45\nFOVx:       62.307692307692307\nFOV2d:      180\nDistance:   259.8076211353316\nIOD:        0.050000000000000003\nIODType:    relative\nZFocus:     1\nZFocusType: relative\nZNear:      129.90352065067361\nZFar:       389.71173687877865\n\nCUT_CAMERA_INFO rotating vviewparams: Scale:  4.04206\nAspect: 1.38462\nProj:        0.57735     -0.57735      0.57735\nUp:        -0.408248     0.408248     0.816497\nAt:               75           75           75\nEye:             225          -75          225\nOrientMat:        0.707107     0.707107            0     -106.066\n                 -0.408248     0.408248     0.816497     -61.2372\n                   0.57735     -0.57735      0.57735     -303.109\n                         0            0            0            1\nProjMat:        0.00583853            0            0           -0\n                         0   0.00808412            0           -0\n                         0            0  -0.00769799           -2\n                         0            0            0            1",
+      "deformed": "ProjType:   orthographic\nFOVy:       45\nFOVx:       62.307692307692307\nFOV2d:      180\nDistance:   273.03638294365459\nIOD:        0.050000000000000003\nIODType:    relative\nZFocus:     1\nZFocusType: relative\nZNear:      136.51790155483505\nZFar:       409.5548795912631\n\nCUT_CAMERA_INFO deformed vviewparams: Scale:  3.87303\nAspect: 1.38462\nProj:        0.57735     -0.57735      0.57735\nUp:        -0.408248     0.408248     0.816497\nAt:          81.5465      78.2733      76.6366\nEye:         239.184     -79.3644      234.274\nOrientMat:        0.707107     0.707107            0      -113.01\n                 -0.408248     0.408248     0.816497     -61.2372\n                   0.57735     -0.57735      0.57735     -319.172\n                         0            0            0            1\nProjMat:        0.00559438            0            0           -0\n                         0   0.00774606            0           -0\n                         0            0  -0.00732502           -2\n                         0            0            0            1"
+    },
+    "renderer": "NVIDIA GeForce MX450/PCIe/SSE2\n4.6.0 NVIDIA 573.91"
+  },
+  "IrisXe": {
+    "manifest": {
+      "gpu": "IrisXe",
+      "mode": "Camera",
+      "started": "2026-10-21T11:52:17.0633720+08:00",
+      "frames": 2,
+      "repetitions": 1,
+      "repository": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer",
+      "build": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\mingw-deformation",
+      "executable": "D:\\workspace\\OpenCASCADE\\OCCT_private\\install\\mingw\\win64\\gcc\\bin\\DRAWEXE.exe",
+      "model": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\large-vtk-deformed\\hex_150.vtu",
+      "revision": "78fa2d5bf2370ac05c70ceee0195f4beb63f7ede",
+      "succeeded": true,
+      "preferenceBefore": {
+        "exists": false,
+        "value": null,
+        "kind": ""
+      },
+      "preferenceDuring": "GpuPreference=1;",
+      "cameraCompleted": true,
+      "preferenceRestored": true,
+      "finished": "2026-10-21T11:52:49.8784350+08:00"
+    },
+    "camera": {
+      "crossing": "ProjType:   orthographic\nFOVy:       45\nFOVx:       62.307692307692307\nFOV2d:      180\nDistance:   259.8076211353316\nIOD:        0.050000000000000003\nIODType:    relative\nZFocus:     1\nZFocusType: relative\nZNear:      129.90352065067361\nZFar:       389.71173687877865\n\nCUT_CAMERA_INFO crossing vviewparams: Scale:  4.04206\nAspect: 1.38462\nProj:        0.57735     -0.57735      0.57735\nUp:        -0.408248     0.408248     0.816497\nAt:               75           75           75\nEye:             225          -75          225\nOrientMat:        0.707107     0.707107            0     -106.066\n                 -0.408248     0.408248     0.816497     -61.2372\n                   0.57735     -0.57735      0.57735     -303.109\n                         0            0            0            1\nProjMat:        0.00583853            0            0           -0\n                         0   0.00808412            0           -0\n                         0            0  -0.00769799           -2\n                         0            0            0            1",
+      "rotating": "ProjType:   orthographic\nFOVy:       45\nFOVx:       62.307692307692307\nFOV2d:      180\nDistance:   259.8076211353316\nIOD:        0.050000000000000003\nIODType:    relative\nZFocus:     1\nZFocusType: relative\nZNear:      129.90352065067361\nZFar:       389.71173687877865\n\nCUT_CAMERA_INFO rotating vviewparams: Scale:  4.04206\nAspect: 1.38462\nProj:        0.57735     -0.57735      0.57735\nUp:        -0.408248     0.408248     0.816497\nAt:               75           75           75\nEye:             225          -75          225\nOrientMat:        0.707107     0.707107            0     -106.066\n                 -0.408248     0.408248     0.816497     -61.2372\n                   0.57735     -0.57735      0.57735     -303.109\n                         0            0            0            1\nProjMat:        0.00583853            0            0           -0\n                         0   0.00808412            0           -0\n                         0            0  -0.00769799           -2\n                         0            0            0            1",
+      "deformed": "ProjType:   orthographic\nFOVy:       45\nFOVx:       62.307692307692307\nFOV2d:      180\nDistance:   273.03638294365459\nIOD:        0.050000000000000003\nIODType:    relative\nZFocus:     1\nZFocusType: relative\nZNear:      136.51790155483505\nZFar:       409.5548795912631\n\nCUT_CAMERA_INFO deformed vviewparams: Scale:  3.87303\nAspect: 1.38462\nProj:        0.57735     -0.57735      0.57735\nUp:        -0.408248     0.408248     0.816497\nAt:          81.5465      78.2733      76.6366\nEye:         239.184     -79.3644      234.274\nOrientMat:        0.707107     0.707107            0      -113.01\n                 -0.408248     0.408248     0.816497     -61.2372\n                   0.57735     -0.57735      0.57735     -319.172\n                         0            0            0            1\nProjMat:        0.00559438            0            0           -0\n                         0   0.00774606            0           -0\n                         0            0  -0.00732502           -2\n                         0            0            0            1"
+    },
+    "renderer": "Intel(R) Iris(R) Xe Graphics\n4.6.0 - Build 32.0.101.7088"
+  }
+}

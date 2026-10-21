@@ -165,6 +165,8 @@ export CUTVIEW_OUTPUT_DIR="$CUT_REPO/build/plot-options-large"
 
 ## 7. 本轮开发记录
 
+- 后续硬件验收：新增 [MX450 / Iris Xe 功能与性能报告](cut-view-manager-gpu-test-report.md)，包含 MX450 全量回归、337.5 万单元门禁、两卡同协议 3×60 帧实测及逐帧数值；历史 A10 测量保留，性能达标情况单独列出。
+
 - 2026-10-20：核验官方 S1..S10 与当前源码，建立 R01..R26 和 A01..A10；开始 A01。索引对 C++/Tcl 存在部分解析覆盖，本轮以相关源文件直接读取补全，不能把图查询未返回符号视为能力缺失。
 - A01 已完成实现与验收：`ViewDraw` Release 构建通过；9 项相关 CTest 通过（`cut_view`、`cut_display`、`native_session`、`draw_cut_view_controls`、`draw_cut_view_tools`、`draw_cut_view_plot_options`、`draw_cut_view_gpu_plane`、`draw_cut_view_display_modes`、`draw_cut_view_deformation`）。补充完整 session 的 RGB/覆盖往返、未显示模型删除后的 ID 重用、输入格式修正后，新回归再次通过。新面板截图已人工检查；Windows 截图辅助进程曾导致测试超时，已将其移出自动回归，保留实际渲染的面色/云图图像比较。
 - 百万单元：3,375,000 六面体、倍率 0.1，三模式 × mask 2/3/7 共 9 组完成 `CUT_PLOT_OPTIONS_LARGE_PASS`。打开 Options 不触发同步求交；Apply/恢复继承后 GPU 路径保留，后续 4 步切面移动均无主体重建/上传，源准备次数不增加。逻辑预算始终为 source `1,460,965,248`、result `17,010,275,392` 字节，限额仍为 4/16 GiB。它是预算与缓存回归，不是新的鼠标 FPS 基准。

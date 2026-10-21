@@ -7,6 +7,8 @@
 当前完整会话为 session 4，definitions 为 13，旧 session 1/2/3 继续读取。
 详细需求见 [对标台账](cut-view-manager-abaqus-parity.md)，迁移以 [无 OCCT 手册](cut-view-manager-visit-porting.md) 为准。
 
+后续补充的 MX450 全量回归、两卡相同 3×60 帧性能复测和逐帧归档见 [MX450 / Iris Xe 功能与性能报告](cut-view-manager-gpu-test-report.md)。下文保留 A10 原始验收与 20 帧历史记录。
+
 | 工作包 | 功能与提交 |
 | --- | --- |
 | A01 | 三部分显示选项、独立重命名、显示覆盖生命周期；`b85b89b` |
