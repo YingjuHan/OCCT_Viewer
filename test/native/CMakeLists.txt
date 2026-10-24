@@ -57,6 +57,8 @@ add_test (NAME cut_slicing COMMAND cut_slicing_tests)
 add_executable (cut_linear_batch_tests CutLinearBatchTests.cpp)
 target_link_libraries (cut_linear_batch_tests PRIVATE ViewCaeGeom)
 add_test (NAME cut_linear_batch COMMAND cut_linear_batch_tests)
+add_executable (cut_bvh_benchmark CutBvhBenchmark.cpp)
+target_link_libraries (cut_bvh_benchmark PRIVATE ViewCaeGeom RWMeshConv)
 set_property (TEST cut_linear_batch APPEND PROPERTY ENVIRONMENT "OCCTV_CUT_CELL_TOPOLOGY_CACHE=1")
 set_tests_properties (cut_linear_batch PROPERTIES TIMEOUT 180
   PASS_REGULAR_EXPRESSION "CUT_LINEAR_BATCH_PASS" FAIL_REGULAR_EXPRESSION "CUT_LINEAR_BATCH_FAIL")

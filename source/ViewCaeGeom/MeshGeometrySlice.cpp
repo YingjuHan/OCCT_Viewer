@@ -87,6 +87,53 @@ public:
         if(enabled) { myNodePositions.reserve(32768); myAddedNodes.Clear(new NCollection_IncAllocator()); myAddedNodes.ReSize(32768); }
     }
     const std::vector<RWCae::MeshEntityId>& Candidates() const { return myCandidates; }
+    void CollectParallelCandidates(ViewCaeGeom::MeshBvhData::MeshBvhBoxSet* boxes)
+    {
+        using SubSet=ViewCaeGeom::MeshBvhData::MeshBvhBoxSet::SubBoxSet;
+        struct Collector : BVH_Traverse<float,3,SubSet,bool> {
+            const MeshSliceSelector* Owner=nullptr;
+            std::vector<RWCae::MeshEntityId>* Output=nullptr;
+            size_t Visited=0;
+            bool RejectNode(const BVH_Vec3f& minimum,const BVH_Vec3f& maximum,bool& inside) const override {
+                inside=false; return !Owner->boxAccepted(minimum,maximum);
+            }
+            bool Accept(int index,const bool&) override {
+                if((++Visited%256)==0) { Owner->checkCancelled(); }
+                const auto box=this->myBVHSet->Box(index);
+                if(!Owner->boxAccepted(box.CornerMin(),box.CornerMax())) { return false; }
+                Output->push_back(this->myBVHSet->Element(index)); return true;
+            }
+        };
+        checkCancelled();
+        using BoxSet=ViewCaeGeom::MeshBvhData::MeshBvhBoxSet;
+        struct TopCollector : BVH_Traverse<float,3,BoxSet,bool> {
+            const MeshSliceSelector* Owner=nullptr; std::vector<int>* Order=nullptr;
+            bool RejectNode(const BVH_Vec3f& minimum,const BVH_Vec3f& maximum,bool& inside) const override {
+                inside=false; return !Owner->boxAccepted(minimum,maximum);
+            }
+            bool Accept(int index,const bool&) override { Order->push_back(index); return true; }
+        };
+        std::vector<int> order; order.reserve(boxes->Size());
+        TopCollector top; top.Owner=this; top.Order=&order; top.SetBVHSet(boxes); top.Select();
+        if(order.empty()) { return; }
+        std::vector<std::vector<RWCae::MeshEntityId>> parts(order.size());
+        // Build/materialize on the Viewer thread before workers touch trees.
+        // Workers only read boxes; potentially lazy geometry filters run below.
+        OSD_ThreadPool::Launcher launcher(*OSD_ThreadPool::DefaultPool(),4);
+        launcher.Perform(0,(int)order.size(),[&](int,int i) {
+            const auto& subset=boxes->SubSet(boxes->Element(order[i])); const auto box=subset->Box();
+            if(!boxAccepted(box.CornerMin(),box.CornerMax())) { return; }
+            Collector collector; collector.Owner=this; collector.Output=&parts[i]; collector.SetBVHSet(subset.get()); collector.Select();
+        });
+        checkCancelled();
+        // Preserve the existing top-tree traversal order so source evaluation,
+        // shared-node numbering and fallback ownership do not depend on workers.
+        size_t count=0; for(const auto& part:parts) { count+=part.size(); } myCandidates.reserve(count);
+        for(const auto& part:parts) { for(const auto id:part) {
+            if((++myVisited%256)==0) { checkCancelled(); }
+            if(myMeshGeom->AcceptElement(id)) { myCandidates.push_back(id); }
+        } }
+    }
     void ProcessCandidates(ViewCaeGeom::MeshSliceWork& work)
     {
         using Clock=std::chrono::steady_clock;
@@ -391,7 +438,7 @@ private:
         input.Type=element.Type;
         input.Count=element.Type==T::Tetrahedron?4:element.Type==T::Pyramid?5:element.Type==T::Prism?6:element.Type==T::Hexahedron?8:0;
         RWCae::MeshElemEntityOffset begin,end; elements.GetElemNodesRange(element.Index,&begin,&end);
-        if(input.Count==0 || end-begin!=input.Count) { return false; }
+        if(input.Count==0 || end-begin!=(RWCae::MeshElemEntityOffset)input.Count) { return false; }
         for(int i=0;i<input.Count;++i) {
             const auto id=elements.Nodes()[(int)begin+i]; input.Ids[i]=id;
             if(myCollect && myModifyNodes) {
@@ -599,7 +646,10 @@ void MeshGeometrySlice::generateMeshData()
                 const bool staged=mySlicePlanes.Size()==1 && aParentMeshData->NbIndexedElems()>=65536;
                 aSelector.CollectCandidates(staged);
                 const auto start=std::chrono::steady_clock::now();
-                aSelector.Select();
+                const auto* queryMode=std::getenv("OCCTV_CUT_PARALLEL_QUERY");
+                const bool parallelQuery=!(queryMode && queryMode[0]=='0' && queryMode[1]=='\0');
+                if(staged && boxes->Size()>1 && parallelQuery) { aSelector.CollectParallelCandidates(boxes.get()); }
+                else { aSelector.Select(); }
                 if(staged) {
                     myLastWork.BvhMs+=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();
                     myLastWork.Candidates+=aSelector.Candidates().size();

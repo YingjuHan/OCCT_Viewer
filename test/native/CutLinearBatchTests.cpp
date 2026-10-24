@@ -5,12 +5,27 @@
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
+#include <cstdlib>
+#include <string>
 
 using namespace ViewCaeGeom;
 static void require(bool value,const char* message) { if(!value) { throw std::runtime_error(message); } }
+struct QueryMode {
+    bool Present=false; std::string Previous;
+    QueryMode() { const auto* value=std::getenv("OCCTV_CUT_PARALLEL_QUERY"); Present=value!=nullptr; if(value) { Previous=value; } Set("1"); }
+    static void Set(const char* value) {
+#ifdef _WIN32
+        _putenv_s("OCCTV_CUT_PARALLEL_QUERY",value?value:"");
+#else
+        if(value) { setenv("OCCTV_CUT_PARALLEL_QUERY",value,1); } else { unsetenv("OCCTV_CUT_PARALLEL_QUERY"); }
+#endif
+    }
+    ~QueryMode() { Set(Present?Previous.c_str():nullptr); }
+};
 
 static void check(RWCae::MeshElemType type,int n)
 {
+    QueryMode queryMode;
     const auto start=std::chrono::steady_clock::now();
     Handle(RWCae::MeshData) mesh=new RWCae::MeshData();
     const auto id=[n](int x,int y,int z) { return RWCae::MeshEntityId(x+(n+1)*(y+(n+1)*z)); };
@@ -42,6 +57,21 @@ static void check(RWCae::MeshElemType type,int n)
     else { require(cuts.SetPlane("p",Graphic3d_Vec4d(1,slope,0,-offset)),"Incremental linear plane rejected"); }
     const auto result=cuts.EvaluateSectionForDisplay("p",field); const auto section=result.Portions[1]; const auto output=section->GetMeshData();
     const auto timings=cuts.LastTimings();
+    if(movement==0) {
+        QueryMode::Set("0"); MeshCutViewManager serial(mesh); serial.AddPlane("p",Graphic3d_Vec4d(1,slope,0,-offset));
+        const auto reference=serial.EvaluateSectionForDisplay("p",field); const auto data=reference.Portions[1]->GetMeshData(); QueryMode::Set("1");
+        require(data->NbNodes()==output->NbNodes() && data->NbIndexedElems()==output->NbIndexedElems(),"Parallel query changed section counts");
+        for(RWCae::MeshEntityId node=0;node<output->NbNodes();++node) {
+            MeshInterpolatedNode a(2),b(2); section->OriginNode(node,a); reference.Portions[1]->OriginNode(node,b);
+            require(output->Nodes()[node]==data->Nodes()[node] && a.BaseNodes()==b.BaseNodes(),"Parallel query changed node order or FE weights");
+        }
+        for(RWCae::MeshEntityId e=0;e<output->NbIndexedElems();++e) {
+            std::vector<RWCae::MeshEntityId> a,b; output->ElementNodes(e,a); data->ElementNodes(e,b);
+            const auto& ai=output->IndexedElements()[e]; const auto& bi=data->IndexedElements()[e]; RWCae::MeshEntityId ao,bo;
+            require(a==b && section->OriginElement(MeshGeomElem(ai.Index,ai.Type,false),ao)
+                && reference.Portions[1]->OriginElement(MeshGeomElem(bi.Index,bi.Type,false),bo) && ao==bo,"Parallel query changed connectivity or original cell identity");
+        }
+    }
     require(timings.Candidates>4096 && timings.Fallbacks<timings.Candidates,"Parallel linear batch path was not exercised");
     if(movement==.01 && MeshGeometrySlice::CellTopologyReuseEnabled()) { require(timings.TopologyCellHits>0,"Small plane translation did not reuse cell topology"); }
     require(timings.TopologyCellHits+timings.TopologyCellMisses==timings.Candidates,"Cell topology counters do not partition candidates");
