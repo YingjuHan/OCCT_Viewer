@@ -144,6 +144,7 @@ cmake_dependent_option (OCCTV_USE_MEDFILE "Use MEDFile library for MED parser" O
 # 启用/禁用 DRAW 插件选项
 cmake_dependent_option (OCCTV_BUILD_DRAW "Build DRAW Harness plugin" ON "NOT EMSCRIPTEN" OFF)
 # 是否构建 DRAW Harness 插件，在非 EMSCRIPTEN 环境下默认开启
+cmake_dependent_option (OCCTV_BUILD_NATIVE_VIEWER "Build native Viewer library without DRAW plugins" OFF "NOT EMSCRIPTEN" OFF)
 # Option to enable/disable mesh exchange plugin
 # 启用/禁用网格交换插件选项
 cmake_dependent_option (OCCTV_BUILD_MESH_EXCHANGER "Build mesh exchanger plugin" OFF "NOT EMSCRIPTEN;OCCTV_USE_MEDFILE" OFF)
@@ -447,7 +448,7 @@ add_subdirectory (source/SimMesh)
 add_subdirectory (source/LodCae)
 # 添加 SCLodCae 子目录
 
-if ((EMSCRIPTEN AND OCCTV_BUILD_WEB_VIEWER) OR OCCTV_BUILD_DRAW)
+if ((EMSCRIPTEN AND OCCTV_BUILD_WEB_VIEWER) OR OCCTV_BUILD_DRAW OR OCCTV_BUILD_NATIVE_VIEWER)
   # 如果是 EMSCRIPTEN 环境且构建 Web 查看器，或者构建 DRAW
   add_subdirectory (source/Viewer)
   # 添加 SCwebviewer 子目录

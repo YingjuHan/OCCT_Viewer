@@ -1,0 +1,10 @@
+git commit: d5b557830edc1b6a489f1fe8a41a1b7d61a1f6ef date: 26-10-24
+Configuring OCCTViewer version: '26.10.24'
+-- OpenCASCADE library has been found: /home/htf/occtviewer-ci/linux/occt-install
+-- OpenCASCADE include directories: /home/htf/occtviewer-ci/linux/occt-install/include/opencascade
+-- OpenCASCADE library directories: /home/htf/occtviewer-ci/linux/occt-install/lib
+-- OpenCASCADE binary: /home/htf/occtviewer-ci/linux/occt-install/bin
+rapidjson include dirs: /usr/include
+-- Configuring done (3.2s)
+-- Generating done (0.1s)
+-- Build files have been written to: /home/htf/occtviewer-ci/linux/viewer

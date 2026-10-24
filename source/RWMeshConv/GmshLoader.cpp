@@ -3,7 +3,6 @@
 #include <Standard_CLocaleSentry.hxx>
 #include <Message.hxx>
 #include <Message_Messenger.hxx>
-#include <Interface_Static.hxx>
 #include <OSD_Timer.hxx>
 
 #include <algorithm>

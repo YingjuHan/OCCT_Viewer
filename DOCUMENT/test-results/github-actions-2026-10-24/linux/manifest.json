@@ -1,0 +1,26 @@
+{
+  "platform": "WSL Ubuntu 24.04",
+  "configuration": "Release, native Viewer on, DRAW plugins off",
+  "occt_revision": "db3716c9f9189391d2b5f6b469bce3963ae99afa",
+  "viewer_base_revision": "d5b557830edc1b6a489f1fe8a41a1b7d61a1f6ef",
+  "working_changes": [
+    "CMakeLists.txt",
+    "adm/ci/build-linux.sh",
+    "source/RWMeshConv/GmshLoader.cpp"
+  ],
+  "tests": 33,
+  "passed": 33,
+  "ctest_elapsed_seconds": 59.15,
+  "source_sha256": {
+    "CMakeLists.txt": "f04ac7247a046efe2735ac0d64ff3db2fcfeca284e33908c6a3fd6b2a27668bf",
+    "adm\\ci\\build-linux.sh": "7384b0369cd105de375426f15a3f597d074780b9ba7e57e0fbfad690852b06d8",
+    "source\\RWMeshConv\\GmshLoader.cpp": "57d2f0400f7f3be47713ae4a98e68573b2755f8e411af26b48d14ae94a4b7d22"
+  },
+  "evidence_sha256": {
+    "ctest.log": "85f1cd2b67d7c02244d6cd9eaddcf9a7a3d8b350ae8c3a71926532ee8aba1fc4",
+    "ctest.xml": "a287e5aae3c32b07dfc7f06c6616d6eefbdc6321d7f88d545216f5223c5db34a",
+    "versions.txt": "5dafcd1f4bc5cb8d68896cc6c7f24bca97712b5cf2388dbbb52269b9f347f719",
+    "viewer-build.log": "3ce354896c03af88d6db58cf08ede792d93542c73715fa9325f9ba5769ebdc41",
+    "viewer-configure.log": "8b2336159a2afd3abac9507a74a97a8c3fc2e9fa860ad657f5ce9f5db8a87d52"
+  }
+}
