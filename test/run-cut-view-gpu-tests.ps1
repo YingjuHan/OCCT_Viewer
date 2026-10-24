@@ -26,9 +26,11 @@ New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 $cutManifest = [ordered]@{
     gpu=$Gpu; mode=$Mode; started=(Get-Date -Format o); frames=$Frames; repetitions=$Repetitions; displayMode=$DisplayMode
     cellTopologyReuse=($env:OCCTV_CUT_CELL_TOPOLOGY_CACHE -eq '1')
+    parallelPlaneQuery=($env:OCCTV_CUT_PARALLEL_QUERY -ne '0')
     fullValidation=[bool]$FullValidation
     repository=$cutRepo; build=$BuildDirectory; executable=$DrawExe; model=$Model
     revision=(& git -C $cutRepo rev-parse HEAD); succeeded=$false
+    trackedWorkingTreeChanges=@(& git -C $cutRepo status --porcelain --untracked-files=no)
 }
 $cutEnvironment = @{}
 foreach ($entry in Get-ChildItem Env:) { $cutEnvironment[$entry.Name] = $entry.Value }
@@ -64,7 +66,8 @@ try {
     # Do not let an inherited file-mode benchmark turn CTest smoke into a big run.
     foreach ($entry in @(Get-ChildItem Env:CUTVIEW_*)) { Remove-Item -LiteralPath $entry.PSPath }
     $env:CUTVIEW_EXPECTED_GPU = $cutExpected
-    Get-FileHash -LiteralPath $Model,$DrawExe,(Join-Path $BuildDirectory 'bin/libViewCaeTest.dll'),(Join-Path $BuildDirectory 'bin/libViewer.dll') -Algorithm SHA256 |
+    $cutHashPaths = @($Model,$DrawExe) + @('ViewCaeTest','Viewer','ViewCae','ViewCaeGeom','RWVtk','RWCae' | ForEach-Object { Join-Path $BuildDirectory "bin/lib$_.dll" })
+    Get-FileHash -LiteralPath $cutHashPaths -Algorithm SHA256 |
         Select-Object Path,Hash | ConvertTo-Json | Set-Content (Join-Path $OutputDirectory 'hashes.json')
     Get-CimInstance Win32_Processor | Select-Object Name,NumberOfCores,NumberOfLogicalProcessors | ConvertTo-Json | Set-Content (Join-Path $OutputDirectory 'cpu.json')
     Get-CimInstance Win32_VideoController | Select-Object Name,DriverVersion | ConvertTo-Json | Set-Content (Join-Path $OutputDirectory 'adapters.json')

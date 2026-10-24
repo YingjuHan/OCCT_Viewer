@@ -1,0 +1,2374 @@
+Start testing: Oct 24 17:30 中国标准时间
+----------------------------------------------------------
+1/85 Testing: vtk_reader
+1/85 Test: vtk_reader
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/occtviewer_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"vtk_reader" start time: Oct 24 17:30 中国标准时间
+Output:
+----------------------------------------------------------
+[ERR_VTK_IMPORT] Tuple count mismatch in CellData 'pressure'
+[ERR_VTK_IMPORT] VTK cell connectivity has incorrect type/node count/degrees
+[ERR_VTK_IMPORT] Invalid or missing VTK polyhedron face arrays
+[ERR_VTK_IMPORT] PolyData point index out of range
+[ERR_VTK_IMPORT] VTK integer value exceeds supported range or is not integral
+[ERR_VTK_IMPORT] Invalid PolyData connectivity offset or cell node count
+[ERR_VTK_IMPORT] Invalid PolyData connectivity offset or cell node count
+[ERR_VTK_IMPORT] Array 'connectivity': stoll
+[ERR_VTK_IMPORT] Invalid PolyData connectivity or offset count
+[ERR_VTK_IMPORT] Composite 'D:/workspace/OpenCASCADE/OCCT_Viewer/test/native/fixtures/broken.vtm', block 'dataset_1', reference 'missing.vtu', resolved 'D:/workspace/OpenCASCADE/OCCT_Viewer/test/native/fixtures/missing.vtu'
+[ERR_VTK_IMPORT] VTK series files must be a nonempty array
+VTK reader tests passed
+<end of output>
+Test time =   0.07 sec
+----------------------------------------------------------
+Test Passed.
+"vtk_reader" end time: Oct 24 17:30 中国标准时间
+"vtk_reader" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/85 Testing: vtk_format
+2/85 Test: vtk_format
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/vtk_format_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"vtk_format" start time: Oct 24 17:30 中国标准时间
+Output:
+----------------------------------------------------------
+VTK_FORMAT_PASS
+<end of output>
+Test time =   0.06 sec
+----------------------------------------------------------
+Test Passed.
+"vtk_format" end time: Oct 24 17:30 中国标准时间
+"vtk_format" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/85 Testing: vtk_series
+3/85 Test: vtk_series
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/vtk_series_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"vtk_series" start time: Oct 24 17:30 中国标准时间
+Output:
+----------------------------------------------------------
+VTK_SERIES_PASS
+<end of output>
+Test time =   0.09 sec
+----------------------------------------------------------
+Test Passed.
+"vtk_series" end time: Oct 24 17:30 中国标准时间
+"vtk_series" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/85 Testing: vtk_safety
+4/85 Test: vtk_safety
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/vtk_safety_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"vtk_safety" start time: Oct 24 17:30 中国标准时间
+Output:
+----------------------------------------------------------
+VTK_SAFETY_PASS
+<end of output>
+Test time =   0.07 sec
+----------------------------------------------------------
+Test Passed.
+"vtk_safety" end time: Oct 24 17:30 中国标准时间
+"vtk_safety" time elapsed: 00:00:00
+----------------------------------------------------------
+
+5/85 Testing: vtk_limits
+5/85 Test: vtk_limits
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/vtk_limits_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"vtk_limits" start time: Oct 24 17:30 中国标准时间
+Output:
+----------------------------------------------------------
+MEMORY_PASS arrays=4 payload_bytes=2097152
+MEMORY_PEAK_BYTES 21577728
+VTK_LIMITS_PASS
+<end of output>
+Test time =   0.08 sec
+----------------------------------------------------------
+Test Passed.
+"vtk_limits" end time: Oct 24 17:30 中国标准时间
+"vtk_limits" time elapsed: 00:00:00
+----------------------------------------------------------
+
+6/85 Testing: vtk_reference
+6/85 Test: vtk_reference
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/vtk_reference_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"vtk_reference" start time: Oct 24 17:30 中国标准时间
+Output:
+----------------------------------------------------------
+[ERR_VTK_IMPORT] VTK reference staging 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/missing.vtm' into 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/stage': Reference 'B/absent.vtu' from 'd:/workspace/opencascade/occt_viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/missing.vtm', resolved 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/B/absent.vtu': filesystem error: cannot make canonical path: No such file or directory [D:\workspace\OpenCASCADE\OCCT_Viewer\build\mingw-deformation\test\native\vtk-reference-fixtures\src\B/absent.vtu]
+[ERR_VTK_IMPORT] VTK reference staging 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/cycle.vtm' into 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/stage': Reference 'cycle.vtm' from 'd:/workspace/opencascade/occt_viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/cycle.vtm', resolved 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/cycle.vtm': Cyclic VTK reference: d:/workspace/opencascade/occt_viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/cycle.vtm
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/invalid.vtm: portable: Child 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/stage/vtk-import-809393316467400-10/1/invalid.vtu': Inexpected end of file: 
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/invalid.vtm: portable: Composite 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/stage/vtk-import-809393316467400-10/0/invalid.vtm', block 'bad', reference '../1/invalid.vtu', resolved 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/stage/vtk-import-809393316467400-10/1/invalid.vtu'
+VTK_REFERENCE_PASS
+<end of output>
+Test time =   0.18 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[VTK_REFERENCE_PASS]
+"vtk_reference" end time: Oct 24 17:30 中国标准时间
+"vtk_reference" time elapsed: 00:00:00
+----------------------------------------------------------
+
+7/85 Testing: vtk_import
+7/85 Test: vtk_import
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/vtk_import_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"vtk_import" start time: Oct 24 17:30 中国标准时间
+Output:
+----------------------------------------------------------
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/invalid.vtu: portable: Invalid byte order: 'invalid'
+Reading mapping file version '0.0'
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/polyline.vtu: Cannot find component 'missing' for property 'temperature'
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/polyline.vtu: Failed to parse mapping for property 'temperature'
+Reading mapping file version '0.0'
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/tetra.vtu: Cannot find component 'missing' for property 'temperature'
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/tetra.vtu: Failed to parse mapping for property 'temperature'
+Reading mapping file version '0.0'
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/tetra.vtm: Child 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/tetra.vtu': Cannot find component 'missing' for property 'temperature'
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/tetra.vtm: Child 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/tetra.vtu': Failed to parse mapping for property 'temperature'
+Reading mapping file version '0.0'
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/tetra.vtm.series: Series step 0 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/tetra.vtm': Child 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/tetra.vtu': Cannot find component 'missing' for property 'temperature'
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/tetra.vtm.series: Series step 0 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/tetra.vtm': Child 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/tetra.vtu': Failed to parse mapping for property 'temperature'
+Reading mapping file version '0.0'
+[ERR_MESH_LOAD] Input file is not accessible: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/absent.vtu
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/missing.vtm: portable: Child 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/absent.vtu': Input file is not accessible: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/absent.vtu
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/missing.vtm: portable: Composite 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/missing.vtm', block 'missing child', reference 'absent.vtu', resolved 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/absent.vtu'
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/invalid.vtu: portable: Invalid byte order: 'invalid'
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/failed_stage.vtm.series: portable: Series step 1 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/missing.vtm': Child 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/absent.vtu': Input file is not accessible: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/absent.vtu
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/failed_stage.vtm.series: portable: Series step 1 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/missing.vtm': Composite 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/missing.vtm', block 'missing child', reference 'absent.vtu', resolved 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/absent.vtu'
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/failed_stage.vtm.series: portable: Cannot stage VTK series step 1
+VTK_IMPORT_PASS
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[VTK_IMPORT_PASS]
+"vtk_import" end time: Oct 24 17:30 中国标准时间
+"vtk_import" time elapsed: 00:00:00
+----------------------------------------------------------
+
+8/85 Testing: cut_view
+8/85 Test: cut_view
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/cut_view_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"cut_view" start time: Oct 24 17:30 中国标准时间
+Output:
+----------------------------------------------------------
+Cut view numerical tests passed
+<end of output>
+Test time =   0.40 sec
+----------------------------------------------------------
+Test Passed.
+"cut_view" end time: Oct 24 17:31 中国标准时间
+"cut_view" time elapsed: 00:00:00
+----------------------------------------------------------
+
+9/85 Testing: cut_display
+9/85 Test: cut_display
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/cut_display_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"cut_display" start time: Oct 24 17:31 中国标准时间
+Output:
+----------------------------------------------------------
+CUT_DISPLAY_PASS
+<end of output>
+Test time =   0.13 sec
+----------------------------------------------------------
+Test Passed.
+"cut_display" end time: Oct 24 17:31 中国标准时间
+"cut_display" time elapsed: 00:00:00
+----------------------------------------------------------
+
+10/85 Testing: cut_slicing
+10/85 Test: cut_slicing
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/cut_slicing_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"cut_slicing" start time: Oct 24 17:31 中国标准时间
+Output:
+----------------------------------------------------------
+CUT_SLICING_PASS
+<end of output>
+Test time =   2.28 sec
+----------------------------------------------------------
+Test Passed.
+"cut_slicing" end time: Oct 24 17:31 中国标准时间
+"cut_slicing" time elapsed: 00:00:02
+----------------------------------------------------------
+
+11/85 Testing: cut_linear_batch
+11/85 Test: cut_linear_batch
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/cut_linear_batch_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"cut_linear_batch" start time: Oct 24 17:31 中国标准时间
+Output:
+----------------------------------------------------------
+LINEAR_BATCH type 6 cells 1296000 candidates 25560 topology_hits 0 fallbacks 0 elapsed_ms 877.013
+LINEAR_BATCH type 6 cells 1296000 candidates 25560 topology_hits 11973 fallbacks 0 elapsed_ms 910.202
+LINEAR_BATCH type 6 cells 1296000 candidates 25560 topology_hits 11347 fallbacks 0 elapsed_ms 942.032
+LINEAR_BATCH type 6 cells 1296000 candidates 25200 topology_hits 0 fallbacks 0 elapsed_ms 977.067
+LINEAR_BATCH type 10 cells 1024000 candidates 15040 topology_hits 0 fallbacks 0 elapsed_ms 844.377
+LINEAR_BATCH type 10 cells 1024000 candidates 15040 topology_hits 15038 fallbacks 0 elapsed_ms 867.666
+LINEAR_BATCH type 10 cells 1024000 candidates 15040 topology_hits 14398 fallbacks 0 elapsed_ms 889.604
+LINEAR_BATCH type 10 cells 1024000 candidates 15040 topology_hits 0 fallbacks 0 elapsed_ms 919.657
+LINEAR_BATCH type 8 cells 1053696 candidates 18424 topology_hits 0 fallbacks 0 elapsed_ms 827.536
+LINEAR_BATCH type 8 cells 1053696 candidates 18424 topology_hits 17046 fallbacks 0 elapsed_ms 870.903
+LINEAR_BATCH type 8 cells 1053696 candidates 18424 topology_hits 15541 fallbacks 0 elapsed_ms 914.943
+LINEAR_BATCH type 8 cells 1053696 candidates 18256 topology_hits 0 fallbacks 0 elapsed_ms 967.947
+CUT_LINEAR_BATCH_PASS
+<end of output>
+Test time =   2.99 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_LINEAR_BATCH_PASS]
+"cut_linear_batch" end time: Oct 24 17:31 中国标准时间
+"cut_linear_batch" time elapsed: 00:00:02
+----------------------------------------------------------
+
+12/85 Testing: cut_placement
+12/85 Test: cut_placement
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/cut_placement_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"cut_placement" start time: Oct 24 17:31 中国标准时间
+Output:
+----------------------------------------------------------
+CUT_PLACEMENT_PASS
+<end of output>
+Test time =   0.05 sec
+----------------------------------------------------------
+Test Passed.
+"cut_placement" end time: Oct 24 17:31 中国标准时间
+"cut_placement" time elapsed: 00:00:00
+----------------------------------------------------------
+
+13/85 Testing: cut_material
+13/85 Test: cut_material
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/cut_material_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"cut_material" start time: Oct 24 17:31 中国标准时间
+Output:
+----------------------------------------------------------
+CUT_MATERIAL_PASS
+<end of output>
+Test time =   1.40 sec
+----------------------------------------------------------
+Test Passed.
+"cut_material" end time: Oct 24 17:31 中国标准时间
+"cut_material" time elapsed: 00:00:01
+----------------------------------------------------------
+
+14/85 Testing: cut_sine_plate
+14/85 Test: cut_sine_plate
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/cut_sine_plate_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"cut_sine_plate" start time: Oct 24 17:31 中国标准时间
+Output:
+----------------------------------------------------------
+SINE_PLATE_SECTION vtk plane 0 source_cells 6
+SINE_PLATE_SECTION vtk plane 1 source_cells 12
+SINE_PLATE_SECTION vtk plane 2 source_cells 24
+SINE_PLATE_SECTION vtk plane 3 source_cells 12
+SINE_PLATE_SECTION vtk plane 4 source_cells 18
+SINE_PLATE_SECTION vtk plane 5 source_cells 18
+SINE_PLATE_SECTION vtk plane 6 source_cells 12
+SINE_PLATE_SECTION vtk plane 7 source_cells 24
+SINE_PLATE_SECTION vtk plane 8 source_cells 0
+SINE_PLATE_SECTION vtk plane 9 source_cells 0
+SINE_PLATE_BODY plane 0 sign 1 mask 3
+SINE_PLATE_BODY plane 0 sign 1 mask 6
+SINE_PLATE_BODY plane 0 sign 1 mask 7
+SINE_PLATE_BODY plane 0 sign -1 mask 3
+SINE_PLATE_BODY plane 0 sign -1 mask 6
+SINE_PLATE_BODY plane 0 sign -1 mask 7
+SINE_PLATE_SECTION vtu plane 0 source_cells 6
+SINE_PLATE_SECTION vtu plane 1 source_cells 12
+SINE_PLATE_BODY plane 2 sign 1 mask 3
+SINE_PLATE_BODY plane 2 sign 1 mask 6
+SINE_PLATE_BODY plane 2 sign 1 mask 7
+SINE_PLATE_BODY plane 2 sign -1 mask 3
+SINE_PLATE_BODY plane 2 sign -1 mask 6
+SINE_PLATE_BODY plane 2 sign -1 mask 7
+SINE_PLATE_SECTION vtu plane 2 source_cells 24
+SINE_PLATE_SECTION vtu plane 3 source_cells 12
+SINE_PLATE_SECTION vtu plane 4 source_cells 18
+SINE_PLATE_SECTION vtu plane 5 source_cells 18
+SINE_PLATE_SECTION vtu plane 6 source_cells 12
+SINE_PLATE_SECTION vtu plane 7 source_cells 24
+SINE_PLATE_SECTION vtu plane 8 source_cells 0
+SINE_PLATE_SECTION vtu plane 9 source_cells 0
+SINE_PLATE_SECTION 0.500000/0.000000 plane 0 source_cells 6
+SINE_PLATE_SECTION 0.500000/0.000000 plane 1 source_cells 12
+SINE_PLATE_SECTION 0.500000/0.000000 plane 2 source_cells 12
+SINE_PLATE_SECTION 0.500000/0.000000 plane 3 source_cells 12
+SINE_PLATE_SECTION 0.500000/0.000000 plane 4 source_cells 0
+SINE_PLATE_SECTION 0.500000/0.000000 plane 5 source_cells 24
+SINE_PLATE_SECTION 0.500000/0.000000 plane 6 source_cells 12
+SINE_PLATE_SECTION 0.500000/0.000000 plane 7 source_cells 12
+SINE_PLATE_SECTION 0.500000/0.000000 plane 8 source_cells 0
+SINE_PLATE_SECTION 0.500000/0.000000 plane 9 source_cells 0
+SINE_PLATE_SECTION 0.500000/0.310000 plane 0 source_cells 6
+SINE_PLATE_SECTION 0.500000/0.310000 plane 1 source_cells 12
+SINE_PLATE_SECTION 0.500000/0.310000 plane 2 source_cells 6
+SINE_PLATE_SECTION 0.500000/0.310000 plane 3 source_cells 18
+SINE_PLATE_SECTION 0.500000/0.310000 plane 4 source_cells 0
+SINE_PLATE_SECTION 0.500000/0.310000 plane 5 source_cells 24
+SINE_PLATE_SECTION 0.500000/0.310000 plane 6 source_cells 6
+SINE_PLATE_SECTION 0.500000/0.310000 plane 7 source_cells 6
+SINE_PLATE_SECTION 0.500000/0.310000 plane 8 source_cells 0
+SINE_PLATE_SECTION 0.500000/0.310000 plane 9 source_cells 0
+SINE_PLATE_SECTION 1.000000/0.000000 plane 0 source_cells 6
+SINE_PLATE_SECTION 1.000000/0.000000 plane 1 source_cells 12
+SINE_PLATE_SECTION 1.000000/0.000000 plane 2 source_cells 24
+SINE_PLATE_SECTION 1.000000/0.000000 plane 3 source_cells 12
+SINE_PLATE_SECTION 1.000000/0.000000 plane 4 source_cells 18
+SINE_PLATE_SECTION 1.000000/0.000000 plane 5 source_cells 18
+SINE_PLATE_SECTION 1.000000/0.000000 plane 6 source_cells 12
+SINE_PLATE_SECTION 1.000000/0.000000 plane 7 source_cells 24
+SINE_PLATE_SECTION 1.000000/0.000000 plane 8 source_cells 0
+SINE_PLATE_SECTION 1.000000/0.000000 plane 9 source_cells 0
+SINE_PLATE_SECTION 1.000000/0.310000 plane 0 source_cells 6
+SINE_PLATE_SECTION 1.000000/0.310000 plane 1 source_cells 12
+SINE_PLATE_SECTION 1.000000/0.310000 plane 2 source_cells 12
+SINE_PLATE_SECTION 1.000000/0.310000 plane 3 source_cells 18
+SINE_PLATE_SECTION 1.000000/0.310000 plane 4 source_cells 18
+SINE_PLATE_SECTION 1.000000/0.310000 plane 5 source_cells 18
+SINE_PLATE_SECTION 1.000000/0.310000 plane 6 source_cells 6
+SINE_PLATE_SECTION 1.000000/0.310000 plane 7 source_cells 18
+SINE_PLATE_SECTION 1.000000/0.310000 plane 8 source_cells 0
+SINE_PLATE_SECTION 1.000000/0.310000 plane 9 source_cells 0
+SINE_PLATE_SECTION 1.500000/0.000000 plane 0 source_cells 6
+SINE_PLATE_SECTION 1.500000/0.000000 plane 1 source_cells 12
+SINE_PLATE_SECTION 1.500000/0.000000 plane 2 source_cells 36
+SINE_PLATE_SECTION 1.500000/0.000000 plane 3 source_cells 24
+SINE_PLATE_SECTION 1.500000/0.000000 plane 4 source_cells 12
+SINE_PLATE_SECTION 1.500000/0.000000 plane 5 source_cells 24
+SINE_PLATE_SECTION 1.500000/0.000000 plane 6 source_cells 18
+SINE_PLATE_SECTION 1.500000/0.000000 plane 7 source_cells 18
+SINE_PLATE_SECTION 1.500000/0.000000 plane 8 source_cells 0
+SINE_PLATE_SECTION 1.500000/0.000000 plane 9 source_cells 0
+SINE_PLATE_SECTION 1.500000/0.310000 plane 0 source_cells 6
+SINE_PLATE_SECTION 1.500000/0.310000 plane 1 source_cells 12
+SINE_PLATE_SECTION 1.500000/0.310000 plane 2 source_cells 18
+SINE_PLATE_SECTION 1.500000/0.310000 plane 3 source_cells 30
+SINE_PLATE_SECTION 1.500000/0.310000 plane 4 source_cells 12
+SINE_PLATE_SECTION 1.500000/0.310000 plane 5 source_cells 24
+SINE_PLATE_SECTION 1.500000/0.310000 plane 6 source_cells 30
+SINE_PLATE_SECTION 1.500000/0.310000 plane 7 source_cells 18
+SINE_PLATE_SECTION 1.500000/0.310000 plane 8 source_cells 0
+SINE_PLATE_SECTION 1.500000/0.310000 plane 9 source_cells 0
+SINE_PLATE_SECTION 2.000000/0.000000 plane 0 source_cells 6
+SINE_PLATE_SECTION 2.000000/0.000000 plane 1 source_cells 12
+SINE_PLATE_SECTION 2.000000/0.000000 plane 2 source_cells 36
+SINE_PLATE_SECTION 2.000000/0.000000 plane 3 source_cells 24
+SINE_PLATE_SECTION 2.000000/0.000000 plane 4 source_cells 24
+SINE_PLATE_SECTION 2.000000/0.000000 plane 5 source_cells 24
+SINE_PLATE_SECTION 2.000000/0.000000 plane 6 source_cells 24
+SINE_PLATE_SECTION 2.000000/0.000000 plane 7 source_cells 36
+SINE_PLATE_SECTION 2.000000/0.000000 plane 8 source_cells 0
+SINE_PLATE_SECTION 2.000000/0.000000 plane 9 source_cells 0
+SINE_PLATE_SECTION 2.000000/0.310000 plane 0 source_cells 6
+SINE_PLATE_SECTION 2.000000/0.310000 plane 1 source_cells 12
+SINE_PLATE_SECTION 2.000000/0.310000 plane 2 source_cells 24
+SINE_PLATE_SECTION 2.000000/0.310000 plane 3 source_cells 36
+SINE_PLATE_SECTION 2.000000/0.310000 plane 4 source_cells 24
+SINE_PLATE_SECTION 2.000000/0.310000 plane 5 source_cells 24
+SINE_PLATE_SECTION 2.000000/0.310000 plane 6 source_cells 18
+SINE_PLATE_SECTION 2.000000/0.310000 plane 7 source_cells 30
+SINE_PLATE_SECTION 2.000000/0.310000 plane 8 source_cells 0
+SINE_PLATE_SECTION 2.000000/0.310000 plane 9 source_cells 0
+CUT_SINE_PLATE_PASS
+<end of output>
+Test time =  42.18 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_SINE_PLATE_PASS]
+"cut_sine_plate" end time: Oct 24 17:31 中国标准时间
+"cut_sine_plate" time elapsed: 00:00:42
+----------------------------------------------------------
+
+15/85 Testing: cut_cache
+15/85 Test: cut_cache
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/cut_cache_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"cut_cache" start time: Oct 24 17:31 中国标准时间
+Output:
+----------------------------------------------------------
+CUT_CACHE_PASS
+<end of output>
+Test time =   0.06 sec
+----------------------------------------------------------
+Test Passed.
+"cut_cache" end time: Oct 24 17:31 中国标准时间
+"cut_cache" time elapsed: 00:00:00
+----------------------------------------------------------
+
+16/85 Testing: cut_physics
+16/85 Test: cut_physics
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/cut_physics_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"cut_physics" start time: Oct 24 17:31 中国标准时间
+Output:
+----------------------------------------------------------
+CUT_PHYSICS_PASS
+<end of output>
+Test time =   0.13 sec
+----------------------------------------------------------
+Test Passed.
+"cut_physics" end time: Oct 24 17:31 中国标准时间
+"cut_physics" time elapsed: 00:00:00
+----------------------------------------------------------
+
+17/85 Testing: native_cut
+17/85 Test: native_cut
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/native_cut_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"native_cut" start time: Oct 24 17:31 中国标准时间
+Output:
+----------------------------------------------------------
+NATIVE_CUT_PASS
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"native_cut" end time: Oct 24 17:31 中国标准时间
+"native_cut" time elapsed: 00:00:00
+----------------------------------------------------------
+
+18/85 Testing: native_timeline
+18/85 Test: native_timeline
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/native_timeline_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"native_timeline" start time: Oct 24 17:31 中国标准时间
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"native_timeline" end time: Oct 24 17:31 中国标准时间
+"native_timeline" time elapsed: 00:00:00
+----------------------------------------------------------
+
+19/85 Testing: native_analysis
+19/85 Test: native_analysis
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/native_analysis_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"native_analysis" start time: Oct 24 17:31 中国标准时间
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.07 sec
+----------------------------------------------------------
+Test Passed.
+"native_analysis" end time: Oct 24 17:31 中国标准时间
+"native_analysis" time elapsed: 00:00:00
+----------------------------------------------------------
+
+20/85 Testing: native_session
+20/85 Test: native_session
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/native_session_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"native_session" start time: Oct 24 17:31 中国标准时间
+Output:
+----------------------------------------------------------
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/native-session\remeshed\model.vtm.series: Series geometry/topology changes: the initial Viewer mesh exposes only first-step fields; use SeriesSteps for later geometry
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/native-session/remeshed/series.json.assets/vtk-import-809444323277200-8/0/model.vtm.series: Series geometry/topology changes: the initial Viewer mesh exposes only first-step fields; use SeriesSteps for later geometry
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/native-session/remeshed/series.json.assets/vtk-import-809444323277200-8/0/model.vtm.series: Series geometry/topology changes: the initial Viewer mesh exposes only first-step fields; use SeriesSteps for later geometry
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/native-session/remeshed/series.json.assets/vtk-import-809444358939300-9/0/model.vtm.series: Series geometry/topology changes: the initial Viewer mesh exposes only first-step fields; use SeriesSteps for later geometry
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/native-session/remeshed/series.json.assets/vtk-import-809444358939300-9/0/model.vtm.series: Series geometry/topology changes: the initial Viewer mesh exposes only first-step fields; use SeriesSteps for later geometry
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/native-session/remeshed/series.json.assets/vtk-import-809444358939300-9/0/model.vtm.series: Series geometry/topology changes: the initial Viewer mesh exposes only first-step fields; use SeriesSteps for later geometry
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/native-session/remeshed/series.json.assets/vtk-import-809444358939300-9/0/model.vtm.series: Series geometry/topology changes: the initial Viewer mesh exposes only first-step fields; use SeriesSteps for later geometry
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/native-session/remeshed/series.json.assets/vtk-import-809444358939300-9/0/model.vtm.series: Series geometry/topology changes: the initial Viewer mesh exposes only first-step fields; use SeriesSteps for later geometry
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/native-session/remeshed/series.json.assets/vtk-import-809444358939300-9/0/model.vtm.series: Series geometry/topology changes: the initial Viewer mesh exposes only first-step fields; use SeriesSteps for later geometry
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/native-session/remeshed/series.json.assets/vtk-import-809444358939300-9/0/model.vtm.series: Series geometry/topology changes: the initial Viewer mesh exposes only first-step fields; use SeriesSteps for later geometry
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/native-session/remeshed/series.json.assets/vtk-import-809444358939300-9/0/model.vtm.series: Series geometry/topology changes: the initial Viewer mesh exposes only first-step fields; use SeriesSteps for later geometry
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/native-session/remeshed/series.json.assets/vtk-import-809444358939300-9/0/model.vtm.series: Series geometry/topology changes: the initial Viewer mesh exposes only first-step fields; use SeriesSteps for later geometry
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/native-session/remeshed/series.json.assets/vtk-import-809444358939300-9/0/model.vtm.series: Series geometry/topology changes: the initial Viewer mesh exposes only first-step fields; use SeriesSteps for later geometry
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/native-session/remeshed/series.json.assets/vtk-import-809444358939300-9/0/model.vtm.series: Series geometry/topology changes: the initial Viewer mesh exposes only first-step fields; use SeriesSteps for later geometry
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/native-session/remeshed/series.json.assets/vtk-import-809444358939300-9/0/model.vtm.series: Series geometry/topology changes: the initial Viewer mesh exposes only first-step fields; use SeriesSteps for later geometry
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/native-session/remeshed/series.json.assets/vtk-import-809444547047100-10/0/model.vtm.series: Series geometry/topology changes: the initial Viewer mesh exposes only first-step fields; use SeriesSteps for later geometry
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/native-session/remeshed/series.json.assets/vtk-import-809444547047100-10/0/model.vtm.series: Series geometry/topology changes: the initial Viewer mesh exposes only first-step fields; use SeriesSteps for later geometry
+<end of output>
+Test time =   1.26 sec
+----------------------------------------------------------
+Test Passed.
+"native_session" end time: Oct 24 17:31 中国标准时间
+"native_session" time elapsed: 00:00:01
+----------------------------------------------------------
+
+21/85 Testing: quadric_cut
+21/85 Test: quadric_cut
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/quadric_cut_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"quadric_cut" start time: Oct 24 17:31 中国标准时间
+Output:
+----------------------------------------------------------
+Curved cut numerical tests passed
+<end of output>
+Test time =   1.16 sec
+----------------------------------------------------------
+Test Passed.
+"quadric_cut" end time: Oct 24 17:31 中国标准时间
+"quadric_cut" time elapsed: 00:00:01
+----------------------------------------------------------
+
+22/85 Testing: cut_recovery
+22/85 Test: cut_recovery
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/cut_recovery_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"cut_recovery" start time: Oct 24 17:31 中国标准时间
+Output:
+----------------------------------------------------------
+CUT_RECOVERY_PASS
+<end of output>
+Test time =   0.07 sec
+----------------------------------------------------------
+Test Passed.
+"cut_recovery" end time: Oct 24 17:31 中国标准时间
+"cut_recovery" time elapsed: 00:00:00
+----------------------------------------------------------
+
+23/85 Testing: cut_tensor
+23/85 Test: cut_tensor
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/cut_tensor_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"cut_tensor" start time: Oct 24 17:31 中国标准时间
+Output:
+----------------------------------------------------------
+CUT_TENSOR_PASS
+<end of output>
+Test time =   0.14 sec
+----------------------------------------------------------
+Test Passed.
+"cut_tensor" end time: Oct 24 17:31 中国标准时间
+"cut_tensor" time elapsed: 00:00:00
+----------------------------------------------------------
+
+24/85 Testing: cut_trace_binding
+24/85 Test: cut_trace_binding
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/cut_trace_binding_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"cut_trace_binding" start time: Oct 24 17:31 中国标准时间
+Output:
+----------------------------------------------------------
+CUT_TRACE_BINDING_PASS
+<end of output>
+Test time =   0.16 sec
+----------------------------------------------------------
+Test Passed.
+"cut_trace_binding" end time: Oct 24 17:31 中国标准时间
+"cut_trace_binding" time elapsed: 00:00:00
+----------------------------------------------------------
+
+25/85 Testing: cut_union
+25/85 Test: cut_union
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/cut_union_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"cut_union" start time: Oct 24 17:31 中国标准时间
+Output:
+----------------------------------------------------------
+CUT_UNION_PASS
+<end of output>
+Test time =   5.97 sec
+----------------------------------------------------------
+Test Passed.
+"cut_union" end time: Oct 24 17:31 中国标准时间
+"cut_union" time elapsed: 00:00:05
+----------------------------------------------------------
+
+26/85 Testing: cut_interface
+26/85 Test: cut_interface
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/cut_interface_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"cut_interface" start time: Oct 24 17:31 中国标准时间
+Output:
+----------------------------------------------------------
+CUT_INTERFACE_SOURCE_PASS 12 bend 0 deformed 0 numerical 0
+CUT_INTERFACE_SOURCE_PASS 11 bend 0 deformed 0 numerical 0
+CUT_INTERFACE_SOURCE_PASS 25 bend 0 deformed 0 numerical 0
+CUT_INTERFACE_SOURCE_PASS 72 bend 0 deformed 0 numerical 0
+CUT_INTERFACE_SOURCE_PASS 42 bend 0 deformed 0 numerical 0
+CUT_INTERFACE_SOURCE_PASS 12 bend 0 deformed 1 numerical 0
+CUT_INTERFACE_SOURCE_PASS 25 bend 0.08 deformed 0 numerical 0
+CUT_INTERFACE_SOURCE_PASS 72 bend 0.08 deformed 1 numerical 0
+CUT_INTERFACE_SOURCE_PASS 25 bend 0.08 deformed 0 numerical 1
+CUT_INTERFACE_NATIVE_PASS
+<end of output>
+Test time =   0.59 sec
+----------------------------------------------------------
+Test Passed.
+"cut_interface" end time: Oct 24 17:31 中国标准时间
+"cut_interface" time elapsed: 00:00:00
+----------------------------------------------------------
+
+27/85 Testing: vtk_cell_cut
+27/85 Test: vtk_cell_cut
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/vtk_cell_cut_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"vtk_cell_cut" start time: Oct 24 17:31 中国标准时间
+Output:
+----------------------------------------------------------
+VTK_CELL_CHECK 0 nodes 0
+VTK_CELL_PASS 0 MeshCellKernel
+VTK_CELL_CHECK 1 nodes 1
+VTK_CELL_PASS 1 MeshCellKernel
+VTK_CELL_CHECK 2 nodes 3
+VTK_CELL_PASS 2 MeshCellKernel
+VTK_CELL_CHECK 3 nodes 2
+VTK_CELL_PASS 3 MeshCellKernel
+VTK_CELL_CHECK 4 nodes 3
+VTK_CELL_PASS 4 MeshCellKernel
+VTK_CELL_CHECK 5 nodes 3
+VTK_CELL_PASS 5 MeshCellKernel
+VTK_CELL_CHECK 6 nodes 4
+VTK_CELL_PASS 6 MeshCellKernel
+VTK_CELL_CHECK 7 nodes 5
+VTK_CELL_PASS 7 MeshCellKernel
+VTK_CELL_CHECK 8 nodes 4
+VTK_CELL_PASS 8 MeshCellKernel
+VTK_CELL_CHECK 9 nodes 4
+VTK_CELL_PASS 9 MeshCellKernel
+VTK_CELL_CHECK 10 nodes 4
+VTK_CELL_PASS 10 MeshCellKernel
+VTK_CELL_CHECK 11 nodes 8
+VTK_CELL_PASS 11 MeshCellKernel
+VTK_CELL_CHECK 12 nodes 8
+VTK_CELL_PASS 12 MeshCellKernel
+VTK_CELL_CHECK 13 nodes 6
+VTK_CELL_PASS 13 MeshCellKernel
+VTK_CELL_CHECK 14 nodes 5
+VTK_CELL_PASS 14 MeshCellKernel
+VTK_CELL_CHECK 15 nodes 10
+VTK_CELL_PASS 15 MeshCellKernel
+VTK_CELL_CHECK 16 nodes 12
+VTK_CELL_PASS 16 MeshCellKernel
+VTK_CELL_CHECK 21 nodes 3
+VTK_CELL_PASS 21 MeshCellKernel
+VTK_CELL_CHECK 22 nodes 6
+VTK_CELL_PASS 22 MeshCellKernel
+VTK_CELL_CHECK 23 nodes 8
+VTK_CELL_PASS 23 MeshCellKernel
+VTK_CELL_CHECK 24 nodes 10
+VTK_CELL_PASS 24 MeshCellKernel
+VTK_CELL_CHECK 25 nodes 20
+VTK_CELL_PASS 25 MeshCellKernel
+VTK_CELL_CHECK 26 nodes 15
+VTK_CELL_PASS 26 MeshCellKernel
+VTK_CELL_CHECK 27 nodes 13
+VTK_CELL_PASS 27 MeshCellKernel
+VTK_CELL_CHECK 28 nodes 9
+VTK_CELL_PASS 28 MeshCellKernel
+VTK_CELL_CHECK 29 nodes 27
+VTK_CELL_PASS 29 MeshCellKernel
+VTK_CELL_CHECK 30 nodes 6
+VTK_CELL_PASS 30 MeshCellKernel
+VTK_CELL_CHECK 31 nodes 12
+VTK_CELL_PASS 31 MeshCellKernel
+VTK_CELL_CHECK 32 nodes 18
+VTK_CELL_PASS 32 MeshCellKernel
+VTK_CELL_CHECK 33 nodes 24
+VTK_CELL_PASS 33 MeshCellKernel
+VTK_CELL_CHECK 34 nodes 7
+VTK_CELL_PASS 34 MeshCellKernel
+VTK_CELL_CHECK 35 nodes 4
+VTK_CELL_PASS 35 MeshCellKernel
+VTK_CELL_CHECK 36 nodes 8
+VTK_CELL_PASS 36 MeshCellKernel
+VTK_CELL_CHECK 37 nodes 19
+VTK_CELL_PASS 37 MeshCellKernel
+VTK_CELL_CHECK 41 nodes 5
+VTK_CELL_PASS 41 MeshCellKernel
+VTK_CELL_CHECK 42 nodes 8
+VTK_CELL_PASS 42 MeshCellKernel
+VTK_CELL_CHECK 68 nodes 3
+VTK_CELL_PASS 68 MeshCellKernel
+VTK_CELL_CHECK 69 nodes 6
+VTK_CELL_PASS 69 MeshCellKernel
+VTK_CELL_CHECK 70 nodes 9
+VTK_CELL_PASS 70 MeshCellKernel
+VTK_CELL_CHECK 71 nodes 10
+VTK_CELL_PASS 71 MeshCellKernel
+VTK_CELL_CHECK 72 nodes 27
+VTK_CELL_PASS 72 MeshCellKernel
+VTK_CELL_CHECK 73 nodes 18
+VTK_CELL_PASS 73 MeshCellKernel
+VTK_CELL_CHECK 75 nodes 3
+VTK_CELL_PASS 75 MeshCellKernel
+VTK_CELL_CHECK 76 nodes 6
+VTK_CELL_PASS 76 MeshCellKernel
+VTK_CELL_CHECK 77 nodes 9
+VTK_CELL_PASS 77 MeshCellKernel
+VTK_CELL_CHECK 78 nodes 10
+VTK_CELL_PASS 78 MeshCellKernel
+VTK_CELL_CHECK 79 nodes 27
+VTK_CELL_PASS 79 MeshCellKernel
+VTK_CELL_CHECK 80 nodes 18
+VTK_CELL_PASS 80 MeshCellKernel
+VTK_CELL_CHECK 70 nodes 12
+VTK_CELL_CHECK 73 nodes 30
+VTK_CELL_CHECK 72 nodes 343
+VTK_CELL_CHECK 75 nodes 3
+VTK_CELL_CHECK 76 nodes 6
+VTK_CELL_CHECK 77 nodes 9
+VTK_CELL_CHECK 78 nodes 10
+VTK_CELL_CHECK 79 nodes 27
+VTK_CELL_CHECK 80 nodes 18
+VTK_EXTENDED_PASS anisotropic rational 343_nodes integration
+VTK_CELL_COVERAGE 48/48
+<end of output>
+Test time =  15.34 sec
+----------------------------------------------------------
+Test Passed.
+"vtk_cell_cut" end time: Oct 24 17:32 中国标准时间
+"vtk_cell_cut" time elapsed: 00:00:15
+----------------------------------------------------------
+
+28/85 Testing: general_cut_cache
+28/85 Test: general_cut_cache
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/general_cut_cache_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"general_cut_cache" start time: Oct 24 17:32 中国标准时间
+Output:
+----------------------------------------------------------
+GENERAL_ADJACENCY_PASS 12
+GENERAL_ADJACENCY_PASS 11
+GENERAL_ADJACENCY_PASS 25
+GENERAL_ADJACENCY_PASS 72
+GENERAL_ADJACENCY_PASS 42
+GENERAL_CACHE_PASS combined_reference_test_ms 320.805 (not a frame benchmark)
+GENERAL_CACHE_NATIVE_PASS
+<end of output>
+Test time =   3.30 sec
+----------------------------------------------------------
+Test Passed.
+"general_cut_cache" end time: Oct 24 17:32 中国标准时间
+"general_cut_cache" time elapsed: 00:00:03
+----------------------------------------------------------
+
+29/85 Testing: cut_geometry
+29/85 Test: cut_geometry
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/cut_geometry_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"cut_geometry" start time: Oct 24 17:32 中国标准时间
+Output:
+----------------------------------------------------------
+CUT_GEOMETRY_CONVERGENCE tolerance 0.025 area_error 0.00416665 primitives 102
+CUT_GEOMETRY_CONVERGENCE tolerance 0.007 area_error 0.00104165 primitives 390
+CUT_GEOMETRY_CONVERGENCE tolerance 0.002 area_error 0.000260401 primitives 1542
+CUT_GEOMETRY_CURVED_ADJACENCY type 25 rational 0
+CUT_GEOMETRY_CURVED_ADJACENCY type 29 rational 0
+CUT_GEOMETRY_CURVED_ADJACENCY type 72 rational 0
+CUT_GEOMETRY_CURVED_ADJACENCY type 79 rational 1
+CUT_GEOMETRY_NATIVE_PASS
+<end of output>
+Test time =  21.57 sec
+----------------------------------------------------------
+Test Passed.
+"cut_geometry" end time: Oct 24 17:32 中国标准时间
+"cut_geometry" time elapsed: 00:00:21
+----------------------------------------------------------
+
+30/85 Testing: cut_analytic
+30/85 Test: cut_analytic
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/cut_analytic_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"cut_analytic" start time: Oct 24 17:32 中国标准时间
+Output:
+----------------------------------------------------------
+CUT_ANALYTIC_BOX_PASS 25
+CUT_ANALYTIC_BOX_PASS 29
+CUT_ANALYTIC_BOX_PASS 33
+CUT_ANALYTIC_BOX_PASS 72
+CUT_ANALYTIC_BOX_PASS 79
+CUT_ANALYTIC_WEDGE_PASS 26 rational 0
+CUT_ANALYTIC_WEDGE_PASS 31 rational 0
+CUT_ANALYTIC_WEDGE_PASS 32 rational 0
+CUT_ANALYTIC_WEDGE_PASS 73 rational 0
+CUT_ANALYTIC_WEDGE_PASS 80 rational 0
+CUT_ANALYTIC_WEDGE_PASS 80 rational 1
+CUT_ANALYTIC_PYRAMID_PASS 27
+CUT_ANALYTIC_PYRAMID_PASS 37
+CUT_ANALYTIC_TETRA_PASS
+CUT_ANALYTIC_CURVE_FALLBACK_PASS
+CUT_ANALYTIC_POLYGON_PASS
+CUT_ANALYTIC_NATIVE_PASS
+<end of output>
+Test time =   5.54 sec
+----------------------------------------------------------
+Test Passed.
+"cut_analytic" end time: Oct 24 17:32 中国标准时间
+"cut_analytic" time elapsed: 00:00:05
+----------------------------------------------------------
+
+31/85 Testing: cut_reference
+31/85 Test: cut_reference
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/cut_reference_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"cut_reference" start time: Oct 24 17:32 中国标准时间
+Output:
+----------------------------------------------------------
+CUT_REFERENCE_CHECK 21 rational 0 degree 2
+CUT_REFERENCE_CHECK 35 rational 0 degree 2
+CUT_REFERENCE_CHECK 68 rational 0 degree 2
+CUT_REFERENCE_CHECK 75 rational 0 degree 2
+CUT_REFERENCE_CHECK 22 rational 0 degree 2
+CUT_REFERENCE_CHECK 23 rational 0 degree 2
+CUT_REFERENCE_CHECK 28 rational 0 degree 2
+CUT_REFERENCE_CHECK 30 rational 0 degree 2
+CUT_REFERENCE_CHECK 34 rational 0 degree 2
+CUT_REFERENCE_CHECK 69 rational 0 degree 2
+CUT_REFERENCE_CHECK 70 rational 0 degree 2
+CUT_REFERENCE_CHECK 76 rational 0 degree 2
+CUT_REFERENCE_CHECK 77 rational 0 degree 2
+CUT_REFERENCE_CHECK 71 rational 0 degree 2
+CUT_REFERENCE_CHECK 78 rational 0 degree 2
+CUT_REFERENCE_CHECK 75 rational 1 degree 2
+CUT_REFERENCE_CHECK 76 rational 1 degree 2
+CUT_REFERENCE_CHECK 77 rational 1 degree 2
+CUT_REFERENCE_CHECK 78 rational 1 degree 2
+CUT_REFERENCE_CHECK 68 rational 0 degree 6
+CUT_REFERENCE_CHECK 75 rational 1 degree 6
+CUT_REFERENCE_CHECK 70 rational 0 degree 2
+CUT_REFERENCE_CHECK 77 rational 1 degree 2
+CUT_REFERENCE_CHECK 70 rational 0 degree 6
+CUT_REFERENCE_CHECK 75 rational 1 degree 2
+CUT_REFERENCE_CHECK 75 rational 1 degree 2
+CUT_REFERENCE_CONVERGENCE 69 tolerance 0.025 error 0.000775762
+CUT_REFERENCE_CONVERGENCE 69 tolerance 0.007 error 0.000775762
+CUT_REFERENCE_CONVERGENCE 69 tolerance 0.002 error 0.000193558
+CUT_REFERENCE_CONVERGENCE 77 tolerance 0.025 error 0.000429116
+CUT_REFERENCE_CONVERGENCE 77 tolerance 0.007 error 0.000107336
+CUT_REFERENCE_CONVERGENCE 77 tolerance 0.002 error 2.68373e-05
+CUT_REFERENCE_CONVERGENCE 78 tolerance 0.025 error 0.000621427
+CUT_REFERENCE_CONVERGENCE 78 tolerance 0.007 error 0.000156782
+CUT_REFERENCE_CONVERGENCE 78 tolerance 0.002 error 3.92858e-05
+CUT_REFERENCE_NATIVE_PASS
+<end of output>
+Test time =  14.79 sec
+----------------------------------------------------------
+Test Passed.
+"cut_reference" end time: Oct 24 17:32 中国标准时间
+"cut_reference" time elapsed: 00:00:14
+----------------------------------------------------------
+
+32/85 Testing: cut_iso
+32/85 Test: cut_iso
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/cut_iso_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"cut_iso" start time: Oct 24 17:32 中国标准时间
+Output:
+----------------------------------------------------------
+ISO_CHART 3
+ISO_CHART 5
+ISO_CHART 8
+ISO_CHART 9
+ISO_CHART 10
+ISO_CHART 11
+ISO_CHART 12
+ISO_CHART 13
+ISO_CHART 14
+ISO_CHART 21
+ISO_CHART 22
+ISO_CHART 23
+ISO_CHART 24
+ISO_CHART 25
+ISO_CHART 26
+ISO_CHART 27
+ISO_CHART 28
+ISO_CHART 29
+ISO_CHART 30
+ISO_CHART 31
+ISO_CHART 32
+ISO_CHART 33
+ISO_CHART 34
+ISO_CHART 35
+ISO_CHART 37
+ISO_CHART 68
+ISO_CHART 69
+ISO_CHART 70
+ISO_CHART 71
+ISO_CHART 72
+ISO_CHART 73
+ISO_CHART 75
+ISO_CHART 76
+ISO_CHART 77
+ISO_CHART 78
+ISO_CHART 79
+ISO_CHART 80
+CUT_ISO_PASS
+<end of output>
+Test time =   4.95 sec
+----------------------------------------------------------
+Test Passed.
+"cut_iso" end time: Oct 24 17:33 中国标准时间
+"cut_iso" time elapsed: 00:00:04
+----------------------------------------------------------
+
+33/85 Testing: draw_cut_view
+33/85 Test: draw_cut_view
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view" start time: Oct 24 17:33 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_VIEW_DRAW_PASS
+<end of output>
+Test time =   0.20 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_DRAW_PASS]
+"draw_cut_view" end time: Oct 24 17:33 中国标准时间
+"draw_cut_view" time elapsed: 00:00:00
+----------------------------------------------------------
+
+34/85 Testing: draw_vtk_import
+34/85 Test: draw_vtk_import
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/vtk_import.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_vtk_import" start time: Oct 24 17:33 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/invalid.vtu: portable: Invalid byte order: 'invalid'
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/unsupported_section.vtk: portable: Unsupported legacy VTK section: UNSUPPORTED_SECTION
+VTK_IMPORT_DRAW_PASS
+<end of output>
+Test time =   0.13 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[VTK_IMPORT_DRAW_PASS]
+"draw_vtk_import" end time: Oct 24 17:33 中国标准时间
+"draw_vtk_import" time elapsed: 00:00:00
+----------------------------------------------------------
+
+35/85 Testing: draw_vtk_reference
+35/85 Test: draw_vtk_reference
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/vtk_references.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_vtk_reference" start time: Oct 24 17:33 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+[ERR_VTK_IMPORT] VTK reference staging 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/missing.vtm' into 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/draw-stage': Reference 'B/absent.vtu' from 'd:/workspace/opencascade/occt_viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/missing.vtm', resolved 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/B/absent.vtu': filesystem error: cannot make canonical path: No such file or directory [D:\workspace\OpenCASCADE\OCCT_Viewer\build\mingw-deformation\test\native\vtk-reference-fixtures\src\B/absent.vtu]
+[ERR_VTK_IMPORT] VTK reference staging 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/cycle.vtm' into 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/draw-stage': Reference 'cycle.vtm' from 'd:/workspace/opencascade/occt_viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/cycle.vtm', resolved 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/cycle.vtm': Cyclic VTK reference: d:/workspace/opencascade/occt_viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/cycle.vtm
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/invalid.vtm: portable: Child 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/draw-stage/vtk-import-809518546032900-3/1/invalid.vtu': Inexpected end of file: 
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/invalid.vtm: portable: Composite 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/draw-stage/vtk-import-809518546032900-3/0/invalid.vtm', block 'bad', reference '../1/invalid.vtu', resolved 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/draw-stage/vtk-import-809518546032900-3/1/invalid.vtu'
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/remesh.vtm.series: Series geometry/topology changes: the initial Viewer mesh exposes only first-step fields; use SeriesSteps for later geometry
+VTK_REFERENCE_DRAW_PASS
+<end of output>
+Test time =   0.14 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[VTK_REFERENCE_DRAW_PASS]
+"draw_vtk_reference" end time: Oct 24 17:33 中国标准时间
+"draw_vtk_reference" time elapsed: 00:00:00
+----------------------------------------------------------
+
+36/85 Testing: draw_cut_view_iso
+36/85 Test: draw_cut_view_iso
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_iso.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_iso" start time: Oct 24 17:33 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_VIEW_DRAW_PASS
+CUT_VIEW_ISO_PASS
+<end of output>
+Test time =   0.21 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_ISO_PASS]
+"draw_cut_view_iso" end time: Oct 24 17:33 中国标准时间
+"draw_cut_view_iso" time elapsed: 00:00:00
+----------------------------------------------------------
+
+37/85 Testing: draw_cut_view_tensor
+37/85 Test: draw_cut_view_tensor
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_tensor.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_tensor" start time: Oct 24 17:33 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_VIEW_TENSOR_PASS
+<end of output>
+Test time =   0.13 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_TENSOR_PASS]
+"draw_cut_view_tensor" end time: Oct 24 17:33 中国标准时间
+"draw_cut_view_tensor" time elapsed: 00:00:00
+----------------------------------------------------------
+
+38/85 Testing: draw_cut_view_trace
+38/85 Test: draw_cut_view_trace
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_trace.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_trace" start time: Oct 24 17:33 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_VIEW_TRACE_PASS
+<end of output>
+Test time =   0.12 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_TRACE_PASS]
+"draw_cut_view_trace" end time: Oct 24 17:33 中国标准时间
+"draw_cut_view_trace" time elapsed: 00:00:00
+----------------------------------------------------------
+
+39/85 Testing: draw_cut_view_union
+39/85 Test: draw_cut_view_union
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_union.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_union" start time: Oct 24 17:33 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_VIEW_DRAW_PASS
+CUT_VIEW_UNION_PASS
+<end of output>
+Test time =   0.39 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_UNION_PASS]
+"draw_cut_view_union" end time: Oct 24 17:33 中国标准时间
+"draw_cut_view_union" time elapsed: 00:00:00
+----------------------------------------------------------
+
+40/85 Testing: draw_cut_view_quadric
+40/85 Test: draw_cut_view_quadric
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_quadric.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_quadric" start time: Oct 24 17:33 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_VIEW_QUADRIC_PASS
+<end of output>
+Test time =   0.57 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_QUADRIC_PASS]
+"draw_cut_view_quadric" end time: Oct 24 17:33 中国标准时间
+"draw_cut_view_quadric" time elapsed: 00:00:00
+----------------------------------------------------------
+
+41/85 Testing: draw_cut_view_high_order_iso
+41/85 Test: draw_cut_view_high_order_iso
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_high_order_iso.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_high_order_iso" start time: Oct 24 17:33 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_VIEW_HIGH_ORDER_ISO_PASS
+<end of output>
+Test time =   1.42 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_HIGH_ORDER_ISO_PASS]
+"draw_cut_view_high_order_iso" end time: Oct 24 17:33 中国标准时间
+"draw_cut_view_high_order_iso" time elapsed: 00:00:01
+----------------------------------------------------------
+
+42/85 Testing: draw_cut_view_references
+42/85 Test: draw_cut_view_references
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_references.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_references" start time: Oct 24 17:33 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_VIEW_REFERENCE_FAMILY_PASS 21
+CUT_VIEW_REFERENCE_FAMILY_PASS 35
+CUT_VIEW_REFERENCE_FAMILY_PASS 68
+CUT_VIEW_REFERENCE_FAMILY_PASS 75
+CUT_VIEW_REFERENCE_FAMILY_PASS 22
+CUT_VIEW_REFERENCE_FAMILY_PASS 23
+CUT_VIEW_REFERENCE_FAMILY_PASS 28
+CUT_VIEW_REFERENCE_FAMILY_PASS 30
+CUT_VIEW_REFERENCE_FAMILY_PASS 34
+CUT_VIEW_REFERENCE_FAMILY_PASS 69
+CUT_VIEW_REFERENCE_FAMILY_PASS 70
+CUT_VIEW_REFERENCE_FAMILY_PASS 76
+CUT_VIEW_REFERENCE_FAMILY_PASS 77
+CUT_VIEW_REFERENCE_FAMILY_PASS 71
+CUT_VIEW_REFERENCE_FAMILY_PASS 78
+CUT_VIEW_REFERENCE_FAMILY_PASS 75_rational
+CUT_VIEW_REFERENCE_FAMILY_PASS 76_rational
+CUT_VIEW_REFERENCE_FAMILY_PASS 77_rational
+CUT_VIEW_REFERENCE_FAMILY_PASS 78_rational
+CUT_VIEW_REFERENCE_FAMILY_PASS 68_d6x0
+CUT_VIEW_REFERENCE_FAMILY_PASS 75_rational_d6x0
+CUT_VIEW_REFERENCE_FAMILY_PASS 70_d2x3
+CUT_VIEW_REFERENCE_FAMILY_PASS 77_rational_d2x3
+CUT_VIEW_REFERENCE_FAMILY_PASS 70_d6x2
+CUT_VIEW_REFERENCE_PASS
+<end of output>
+Test time =  13.56 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_REFERENCE_PASS]
+"draw_cut_view_references" end time: Oct 24 17:33 中国标准时间
+"draw_cut_view_references" time elapsed: 00:00:13
+----------------------------------------------------------
+
+43/85 Testing: draw_cut_view_analytic
+43/85 Test: draw_cut_view_analytic
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_analytic.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_analytic" start time: Oct 24 17:33 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_wedge_26
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_wedge_31
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_wedge_32
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_wedge_73
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_wedge_80
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_wedge_80_rational
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_pyramid_27
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_pyramid_37
+CUT_VIEW_ANALYTIC_PASS
+<end of output>
+Test time =   3.06 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_ANALYTIC_PASS]
+"draw_cut_view_analytic" end time: Oct 24 17:33 中国标准时间
+"draw_cut_view_analytic" time elapsed: 00:00:03
+----------------------------------------------------------
+
+44/85 Testing: draw_cut_view_geometry
+44/85 Test: draw_cut_view_geometry
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_geometry.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_geometry" start time: Oct 24 17:33 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_VIEW_GEOMETRY_PASS
+<end of output>
+Test time =   0.52 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_GEOMETRY_PASS]
+"draw_cut_view_geometry" end time: Oct 24 17:33 中国标准时间
+"draw_cut_view_geometry" time elapsed: 00:00:00
+----------------------------------------------------------
+
+45/85 Testing: draw_cut_view_cache
+45/85 Test: draw_cut_view_cache
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_cache.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_cache" start time: Oct 24 17:33 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_VIEW_CACHE_PASS
+<end of output>
+Test time =   0.74 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_CACHE_PASS]
+"draw_cut_view_cache" end time: Oct 24 17:33 中国标准时间
+"draw_cut_view_cache" time elapsed: 00:00:00
+----------------------------------------------------------
+
+46/85 Testing: draw_cut_view_vtk_cells
+46/85 Test: draw_cut_view_vtk_cells
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_vtk_cells.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_vtk_cells" start time: Oct 24 17:33 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_VIEW_VTK_CELL_PASS 1
+CUT_VIEW_VTK_CELL_PASS 2
+CUT_VIEW_VTK_CELL_PASS 3
+CUT_VIEW_VTK_CELL_PASS 4
+CUT_VIEW_VTK_CELL_PASS 5
+CUT_VIEW_VTK_CELL_PASS 6
+CUT_VIEW_VTK_CELL_PASS 7
+CUT_VIEW_VTK_CELL_PASS 8
+CUT_VIEW_VTK_CELL_PASS 9
+CUT_VIEW_VTK_CELL_PASS 10
+CUT_VIEW_VTK_CELL_PASS 11
+CUT_VIEW_VTK_CELL_PASS 12
+CUT_VIEW_VTK_CELL_PASS 13
+CUT_VIEW_VTK_CELL_PASS 14
+CUT_VIEW_VTK_CELL_PASS 15
+CUT_VIEW_VTK_CELL_PASS 16
+CUT_VIEW_VTK_CELL_PASS 21
+CUT_VIEW_VTK_CELL_PASS 22
+CUT_VIEW_VTK_CELL_PASS 23
+CUT_VIEW_VTK_CELL_PASS 24
+CUT_VIEW_VTK_CELL_PASS 25
+CUT_VIEW_VTK_CELL_PASS 26
+CUT_VIEW_VTK_CELL_PASS 27
+CUT_VIEW_VTK_CELL_PASS 28
+CUT_VIEW_VTK_CELL_PASS 29
+CUT_VIEW_VTK_CELL_PASS 30
+CUT_VIEW_VTK_CELL_PASS 31
+CUT_VIEW_VTK_CELL_PASS 32
+CUT_VIEW_VTK_CELL_PASS 33
+CUT_VIEW_VTK_CELL_PASS 34
+CUT_VIEW_VTK_CELL_PASS 35
+CUT_VIEW_VTK_CELL_PASS 36
+CUT_VIEW_VTK_CELL_PASS 37
+CUT_VIEW_VTK_CELL_PASS 41
+CUT_VIEW_VTK_CELL_PASS 42
+CUT_VIEW_VTK_CELL_PASS 68
+CUT_VIEW_VTK_CELL_PASS 69
+CUT_VIEW_VTK_CELL_PASS 70
+CUT_VIEW_VTK_CELL_PASS 71
+CUT_VIEW_VTK_CELL_PASS 72
+CUT_VIEW_VTK_CELL_PASS 73
+CUT_VIEW_VTK_CELL_PASS 75
+CUT_VIEW_VTK_CELL_PASS 76
+CUT_VIEW_VTK_CELL_PASS 77
+CUT_VIEW_VTK_CELL_PASS 78
+CUT_VIEW_VTK_CELL_PASS 79
+CUT_VIEW_VTK_CELL_PASS 80
+CUT_VIEW_VTK_CELLS_PASS 48
+<end of output>
+Test time =  29.78 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_VTK_CELLS_PASS]
+"draw_cut_view_vtk_cells" end time: Oct 24 17:33 中国标准时间
+"draw_cut_view_vtk_cells" time elapsed: 00:00:29
+----------------------------------------------------------
+
+47/85 Testing: draw_cut_view_recovery
+47/85 Test: draw_cut_view_recovery
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_recovery.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_recovery" start time: Oct 24 17:33 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_VIEW_RECOVERY_PASS
+<end of output>
+Test time =  13.68 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_RECOVERY_PASS]
+"draw_cut_view_recovery" end time: Oct 24 17:34 中国标准时间
+"draw_cut_view_recovery" time elapsed: 00:00:13
+----------------------------------------------------------
+
+48/85 Testing: generate_large_vtk_smoke
+48/85 Test: generate_large_vtk_smoke
+Command: "C:/Python314/python.exe" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/generate-large-vtk.py" "--grids" "6" "--deformation" "--output" "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/large-vtk-smoke"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"generate_large_vtk_smoke" start time: Oct 24 17:34 中国标准时间
+Output:
+----------------------------------------------------------
+{"file": "hex_6.vtk", "grid": 6, "points": 343, "cells": 216, "bytes": 25751, "deformation": true, "seconds": 0.001}
+{"file": "hex_6.vtu", "grid": 6, "points": 343, "cells": 216, "bytes": 25969, "deformation": true, "seconds": 0.001}
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"generate_large_vtk_smoke" end time: Oct 24 17:34 中国标准时间
+"generate_large_vtk_smoke" time elapsed: 00:00:00
+----------------------------------------------------------
+
+49/85 Testing: draw_large_vtk_smoke
+49/85 Test: draw_large_vtk_smoke
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/large_vtk.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_large_vtk_smoke" start time: Oct 24 17:34 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+LARGE_VTK_RESULT vtk cells 216 frames 3 scenario crossing mask 2 backend auto display_mode cloud full_checks 0 maximum_area_error 0 deformation_scale 0 body_builds 0 import_ms 4.4580000000000002 setup_ms 111.9845 p50_ms 2.1920000000000002 p95_ms 4.6279000000000003 fps 339.47788301592152 actual_redraw 1 original_FE 1 target 1
+LARGE_VTK_RESULT vtk cells 216 frames 3 scenario crossing mask 3 backend auto display_mode cloud full_checks 0 maximum_area_error 0 deformation_scale 0 body_builds 1 import_ms 7.2735000000000003 setup_ms 19.362100000000002 p50_ms 1.8447 p95_ms 4.4485999999999999 fps 384.48229459033411 actual_redraw 1 original_FE 1 target 1
+LARGE_VTK_RESULT vtk cells 216 frames 3 scenario crossing mask 5 backend auto display_mode cloud full_checks 0 maximum_area_error 0 deformation_scale 0 body_builds 1 import_ms 4.4711999999999996 setup_ms 12.444599999999999 p50_ms 1.8674999999999999 p95_ms 4.5868000000000002 fps 394.47731755424059 actual_redraw 1 original_FE 1 target 1
+LARGE_VTK_RESULT vtk cells 216 frames 3 scenario crossing mask 7 backend auto display_mode cloud full_checks 0 maximum_area_error 0 deformation_scale 0 body_builds 1 import_ms 7.6177000000000001 setup_ms 19.499400000000001 p50_ms 1.7730999999999999 p95_ms 4.8639999999999999 fps 366.68092648047423 actual_redraw 1 original_FE 1 target 1
+LARGE_VTK_RESULT vtk cells 216 frames 3 scenario rotating mask 3 backend auto display_mode cloud full_checks 0 maximum_area_error 0 deformation_scale 0 body_builds 1 import_ms 4.6677 setup_ms 16.373200000000001 p50_ms 1.9704999999999999 p95_ms 4.2805 fps 369.6174459434485 actual_redraw 1 original_FE 1 target 1
+LARGE_VTK_RESULT vtk cells 216 frames 3 scenario deformed mask 3 backend auto display_mode cloud full_checks 0 maximum_area_error 0 deformation_scale 0.0050000000000000001 body_builds 1 import_ms 7.3044000000000002 setup_ms 19.982299999999999 p50_ms 2.0564 p95_ms 4.1555 fps 386.40374038820698 actual_redraw 1 original_FE 1 target 1
+LARGE_VTK_RESULT vtu cells 216 frames 3 scenario crossing mask 2 backend auto display_mode cloud full_checks 0 maximum_area_error 0 deformation_scale 0 body_builds 0 import_ms 0.40279999999999999 setup_ms 8.7416 p50_ms 1.8468 p95_ms 4.3201000000000001 fps 389.8584813712622 actual_redraw 1 original_FE 1 target 1
+LARGE_VTK_RESULT vtu cells 216 frames 3 scenario crossing mask 3 backend auto display_mode cloud full_checks 0 maximum_area_error 0 deformation_scale 0 body_builds 1 import_ms 0.65280000000000005 setup_ms 13.4885 p50_ms 2.1535000000000002 p95_ms 5.1917999999999997 fps 324.48919991779604 actual_redraw 1 original_FE 1 target 1
+LARGE_VTK_RESULT vtu cells 216 frames 3 scenario crossing mask 5 backend auto display_mode cloud full_checks 0 maximum_area_error 0 deformation_scale 0 body_builds 1 import_ms 0.52039999999999997 setup_ms 9.3850999999999996 p50_ms 1.1915 p95_ms 3.1227 fps 548.57644412748914 actual_redraw 1 original_FE 1 target 1
+LARGE_VTK_RESULT vtu cells 216 frames 3 scenario crossing mask 7 backend auto display_mode cloud full_checks 0 maximum_area_error 0 deformation_scale 0 body_builds 1 import_ms 0.81620000000000004 setup_ms 13.801299999999999 p50_ms 2.7238000000000002 p95_ms 3.9830999999999999 fps 318.3868400106129 actual_redraw 1 original_FE 1 target 1
+LARGE_VTK_RESULT vtu cells 216 frames 3 scenario rotating mask 3 backend auto display_mode cloud full_checks 0 maximum_area_error 0 deformation_scale 0 body_builds 1 import_ms 0.67169999999999996 setup_ms 14.134 p50_ms 1.8795999999999999 p95_ms 4.5214999999999996 fps 367.80481824311903 actual_redraw 1 original_FE 1 target 1
+LARGE_VTK_RESULT vtu cells 216 frames 3 scenario deformed mask 3 backend auto display_mode cloud full_checks 0 maximum_area_error 0 deformation_scale 0.0050000000000000001 body_builds 1 import_ms 0.84850000000000003 setup_ms 13.779 p50_ms 1.9555 p95_ms 5.6536999999999997 fps 327.97638570022957 actual_redraw 1 original_FE 1 target 1
+LARGE_VTK_PASS
+3D View - Driver1/Viewer1/LargeVtk was deleted.
+
+<end of output>
+Test time =   3.07 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[LARGE_VTK_PASS]
+"draw_large_vtk_smoke" end time: Oct 24 17:34 中国标准时间
+"draw_large_vtk_smoke" time elapsed: 00:00:03
+----------------------------------------------------------
+
+50/85 Testing: draw_cut_view_session
+50/85 Test: draw_cut_view_session
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-i" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_session_test.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_session" start time: Oct 24 17:34 中国标准时间
+Output:
+----------------------------------------------------------
+Draw[1]> after#0
+Draw[2]> SESSION_DIALOG_BACKEND Tk (Windows shell dialogs excluded)
+CUT_VIEW_SESSION_COVERAGE 6/6
+3D View - Driver1/Viewer1/NativeSession was deleted.
+
+CUT_VIEW_SESSION_PASS
+<end of output>
+Test time =   2.91 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_SESSION_PASS]
+"draw_cut_view_session" end time: Oct 24 17:34 中国标准时间
+"draw_cut_view_session" time elapsed: 00:00:02
+----------------------------------------------------------
+
+51/85 Testing: draw_cut_view_benchmark_smoke
+51/85 Test: draw_cut_view_benchmark_smoke
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_benchmark.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_benchmark_smoke" start time: Oct 24 17:34 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_BENCHMARK_RESULT cells 216 frames 3 scenario crossing mask 2 backend auto display_mode cloud full_checks 0 maximum_area_error 0 deformation_scale 0 body_builds 0 import_ms 0 setup_ms 79.573800000000006 p50_ms 3.2378999999999998 p95_ms 5.2382999999999997 fps 300.9781790820166 actual_redraw 1 original_FE 1 target 1
+CUT_BENCHMARK_RESULT cells 216 frames 3 scenario rotating mask 2 backend auto display_mode cloud full_checks 0 maximum_area_error 0 deformation_scale 0 body_builds 0 import_ms 0 setup_ms 12.241099999999999 p50_ms 2.2435999999999998 p95_ms 5.3516000000000004 fps 325.48551589454274 actual_redraw 1 original_FE 1 target 1
+CUT_BENCHMARK_RESULT cells 216 frames 3 scenario deformed mask 2 backend auto display_mode cloud full_checks 0 maximum_area_error 0 deformation_scale 0.0050000000000000001 body_builds 0 import_ms 0 setup_ms 9.9029000000000007 p50_ms 1.6201000000000001 p95_ms 4.6928000000000001 fps 380.3293652302894 actual_redraw 1 original_FE 1 target 1
+CUT_BENCHMARK_PASS
+3D View - Driver1/Viewer1/CutBenchmark was deleted.
+
+<end of output>
+Test time =   0.82 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_BENCHMARK_PASS]
+"draw_cut_view_benchmark_smoke" end time: Oct 24 17:34 中国标准时间
+"draw_cut_view_benchmark_smoke" time elapsed: 00:00:00
+----------------------------------------------------------
+
+52/85 Testing: draw_cut_view_physics
+52/85 Test: draw_cut_view_physics
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-i" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_physics_test.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_physics" start time: Oct 24 17:34 中国标准时间
+Output:
+----------------------------------------------------------
+Draw[1]> CUT_VIEW_PHYSICS_COVERAGE 31/31
+CUT_VIEW_PHYSICS_PASS D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/draw-physics
+3D View - Driver1/Viewer1/NativePhysics was deleted.
+
+<end of output>
+Test time =   2.52 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_PHYSICS_PASS]
+"draw_cut_view_physics" end time: Oct 24 17:34 中国标准时间
+"draw_cut_view_physics" time elapsed: 00:00:02
+----------------------------------------------------------
+
+53/85 Testing: draw_vtk_reference_visual
+53/85 Test: draw_vtk_reference_visual
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/vtk_references.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_vtk_reference_visual" start time: Oct 24 17:34 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+[ERR_VTK_IMPORT] VTK reference staging 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/missing.vtm' into 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/draw-stage': Reference 'B/absent.vtu' from 'd:/workspace/opencascade/occt_viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/missing.vtm', resolved 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/B/absent.vtu': filesystem error: cannot make canonical path: No such file or directory [D:\workspace\OpenCASCADE\OCCT_Viewer\build\mingw-deformation\test\native\vtk-reference-fixtures\src\B/absent.vtu]
+[ERR_VTK_IMPORT] VTK reference staging 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/cycle.vtm' into 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/draw-stage': Reference 'cycle.vtm' from 'd:/workspace/opencascade/occt_viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/cycle.vtm', resolved 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/cycle.vtm': Cyclic VTK reference: d:/workspace/opencascade/occt_viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/cycle.vtm
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/invalid.vtm: portable: Child 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/draw-stage/vtk-import-809592298650400-3/1/invalid.vtu': Inexpected end of file: 
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/invalid.vtm: portable: Composite 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/draw-stage/vtk-import-809592298650400-3/0/invalid.vtm', block 'bad', reference '../1/invalid.vtu', resolved 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/draw-stage/vtk-import-809592298650400-3/1/invalid.vtu'
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/remesh.vtm.series: Series geometry/topology changes: the initial Viewer mesh exposes only first-step fields; use SeriesSteps for later geometry
+[ERR_VTK_IMPORT] VTK reference staging 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/missing.vtm' into 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/draw-stage': Reference 'B/absent.vtu' from 'd:/workspace/opencascade/occt_viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/missing.vtm', resolved 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/B/absent.vtu': filesystem error: cannot make canonical path: No such file or directory [D:\workspace\OpenCASCADE\OCCT_Viewer\build\mingw-deformation\test\native\vtk-reference-fixtures\src\B/absent.vtu]
+[ERR_VTK_IMPORT] VTK reference staging 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/cycle.vtm' into 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/draw-stage': Reference 'cycle.vtm' from 'd:/workspace/opencascade/occt_viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/cycle.vtm', resolved 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/cycle.vtm': Cyclic VTK reference: d:/workspace/opencascade/occt_viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/cycle.vtm
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/invalid.vtm: portable: Child 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/draw-stage/vtk-import-809592909088300-9/1/invalid.vtu': Inexpected end of file: 
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/invalid.vtm: portable: Composite 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/draw-stage/vtk-import-809592909088300-9/0/invalid.vtm', block 'bad', reference '../1/invalid.vtu', resolved 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/draw-stage/vtk-import-809592909088300-9/1/invalid.vtu'
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/remesh.vtm.series: Series geometry/topology changes: the initial Viewer mesh exposes only first-step fields; use SeriesSteps for later geometry
+VTK_REFERENCE_DRAW_PASS
+3D View - Driver1/Viewer1/View1 was deleted.
+
+<end of output>
+Test time =   0.95 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[VTK_REFERENCE_DRAW_PASS]
+"draw_vtk_reference_visual" end time: Oct 24 17:34 中国标准时间
+"draw_vtk_reference_visual" time elapsed: 00:00:00
+----------------------------------------------------------
+
+54/85 Testing: draw_vtk_import_visual
+54/85 Test: draw_vtk_import_visual
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/vtk_import.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_vtk_import_visual" start time: Oct 24 17:34 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/invalid.vtu: portable: Invalid byte order: 'invalid'
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/unsupported_section.vtk: portable: Unsupported legacy VTK section: UNSUPPORTED_SECTION
+[ERR_MESH_LOAD] Input file is not accessible: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/absent.vtu
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/invalid.vtu: portable: Invalid byte order: 'invalid'
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/missing.vtm: portable: Child 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/absent.vtu': Input file is not accessible: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/absent.vtu
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/missing.vtm: portable: Composite 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/missing.vtm', block 'missing child', reference 'absent.vtu', resolved 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/absent.vtu'
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/failed_stage.vtm.series: portable: Series step 1 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/missing.vtm': Child 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/absent.vtu': Input file is not accessible: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/absent.vtu
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/failed_stage.vtm.series: portable: Series step 1 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/missing.vtm': Composite 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/missing.vtm', block 'missing child', reference 'absent.vtu', resolved 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/absent.vtu'
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/failed_stage.vtm.series: portable: Cannot stage VTK series step 1
+VTK_IMPORT_DRAW_PASS
+3D View - Driver1/Viewer1/View1 was deleted.
+
+<end of output>
+Test time =   1.69 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[VTK_IMPORT_DRAW_PASS]
+"draw_vtk_import_visual" end time: Oct 24 17:34 中国标准时间
+"draw_vtk_import_visual" time elapsed: 00:00:01
+----------------------------------------------------------
+
+55/85 Testing: draw_cut_view_recovery_visual
+55/85 Test: draw_cut_view_recovery_visual
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_recovery.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_recovery_visual" start time: Oct 24 17:34 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_VIEW_RECOVERY_PASS
+3D View - Driver1/Viewer1/RecoveryCut was deleted.
+
+<end of output>
+Test time =  15.43 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_RECOVERY_PASS]
+"draw_cut_view_recovery_visual" end time: Oct 24 17:34 中国标准时间
+"draw_cut_view_recovery_visual" time elapsed: 00:00:15
+----------------------------------------------------------
+
+56/85 Testing: draw_cut_view_high_order_iso_visual
+56/85 Test: draw_cut_view_high_order_iso_visual
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-i" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_high_order_iso.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_high_order_iso_visual" start time: Oct 24 17:34 中国标准时间
+Output:
+----------------------------------------------------------
+Draw[1]> CUT_VIEW_HIGH_ORDER_ISO_PASS
+3D View - Driver1/Viewer1/HighOrderIso was deleted.
+
+<end of output>
+Test time =   3.70 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_HIGH_ORDER_ISO_PASS]
+"draw_cut_view_high_order_iso_visual" end time: Oct 24 17:34 中国标准时间
+"draw_cut_view_high_order_iso_visual" time elapsed: 00:00:03
+----------------------------------------------------------
+
+57/85 Testing: draw_cut_view_references_visual
+57/85 Test: draw_cut_view_references_visual
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_references.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_references_visual" start time: Oct 24 17:34 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_VIEW_REFERENCE_FAMILY_PASS 21
+CUT_VIEW_REFERENCE_FAMILY_PASS 35
+CUT_VIEW_REFERENCE_FAMILY_PASS 68
+CUT_VIEW_REFERENCE_FAMILY_PASS 75
+CUT_VIEW_REFERENCE_FAMILY_PASS 22
+CUT_VIEW_REFERENCE_FAMILY_PASS 23
+CUT_VIEW_REFERENCE_FAMILY_PASS 28
+CUT_VIEW_REFERENCE_FAMILY_PASS 30
+CUT_VIEW_REFERENCE_FAMILY_PASS 34
+CUT_VIEW_REFERENCE_FAMILY_PASS 69
+CUT_VIEW_REFERENCE_FAMILY_PASS 70
+CUT_VIEW_REFERENCE_FAMILY_PASS 76
+CUT_VIEW_REFERENCE_FAMILY_PASS 77
+CUT_VIEW_REFERENCE_FAMILY_PASS 71
+CUT_VIEW_REFERENCE_FAMILY_PASS 78
+CUT_VIEW_REFERENCE_FAMILY_PASS 75_rational
+CUT_VIEW_REFERENCE_FAMILY_PASS 76_rational
+CUT_VIEW_REFERENCE_FAMILY_PASS 77_rational
+CUT_VIEW_REFERENCE_FAMILY_PASS 78_rational
+CUT_VIEW_REFERENCE_FAMILY_PASS 68_d6x0
+CUT_VIEW_REFERENCE_FAMILY_PASS 75_rational_d6x0
+CUT_VIEW_REFERENCE_FAMILY_PASS 70_d2x3
+CUT_VIEW_REFERENCE_FAMILY_PASS 77_rational_d2x3
+CUT_VIEW_REFERENCE_FAMILY_PASS 70_d6x2
+CUT_VIEW_REFERENCE_PASS
+3D View - Driver1/Viewer1/CurvedReferences was deleted.
+
+<end of output>
+Test time =  17.90 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_REFERENCE_PASS]
+"draw_cut_view_references_visual" end time: Oct 24 17:34 中国标准时间
+"draw_cut_view_references_visual" time elapsed: 00:00:17
+----------------------------------------------------------
+
+58/85 Testing: draw_cut_view_analytic_visual
+58/85 Test: draw_cut_view_analytic_visual
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_analytic.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_analytic_visual" start time: Oct 24 17:34 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_wedge_26
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_wedge_31
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_wedge_32
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_wedge_73
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_wedge_80
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_wedge_80_rational
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_pyramid_27
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_pyramid_37
+CUT_VIEW_ANALYTIC_PASS
+3D View - Driver1/Viewer1/AnalyticCut was deleted.
+
+<end of output>
+Test time =   4.24 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_ANALYTIC_PASS]
+"draw_cut_view_analytic_visual" end time: Oct 24 17:35 中国标准时间
+"draw_cut_view_analytic_visual" time elapsed: 00:00:04
+----------------------------------------------------------
+
+59/85 Testing: draw_cut_view_geometry_visual
+59/85 Test: draw_cut_view_geometry_visual
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_geometry.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_geometry_visual" start time: Oct 24 17:35 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_VIEW_GEOMETRY_PASS
+3D View - Driver1/Viewer1/CurvedGeometry was deleted.
+
+<end of output>
+Test time =   1.89 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_GEOMETRY_PASS]
+"draw_cut_view_geometry_visual" end time: Oct 24 17:35 中国标准时间
+"draw_cut_view_geometry_visual" time elapsed: 00:00:01
+----------------------------------------------------------
+
+60/85 Testing: draw_cut_view_cache_visual
+60/85 Test: draw_cut_view_cache_visual
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_cache.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_cache_visual" start time: Oct 24 17:35 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_VIEW_CACHE_PASS
+3D View - Driver1/Viewer1/CachedCut was deleted.
+
+<end of output>
+Test time =   1.84 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_CACHE_PASS]
+"draw_cut_view_cache_visual" end time: Oct 24 17:35 中国标准时间
+"draw_cut_view_cache_visual" time elapsed: 00:00:01
+----------------------------------------------------------
+
+61/85 Testing: draw_cut_view_vtk_cells_visual
+61/85 Test: draw_cut_view_vtk_cells_visual
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_vtk_cells.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_vtk_cells_visual" start time: Oct 24 17:35 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_VIEW_VTK_CELL_PASS 1
+CUT_VIEW_VTK_CELL_PASS 2
+CUT_VIEW_VTK_CELL_PASS 3
+CUT_VIEW_VTK_CELL_PASS 4
+CUT_VIEW_VTK_CELL_PASS 5
+CUT_VIEW_VTK_CELL_PASS 6
+CUT_VIEW_VTK_CELL_PASS 7
+CUT_VIEW_VTK_CELL_PASS 8
+CUT_VIEW_VTK_CELL_PASS 9
+CUT_VIEW_VTK_CELL_PASS 10
+CUT_VIEW_VTK_CELL_PASS 11
+CUT_VIEW_VTK_CELL_PASS 12
+CUT_VIEW_VTK_CELL_PASS 13
+CUT_VIEW_VTK_CELL_PASS 14
+CUT_VIEW_VTK_CELL_PASS 15
+CUT_VIEW_VTK_CELL_PASS 16
+CUT_VIEW_VTK_CELL_PASS 21
+CUT_VIEW_VTK_CELL_PASS 22
+CUT_VIEW_VTK_CELL_PASS 23
+CUT_VIEW_VTK_CELL_PASS 24
+CUT_VIEW_VTK_CELL_PASS 25
+CUT_VIEW_VTK_CELL_PASS 26
+CUT_VIEW_VTK_CELL_PASS 27
+CUT_VIEW_VTK_CELL_PASS 28
+CUT_VIEW_VTK_CELL_PASS 29
+CUT_VIEW_VTK_CELL_PASS 30
+CUT_VIEW_VTK_CELL_PASS 31
+CUT_VIEW_VTK_CELL_PASS 32
+CUT_VIEW_VTK_CELL_PASS 33
+CUT_VIEW_VTK_CELL_PASS 34
+CUT_VIEW_VTK_CELL_PASS 35
+CUT_VIEW_VTK_CELL_PASS 36
+CUT_VIEW_VTK_CELL_PASS 37
+CUT_VIEW_VTK_CELL_PASS 41
+CUT_VIEW_VTK_CELL_PASS 42
+CUT_VIEW_VTK_CELL_PASS 68
+CUT_VIEW_VTK_CELL_PASS 69
+CUT_VIEW_VTK_CELL_PASS 70
+CUT_VIEW_VTK_CELL_PASS 71
+CUT_VIEW_VTK_CELL_PASS 72
+CUT_VIEW_VTK_CELL_PASS 73
+CUT_VIEW_VTK_CELL_PASS 75
+CUT_VIEW_VTK_CELL_PASS 76
+CUT_VIEW_VTK_CELL_PASS 77
+CUT_VIEW_VTK_CELL_PASS 78
+CUT_VIEW_VTK_CELL_PASS 79
+CUT_VIEW_VTK_CELL_PASS 80
+CUT_VIEW_VTK_CELLS_PASS 48
+3D View - Driver1/Viewer1/VtkCells was deleted.
+
+<end of output>
+Test time =  47.94 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_VTK_CELLS_PASS]
+"draw_cut_view_vtk_cells_visual" end time: Oct 24 17:35 中国标准时间
+"draw_cut_view_vtk_cells_visual" time elapsed: 00:00:47
+----------------------------------------------------------
+
+62/85 Testing: draw_cut_view_quadric_visual
+62/85 Test: draw_cut_view_quadric_visual
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_quadric.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_quadric_visual" start time: Oct 24 17:35 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_VIEW_QUADRIC_PASS
+3D View - Driver1/Viewer1/CurvedCutView was deleted.
+
+<end of output>
+Test time =   7.40 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_QUADRIC_PASS]
+"draw_cut_view_quadric_visual" end time: Oct 24 17:36 中国标准时间
+"draw_cut_view_quadric_visual" time elapsed: 00:00:07
+----------------------------------------------------------
+
+63/85 Testing: draw_cut_view_controls
+63/85 Test: draw_cut_view_controls
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-i" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_controls.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_controls" start time: Oct 24 17:36 中国标准时间
+Output:
+----------------------------------------------------------
+Draw[1]> CONTROL_DIALOG_BACKEND Tk (Windows shell dialogs excluded)
+CONTROL_CLICK .scvcutmanager.options
+CONTROL_CLICK .scvcutmanager.actions.rename
+CONTROL_CLICK .scvcutmanager.tools
+CONTROL_TREE x #0
+CONTROL_MENU .scvcutmanager.traces.displayPolicy negative
+CONTROL_CLICK .scvcutmanager.traces.displayApply
+CONTROL_MENU .scvcutmanager.traces.displayPolicy positive
+CONTROL_CLICK .scvcutmanager.traces.displayApply
+CONTROL_MENU .scvcutmanager.traces.displayPolicy lowest
+CONTROL_CLICK .scvcutmanager.traces.displayApply
+CONTROL_MENU .scvcutmanager.traces.displayPolicy region
+CONTROL_ENTRY .scvcutmanager.traces.displayRegion -9223372036854775808 enter=0
+CONTROL_ENTRY .scvcutmanager.traces.displayRegions -9223372036854775808 enter=0
+CONTROL_CLICK .scvcutmanager.traces.displayApply
+CONTROL_ENTRY .scvcutmanager.traces.displayRegion 1.5 enter=1
+CONTROL_ENTRY .scvcutmanager.traces.displayRegion -9223372036854775808 enter=1
+CONTROL_MENU .scvcutmanager.traces.displayPolicy lowest
+CONTROL_CLICK .scvcutmanager.traces.displayApply
+CONTROL_MENU .scvcutmanager.traces.physicalPolicy negative
+CONTROL_CLICK .scvcutmanager.traces.physicalApply
+CONTROL_MENU .scvcutmanager.traces.physicalPolicy positive
+CONTROL_CLICK .scvcutmanager.traces.physicalApply
+CONTROL_MENU .scvcutmanager.traces.physicalPolicy lowest
+CONTROL_CLICK .scvcutmanager.traces.physicalApply
+CONTROL_MENU .scvcutmanager.traces.physicalPolicy region
+CONTROL_ENTRY .scvcutmanager.traces.physicalRegion -9223372036854775808 enter=0
+CONTROL_ENTRY .scvcutmanager.traces.physicalRegions -9223372036854775808 enter=0
+CONTROL_CLICK .scvcutmanager.traces.physicalApply
+CONTROL_ENTRY .scvcutmanager.traces.physicalRegion 1.5 enter=1
+CONTROL_ENTRY .scvcutmanager.traces.physicalRegion -9223372036854775808 enter=1
+CONTROL_MENU .scvcutmanager.traces.physicalPolicy lowest
+CONTROL_CLICK .scvcutmanager.traces.physicalApply
+CONTROL_TREE y #0
+CONTROL_TREE y show
+CONTROL_TREE y show
+CONTROL_TREE y below
+CONTROL_TREE y on
+CONTROL_TREE y above
+CONTROL_TREE x #0
+CONTROL_CLICK .scvcutmanager.controls.show
+CONTROL_CLICK .scvcutmanager.controls.show
+CONTROL_CLICK .scvcutmanager.controls.below
+CONTROL_CLICK .scvcutmanager.controls.on
+CONTROL_CLICK .scvcutmanager.controls.above
+CONTROL_ENTRY .scvcutmanager.controls.name Plane {A} with spaces enter=0
+CONTROL_ENTRY .scvcutmanager.controls.nx 2 enter=0
+CONTROL_ENTRY .scvcutmanager.controls.ny 0 enter=0
+CONTROL_ENTRY .scvcutmanager.controls.nz 0 enter=0
+CONTROL_ENTRY .scvcutmanager.controls.position 0.3 enter=0
+CONTROL_CLICK .scvcutmanager.controls.apply
+CONTROL_ENTRY .scvcutmanager.controls.position 0.35 enter=1
+CONTROL_ENTRY .scvcutmanager.controls.position  enter=1
+CONTROL_ENTRY .scvcutmanager.controls.position nonsense enter=1
+CONTROL_ENTRY .scvcutmanager.controls.position NaN enter=1
+CONTROL_ENTRY .scvcutmanager.controls.position Inf enter=1
+CONTROL_ENTRY .scvcutmanager.controls.position -Inf enter=1
+CONTROL_ENTRY .scvcutmanager.controls.position -0.1 enter=1
+CONTROL_ENTRY .scvcutmanager.controls.position 0.35 enter=1
+CONTROL_ENTRY .scvcutmanager.controls.nx 0 enter=0
+CONTROL_CLICK .scvcutmanager.controls.apply
+CONTROL_ENTRY .scvcutmanager.controls.nx 1 enter=0
+CONTROL_CLICK .scvcutmanager.controls.apply
+CONTROL_TREE y #0
+CONTROL_TREE x #0
+CONTROL_CLICK .scvcutmanager.controls.definition
+CONTROL_CLICK .scvcutplacement.body.close
+CONTROL_MENU .scvcutmanager.controls.sensitivity 100
+CONTROL_MENU .scvcutmanager.controls.sensitivity 1
+CONTROL_MENU .scvcutmanager.controls.motion Translate
+CONTROL_MENU .scvcutmanager.controls.motion Rotate
+CONTROL_MENU .scvcutmanager.controls.axis 2
+CONTROL_MENU .scvcutmanager.controls.axis 3
+CONTROL_MENU .scvcutmanager.controls.motion Translate
+CONTROL_CLICK .scvcutmanager.controls.gizmo
+CONTROL_CLICK .scvcutmanager.controls.gizmo
+CONTROL_MENU .scvcutmanager.actions.shape Plane
+CONTROL_CLICK .scvcutmanager.actions.create
+CONTROL_CLICK .scvcutmanager.actions.copy
+CONTROL_CLICK .scvcutmanager.actions.delete
+CONTROL_TREE cut_1 #0
+CONTROL_CLICK .scvcutmanager.actions.delete
+CONTROL_TREE x #0
+CONTROL_CLICK .scvcutmanager.header.multiple
+CONTROL_MENU .scvcutmanager.header.behavior project
+CONTROL_TREE y show
+CONTROL_CLICK .scvcutmanager.header.multiple
+CONTROL_TREE x show
+CONTROL_TREE x #0
+CONTROL_MENU .scvcutmanager.results.displaymode wireframe
+CONTROL_MENU .scvcutmanager.results.displaymode cloud_edges
+CONTROL_MENU .scvcutmanager.results.displaymode cloud
+CONTROL_MENU .scvcutmanager.results.field pressure (cell)
+CONTROL_MENU .scvcutmanager.results.cellmode projected
+CONTROL_MENU .scvcutmanager.results.cellmode constant
+CONTROL_MENU .scvcutmanager.results.field No Result
+CONTROL_MENU .scvcutmanager.results.field temperature (point)
+CONTROL_ENTRY .scvcutmanager.recovery.threshold 0 enter=1
+CONTROL_ENTRY .scvcutmanager.recovery.threshold nonsense enter=1
+CONTROL_ENTRY .scvcutmanager.recovery.threshold -1 enter=1
+CONTROL_ENTRY .scvcutmanager.recovery.threshold 101 enter=1
+CONTROL_ENTRY .scvcutmanager.recovery.threshold NaN enter=1
+CONTROL_ENTRY .scvcutmanager.recovery.threshold Inf enter=1
+CONTROL_ENTRY .scvcutmanager.recovery.threshold 99 enter=0
+CONTROL_CLICK .scvcutmanager.recovery.apply
+CONTROL_CLICK .scvcutmanager.recovery.before
+CONTROL_MENU .scvcutmanager.recovery.region pressure (cell)
+CONTROL_MENU .scvcutmanager.recovery.region Current regions
+CONTROL_MENU .scvcutmanager.recovery.region All regions
+CONTROL_MENU .scvcutmanager.recovery.region pressure (cell)
+CONTROL_ENTRY .scvcutmanager.results.component nonsense enter=1
+CONTROL_ENTRY .scvcutmanager.results.component 9 enter=1
+CONTROL_ENTRY .scvcutmanager.results.component 0 enter=1
+CONTROL_CLICK .scvcutmanager.actions.save
+CONTROL_DIALOG_READY D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/draw-controls/definitions with spaces.json cancel=0
+CONTROL_CLICK .scvcutmanager.actions.load
+CONTROL_DIALOG_READY D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/draw-controls/definitions with spaces.json cancel=0
+CONTROL_CLICK .scvcutmanager.actions.save
+CONTROL_DIALOG_READY D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/draw-controls/definitions with spaces.json cancel=1
+CONTROL_CLICK .scvcutmanager.actions.load
+CONTROL_DIALOG_READY D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/draw-controls/definitions with spaces.json cancel=1
+CONTROL_CLICK .scvcutmanager.actions.load
+CONTROL_DIALOG_READY D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/draw-controls/invalid.json cancel=0
+CONTROL_CLICK .scvcutmanager.controls.apply
+CONTROL_CLICK .scvcutmanager.header.multiple
+CONTROL_MENU .scvcutmanager.actions.shape Isosurface
+CONTROL_CLICK .scvcutmanager.actions.create
+CONTROL_CLICK .scvcutmanager.isobinding
+CONTROL_MENU .scvcutmanager.controls.isofield pressure (cell)
+CONTROL_CLICK .scvcutmanager.actions.delete
+CONTROL_MENU .scvcutmanager.actions.shape Sphere
+CONTROL_CLICK .scvcutmanager.actions.create
+CONTROL_ENTRY .scvcutmanager.controls.cx 0.2 enter=0
+CONTROL_ENTRY .scvcutmanager.controls.cy 0.2 enter=0
+CONTROL_ENTRY .scvcutmanager.controls.cz 0.2 enter=0
+CONTROL_ENTRY .scvcutmanager.controls.position 0.08 enter=0
+CONTROL_CLICK .scvcutmanager.controls.apply
+CONTROL_ENTRY .scvcutmanager.controls.position 0 enter=1
+CONTROL_ENTRY .scvcutmanager.controls.position 0.08 enter=1
+CONTROL_CLICK .scvcutmanager.controls.gizmo
+CONTROL_CLICK .scvcutmanager.controls.gizmo
+CONTROL_CLICK .scvcutmanager.actions.copy
+CONTROL_CLICK .scvcutmanager.actions.delete
+CONTROL_TREE cut_4 #0
+CONTROL_CLICK .scvcutmanager.actions.save
+CONTROL_DIALOG_READY D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/draw-controls/definitions with spaces.json cancel=0
+CONTROL_CLICK .scvcutmanager.actions.load
+CONTROL_DIALOG_READY D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/draw-controls/definitions with spaces.json cancel=0
+CONTROL_TREE cut_4 #0
+CONTROL_CLICK .scvcutmanager.actions.delete
+CONTROL_MENU .scvcutmanager.actions.shape Cylinder
+CONTROL_CLICK .scvcutmanager.actions.create
+CONTROL_ENTRY .scvcutmanager.controls.cx 0.2 enter=0
+CONTROL_ENTRY .scvcutmanager.controls.cy 0.2 enter=0
+CONTROL_ENTRY .scvcutmanager.controls.cz 0.2 enter=0
+CONTROL_ENTRY .scvcutmanager.controls.position 0.08 enter=0
+CONTROL_ENTRY .scvcutmanager.controls.nx 0 enter=0
+CONTROL_ENTRY .scvcutmanager.controls.ny 0 enter=0
+CONTROL_ENTRY .scvcutmanager.controls.nz 2 enter=0
+CONTROL_CLICK .scvcutmanager.controls.apply
+CONTROL_ENTRY .scvcutmanager.controls.position 0 enter=1
+CONTROL_ENTRY .scvcutmanager.controls.position 0.08 enter=1
+CONTROL_CLICK .scvcutmanager.controls.gizmo
+CONTROL_CLICK .scvcutmanager.controls.gizmo
+CONTROL_MENU .scvcutmanager.controls.motion Rotate
+CONTROL_MENU .scvcutmanager.controls.axis X
+CONTROL_CLICK .scvcutmanager.actions.copy
+CONTROL_CLICK .scvcutmanager.actions.delete
+CONTROL_TREE cut_6 #0
+CONTROL_CLICK .scvcutmanager.actions.save
+CONTROL_DIALOG_READY D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/draw-controls/definitions with spaces.json cancel=0
+CONTROL_CLICK .scvcutmanager.actions.load
+CONTROL_DIALOG_READY D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/draw-controls/definitions with spaces.json cancel=0
+CONTROL_TREE cut_6 #0
+CONTROL_CLICK .scvcutmanager.actions.delete
+CONTROL_CLICK .scvcutmanager.freebody
+CONTROL_MENU .scvcutmanager.actions.shape Plane
+CONTROL_CLICK .scvcutmanager.actions.create
+CONTROL_CLICK .scvcutmanager.close
+[ERR_MESH_LOAD] Input file is not accessible: D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/../native/fixtures/missing.vtu
+CONTROL_TREE x show
+CONTROL_MENU .scvcutmanager.results.field heat_flux (point)
+CONTROL_MENU .scvcutmanager.results.field stress (point)
+CONTROL_ENTRY .scvcutmanager.results.component 5 enter=1
+CONTROL_MENU .scvcutmanager.results.field temperature (point) - step 1
+CONTROL_MENU .scvcutmanager.results.field stress (cell)
+CONTROL_MENU .scvcutmanager.tensor.layout xx-yy-zz-xy-yz-xz
+CONTROL_MENU .scvcutmanager.tensor.layout row-major
+CONTROL_MENU .scvcutmanager.tensor.measure mises
+CONTROL_MENU .scvcutmanager.tensor.shear engineering
+CONTROL_MENU .scvcutmanager.tensor.layout column-major
+CONTROL_MENU .scvcutmanager.tensor.layout row-major
+CONTROL_MENU .scvcutmanager.tensor.shear tensor
+CONTROL_MENU .scvcutmanager.tensor.measure maxprincipal
+CONTROL_MENU .scvcutmanager.tensor.measure tresca
+CONTROL_MENU .scvcutmanager.tensor.measure components
+CONTROL_MENU .scvcutmanager.tensor.measure mises
+CUT_VIEW_CONTROL_COVERAGE: 56/56 .scvcutmanager.header.multiple .scvcutmanager.header.behavior .scvcutmanager.cuts .scvcutmanager.actions.create .scvcutmanager.actions.copy .scvcutmanager.actions.rename .scvcutmanager.actions.delete .scvcutmanager.actions.save .scvcutmanager.actions.load .scvcutmanager.actions.shape .scvcutmanager.controls.name .scvcutmanager.controls.definition .scvcutmanager.controls.nx .scvcutmanager.controls.ny .scvcutmanager.controls.nz .scvcutmanager.controls.cx .scvcutmanager.controls.cy .scvcutmanager.controls.cz .scvcutmanager.controls.isofield .scvcutmanager.controls.isocomponent .scvcutmanager.controls.position .scvcutmanager.controls.apply .scvcutmanager.controls.show .scvcutmanager.controls.motion .scvcutmanager.controls.axis .scvcutmanager.controls.gizmo .scvcutmanager.controls.translate .scvcutmanager.controls.rotate .scvcutmanager.controls.sensitivity .scvcutmanager.controls.below .scvcutmanager.controls.on .scvcutmanager.controls.above .scvcutmanager.results.displaymode .scvcutmanager.results.field .scvcutmanager.results.component .scvcutmanager.results.cellmode .scvcutmanager.recovery.threshold .scvcutmanager.recovery.before .scvcutmanager.recovery.apply .scvcutmanager.recovery.region .scvcutmanager.tensor.measure .scvcutmanager.tensor.shear .scvcutmanager.tensor.layout .scvcutmanager.traces.displayPolicy .scvcutmanager.traces.displayRegion .scvcutmanager.traces.displayApply .scvcutmanager.traces.displayRegions .scvcutmanager.traces.physicalPolicy .scvcutmanager.traces.physicalRegion .scvcutmanager.traces.physicalApply .scvcutmanager.traces.physicalRegions .scvcutmanager.tools .scvcutmanager.options .scvcutmanager.freebody .scvcutmanager.isobinding .scvcutmanager.close
+CUT_VIEW_CONTROLS_PASS: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/draw-controls
+3D View - Driver1/Viewer1/CutView was deleted.
+
+<end of output>
+Test time =  18.41 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_CONTROLS_PASS]
+"draw_cut_view_controls" end time: Oct 24 17:36 中国标准时间
+"draw_cut_view_controls" time elapsed: 00:00:18
+----------------------------------------------------------
+
+64/85 Testing: draw_cut_view_tools
+64/85 Test: draw_cut_view_tools
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-i" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_tools_test.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_tools" start time: Oct 24 17:36 中国标准时间
+Output:
+----------------------------------------------------------
+Draw[1]> CUT_VIEW_CACHE_COVERAGE 7/7
+CUT_VIEW_TOOLS_COVERAGE 40/40
+CUT_VIEW_TOOLS_PASS D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/draw-tools
+3D View - Driver1/Viewer1/NativeTools was deleted.
+
+<end of output>
+Test time =   4.68 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_TOOLS_PASS]
+"draw_cut_view_tools" end time: Oct 24 17:36 中国标准时间
+"draw_cut_view_tools" time elapsed: 00:00:04
+----------------------------------------------------------
+
+65/85 Testing: draw_cut_view_plot_options
+65/85 Test: draw_cut_view_plot_options
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-i" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_plot_options_test.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_plot_options" start time: Oct 24 17:36 中国标准时间
+Output:
+----------------------------------------------------------
+Draw[1]> CUT_VIEW_PLOT_OPTIONS_PASS D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/draw-plot-options
+3D View - Driver1/Viewer1/CutView was deleted.
+
+<end of output>
+Test time =   1.64 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_PLOT_OPTIONS_PASS]
+"draw_cut_view_plot_options" end time: Oct 24 17:36 中国标准时间
+"draw_cut_view_plot_options" time elapsed: 00:00:01
+----------------------------------------------------------
+
+66/85 Testing: draw_cut_view_placement
+66/85 Test: draw_cut_view_placement
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-i" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_placement_test.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_placement" start time: Oct 24 17:36 中国标准时间
+Output:
+----------------------------------------------------------
+Draw[1]> CUT_VIEW_PLACEMENT_PASS
+3D View - Driver1/Viewer1/CutView was deleted.
+
+<end of output>
+Test time =   1.63 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_PLACEMENT_PASS]
+"draw_cut_view_placement" end time: Oct 24 17:36 中国标准时间
+"draw_cut_view_placement" time elapsed: 00:00:01
+----------------------------------------------------------
+
+67/85 Testing: draw_cut_view_material
+67/85 Test: draw_cut_view_material
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-i" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_material_test.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_material" start time: Oct 24 17:36 中国标准时间
+Output:
+----------------------------------------------------------
+Draw[1]> CUT_VIEW_MATERIAL_PASS
+3D View - Driver1/Viewer1/CutMaterial was deleted.
+
+<end of output>
+Test time =   1.74 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_MATERIAL_PASS]
+"draw_cut_view_material" end time: Oct 24 17:36 中国标准时间
+"draw_cut_view_material" time elapsed: 00:00:01
+----------------------------------------------------------
+
+68/85 Testing: draw_cut_view_free_body
+68/85 Test: draw_cut_view_free_body
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-i" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_free_body_test.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_free_body" start time: Oct 24 17:36 中国标准时间
+Output:
+----------------------------------------------------------
+Draw[1]> CUT_VIEW_FREE_BODY_PASS
+3D View - Driver1/Viewer1/FreeBody was deleted.
+
+<end of output>
+Test time =   0.82 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_FREE_BODY_PASS]
+"draw_cut_view_free_body" end time: Oct 24 17:36 中国标准时间
+"draw_cut_view_free_body" time elapsed: 00:00:00
+----------------------------------------------------------
+
+69/85 Testing: draw_cut_view_iso_binding
+69/85 Test: draw_cut_view_iso_binding
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-i" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_iso_binding_test.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_iso_binding" start time: Oct 24 17:36 中国标准时间
+Output:
+----------------------------------------------------------
+Draw[1]> CUT_VIEW_ISO_BINDING_PASS
+3D View - Driver1/Viewer1/IsoBinding was deleted.
+
+<end of output>
+Test time =   0.76 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_ISO_BINDING_PASS]
+"draw_cut_view_iso_binding" end time: Oct 24 17:36 中国标准时间
+"draw_cut_view_iso_binding" time elapsed: 00:00:00
+----------------------------------------------------------
+
+70/85 Testing: draw_cut_view_slices
+70/85 Test: draw_cut_view_slices
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-i" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_slices_test.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_slices" start time: Oct 24 17:36 中国标准时间
+Output:
+----------------------------------------------------------
+Draw[1]> CUT_VIEW_SLICES_PASS
+3D View - Driver1/Viewer1/SliceCollections was deleted.
+
+<end of output>
+Test time =   0.78 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_SLICES_PASS]
+"draw_cut_view_slices" end time: Oct 24 17:36 中国标准时间
+"draw_cut_view_slices" time elapsed: 00:00:00
+----------------------------------------------------------
+
+71/85 Testing: draw_cut_view_plot_parity
+71/85 Test: draw_cut_view_plot_parity
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-i" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_plot_parity_test.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_plot_parity" start time: Oct 24 17:36 中国标准时间
+Output:
+----------------------------------------------------------
+Draw[1]> CUT_VIEW_PLOT_PARITY_PASS
+3D View - Driver1/Viewer1/PlotParity was deleted.
+
+<end of output>
+Test time =   1.46 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_PLOT_PARITY_PASS]
+"draw_cut_view_plot_parity" end time: Oct 24 17:36 中国标准时间
+"draw_cut_view_plot_parity" time elapsed: 00:00:01
+----------------------------------------------------------
+
+72/85 Testing: draw_cut_view_automatic
+72/85 Test: draw_cut_view_automatic
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-i" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_automatic_test.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_automatic" start time: Oct 24 17:36 中国标准时间
+Output:
+----------------------------------------------------------
+Draw[1]> CUT_VIEW_AUTOMATIC_PASS
+3D View - Driver1/Viewer1/AutomaticCuts was deleted.
+
+<end of output>
+Test time =   0.91 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_AUTOMATIC_PASS]
+"draw_cut_view_automatic" end time: Oct 24 17:36 中国标准时间
+"draw_cut_view_automatic" time elapsed: 00:00:00
+----------------------------------------------------------
+
+73/85 Testing: draw_cut_view_scope
+73/85 Test: draw_cut_view_scope
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-i" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_scope_test.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_scope" start time: Oct 24 17:36 中国标准时间
+Output:
+----------------------------------------------------------
+Draw[1]> CUT_VIEW_SCOPE_PASS
+3D View - Driver1/Viewer1/ScopeB was deleted.
+
+3D View - Driver1/Viewer1/ScopeA was deleted.
+
+<end of output>
+Test time =   1.65 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_SCOPE_PASS]
+"draw_cut_view_scope" end time: Oct 24 17:36 中国标准时间
+"draw_cut_view_scope" time elapsed: 00:00:01
+----------------------------------------------------------
+
+74/85 Testing: draw_cut_view_time
+74/85 Test: draw_cut_view_time
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-i" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_time_test.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_time" start time: Oct 24 17:36 中国标准时间
+Output:
+----------------------------------------------------------
+Draw[1]> [VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-series-fixtures/native-moving.vtm.series: Series geometry/topology changes: the initial Viewer mesh exposes only first-step fields; use SeriesSteps for later geometry
+CUT_VIEW_TIME_COVERAGE 26/26
+CUT_VIEW_TIME_PASS D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/draw-time
+3D View - Driver1/Viewer1/NativeTime was deleted.
+
+<end of output>
+Test time =   2.69 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_TIME_PASS]
+"draw_cut_view_time" end time: Oct 24 17:36 中国标准时间
+"draw_cut_view_time" time elapsed: 00:00:02
+----------------------------------------------------------
+
+75/85 Testing: draw_cut_view_tensor_visual
+75/85 Test: draw_cut_view_tensor_visual
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-i" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_tensor.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_tensor_visual" start time: Oct 24 17:36 中国标准时间
+Output:
+----------------------------------------------------------
+Draw[1]> CUT_VIEW_TENSOR_PASS
+3D View - Driver1/Viewer1/Tensor was deleted.
+
+<end of output>
+Test time =   1.05 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_TENSOR_PASS]
+"draw_cut_view_tensor_visual" end time: Oct 24 17:36 中国标准时间
+"draw_cut_view_tensor_visual" time elapsed: 00:00:01
+----------------------------------------------------------
+
+76/85 Testing: draw_cut_view_trace_visual
+76/85 Test: draw_cut_view_trace_visual
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_trace.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_trace_visual" start time: Oct 24 17:36 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_VIEW_TRACE_PASS
+3D View - Driver1/Viewer1/CutTrace was deleted.
+
+<end of output>
+Test time =   0.55 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_TRACE_PASS]
+"draw_cut_view_trace_visual" end time: Oct 24 17:36 中国标准时间
+"draw_cut_view_trace_visual" time elapsed: 00:00:00
+----------------------------------------------------------
+
+77/85 Testing: draw_cut_view_union_visual
+77/85 Test: draw_cut_view_union_visual
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_union.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_union_visual" start time: Oct 24 17:36 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_VIEW_DRAW_PASS
+UNION_IMAGE_DIFF duplicate.png: changed 0 mean 0 maximum 0 silhouette 0
+UNION_IMAGE_DIFF contained.png: changed 16 mean 1.1111111111111112e-05 maximum 1 silhouette 0
+UNION_IMAGE_DIFF all_masks.png: changed 31 mean 2.1527777777777776e-05 maximum 1 silhouette 0
+UNION_IMAGE_DIFF constant_all_masks.png: changed 0 mean 0 maximum 0 silhouette 0
+CUT_VIEW_UNION_PASS
+3D View - Driver1/Viewer1/UnionView was deleted.
+
+<end of output>
+Test time =   3.35 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_UNION_PASS]
+"draw_cut_view_union_visual" end time: Oct 24 17:36 中国标准时间
+"draw_cut_view_union_visual" time elapsed: 00:00:03
+----------------------------------------------------------
+
+78/85 Testing: draw_cut_view_iso_visual
+78/85 Test: draw_cut_view_iso_visual
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_iso.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_iso_visual" start time: Oct 24 17:36 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_VIEW_DRAW_PASS
+CUT_VIEW_ISO_PASS
+3D View - Driver1/Viewer1/IsoCutView was deleted.
+
+<end of output>
+Test time =   2.32 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_ISO_PASS]
+"draw_cut_view_iso_visual" end time: Oct 24 17:36 中国标准时间
+"draw_cut_view_iso_visual" time elapsed: 00:00:02
+----------------------------------------------------------
+
+79/85 Testing: draw_cut_view_visual
+79/85 Test: draw_cut_view_visual
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_visual.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_visual" start time: Oct 24 17:36 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_VIEW_DRAW_PASS
+CUT_VIEW_VISUAL_PASS: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/draw-images
+3D View - Driver1/Viewer1/CutView was deleted.
+
+<end of output>
+Test time =   2.29 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_VISUAL_PASS]
+"draw_cut_view_visual" end time: Oct 24 17:36 中国标准时间
+"draw_cut_view_visual" time elapsed: 00:00:02
+----------------------------------------------------------
+
+80/85 Testing: draw_cut_view_gpu_plane
+80/85 Test: draw_cut_view_gpu_plane
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_gpu_plane.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_gpu_plane" start time: Oct 24 17:36 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_GPU_PLANE_PASS
+3D View - Driver1/Viewer1/GpuPlane was deleted.
+
+<end of output>
+Test time =   4.56 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_GPU_PLANE_PASS]
+"draw_cut_view_gpu_plane" end time: Oct 24 17:36 中国标准时间
+"draw_cut_view_gpu_plane" time elapsed: 00:00:04
+----------------------------------------------------------
+
+81/85 Testing: draw_cut_view_display_modes
+81/85 Test: draw_cut_view_display_modes
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_display_modes.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_display_modes" start time: Oct 24 17:36 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_DISPLAY_MODES_PASS
+3D View - Driver1/Viewer1/CutModes was deleted.
+
+<end of output>
+Test time =  16.50 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_DISPLAY_MODES_PASS]
+"draw_cut_view_display_modes" end time: Oct 24 17:37 中国标准时间
+"draw_cut_view_display_modes" time elapsed: 00:00:16
+----------------------------------------------------------
+
+82/85 Testing: draw_cut_view_deformation
+82/85 Test: draw_cut_view_deformation
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-i" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_deformation.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_deformation" start time: Oct 24 17:37 中国标准时间
+Output:
+----------------------------------------------------------
+Draw[1]> CUT_DEFORMATION_PASS
+3D View - Driver1/Viewer1/CutDeformation was deleted.
+
+<end of output>
+Test time =  10.00 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_DEFORMATION_PASS]
+"draw_cut_view_deformation" end time: Oct 24 17:37 中国标准时间
+"draw_cut_view_deformation" time elapsed: 00:00:10
+----------------------------------------------------------
+
+83/85 Testing: draw_cut_view_sine_plate
+83/85 Test: draw_cut_view_sine_plate
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_sine_plate.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_sine_plate" start time: Oct 24 17:37 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_SINE_PLATE_CASE_PASS vtk 0
+CUT_SINE_PLATE_CASE_PASS vtk 1
+CUT_SINE_PLATE_CASE_PASS vtk 2
+CUT_SINE_PLATE_CASE_PASS vtk 3
+CUT_SINE_PLATE_CASE_PASS vtk 4
+CUT_SINE_PLATE_CASE_PASS vtk 5
+CUT_SINE_PLATE_CASE_PASS vtu 0
+CUT_SINE_PLATE_CASE_PASS vtu 1
+CUT_SINE_PLATE_CASE_PASS vtu 2
+CUT_SINE_PLATE_CASE_PASS vtu 3
+CUT_SINE_PLATE_CASE_PASS vtu 4
+CUT_SINE_PLATE_CASE_PASS vtu 5
+CUT_SINE_PLATE_DRAW_PASS
+3D View - Driver1/Viewer1/SinePlateTest was deleted.
+
+<end of output>
+Test time = 367.29 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_SINE_PLATE_DRAW_PASS]
+"draw_cut_view_sine_plate" end time: Oct 24 17:43 中国标准时间
+"draw_cut_view_sine_plate" time elapsed: 00:06:07
+----------------------------------------------------------
+
+84/85 Testing: draw_cut_view_interaction
+84/85 Test: draw_cut_view_interaction
+Command: "D:/workspace/OpenCASCADE/OCCT_private/install/mingw/win64/gcc/bin/DRAWEXE.exe" "-b" "-f" "D:/workspace/OpenCASCADE/OCCT_Viewer/test/cae/cut_view_interaction.tcl"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"draw_cut_view_interaction" start time: Oct 24 17:43 中国标准时间
+Output:
+----------------------------------------------------------
+DRAW is running in batch mode
+CUT_VIEW_INTERACTION_PASS: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/draw-interaction
+3D View - Driver1/Viewer1/CutView was deleted.
+
+<end of output>
+Test time =   2.45 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[CUT_VIEW_INTERACTION_PASS]
+"draw_cut_view_interaction" end time: Oct 24 17:43 中国标准时间
+"draw_cut_view_interaction" time elapsed: 00:00:02
+----------------------------------------------------------
+
+85/85 Testing: cell_kernel
+85/85 Test: cell_kernel
+Command: "D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/bin/cell_kernel_tests.exe"
+Directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native
+"cell_kernel" start time: Oct 24 17:43 中国标准时间
+Output:
+----------------------------------------------------------
+CELL_SHAPE_REFERENCE 1 maximum 0
+CELL_SHAPE_REFERENCE 3 maximum 0
+CELL_SHAPE_REFERENCE 5 maximum 0
+CELL_SHAPE_REFERENCE 8 maximum 1.11022e-16
+CELL_SHAPE_REFERENCE 9 maximum 1.11022e-16
+CELL_SHAPE_REFERENCE 10 maximum 0
+CELL_SHAPE_REFERENCE 11 maximum 1.11022e-16
+CELL_SHAPE_REFERENCE 12 maximum 1.11022e-16
+CELL_SHAPE_REFERENCE 13 maximum 8.67362e-17
+CELL_SHAPE_REFERENCE 14 maximum 2.77556e-17
+CELL_SHAPE_REFERENCE 15 maximum 8.70076e-07
+CELL_SHAPE_REFERENCE 16 maximum 7.77156e-16
+CELL_SHAPE_REFERENCE 21 maximum 1.38778e-16
+CELL_SHAPE_REFERENCE 22 maximum 2.77556e-16
+CELL_SHAPE_REFERENCE 23 maximum 1.94289e-16
+CELL_SHAPE_REFERENCE 24 maximum 4.44089e-16
+CELL_SHAPE_REFERENCE 25 maximum 2.77556e-16
+CELL_SHAPE_REFERENCE 26 maximum 2.77556e-16
+CELL_SHAPE_REFERENCE 27 maximum 5.55112e-17
+CELL_SHAPE_REFERENCE 28 maximum 2.22045e-16
+CELL_SHAPE_REFERENCE 29 maximum 1.4988e-15
+CELL_SHAPE_REFERENCE 30 maximum 1.38778e-16
+CELL_SHAPE_REFERENCE 31 maximum 1.94289e-16
+CELL_SHAPE_REFERENCE 32 maximum 7.63278e-16
+CELL_SHAPE_REFERENCE 33 maximum 8.39606e-16
+CELL_SHAPE_REFERENCE 34 maximum 4.09395e-16
+CELL_SHAPE_REFERENCE 35 maximum 3.33067e-16
+CELL_SHAPE_REFERENCE 37 maximum 7.77156e-16
+POLYHEDRON_AFFINE maximum 2.27374e-13
+CELL_KERNEL_PASS
+<end of output>
+Test time =   0.07 sec
+----------------------------------------------------------
+Test Passed.
+"cell_kernel" end time: Oct 24 17:43 中国标准时间
+"cell_kernel" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Oct 24 17:43 中国标准时间

@@ -1,0 +1,19 @@
+Draw[1]> CUT_GPU_INFO_BEGIN
+OpenGL info:
+  GLvendor: Intel
+  GLdevice: Intel(R) Iris(R) Xe Graphics
+  GLversion: 4.6.0 - Build 32.0.101.7088
+  GLSLversion: 4.60 - Build 32.0.101.7088
+  Max texture size: 16384
+  Max FBO dump size: 4096x16384
+  Max combined texture units: 192
+  Max MSAA samples: 16
+  Viewport: 900x650
+  Window buffer: RGB8 ALPHA8 DEPTH24 STENCIL8
+  GPU free memory: 15987 MiB
+  ResolutionRatio: 1
+  FBO buffer: GL_SRGB8_ALPHA8 GL_DEPTH24_STENCIL8
+CUT_GPU_INFO_END
+CUT_GPU_PROBE_PASS
+3D View - Driver1/Viewer1/CutGpuProbe was deleted.
+

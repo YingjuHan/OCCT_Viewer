@@ -1,0 +1,139 @@
+
+> geom_poc@0.1.0 build
+> vue-cli-service build
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+Browserslist: browsers data (caniuse-lite) is 12 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+All browser targets in the browserslist configuration have supported ES module.
+Therefore we don't build two separate bundles for differential loading.
+
+
+-  Building for production...
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+Browserslist: browsers data (caniuse-lite) is 12 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+Browserslist: browsers data (caniuse-lite) is 12 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+Browserslist: browsers data (caniuse-lite) is 12 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+Browserslist: browsers data (caniuse-lite) is 12 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+Browserslist: browsers data (caniuse-lite) is 12 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+Browserslist: browsers data (caniuse-lite) is 12 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+Browserslist: browsers data (caniuse-lite) is 12 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+Browserslist: browsers data (caniuse-lite) is 12 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+Browserslist: browsers data (caniuse-lite) is 12 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+ WARNING  Compiled with 3 warnings18:10:50
+
+ warning  
+
+asset size limit: The following asset(s) exceed the recommended size limit (244 KiB).
+This can impact web performance.
+Assets: 
+  fonts/materialdesignicons-webfont.0766edc9.eot (1.25 MiB)
+  fonts/materialdesignicons-webfont.e659bf56.woff (574 KiB)
+  fonts/materialdesignicons-webfont.fbaef2a9.woff2 (394 KiB)
+  fonts/materialdesignicons-webfont.714a4eee.ttf (1.25 MiB)
+  js/app.ce3c6a32.js (351 KiB)
+  css/chunk-vendors.dc86b955.css (760 KiB)
+  js/chunk-vendors.cd3918e2.js (528 KiB)
+  models/brep/as1-oc-214.bbrep (274 KiB)
+  models/step/as1-oc-214.stp (433 KiB)
+  models/step/sp7_04-do-242.stp (1.23 MiB)
+  models/step/sp7_04-dx-242.stp (828 KiB)
+  models/step/sp7_08_nx-242.stp (4.24 MiB)
+  others/fonts/HarmonyOS_Sans_SC_Regular.woff (5.33 MiB)
+  others/wasm32/Viewer-wasm.wasm (16.9 MiB)
+
+ warning  
+
+entrypoint size limit: The following entrypoint(s) combined asset size exceeds the recommended limit (244 KiB). This can impact web performance.
+Entrypoints:
+  app (1.6 MiB)
+      css/chunk-vendors.dc86b955.css
+      js/chunk-vendors.cd3918e2.js
+      css/app.f751f0a5.css
+      js/app.ce3c6a32.js
+
+
+ warning  
+
+webpack performance recommendations: 
+You can limit the size of your bundles by using import() or require.ensure to lazy load some parts of your application.
+For more info visit https://webpack.js.org/guides/code-splitting/
+
+  File                                      Size             Gzipped
+
+  dist\js\chunk-vendors.cd3918e2.js         527.58 KiB       163.33 KiB
+  dist\js\app.ce3c6a32.js                   350.57 KiB       72.44 KiB
+  dist\others\wasm32\Viewer-wasm.js         196.49 KiB       50.12 KiB
+  dist\others\wasm32\InteractiveCaeMesh.    33.60 KiB        5.47 KiB
+  js
+  dist\others\wasm32\InteractiveShape.js    28.88 KiB        5.85 KiB
+  dist\others\wasm32\SCwebviewer.js         16.33 KiB        4.67 KiB
+  dist\others\wasm32\CommonTools.js         15.54 KiB        4.34 KiB
+  dist\others\wasm32\InteractiveObject.j    15.16 KiB        3.58 KiB
+  s
+  dist\others\wasm32\ViewerEventManager.    6.25 KiB         1.51 KiB
+  js
+  dist\others\wasm32\InteractiveColorSca    6.16 KiB         1.40 KiB
+  le.js
+  dist\others\wasm32\MeasurementStore.js    5.39 KiB         1.84 KiB
+  dist\others\wasm32\PmiStore.js            3.76 KiB         1.41 KiB
+  dist\others\wasm32\InteractiveClipping    3.73 KiB         0.69 KiB
+  .js
+  dist\others\wasm32\Subview.js             3.71 KiB         0.85 KiB
+  dist\others\wasm32\InteractiveDimensio    3.65 KiB         0.80 KiB
+  n.js
+  dist\others\wasm32\SavedViewStore.js      3.42 KiB         1.24 KiB
+  dist\others\wasm32\Camera.js              3.14 KiB         0.78 KiB
+  dist\others\wasm32\InteractiveTextLabe    2.38 KiB         0.72 KiB
+  l.js
+  dist\others\wasm32\InteractiveSpherica    2.15 KiB         0.66 KiB
+  lAxes.js
+  dist\others\wasm32\InteractiveViewCube    2.15 KiB         0.61 KiB
+  .js
+  dist\others\wasm32\ViewerEventTarget.j    1.76 KiB         0.54 KiB
+  s
+  dist\others\wasm32\ProjectStore.js        1.46 KiB         0.61 KiB
+  dist\others\wasm32\SceneGraph.js          1.37 KiB         0.65 KiB
+  dist\others\wasm32\InteractiveScaleRul    1.00 KiB         0.39 KiB
+  er.js
+  dist\others\wasm32\ViewerBuildConfig.j    0.16 KiB         0.13 KiB
+  s
+  dist\others\wasm32\InteractiveCaeMeshM    0.01 KiB         0.03 KiB
+  anager.js
+  dist\others\wasm32\ViewManager.js         0.01 KiB         0.03 KiB
+  dist\css\chunk-vendors.dc86b955.css       759.75 KiB       108.04 KiB
+  dist\css\app.f751f0a5.css                 5.61 KiB         1.74 KiB
+
+  Images and other types of assets omitted.
+  Build at: 2026-10-24T10:10:50.214Z - Hash: 81f6bc8add726309 - Time: 22087ms
+
+ DONE  Build complete. The dist directory is ready to be deployed.
+ INFO  Check out deployment instructions at https://cli.vuejs.org/guide/deployment.html
+       

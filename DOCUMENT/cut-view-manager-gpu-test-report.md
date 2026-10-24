@@ -1,5 +1,7 @@
 # Cut View Manager：MX450 / Iris Xe 功能与性能报告
 
+后续性能优化及 85 项双卡全量复测见 [2026-10-24 报告](cut-view-manager-performance-report-2026-10-24.md)。本文保留 2026-10-21 的原始协议和结果，作为历史对照。
+
 ## 1. 测试结论与交付范围
 
 测试日期：2026-10-21（测试机本地时间）。被测 C++ 版本为 `78fa2d5bf2370ac05c70ceee0195f4beb63f7ede`，Release，不挂 GDB。本次只增加测试驱动与报告，没有修改产品算法或被测 DLL。

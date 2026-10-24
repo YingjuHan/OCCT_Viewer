@@ -1,0 +1,65 @@
+[  1%] Built target RWBase
+[  1%] Built target DrawBase
+[  3%] Built target SimMesh
+[  9%] Built target ViewBase
+[ 10%] Built target RWShape
+[ 15%] Built target RWCae
+[ 16%] Built target SimMeshDraw
+[ 17%] Built target RWShapeConv
+[ 19%] Built target ViewDim
+[ 20%] Built target RWMed
+[ 22%] Built target ViewShape
+[ 26%] Built target RWVtk
+[ 26%] Built target LodCae
+[ 35%] Built target ViewCaeGeom
+[ 36%] Built target RWMeshConv
+[ 36%] Built target cut_slicing_tests
+[ 37%] Built target cut_material_tests
+[ 39%] Built target cut_sine_plate_tests
+[ 39%] Built target cut_placement_tests
+[ 40%] Built target cut_linear_batch_tests
+[ 49%] Built target ViewCae
+[ 50%] Built target cut_cache_tests
+[ 50%] Built target cut_trace_binding_tests
+[ 50%] Built target cut_recovery_tests
+[ 50%] Built target cut_physics_tests
+[ 51%] Built target cut_interface_tests
+[ 52%] Built target general_cut_cache_tests
+[ 52%] Built target cut_geometry_tests
+[ 53%] Built target cut_reference_tests
+[ 54%] Built target cut_analytic_tests
+[ 54%] Built target cell_kernel_tests
+[ 54%] Built target cut_iso_tests
+[ 55%] Built target cut_view_benchmark
+[ 56%] Built target FileExchange
+[ 57%] Built target occtviewer_tests
+[ 58%] Built target vtk_format_tests
+[ 59%] Built target vtk_series_tests
+[ 60%] Built target vtk_safety_tests
+[ 71%] Built target Viewer
+[ 71%] Built target cut_view_tests
+[ 72%] Built target vtk_limits_tests
+[ 73%] Built target cut_display_tests
+[ 73%] Built target quadric_cut_tests
+[ 73%] Built target cut_bvh_benchmark
+[ 74%] Built target cut_tensor_tests
+[ 75%] Built target cut_union_tests
+[ 76%] Built target vtk_cell_cut_tests
+[ 76%] Built target vtk_reference_tests
+[ 76%] Built target vtk_import_tests
+[ 79%] Built target ViewBaseTest
+[ 80%] Built target native_cut_tests
+[ 80%] Built target native_timeline_tests
+[ 80%] Built target native_analysis_tests
+[ 81%] Built target native_session_tests
+[ 83%] Built target RWShapeTest
+[ 83%] Building CXX object source-draw/ViewCaeTest/CMakeFiles/ViewCaeTest.dir/CutBenchmarkCommands.cpp.obj
+[ 86%] Built target ViewShapeTest
+[ 86%] Linking CXX shared library ..\..\bin\libViewCaeTest.dll
+[ 93%] Built target ViewCaeTest
+[ 93%] Linking CXX shared library ..\..\bin\libRWCaeTest.dll
+[ 98%] Built target RWCaeTest
+[ 98%] Linking CXX shared library ..\..\bin\libLodCaeTest.dll
+[ 99%] Built target LodCaeTest
+[100%] Linking CXX shared library ..\..\bin\libViewDraw.dll
+[100%] Built target ViewDraw

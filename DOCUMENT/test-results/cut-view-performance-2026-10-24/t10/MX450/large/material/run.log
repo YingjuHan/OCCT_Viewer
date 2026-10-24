@@ -1,0 +1,17 @@
+Draw[1]> Display in Manager: cloud / wireframe / cloud_edges. Drag the plane or use the position slider.
+scvcutview cut_modes displaymode wireframe
+scvcutview cut_modes displaymode cloud
+scvcutview cut_modes displaymode cloud_edges
+Masks: 2=section only, 3=negative+section, 6=positive+section, 5=uncut body, 7=uncut body+section.
+backend gpu_plane fallback {} body_builds 1 slice_reallocations 2 slice_evaluations 5 submitted_body_bytes 0 submitted_slice_bytes 10080000 source_ms 0.00020000000000000001 slice_ms 0.16919999999999999 fields_ms 3.9971999999999999 presentation_ms 7.2213000000000012 geometry_slice_ms 0.0015 trace_ms 0.16769999999999999 bvh_ms 0 node_prepare_ms 0 cell_cut_ms 0 merge_ms 0 candidates 0 fallbacks 0 shared_point_ms 0 append_ms 0 fallback_ms 0 fallback_unsupported 0 fallback_near_plane 0 fallback_warped 0 fallback_degenerate 0 fallback_near_endpoint 0 topology_hits 0 topology_cell_hits 0 topology_cell_misses 0 trace_origins_ms 0 trace_classify_ms 0 trace_prepare_ms 0 trace_maps_ms 0 trace_fill_ms 0 trace_general_ms 0 interior_hits_total 0 interior_misses_total 0 interior_evictions_total 0
+Deformed geometry, temperature cloud and mesh edges share the same cut plane.
+scvcutview cut_modes deform displacement 0.1
+scvcutview cut_modes deform none 0
+scvcutview cut_modes deform
+field displacement step -1 scale 0 effectiveScale 0
+CUT_MATERIAL_LARGE_STATE cloud elapsed_ms 2001.298 referenceBuilds 1 mappingBuilds 6 mappedNodes 136806 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1626292432 resultReserved 445418560 sourceEstimate 65536 resultEstimate 16653809856 evictions 0 request 1
+CUT_MATERIAL_LARGE_STATE wireframe elapsed_ms 2007.425 referenceBuilds 1 mappingBuilds 10 mappedNodes 228010 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1626292432 resultReserved 445418560 sourceEstimate 65536 resultEstimate 16653809856 evictions 0 request 1
+CUT_MATERIAL_LARGE_STATE cloud_edges elapsed_ms 2689.619 referenceBuilds 1 mappingBuilds 14 mappedNodes 319214 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1626292432 resultReserved 445418560 sourceEstimate 65536 resultEstimate 16653809856 evictions 0 request 1
+CUT_MATERIAL_LARGE_PASS
+3D View - Driver1/Viewer1/CutDisplayModes was deleted.
+

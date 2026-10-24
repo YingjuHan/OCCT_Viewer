@@ -1,0 +1,4 @@
+Draw[1]> CUT_SLICES_LARGE_STATE elapsed_ms 9873.323 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 921862144 sourceEstimate 1460965248 resultEstimate 16653809856 evictions 0 request 1
+CUT_SLICES_LARGE_PASS
+3D View - Driver1/Viewer1/SlicesLarge was deleted.
+

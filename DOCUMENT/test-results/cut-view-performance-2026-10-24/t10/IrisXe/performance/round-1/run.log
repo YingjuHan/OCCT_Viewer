@@ -1,0 +1,6 @@
+Draw[1]> CUT_BENCHMARK_RESULT cells 3375000 frames 60 scenario crossing mask 3 backend auto display_mode cloud full_checks 0 maximum_area_error 0 deformation_scale 0 body_builds 1 import_ms 3510.4614000000001 setup_ms 10026.190000000001 p50_ms 59.0807 p95_ms 74.149699999999996 fps 16.420021972726079 actual_redraw 1 original_FE 1 target 0
+CUT_BENCHMARK_RESULT cells 3375000 frames 60 scenario rotating mask 3 backend auto display_mode cloud full_checks 0 maximum_area_error 0 deformation_scale 0 body_builds 1 import_ms 3916.7118 setup_ms 10564.4647 p50_ms 89.385499999999993 p95_ms 103.91679999999999 fps 11.180703120131735 actual_redraw 1 original_FE 1 target 0
+CUT_BENCHMARK_RESULT cells 3375000 frames 60 scenario deformed mask 3 backend auto display_mode cloud full_checks 0 maximum_area_error 0 deformation_scale 0.10000000000000001 body_builds 1 import_ms 4108.2882 setup_ms 11192.169400000001 p50_ms 88.270799999999994 p95_ms 99.138800000000003 fps 11.728264783873591 actual_redraw 1 original_FE 1 target 0
+CUT_BENCHMARK_PASS
+3D View - Driver1/Viewer1/CutBenchmark was deleted.
+

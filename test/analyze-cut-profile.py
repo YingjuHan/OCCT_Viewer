@@ -33,8 +33,13 @@ def summarize(path):
             counts[key] = sum(row[key] for row in rows)
     fps = 1000 * len(rows) / sum(total)
     p95 = total[math.ceil(0.95 * len(total)) - 1]
-    return dict(file=str(path), frames=len(rows), fps=fps, p50_ms=total[len(total) // 2],
-                p95_ms=p95, target=fps >= 15 and p95 <= 67, mean_ms=timings, counts=counts)
+    result = dict(file=str(path), frames=len(rows), fps=fps, p50_ms=total[len(total) // 2],
+                  p95_ms=p95, target=fps >= 15 and p95 <= 67, mean_ms=timings, counts=counts)
+    memory_keys = [key for key in rows[0] if key.startswith("process_") and key.endswith("_bytes")]
+    if memory_keys:
+        result["memory_bytes"] = {key: dict(first=rows[0][key], last=rows[-1][key],
+                                           maximum=max(row[key] for row in rows)) for key in memory_keys}
+    return result
 
 
 def main():

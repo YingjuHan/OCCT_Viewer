@@ -107,12 +107,13 @@ def performance(gpu, root, frames, repetitions, archive, label, historical=False
     return result
 
 
-def functional(root):
+def functional(root, expected_tests=84):
     tree = ET.fromstring(read(root / "functional.xml"))
     tests = [{"name": test.attrib["name"], "seconds": float(test.get("time", 0)),
               "passed": not any(test.find(tag) is not None for tag in ("failure", "error", "skipped"))}
              for test in tree.iter("testcase")]
-    require(len(tests) == 84 and all(test["passed"] for test in tests), "Functional suite did not pass 84/84")
+    require(len(tests) == expected_tests and all(test["passed"] for test in tests),
+            f"Functional suite did not pass {expected_tests}/{expected_tests}")
     large = {}
     for case in CASES:
         path = root / "large" / case / "run.log"

@@ -1,0 +1,176 @@
+Internal ctest changing into directory: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation
+Test project D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation
+      Start  1: vtk_reader
+ 1/85 Test  #1: vtk_reader ............................   Passed    0.07 sec
+      Start  2: vtk_format
+ 2/85 Test  #2: vtk_format ............................   Passed    0.06 sec
+      Start  3: vtk_series
+ 3/85 Test  #3: vtk_series ............................   Passed    0.09 sec
+      Start  4: vtk_safety
+ 4/85 Test  #4: vtk_safety ............................   Passed    0.07 sec
+      Start  5: vtk_limits
+ 5/85 Test  #5: vtk_limits ............................   Passed    0.08 sec
+      Start  6: vtk_reference
+ 6/85 Test  #6: vtk_reference .........................   Passed    0.18 sec
+      Start  7: vtk_import
+ 7/85 Test  #7: vtk_import ............................   Passed    0.10 sec
+      Start  8: cut_view
+ 8/85 Test  #8: cut_view ..............................   Passed    0.40 sec
+      Start  9: cut_display
+ 9/85 Test  #9: cut_display ...........................   Passed    0.13 sec
+      Start 10: cut_slicing
+10/85 Test #10: cut_slicing ...........................   Passed    2.28 sec
+      Start 11: cut_linear_batch
+11/85 Test #11: cut_linear_batch ......................   Passed    2.99 sec
+      Start 12: cut_placement
+12/85 Test #12: cut_placement .........................   Passed    0.05 sec
+      Start 13: cut_material
+13/85 Test #13: cut_material ..........................   Passed    1.40 sec
+      Start 14: cut_sine_plate
+14/85 Test #14: cut_sine_plate ........................   Passed   42.18 sec
+      Start 15: cut_cache
+15/85 Test #15: cut_cache .............................   Passed    0.06 sec
+      Start 16: cut_physics
+16/85 Test #16: cut_physics ...........................   Passed    0.13 sec
+      Start 17: native_cut
+17/85 Test #17: native_cut ............................   Passed    0.10 sec
+      Start 18: native_timeline
+18/85 Test #18: native_timeline .......................   Passed    0.10 sec
+      Start 19: native_analysis
+19/85 Test #19: native_analysis .......................   Passed    0.07 sec
+      Start 20: native_session
+20/85 Test #20: native_session ........................   Passed    1.26 sec
+      Start 21: quadric_cut
+21/85 Test #21: quadric_cut ...........................   Passed    1.16 sec
+      Start 22: cut_recovery
+22/85 Test #22: cut_recovery ..........................   Passed    0.07 sec
+      Start 23: cut_tensor
+23/85 Test #23: cut_tensor ............................   Passed    0.14 sec
+      Start 24: cut_trace_binding
+24/85 Test #24: cut_trace_binding .....................   Passed    0.16 sec
+      Start 25: cut_union
+25/85 Test #25: cut_union .............................   Passed    5.97 sec
+      Start 26: cut_interface
+26/85 Test #26: cut_interface .........................   Passed    0.59 sec
+      Start 27: vtk_cell_cut
+27/85 Test #27: vtk_cell_cut ..........................   Passed   15.34 sec
+      Start 28: general_cut_cache
+28/85 Test #28: general_cut_cache .....................   Passed    3.30 sec
+      Start 29: cut_geometry
+29/85 Test #29: cut_geometry ..........................   Passed   21.57 sec
+      Start 30: cut_analytic
+30/85 Test #30: cut_analytic ..........................   Passed    5.54 sec
+      Start 31: cut_reference
+31/85 Test #31: cut_reference .........................   Passed   14.79 sec
+      Start 32: cut_iso
+32/85 Test #32: cut_iso ...............................   Passed    4.95 sec
+      Start 33: draw_cut_view
+33/85 Test #33: draw_cut_view .........................   Passed    0.20 sec
+      Start 34: draw_vtk_import
+34/85 Test #34: draw_vtk_import .......................   Passed    0.13 sec
+      Start 35: draw_vtk_reference
+35/85 Test #35: draw_vtk_reference ....................   Passed    0.14 sec
+      Start 36: draw_cut_view_iso
+36/85 Test #36: draw_cut_view_iso .....................   Passed    0.21 sec
+      Start 37: draw_cut_view_tensor
+37/85 Test #37: draw_cut_view_tensor ..................   Passed    0.13 sec
+      Start 38: draw_cut_view_trace
+38/85 Test #38: draw_cut_view_trace ...................   Passed    0.12 sec
+      Start 39: draw_cut_view_union
+39/85 Test #39: draw_cut_view_union ...................   Passed    0.39 sec
+      Start 40: draw_cut_view_quadric
+40/85 Test #40: draw_cut_view_quadric .................   Passed    0.57 sec
+      Start 41: draw_cut_view_high_order_iso
+41/85 Test #41: draw_cut_view_high_order_iso ..........   Passed    1.42 sec
+      Start 42: draw_cut_view_references
+42/85 Test #42: draw_cut_view_references ..............   Passed   13.56 sec
+      Start 43: draw_cut_view_analytic
+43/85 Test #43: draw_cut_view_analytic ................   Passed    3.06 sec
+      Start 44: draw_cut_view_geometry
+44/85 Test #44: draw_cut_view_geometry ................   Passed    0.52 sec
+      Start 45: draw_cut_view_cache
+45/85 Test #45: draw_cut_view_cache ...................   Passed    0.74 sec
+      Start 46: draw_cut_view_vtk_cells
+46/85 Test #46: draw_cut_view_vtk_cells ...............   Passed   29.78 sec
+      Start 47: draw_cut_view_recovery
+47/85 Test #47: draw_cut_view_recovery ................   Passed   13.68 sec
+      Start 48: generate_large_vtk_smoke
+48/85 Test #48: generate_large_vtk_smoke ..............   Passed    0.10 sec
+      Start 49: draw_large_vtk_smoke
+49/85 Test #49: draw_large_vtk_smoke ..................   Passed    3.07 sec
+      Start 50: draw_cut_view_session
+50/85 Test #50: draw_cut_view_session .................   Passed    2.91 sec
+      Start 51: draw_cut_view_benchmark_smoke
+51/85 Test #51: draw_cut_view_benchmark_smoke .........   Passed    0.82 sec
+      Start 52: draw_cut_view_physics
+52/85 Test #52: draw_cut_view_physics .................   Passed    2.52 sec
+      Start 53: draw_vtk_reference_visual
+53/85 Test #53: draw_vtk_reference_visual .............   Passed    0.95 sec
+      Start 54: draw_vtk_import_visual
+54/85 Test #54: draw_vtk_import_visual ................   Passed    1.69 sec
+      Start 55: draw_cut_view_recovery_visual
+55/85 Test #55: draw_cut_view_recovery_visual .........   Passed   15.43 sec
+      Start 56: draw_cut_view_high_order_iso_visual
+56/85 Test #56: draw_cut_view_high_order_iso_visual ...   Passed    3.70 sec
+      Start 57: draw_cut_view_references_visual
+57/85 Test #57: draw_cut_view_references_visual .......   Passed   17.90 sec
+      Start 58: draw_cut_view_analytic_visual
+58/85 Test #58: draw_cut_view_analytic_visual .........   Passed    4.24 sec
+      Start 59: draw_cut_view_geometry_visual
+59/85 Test #59: draw_cut_view_geometry_visual .........   Passed    1.89 sec
+      Start 60: draw_cut_view_cache_visual
+60/85 Test #60: draw_cut_view_cache_visual ............   Passed    1.84 sec
+      Start 61: draw_cut_view_vtk_cells_visual
+61/85 Test #61: draw_cut_view_vtk_cells_visual ........   Passed   47.94 sec
+      Start 62: draw_cut_view_quadric_visual
+62/85 Test #62: draw_cut_view_quadric_visual ..........   Passed    7.40 sec
+      Start 63: draw_cut_view_controls
+63/85 Test #63: draw_cut_view_controls ................   Passed   18.41 sec
+      Start 64: draw_cut_view_tools
+64/85 Test #64: draw_cut_view_tools ...................   Passed    4.68 sec
+      Start 65: draw_cut_view_plot_options
+65/85 Test #65: draw_cut_view_plot_options ............   Passed    1.64 sec
+      Start 66: draw_cut_view_placement
+66/85 Test #66: draw_cut_view_placement ...............   Passed    1.63 sec
+      Start 67: draw_cut_view_material
+67/85 Test #67: draw_cut_view_material ................   Passed    1.74 sec
+      Start 68: draw_cut_view_free_body
+68/85 Test #68: draw_cut_view_free_body ...............   Passed    0.82 sec
+      Start 69: draw_cut_view_iso_binding
+69/85 Test #69: draw_cut_view_iso_binding .............   Passed    0.76 sec
+      Start 70: draw_cut_view_slices
+70/85 Test #70: draw_cut_view_slices ..................   Passed    0.78 sec
+      Start 71: draw_cut_view_plot_parity
+71/85 Test #71: draw_cut_view_plot_parity .............   Passed    1.46 sec
+      Start 72: draw_cut_view_automatic
+72/85 Test #72: draw_cut_view_automatic ...............   Passed    0.91 sec
+      Start 73: draw_cut_view_scope
+73/85 Test #73: draw_cut_view_scope ...................   Passed    1.65 sec
+      Start 74: draw_cut_view_time
+74/85 Test #74: draw_cut_view_time ....................   Passed    2.69 sec
+      Start 75: draw_cut_view_tensor_visual
+75/85 Test #75: draw_cut_view_tensor_visual ...........   Passed    1.05 sec
+      Start 76: draw_cut_view_trace_visual
+76/85 Test #76: draw_cut_view_trace_visual ............   Passed    0.55 sec
+      Start 77: draw_cut_view_union_visual
+77/85 Test #77: draw_cut_view_union_visual ............   Passed    3.35 sec
+      Start 78: draw_cut_view_iso_visual
+78/85 Test #78: draw_cut_view_iso_visual ..............   Passed    2.32 sec
+      Start 79: draw_cut_view_visual
+79/85 Test #79: draw_cut_view_visual ..................   Passed    2.29 sec
+      Start 80: draw_cut_view_gpu_plane
+80/85 Test #80: draw_cut_view_gpu_plane ...............   Passed    4.56 sec
+      Start 81: draw_cut_view_display_modes
+81/85 Test #81: draw_cut_view_display_modes ...........   Passed   16.50 sec
+      Start 82: draw_cut_view_deformation
+82/85 Test #82: draw_cut_view_deformation .............   Passed   10.00 sec
+      Start 83: draw_cut_view_sine_plate
+83/85 Test #83: draw_cut_view_sine_plate ..............   Passed  367.29 sec
+      Start 84: draw_cut_view_interaction
+84/85 Test #84: draw_cut_view_interaction .............   Passed    2.45 sec
+      Start 85: cell_kernel
+85/85 Test #85: cell_kernel ...........................   Passed    0.07 sec
+
+100% tests passed, 0 tests failed out of 85
+
+Total Test time (real) = 750.16 sec

@@ -21,6 +21,22 @@
 #endif
 
 namespace {
+struct ProcessMemory
+{
+    size_t PrivateBytes=0, WorkingSetBytes=0, PeakWorkingSetBytes=0;
+};
+ProcessMemory processMemory()
+{
+    ProcessMemory result;
+#ifdef _WIN32
+    PROCESS_MEMORY_COUNTERS_EX counters{}; counters.cb=sizeof(counters);
+    if(!GetProcessMemoryInfo(GetCurrentProcess(),reinterpret_cast<PROCESS_MEMORY_COUNTERS*>(&counters),sizeof(counters))) {
+        throw std::runtime_error("Benchmark process memory sampling failed");
+    }
+    result={counters.PrivateUsage,counters.WorkingSetSize,counters.PeakWorkingSetSize};
+#endif
+    return result;
+}
 int frameWait(Draw_Interpretor& di,int argc,const char**)
 {
     if (argc != 1 || ViewerTest::CurrentView().IsNull() || glGetString(GL_VERSION) == nullptr) {
@@ -117,7 +133,7 @@ int benchmark(Draw_Interpretor& di,int argc,const char** argv)
         view->FitAll(); view->Redraw(); glFinish(); const double setupMs=ms(setup);
         const auto renderer=glGetString(GL_RENDERER); if(!renderer) { throw std::runtime_error("Benchmark has no current OpenGL rendering context"); }
         std::ofstream hardware(out/(mode+"-renderer.txt")); hardware<<renderer<<'\n'<<glGetString(GL_VERSION)<<'\n';
-        std::ofstream log(out/(mode+".csv")); log<<"frame,edit_ms,source_ms,intersection_ms,slice_ms,trace_ms,FE_ms,primitives_ms,actual_redraw_ms,total_ms,nodes,cells,body_builds,submitted_body_bytes,submitted_slice_bytes,bvh_ms,node_prepare_ms,cell_cut_ms,merge_ms,candidates,fallbacks,trace_origins_ms,trace_classify_ms,trace_prepare_ms,trace_maps_ms,trace_fill_ms,trace_general_ms,interior_hits_total,interior_misses_total,interior_evictions_total,shared_point_ms,append_ms,fallback_ms,fallback_unsupported,fallback_near_plane,fallback_warped,fallback_degenerate,fallback_near_endpoint,topology_hits,topology_cell_hits,topology_cell_misses\n";
+        std::ofstream log(out/(mode+".csv")); log<<"frame,edit_ms,source_ms,intersection_ms,slice_ms,trace_ms,FE_ms,primitives_ms,actual_redraw_ms,total_ms,nodes,cells,body_builds,submitted_body_bytes,submitted_slice_bytes,bvh_ms,node_prepare_ms,cell_cut_ms,merge_ms,candidates,fallbacks,trace_origins_ms,trace_classify_ms,trace_prepare_ms,trace_maps_ms,trace_fill_ms,trace_general_ms,interior_hits_total,interior_misses_total,interior_evictions_total,shared_point_ms,append_ms,fallback_ms,fallback_unsupported,fallback_near_plane,fallback_warped,fallback_degenerate,fallback_near_endpoint,topology_hits,topology_cell_hits,topology_cell_misses,process_private_bytes,process_working_set_bytes,process_peak_working_set_bytes\n";
         const auto initial = display->RenderStatistics();
         size_t fullChecks=0; double maximumAreaError=0;
         auto validateSection = [&](bool full) {
@@ -184,6 +200,9 @@ int benchmark(Draw_Interpretor& di,int argc,const char** argv)
                 throw std::runtime_error("Section profiling counters do not partition fallback/merge work");
             }
             const auto redraw=Clock::now(); view->Redraw(); glFinish(); const double redrawMs=ms(redraw),total=ms(start);
+            // Sample after stopping the frame timer, before numerical checks or
+            // framebuffer captures. PeakWorkingSet is the process lifetime peak.
+            const auto memorySample=processMemory();
             const auto stats = display->RenderStatistics();
             if (backend == "auto" && (!stats.GpuPlane || stats.BodyBuilds != initial.BodyBuilds || stats.SubmittedBodyBytes != 0)) {
                 throw std::runtime_error("Warm plane frame rebuilt/submitted body or lost GPU backend");
@@ -193,7 +212,7 @@ int benchmark(Draw_Interpretor& di,int argc,const char** argv)
             // section after timing all frames, so the next edit cannot include
             // cleanup of a section created solely by the benchmark assertion.
             const auto counts = mask == 5 ? std::pair<RWCae::MeshEntityId,RWCae::MeshEntityId>(0,0) : validateSection(fullValidation && (i==0 || i==frames-1));
-            log<<i<<','<<edit<<','<<phases.SourceMs<<','<<phases.IntersectionMs<<','<<phases.SliceMs<<','<<phases.TraceMs<<','<<phases.FieldsMs<<','<<std::max(0.0,prepareMs-phases.SourceMs-phases.IntersectionMs-phases.FieldsMs)<<','<<redrawMs<<','<<total<<','<<counts.first<<','<<counts.second<<','<<stats.BodyBuilds<<','<<stats.SubmittedBodyBytes<<','<<stats.SubmittedSliceBytes<<','<<phases.BvhMs<<','<<phases.NodePrepareMs<<','<<phases.CellCutMs<<','<<phases.MergeMs<<','<<phases.Candidates<<','<<phases.Fallbacks<<','<<phases.TraceOriginsMs<<','<<phases.TraceClassifyMs<<','<<phases.TracePrepareMs<<','<<phases.TraceMapsMs<<','<<phases.TraceFillMs<<','<<phases.TraceGeneralMs<<','<<cache.Hits<<','<<cache.Misses<<','<<cache.Evictions<<','<<phases.SharedPointMs<<','<<phases.AppendMs<<','<<phases.FallbackMs<<','<<phases.Unsupported<<','<<phases.NearPlane<<','<<phases.Warped<<','<<phases.Degenerate<<','<<phases.NearEndpoint<<','<<phases.TopologyHits<<','<<phases.TopologyCellHits<<','<<phases.TopologyCellMisses<<'\n'; timings.push_back(total); sum+=total;
+            log<<i<<','<<edit<<','<<phases.SourceMs<<','<<phases.IntersectionMs<<','<<phases.SliceMs<<','<<phases.TraceMs<<','<<phases.FieldsMs<<','<<std::max(0.0,prepareMs-phases.SourceMs-phases.IntersectionMs-phases.FieldsMs)<<','<<redrawMs<<','<<total<<','<<counts.first<<','<<counts.second<<','<<stats.BodyBuilds<<','<<stats.SubmittedBodyBytes<<','<<stats.SubmittedSliceBytes<<','<<phases.BvhMs<<','<<phases.NodePrepareMs<<','<<phases.CellCutMs<<','<<phases.MergeMs<<','<<phases.Candidates<<','<<phases.Fallbacks<<','<<phases.TraceOriginsMs<<','<<phases.TraceClassifyMs<<','<<phases.TracePrepareMs<<','<<phases.TraceMapsMs<<','<<phases.TraceFillMs<<','<<phases.TraceGeneralMs<<','<<cache.Hits<<','<<cache.Misses<<','<<cache.Evictions<<','<<phases.SharedPointMs<<','<<phases.AppendMs<<','<<phases.FallbackMs<<','<<phases.Unsupported<<','<<phases.NearPlane<<','<<phases.Warped<<','<<phases.Degenerate<<','<<phases.NearEndpoint<<','<<phases.TopologyHits<<','<<phases.TopologyCellHits<<','<<phases.TopologyCellMisses<<','<<memorySample.PrivateBytes<<','<<memorySample.WorkingSetBytes<<','<<memorySample.PeakWorkingSetBytes<<'\n'; timings.push_back(total); sum+=total;
             if(i==0||i==frames-1) { if(!view->Dump((out/(mode+"-"+std::to_string(i)+".png")).string().c_str())) { throw std::runtime_error("Benchmark framebuffer capture failed"); } }
         }
         if (mask == 5) { validateSection(fullValidation); }
@@ -204,4 +223,4 @@ int benchmark(Draw_Interpretor& di,int argc,const char** argv)
     catch(const std::exception& e) { di<<"Error: "<<e.what(); } return 1;
 }
 }
-namespace ViewCaeTest { void RegisterCutBenchmarkCommands(Draw_Interpretor& di) { di.Add("scvcutbenchmark","Full native contour/primitive/redraw benchmark",__FILE__,benchmark,"SC Viewer CAE Prs"); di.Add("scvcutfilebenchmark","File import and full-frame benchmark for generate-large-vtk.py grids",__FILE__,benchmark,"SC Viewer CAE Prs"); di.Add("scvcutmemory","Native process resource sample",__FILE__,memory,"SC Viewer CAE Prs"); di.Add("scvcutframewait","Wait for current viewport GPU work without another redraw (benchmarking)",__FILE__,frameWait,"SC Viewer CAE Prs"); } }
+namespace ViewCaeTest { void RegisterCutBenchmarkCommands(Draw_Interpretor& di) { di.Add("scvcutbenchmark","Full native contour/primitive/redraw benchmark",__FILE__,benchmark,"SC Viewer CAE Prs"); di.Add("scvcutfilebenchmark","File import and full-frame benchmark for generated cubic linear grids",__FILE__,benchmark,"SC Viewer CAE Prs"); di.Add("scvcutmemory","Native process resource sample",__FILE__,memory,"SC Viewer CAE Prs"); di.Add("scvcutframewait","Wait for current viewport GPU work without another redraw (benchmarking)",__FILE__,frameWait,"SC Viewer CAE Prs"); } }

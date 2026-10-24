@@ -1,0 +1,6 @@
+Draw[1]> CUT_AUTOMATIC_LARGE_STATE 450.25 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 460855296 sourceEstimate 1460965248 resultEstimate 16653809856 evictions 0 request 2
+CUT_AUTOMATIC_LARGE_STATE 450.75 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 460855296 sourceEstimate 1460965248 resultEstimate 16653809856 evictions 0 request 3
+CUT_AUTOMATIC_LARGE_BATCH_MS 14256.165
+CUT_AUTOMATIC_LARGE_PASS
+3D View - Driver1/Viewer1/AutomaticLarge was deleted.
+

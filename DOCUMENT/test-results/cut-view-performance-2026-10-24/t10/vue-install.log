@@ -1,0 +1,15 @@
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: '@achrinza/node-ipc@9.2.9',
+npm warn EBADENGINE   required: {
+npm warn EBADENGINE     node: '8 || 9 || 10 || 11 || 12 || 13 || 14 || 15 || 16 || 17 || 18 || 19 || 20 || 21 || 22'
+npm warn EBADENGINE   },
+npm warn EBADENGINE   current: { node: 'v24.14.1', npm: '11.11.0' }
+npm warn EBADENGINE }
+npm warn deprecated crypto@1.0.1: This package is no longer supported. It's now a built-in Node module. If you've depended on crypto, you should switch to the one that's built-in.
+
+added 1015 packages in 2m
+npm notice
+npm notice New minor version of npm available! 11.11.0 -> 11.21.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.21.1
+npm notice To update run: npm install -g npm@11.21.1
+npm notice
