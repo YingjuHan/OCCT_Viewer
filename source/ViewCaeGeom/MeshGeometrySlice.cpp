@@ -35,8 +35,8 @@ using AddedNodeMap       = ViewCaeGeom::MeshGeometryTools::AddedNodeMap;
 struct MeshSliceSelector : public ViewCaeGeom::MeshHBvhBoxSetTraverse<ViewCaeGeom::MeshBvhData::MeshBvhBoxSet> {
     enum class FallbackReason { Unsupported, NearPlane, Warped, Degenerate, NearEndpoint };
     struct Vertex { RWCae::MeshEntityId A,B,Node; double T,Angle; Graphic3d_Vec3d Point; };
-    struct HexInput { RWCae::MeshEntityId Ids[8]; Graphic3d_Vec3d Points[8]; bool Valid=false; };
-    struct HexSection { std::array<Vertex,12> Vertices; size_t Count=0; bool Valid=false; FallbackReason Reason=FallbackReason::Unsupported; };
+    struct LinearInput { RWCae::MeshEntityId Ids[8]; Graphic3d_Vec3d Points[8]; RWCae::MeshElemType Type; int Count=0; bool Valid=false; };
+    struct LinearSection { std::array<Vertex,12> Vertices; size_t Count=0; bool Valid=false; FallbackReason Reason=FallbackReason::Unsupported; };
 public:
     //! Constructor
     explicit MeshSliceSelector(const Handle(ViewCaeGeom::MeshGeometry)& theMeshGeom,
@@ -76,8 +76,8 @@ public:
         // Bound scratch independently of candidate count. Modifiers and lazy
         // geometry are evaluated on the caller thread; workers only read snapshots.
         const size_t blockSize=4096;
-        std::vector<HexInput> inputs(std::min(blockSize,myCandidates.size()));
-        std::vector<HexSection> sections(inputs.size());
+        std::vector<LinearInput> inputs(std::min(blockSize,myCandidates.size()));
+        std::vector<LinearSection> sections(inputs.size());
         OSD_ThreadPool::Launcher launcher(*OSD_ThreadPool::DefaultPool(),4);
         for(size_t begin=0;begin<myCandidates.size();begin+=blockSize) {
             if(myNodePositions.size()>32768) { myNodePositions.clear(); }
@@ -87,7 +87,7 @@ public:
                 for(size_t i=0;i<count;++i) {
                     checkCancelled();
                     const auto& element=mesh->IndexedElements()[myCandidates[begin+i]];
-                    inputs[i].Valid=element.Type==RWCae::MeshElemType::Hexahedron && prepareHex(element,inputs[i]);
+                    inputs[i].Valid=prepareLinear(element,inputs[i]);
                 }
             }
             work.PrepareMs+=std::chrono::duration<double,std::milli>(Clock::now()-start).count();
@@ -96,9 +96,9 @@ public:
                 checkCancelled(); sections[i].Count=0; sections[i].Reason=FallbackReason::Unsupported;
                 if(!myModifyNodes) {
                     const auto& element=mesh->IndexedElements()[myCandidates[begin+i]];
-                    inputs[i].Valid=element.Type==RWCae::MeshElemType::Hexahedron && prepareHex(element,inputs[i]);
+                    inputs[i].Valid=prepareLinear(element,inputs[i]);
                 }
-                sections[i].Valid=inputs[i].Valid && computeHex(inputs[i],sections[i]);
+                sections[i].Valid=inputs[i].Valid && computeLinear(inputs[i],sections[i]);
             };
             if(count>=512) { launcher.Perform(0,(int)count,cut); }
             else { for(size_t i=0;i<count;++i) { cut(0,(int)i); } }
@@ -161,7 +161,7 @@ public:
         if(myCollect) { myCandidates.push_back(anIndex); return true; }
 
         const RWCae::MeshData::IndexedElement& anElem = myMeshGeom->GetMeshData()->IndexedElements()[anIndex];
-        if (anElem.Type == RWCae::MeshElemType::Hexahedron && affineHexSlice(anElem)) { return true; }
+        if (linearSlice(anElem)) { return true; }
         return processIndexedElement(anElem, anIndex);
     }
 
@@ -236,7 +236,7 @@ private:
     // Prefix ranges are fixed before any worker starts writing. OCCT vectors
     // and provenance maps are grown only on this thread; workers never append
     // or change hash tables. Fallbacks subsequently reuse these canonical edges.
-    void appendBatch(size_t begin,size_t count,std::vector<HexSection>& sections,
+    void appendBatch(size_t begin,size_t count,std::vector<LinearSection>& sections,
         ViewCaeGeom::MeshSliceWork& work,OSD_ThreadPool::Launcher& launcher)
     {
         using Clock=std::chrono::steady_clock;
@@ -340,20 +340,24 @@ private:
     {
         if(myCancellation && myCancellation->Cancelled.load()) { throw std::runtime_error("Native section request cancelled during intersection"); }
     }
-    // Affine hexes have convex planar faces. Their section is the ordered set
+    // Verified convex linear cells have planar faces. Their section is the ordered set
     // of crossed original edges; retain the original edge FE weights exactly.
     // Warped, degenerate and near-node cases use the general contour cutter.
-    bool affineHexSlice(const RWCae::MeshData::IndexedElement& element)
+    bool linearSlice(const RWCae::MeshData::IndexedElement& element)
     {
-        HexInput input; HexSection section;
-        if(!prepareHex(element,input) || !computeHex(input,section)) { return false; }
-        appendHex(element,section); return true;
+        LinearInput input; LinearSection section;
+        if(!prepareLinear(element,input) || !computeLinear(input,section)) { return false; }
+        appendLinear(element,section); return true;
     }
-    bool prepareHex(const RWCae::MeshData::IndexedElement& element,HexInput& input) const
+    bool prepareLinear(const RWCae::MeshData::IndexedElement& element,LinearInput& input) const
     {
         const auto& mesh=myMeshGeom->GetMeshData(); const auto& elements=mesh->Elements(element.Type);
-        RWCae::MeshElemEntityOffset begin,end; elements.GetElemNodesRange(element.Index,&begin,&end); if(end-begin!=8) { return false; }
-        for(int i=0;i<8;++i) {
+        using T=RWCae::MeshElemType;
+        input.Type=element.Type;
+        input.Count=element.Type==T::Tetrahedron?4:element.Type==T::Pyramid?5:element.Type==T::Prism?6:element.Type==T::Hexahedron?8:0;
+        RWCae::MeshElemEntityOffset begin,end; elements.GetElemNodesRange(element.Index,&begin,&end);
+        if(input.Count==0 || end-begin!=input.Count) { return false; }
+        for(int i=0;i<input.Count;++i) {
             const auto id=elements.Nodes()[(int)begin+i]; input.Ids[i]=id;
             if(myCollect && myModifyNodes) {
                 const auto found=myNodePositions.find(id);
@@ -365,19 +369,38 @@ private:
         }
         return true;
     }
-    bool computeHex(const HexInput& input,HexSection& section) const
+    bool computeLinear(const LinearInput& input,LinearSection& section) const
     {
         const auto& p=input.Points; const auto& ids=input.Ids; double values[8],magnitude=1;
         const auto& plane=myEquation;
-        for(int i=0;i<8;++i) { magnitude=std::max(magnitude,p[i].Dot(p[i])); values[i]=plane.x()*p[i].x()+plane.y()*p[i].y()+plane.z()*p[i].z()+plane.w(); if(std::abs(values[i])<=CONFUSION) { section.Reason=FallbackReason::NearPlane; return false; } }
-        const auto x=p[1]-p[0],y=p[3]-p[0],z=p[4]-p[0];
+        for(int i=0;i<input.Count;++i) { magnitude=std::max(magnitude,p[i].Dot(p[i])); values[i]=plane.x()*p[i].x()+plane.y()*p[i].y()+plane.z()*p[i].z()+plane.w(); if(std::abs(values[i])<=CONFUSION) { section.Reason=FallbackReason::NearPlane; return false; } }
+        using T=RWCae::MeshElemType;
+        const auto x=p[1]-p[0];
+        const auto y=(input.Type==T::Hexahedron || input.Type==T::Pyramid?p[3]:p[2])-p[0];
+        const auto z=(input.Type==T::Hexahedron || input.Type==T::Pyramid?p[4]:p[3])-p[0];
         const double tolerance=8*std::numeric_limits<float>::epsilon()*std::sqrt(magnitude);
-        if((p[2]-p[0]-x-y).Modulus()>tolerance || (p[5]-p[0]-x-z).Modulus()>tolerance
-            || (p[7]-p[0]-y-z).Modulus()>tolerance || (p[6]-p[0]-x-y-z).Modulus()>tolerance) { section.Reason=FallbackReason::Warped; return false; }
         if(std::abs(x.Dot(Graphic3d_Vec3d::Cross(y,z)))<=1e-12*x.Modulus()*y.Modulus()*z.Modulus()) { section.Reason=FallbackReason::Degenerate; return false; }
-        static constexpr int edges[12][2]={{0,1},{1,2},{2,3},{3,0},{4,5},{5,6},{6,7},{7,4},{0,4},{1,5},{2,6},{3,7}};
+        if(input.Type==T::Hexahedron) {
+            if((p[2]-p[0]-x-y).Modulus()>tolerance || (p[5]-p[0]-x-z).Modulus()>tolerance
+                || (p[7]-p[0]-y-z).Modulus()>tolerance || (p[6]-p[0]-x-y-z).Modulus()>tolerance) { section.Reason=FallbackReason::Warped; return false; }
+        } else if(input.Type==T::Prism) {
+            if((p[4]-p[1]-z).Modulus()>tolerance || (p[5]-p[2]-z).Modulus()>tolerance) { section.Reason=FallbackReason::Warped; return false; }
+        } else if(input.Type==T::Pyramid) {
+            const auto normal=Graphic3d_Vec3d::Cross(x,y);
+            if(std::abs(normal.Dot(p[2]-p[0]))>tolerance*normal.Modulus()) { section.Reason=FallbackReason::Warped; return false; }
+            for(int i=0;i<4;++i) {
+                const auto a=p[(i+1)%4]-p[i],b=p[(i+2)%4]-p[(i+1)%4];
+                if(Graphic3d_Vec3d::Cross(a,b).Dot(normal)<=1e-12*a.Modulus()*b.Modulus()*normal.Modulus()) { section.Reason=FallbackReason::Degenerate; return false; }
+            }
+        }
+        static constexpr int hexEdges[12][2]={{0,1},{1,2},{2,3},{3,0},{4,5},{5,6},{6,7},{7,4},{0,4},{1,5},{2,6},{3,7}};
+        static constexpr int tetraEdges[6][2]={{0,1},{1,2},{2,0},{0,3},{1,3},{2,3}};
+        static constexpr int prismEdges[9][2]={{0,1},{1,2},{2,0},{3,4},{4,5},{5,3},{0,3},{1,4},{2,5}};
+        static constexpr int pyramidEdges[8][2]={{0,1},{1,2},{2,3},{3,0},{0,4},{1,4},{2,4},{3,4}};
+        const int (*edges)[2]=input.Type==T::Tetrahedron?tetraEdges:input.Type==T::Prism?prismEdges:input.Type==T::Pyramid?pyramidEdges:hexEdges;
+        const int edgeCount=input.Type==T::Tetrahedron?6:input.Type==T::Prism?9:input.Type==T::Pyramid?8:12;
         auto& vertices=section.Vertices; auto& count=section.Count; Graphic3d_Vec3d center(0);
-        for(const auto& edge:edges) { int a=edge[0],b=edge[1]; if((values[a]>0)==(values[b]>0)) { continue; }
+        for(int e=0;e<edgeCount;++e) { int a=edges[e][0],b=edges[e][1]; if((values[a]>0)==(values[b]>0)) { continue; }
             // Canonical original-edge direction yields identical FE weights and
             // positions in adjacent cells, independent of worker scheduling.
             if(ids[a]>ids[b]) { std::swap(a,b); }
@@ -391,7 +414,7 @@ private:
         std::sort(vertices.begin(),vertices.begin()+count,[](const auto& a,const auto& b) { return a.Angle<b.Angle; });
         return true;
     }
-    void appendHex(const RWCae::MeshData::IndexedElement& element,HexSection& section,ViewCaeGeom::MeshSliceWork* work=nullptr)
+    void appendLinear(const RWCae::MeshData::IndexedElement& element,LinearSection& section,ViewCaeGeom::MeshSliceWork* work=nullptr)
     {
         auto& vertices=section.Vertices; const auto count=section.Count;
         if(count<3) { return; }

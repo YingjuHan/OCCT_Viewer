@@ -1,0 +1,8 @@
+    Start 11: cut_linear_batch
+11: Test command: D:\workspace\OpenCASCADE\OCCT_Viewer\build\mingw-deformation\bin\cut_linear_batch_tests.exe
+11: LINEAR_BATCH type 6 cells 1296000 candidates 25560 fallbacks 0 elapsed_ms 448.772
+11: LINEAR_BATCH type 10 cells 1024000 candidates 15040 fallbacks 0 elapsed_ms 458.519
+11: LINEAR_BATCH type 8 cells 1053696 candidates 18424 fallbacks 0 elapsed_ms 478.669
+11: CUT_LINEAR_BATCH_PASS
+1/1 Test #11: cut_linear_batch .................   Passed    1.48 sec
+	cut_linear_batch
