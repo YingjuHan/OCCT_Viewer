@@ -792,6 +792,10 @@ Standard_Integer cutView(Draw_Interpretor& di, Standard_Integer argc, const char
                << " bvh_ms " << phases.BvhMs << " node_prepare_ms " << phases.NodePrepareMs
                << " cell_cut_ms " << phases.CellCutMs << " merge_ms " << phases.MergeMs
                << " candidates " << (double)phases.Candidates << " fallbacks " << (double)phases.Fallbacks;
+            di << " shared_point_ms " << phases.SharedPointMs << " append_ms " << phases.AppendMs << " fallback_ms " << phases.FallbackMs
+               << " fallback_unsupported " << (double)phases.Unsupported << " fallback_near_plane " << (double)phases.NearPlane
+               << " fallback_warped " << (double)phases.Warped << " fallback_degenerate " << (double)phases.Degenerate
+               << " fallback_near_endpoint " << (double)phases.NearEndpoint << " topology_hits " << (double)phases.TopologyHits;
             di << " trace_origins_ms " << phases.TraceOriginsMs << " trace_classify_ms " << phases.TraceClassifyMs
                << " trace_prepare_ms " << phases.TracePrepareMs << " trace_maps_ms " << phases.TraceMapsMs
                << " trace_fill_ms " << phases.TraceFillMs << " trace_general_ms " << phases.TraceGeneralMs;

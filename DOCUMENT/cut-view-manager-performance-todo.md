@@ -8,14 +8,14 @@
 
 - 已有：GPU 平面 clipping、CPU slice、分块并行六面体求交、保守的平移拓扑缓存、请求取消检查及双 GPU 测试入口。
 - 基线：337.5 万 hex；MX450 旋转 / 变形平移的 BVH 约 2.55 / 2.36 ms，merge 约 19.04 / 15.91 ms，trace 约 25.09 / 19.96 ms。merge 包含回退求交，需进一步拆分。
-- 正在执行：T01。
+- 正在执行：T02。
 
 ## 任务
 
 | ID | 优先级 | 状态 | 工作及验收 | 提交 |
 | --- | --- | --- | --- | --- |
-| T01 | P0 | 进行中 | 拆分输出追加、共享点处理和 fallback 计时；补充回退原因、拓扑缓存命中及逐帧 CSV；建立百万级基线。 | — |
-| T02 | P0 | 待开始 | 连续数组输出：并行计数、前缀和、预分配、独立填充；保持共享边交点一致及有限元来源正确，减少串行追加。 | — |
+| T01 | P0 | 已完成 | 拆分输出追加、共享点处理和 fallback 计时；补充回退原因、拓扑缓存命中及逐帧 CSV；建立百万级基线。 | — |
+| T02 | P0 | 进行中 | 连续数组输出：并行计数、前缀和、预分配、独立填充；保持共享边交点一致及有限元来源正确，减少串行追加。 | — |
 | T03 | P0 | 待开始 | 缓存固定变形构形，复用只读节点坐标与 BVH；网格、场、倍率或时间步变化时正确失效，缓存纳入预算。 | — |
 | T04 | P0 | 待开始 | 复用求交携带的原始边、权重和单元信息，精简 trace/场值映射；保留共面界面双侧物理语义。 | — |
 | T05 | P1 | 待开始 | 补齐四面体、棱柱、金字塔等线性单元并行路径；复杂单元保守回退，减少整批串行处理。 | — |
@@ -36,3 +36,11 @@
 ## 执行记录
 
 - 2026-10-24：创建清单。codebase-memory 通过本地 CLI 访问；索引标记不完整或元数据变化的实现直接核对源码。
+
+### T01：计时与基线
+
+- Release 构建通过；`cut_view`、`cut_sine_plate`、`cut_cache`、`cut_trace_binding`、`cut_interface` 五项回归通过。
+- 新增 `shared_point_ms`、`append_ms`、`fallback_ms`（均为 `merge_ms` 子项）、五类互斥回退原因及 `topology_hits`；同步导出 renderinfo、API 基准和鼠标基准 CSV。
+- 337.5 万 hex / MX450 独立单轮，每场景 60 帧：平移 23.02 FPS / p95 72.22 ms；旋转 11.81 FPS / p95 100.19 ms；固定变形平移 10.50 FPS / p95 119.55 ms。三场景均未同时满足 FPS/p95 门槛；本轮建立基线，不声称优化收益。
+- [原始 CSV](test-results/cut-view-performance-2026-10-24/t01/frames/) 与 [统计](test-results/cut-view-performance-2026-10-24/t01/summary.json) 已归档。先前与 CPU 回归重叠的一轮仅保留在 build，不纳入基线。
+- 复核命令：`python test/analyze-cut-profile.py build/perf-t01-mx450-isolated --output build/perf-t01-mx450-isolated/profile.json`。脚本拒绝回退计数不一致、merge 子阶段重叠、主体重建或重传。

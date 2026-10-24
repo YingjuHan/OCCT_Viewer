@@ -107,7 +107,7 @@ int benchmark(Draw_Interpretor& di,int argc,const char** argv)
         view->FitAll(); view->Redraw(); glFinish(); const double setupMs=ms(setup);
         const auto renderer=glGetString(GL_RENDERER); if(!renderer) { throw std::runtime_error("Benchmark has no current OpenGL rendering context"); }
         std::ofstream hardware(out/(mode+"-renderer.txt")); hardware<<renderer<<'\n'<<glGetString(GL_VERSION)<<'\n';
-        std::ofstream log(out/(mode+".csv")); log<<"frame,edit_ms,source_ms,intersection_ms,slice_ms,trace_ms,FE_ms,primitives_ms,actual_redraw_ms,total_ms,nodes,cells,body_builds,submitted_body_bytes,submitted_slice_bytes,bvh_ms,node_prepare_ms,cell_cut_ms,merge_ms,candidates,fallbacks,trace_origins_ms,trace_classify_ms,trace_prepare_ms,trace_maps_ms,trace_fill_ms,trace_general_ms,interior_hits_total,interior_misses_total,interior_evictions_total\n";
+        std::ofstream log(out/(mode+".csv")); log<<"frame,edit_ms,source_ms,intersection_ms,slice_ms,trace_ms,FE_ms,primitives_ms,actual_redraw_ms,total_ms,nodes,cells,body_builds,submitted_body_bytes,submitted_slice_bytes,bvh_ms,node_prepare_ms,cell_cut_ms,merge_ms,candidates,fallbacks,trace_origins_ms,trace_classify_ms,trace_prepare_ms,trace_maps_ms,trace_fill_ms,trace_general_ms,interior_hits_total,interior_misses_total,interior_evictions_total,shared_point_ms,append_ms,fallback_ms,fallback_unsupported,fallback_near_plane,fallback_warped,fallback_degenerate,fallback_near_endpoint,topology_hits\n";
         const auto initial = display->RenderStatistics();
         auto validateSection = [&]() {
             const auto result=cuts.EvaluateSectionForDisplay("benchmark",field); const auto data=result.Portions[1]->GetMeshData();
@@ -125,6 +125,10 @@ int benchmark(Draw_Interpretor& di,int argc,const char** argv)
             if(!cuts.SetPlane("benchmark",plane)) { throw std::runtime_error("Benchmark plane rejected"); } const double edit=ms(start);
             const auto prepare=Clock::now(); if(!native.Refresh(false)) { throw std::runtime_error(native.LastError()); } const double prepareMs=ms(prepare);
             const auto phases=cuts.LastTimings(); const auto cache=cuts.TraceCacheStatistics();
+            if(phases.Fallbacks!=phases.Unsupported+phases.NearPlane+phases.Warped+phases.Degenerate+phases.NearEndpoint
+                || phases.SharedPointMs+phases.AppendMs+phases.FallbackMs>phases.MergeMs+1e-6) {
+                throw std::runtime_error("Section profiling counters do not partition fallback/merge work");
+            }
             const auto redraw=Clock::now(); view->Redraw(); glFinish(); const double redrawMs=ms(redraw),total=ms(start);
             const auto stats = display->RenderStatistics();
             if (backend == "auto" && (!stats.GpuPlane || stats.BodyBuilds != initial.BodyBuilds || stats.SubmittedBodyBytes != 0)) {
@@ -135,7 +139,7 @@ int benchmark(Draw_Interpretor& di,int argc,const char** argv)
             // section after timing all frames, so the next edit cannot include
             // cleanup of a section created solely by the benchmark assertion.
             const auto counts = mask == 5 ? std::pair<RWCae::MeshEntityId,RWCae::MeshEntityId>(0,0) : validateSection();
-            log<<i<<','<<edit<<','<<phases.SourceMs<<','<<phases.IntersectionMs<<','<<phases.SliceMs<<','<<phases.TraceMs<<','<<phases.FieldsMs<<','<<std::max(0.0,prepareMs-phases.SourceMs-phases.IntersectionMs-phases.FieldsMs)<<','<<redrawMs<<','<<total<<','<<counts.first<<','<<counts.second<<','<<stats.BodyBuilds<<','<<stats.SubmittedBodyBytes<<','<<stats.SubmittedSliceBytes<<','<<phases.BvhMs<<','<<phases.NodePrepareMs<<','<<phases.CellCutMs<<','<<phases.MergeMs<<','<<phases.Candidates<<','<<phases.Fallbacks<<','<<phases.TraceOriginsMs<<','<<phases.TraceClassifyMs<<','<<phases.TracePrepareMs<<','<<phases.TraceMapsMs<<','<<phases.TraceFillMs<<','<<phases.TraceGeneralMs<<','<<cache.Hits<<','<<cache.Misses<<','<<cache.Evictions<<'\n'; timings.push_back(total); sum+=total;
+            log<<i<<','<<edit<<','<<phases.SourceMs<<','<<phases.IntersectionMs<<','<<phases.SliceMs<<','<<phases.TraceMs<<','<<phases.FieldsMs<<','<<std::max(0.0,prepareMs-phases.SourceMs-phases.IntersectionMs-phases.FieldsMs)<<','<<redrawMs<<','<<total<<','<<counts.first<<','<<counts.second<<','<<stats.BodyBuilds<<','<<stats.SubmittedBodyBytes<<','<<stats.SubmittedSliceBytes<<','<<phases.BvhMs<<','<<phases.NodePrepareMs<<','<<phases.CellCutMs<<','<<phases.MergeMs<<','<<phases.Candidates<<','<<phases.Fallbacks<<','<<phases.TraceOriginsMs<<','<<phases.TraceClassifyMs<<','<<phases.TracePrepareMs<<','<<phases.TraceMapsMs<<','<<phases.TraceFillMs<<','<<phases.TraceGeneralMs<<','<<cache.Hits<<','<<cache.Misses<<','<<cache.Evictions<<','<<phases.SharedPointMs<<','<<phases.AppendMs<<','<<phases.FallbackMs<<','<<phases.Unsupported<<','<<phases.NearPlane<<','<<phases.Warped<<','<<phases.Degenerate<<','<<phases.NearEndpoint<<','<<phases.TopologyHits<<'\n'; timings.push_back(total); sum+=total;
             if(i==0||i==frames-1) { if(!view->Dump((out/(mode+"-"+std::to_string(i)+".png")).string().c_str())) { throw std::runtime_error("Benchmark framebuffer capture failed"); } }
         }
         if (mask == 5) { validateSection(); }

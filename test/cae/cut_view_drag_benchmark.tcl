@@ -58,7 +58,7 @@ if {[catch {
     set previous [drag_plane]
     vdump [file join $::env(CUTVIEW_OUTPUT_DIR) drag-first.png]
     set csv [open [file join $::env(CUTVIEW_OUTPUT_DIR) drag.csv] w]
-    puts $csv "frame,event_ms,manager_ms,total_ms,source_ms,intersection_ms,FE_ms,presentation_ms,synchronizations,submitted_body_bytes,submitted_slice_bytes,bvh_ms,node_prepare_ms,cell_cut_ms,merge_ms,candidates,fallbacks,trace_origins_ms,trace_classify_ms,trace_prepare_ms,trace_maps_ms,trace_fill_ms,trace_general_ms,interior_hits_total,interior_misses_total,interior_evictions_total"
+    puts $csv "frame,event_ms,manager_ms,total_ms,source_ms,intersection_ms,FE_ms,presentation_ms,synchronizations,submitted_body_bytes,submitted_slice_bytes,bvh_ms,node_prepare_ms,cell_cut_ms,merge_ms,candidates,fallbacks,trace_origins_ms,trace_classify_ms,trace_prepare_ms,trace_maps_ms,trace_fill_ms,trace_general_ms,interior_hits_total,interior_misses_total,interior_evictions_total,shared_point_ms,append_ms,fallback_ms,fallback_unsupported,fallback_near_plane,fallback_warped,fallback_degenerate,fallback_near_endpoint,topology_hits"
     set timings {}; set sum 0; set managerSum 0
     for {set i 1} {$i <= $frames} {incr i} {
         set before [dict get [scvcutview $model presentation x] synchronizations]
@@ -78,7 +78,7 @@ if {[catch {
         set managerMs [expr {([clock microseconds]-$start)/1000.0}]
         drag_assert {[dict get [scvcutview $model presentation x] synchronizations] == $after} "Manager poll recomputed slice during held drag"
         set total [expr {$eventMs+$managerMs}]
-        puts $csv "$i,$eventMs,$managerMs,$total,[dict get $info source_ms],[dict get $info slice_ms],[dict get $info fields_ms],[dict get $info presentation_ms],[expr {$after-$before}],0,[dict get $info submitted_slice_bytes],[dict get $info bvh_ms],[dict get $info node_prepare_ms],[dict get $info cell_cut_ms],[dict get $info merge_ms],[dict get $info candidates],[dict get $info fallbacks],[dict get $info trace_origins_ms],[dict get $info trace_classify_ms],[dict get $info trace_prepare_ms],[dict get $info trace_maps_ms],[dict get $info trace_fill_ms],[dict get $info trace_general_ms],[dict get $info interior_hits_total],[dict get $info interior_misses_total],[dict get $info interior_evictions_total]"
+        puts $csv "$i,$eventMs,$managerMs,$total,[dict get $info source_ms],[dict get $info slice_ms],[dict get $info fields_ms],[dict get $info presentation_ms],[expr {$after-$before}],0,[dict get $info submitted_slice_bytes],[dict get $info bvh_ms],[dict get $info node_prepare_ms],[dict get $info cell_cut_ms],[dict get $info merge_ms],[dict get $info candidates],[dict get $info fallbacks],[dict get $info trace_origins_ms],[dict get $info trace_classify_ms],[dict get $info trace_prepare_ms],[dict get $info trace_maps_ms],[dict get $info trace_fill_ms],[dict get $info trace_general_ms],[dict get $info interior_hits_total],[dict get $info interior_misses_total],[dict get $info interior_evictions_total],[dict get $info shared_point_ms],[dict get $info append_ms],[dict get $info fallback_ms],[dict get $info fallback_unsupported],[dict get $info fallback_near_plane],[dict get $info fallback_warped],[dict get $info fallback_degenerate],[dict get $info fallback_near_endpoint],[dict get $info topology_hits]"
         lappend timings $total; set sum [expr {$sum+$total}]; set managerSum [expr {$managerSum+$managerMs}]
     }
     close $csv

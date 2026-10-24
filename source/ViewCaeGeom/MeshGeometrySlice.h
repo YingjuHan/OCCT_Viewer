@@ -11,7 +11,10 @@ struct MeshCutCancellation;
 //! Wall times partition a rebuilt native single-plane section (not cache hits).
 struct MeshSliceWork {
     double BvhMs=0, PrepareMs=0, CutMs=0, MergeMs=0;
+    // MergeMs includes these disjoint subphases plus loop/timer overhead.
+    double SharedPointMs=0, AppendMs=0, FallbackMs=0;
     size_t Candidates=0, Fallbacks=0;
+    size_t Unsupported=0, NearPlane=0, Warped=0, Degenerate=0, NearEndpoint=0;
 };
 //! Endpoints index the slice mesh nodes; source element indexes the original mesh.
 struct MeshSliceLine {

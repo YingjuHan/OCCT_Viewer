@@ -210,6 +210,7 @@ struct MeshCutViewManager::Entry {
     std::vector<double> NodeProjections;
     Handle(RWCae::MeshScalarPropertyBase) IsoValues;
     unsigned CachedMask = 0;
+    bool PlaneTopologyReused = false;
     Handle(MeshGeometry) TraceRoot;
     Handle(MeshGeometryTraceSection) TraceSection;
     uint64_t TraceRevision = 0;
@@ -359,6 +360,7 @@ bool MeshCutViewManager::setPlaneEquation(Entry& entry, const Graphic3d_Vec4d& a
         return true;
     }
     const bool reused = moveCachedPlane(*anEntry, aPlane);
+    anEntry->PlaneTopologyReused = reused;
     if (anEntry->Definition.Plane.x() != aPlane.x() || anEntry->Definition.Plane.y() != aPlane.y()
         || anEntry->Definition.Plane.z() != aPlane.z()) { anEntry->NodeProjections.clear(); }
     anEntry->Definition.Plane = aPlane;
@@ -803,6 +805,7 @@ void MeshCutViewManager::release(Entry& theEntry)
     if (!theEntry.TraceRoot.IsNull()) { theEntry.TraceRoot->RemoveChildren(); }
     theEntry.TraceRoot.Nullify(); theEntry.TraceSection.Nullify(); theEntry.TraceRevision = 0;
     theEntry.CachedMask = 0;
+    theEntry.PlaneTopologyReused = false;
     theEntry.SectionBytes = 0;
     theEntry.NodeProjections.clear();
     for (size_t i = 0; i < theEntry.Roots.size(); ++i) {
@@ -1581,6 +1584,7 @@ MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
     Entry* anEntry = find(theId);
     if (anEntry == nullptr) { throw std::invalid_argument("Unknown cut id: " + theId); }
     const auto request=myRequestGeneration; checkRequest(request); myTimings={};
+    myTimings.TopologyHits=anEntry->PlaneTopologyReused ? 1 : 0;
     MeshCutResult aResult;
     aResult.Definition = anEntry->Definition;
     aResult.Revision = anEntry->Revision;
@@ -1616,6 +1620,9 @@ MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
             const auto& work=cancellable->LastWork();
             myTimings.BvhMs+=work.BvhMs; myTimings.NodePrepareMs+=work.PrepareMs;
             myTimings.CellCutMs+=work.CutMs; myTimings.MergeMs+=work.MergeMs;
+            myTimings.SharedPointMs+=work.SharedPointMs; myTimings.AppendMs+=work.AppendMs; myTimings.FallbackMs+=work.FallbackMs;
+            myTimings.Unsupported+=work.Unsupported; myTimings.NearPlane+=work.NearPlane; myTimings.Warped+=work.Warped;
+            myTimings.Degenerate+=work.Degenerate; myTimings.NearEndpoint+=work.NearEndpoint;
             myTimings.Candidates+=work.Candidates; myTimings.Fallbacks+=work.Fallbacks;
         }
         { const double time=elapsed(); myTimings.IntersectionMs+=time; myTimings.SliceMs+=time; } checkRequest(request);

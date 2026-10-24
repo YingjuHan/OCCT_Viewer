@@ -34,8 +34,10 @@ struct MeshCutTraceCacheStatistics { uint64_t Hits=0,Misses=0,Evictions=0; };
 struct MeshCutFrameTimings {
     double SourceMs=0,IntersectionMs=0,FieldsMs=0,SliceMs=0,TraceMs=0;
     double BvhMs=0,NodePrepareMs=0,CellCutMs=0,MergeMs=0;
+    double SharedPointMs=0,AppendMs=0,FallbackMs=0;
     double TraceOriginsMs=0,TraceClassifyMs=0,TracePrepareMs=0,TraceMapsMs=0,TraceFillMs=0,TraceGeneralMs=0;
     uint64_t Candidates=0,Fallbacks=0;
+    uint64_t Unsupported=0,NearPlane=0,Warped=0,Degenerate=0,NearEndpoint=0,TopologyHits=0;
 };
 }
 #endif
