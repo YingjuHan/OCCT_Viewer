@@ -1,0 +1,2 @@
+Intel(R) Iris(R) Xe Graphics
+4.6.0 - Build 32.0.101.7088

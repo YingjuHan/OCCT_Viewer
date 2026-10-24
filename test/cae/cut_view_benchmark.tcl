@@ -16,7 +16,8 @@ if {[catch {
         puts "CUT_LIFECYCLE_MEMORY baseline $baseline peak $maximum cycles 60 frames 300"
     }
     set failures {}
-    set mask 2; set backend auto; set deformationScale 0.005
+    set mask 2; set backend auto; set deformationScale 0.005; set displayMode cloud
+    if {[info exists ::env(CUTVIEW_BENCHMARK_DISPLAY_MODE)]} { set displayMode $::env(CUTVIEW_BENCHMARK_DISPLAY_MODE) }
     if {[info exists ::env(CUTVIEW_BENCHMARK_MASK)]} { set mask $::env(CUTVIEW_BENCHMARK_MASK) }
     if {[info exists ::env(CUTVIEW_BENCHMARK_BACKEND)]} { set backend $::env(CUTVIEW_BENCHMARK_BACKEND) }
     if {[info exists ::env(CUTVIEW_BENCHMARK_DEFORMATION_SCALE)]} { set deformationScale $::env(CUTVIEW_BENCHMARK_DEFORMATION_SCALE) }
@@ -24,9 +25,9 @@ if {[catch {
     if {[info exists ::env(CUTVIEW_BENCHMARK_SCENARIOS)]} { set scenarios $::env(CUTVIEW_BENCHMARK_SCENARIOS) }
     foreach mode $scenarios {
         if {[info exists ::env(CUTVIEW_BENCHMARK_FILE)]} {
-            set result [scvcutfilebenchmark $::env(CUTVIEW_BENCHMARK_FILE) $::env(CUTVIEW_BENCHMARK_FRAMES) $mode $::env(CUTVIEW_OUTPUT_DIR) $mask $backend $deformationScale]
+            set result [scvcutfilebenchmark $::env(CUTVIEW_BENCHMARK_FILE) $::env(CUTVIEW_BENCHMARK_FRAMES) $mode $::env(CUTVIEW_OUTPUT_DIR) $mask $backend $deformationScale $displayMode]
         } else {
-            set result [scvcutbenchmark $::env(CUTVIEW_BENCHMARK_GRID) $::env(CUTVIEW_BENCHMARK_FRAMES) $mode $::env(CUTVIEW_OUTPUT_DIR) $mask $backend $deformationScale]
+            set result [scvcutbenchmark $::env(CUTVIEW_BENCHMARK_GRID) $::env(CUTVIEW_BENCHMARK_FRAMES) $mode $::env(CUTVIEW_OUTPUT_DIR) $mask $backend $deformationScale $displayMode]
         }
         puts "CUT_BENCHMARK_RESULT $result"
         if {![dict get $result actual_redraw] || ![dict get $result original_FE]} { error "Missing full-frame measurement" }

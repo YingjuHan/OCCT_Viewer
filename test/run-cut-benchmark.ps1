@@ -4,6 +4,7 @@ param(
     [int]$Frames = 60,
     [ValidateRange(0,7)][int]$Mask = 2,
     [ValidateSet('auto','cpu')][string]$Backend = 'auto',
+    [ValidateSet('cloud','wire','cloud_wire')][string]$DisplayMode = 'cloud',
     [string]$RunLabel = 'run',
     [string]$InputFile = '',
     [switch]$MouseDrag,
@@ -28,6 +29,7 @@ $env:CUTVIEW_BENCHMARK_FRAMES = $Frames.ToString()
 $env:CUTVIEW_BENCHMARK_MASK = $Mask.ToString()
 $env:CUTVIEW_BENCHMARK_PERFCOUNTERS = $PerfCounters
 $env:CUTVIEW_BENCHMARK_BACKEND = $Backend
+$env:CUTVIEW_BENCHMARK_DISPLAY_MODE = $DisplayMode
 $env:CUTVIEW_BENCHMARK_SCENARIOS = $Scenarios -join ' '
 $caseLabel = $Grid.ToString()
 if ($InputFile) {

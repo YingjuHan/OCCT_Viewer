@@ -1,0 +1,12 @@
+[
+  {
+    "file": "hex_100_warped.vtu",
+    "topology": "hex",
+    "grid": 100,
+    "warp": 0.15,
+    "points": 1030301,
+    "cells": 1000000,
+    "bytes": 90334426,
+    "seconds": 6.826937000034377
+  }
+]

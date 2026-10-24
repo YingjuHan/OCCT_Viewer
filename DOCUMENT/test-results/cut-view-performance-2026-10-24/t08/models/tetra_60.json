@@ -1,0 +1,22 @@
+[
+  {
+    "file": "tetra_60.vtk",
+    "topology": "tetra",
+    "grid": 60,
+    "warp": 0,
+    "points": 226981,
+    "cells": 1296000,
+    "bytes": 51459474,
+    "seconds": 3.8548835000256076
+  },
+  {
+    "file": "tetra_60.vtu",
+    "topology": "tetra",
+    "grid": 60,
+    "warp": 0,
+    "points": 226981,
+    "cells": 1296000,
+    "bytes": 47572344,
+    "seconds": 5.106605699984357
+  }
+]

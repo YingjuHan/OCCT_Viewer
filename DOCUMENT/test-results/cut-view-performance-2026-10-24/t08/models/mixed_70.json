@@ -1,0 +1,12 @@
+[
+  {
+    "file": "mixed_70.vtu",
+    "topology": "mixed",
+    "grid": 70,
+    "warp": 0,
+    "points": 470611,
+    "cells": 1019200,
+    "bytes": 56654464,
+    "seconds": 4.129745800048113
+  }
+]

@@ -1,0 +1,25 @@
+{
+  "gpu": "MX450",
+  "mode": "Performance",
+  "started": "2026-10-24T16:33:30.3421045+08:00",
+  "frames": 12,
+  "repetitions": 1,
+  "displayMode": "cloud",
+  "cellTopologyReuse": false,
+  "fullValidation": true,
+  "repository": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer",
+  "build": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\mingw-deformation",
+  "executable": "D:\\workspace\\OpenCASCADE\\OCCT_private\\install\\mingw\\win64\\gcc\\bin\\DRAWEXE.exe",
+  "model": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\cut-nonregular\\hex_100_warped.vtu",
+  "revision": "57e6245ddfd0ada5bffe168219cd55038ee67fd0",
+  "succeeded": true,
+  "preferenceBefore": {
+    "exists": false,
+    "kind": "",
+    "value": null
+  },
+  "preferenceDuring": "GpuPreference=2;",
+  "performanceCompleted": true,
+  "preferenceRestored": true,
+  "finished": "2026-10-24T16:33:44.8880093+08:00"
+}

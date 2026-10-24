@@ -10,7 +10,9 @@ param(
     [string[]]$RuntimeDirectories = @(),
     [ValidateSet('Probe','Performance','Functional','Large','Camera','All')][string]$Mode = 'All',
     [ValidateRange(2,1000)][int]$Frames = 60,
-    [ValidateRange(1,20)][int]$Repetitions = 3
+    [ValidateRange(1,20)][int]$Repetitions = 3,
+    [ValidateSet('cloud','wire','cloud_wire')][string]$DisplayMode = 'cloud',
+    [switch]$FullValidation
 )
 $ErrorActionPreference = 'Stop'
 $cutRepo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
@@ -22,7 +24,9 @@ $OutputDirectory = [IO.Path]::GetFullPath($OutputDirectory)
 if (Test-Path -LiteralPath $OutputDirectory) { throw "Output already exists: $OutputDirectory" }
 New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 $cutManifest = [ordered]@{
-    gpu=$Gpu; mode=$Mode; started=(Get-Date -Format o); frames=$Frames; repetitions=$Repetitions
+    gpu=$Gpu; mode=$Mode; started=(Get-Date -Format o); frames=$Frames; repetitions=$Repetitions; displayMode=$DisplayMode
+    cellTopologyReuse=($env:OCCTV_CUT_CELL_TOPOLOGY_CACHE -eq '1')
+    fullValidation=[bool]$FullValidation
     repository=$cutRepo; build=$BuildDirectory; executable=$DrawExe; model=$Model
     revision=(& git -C $cutRepo rev-parse HEAD); succeeded=$false
 }
@@ -96,6 +100,8 @@ try {
         $env:CUTVIEW_BENCHMARK_FRAMES = [string]$Frames
         $env:CUTVIEW_BENCHMARK_MASK = '3'
         $env:CUTVIEW_BENCHMARK_BACKEND = 'auto'
+        $env:CUTVIEW_BENCHMARK_DISPLAY_MODE = $DisplayMode
+        $env:CUTVIEW_BENCHMARK_FULL_VALIDATION = if($FullValidation){'1'}else{'0'}
         $env:CUTVIEW_BENCHMARK_DEFORMATION_SCALE = '0.1'
         $env:CUTVIEW_BENCHMARK_SCENARIOS = 'crossing rotating deformed'
         $cutCategory = if ($Mode -eq 'Camera') { 'camera' } else { 'performance' }

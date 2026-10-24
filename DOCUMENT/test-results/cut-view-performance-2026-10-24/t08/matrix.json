@@ -1,0 +1,290 @@
+[
+  {
+    "gpu": "MX450",
+    "model": "tetra_60.vtu",
+    "displayMode": "cloud",
+    "directory": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\perf-t08-matrix\\MX450\\tetra_60.vtu\\cloud",
+    "frames": 12,
+    "results": [
+      "Draw[1]> CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario crossing mask 3 backend auto display_mode cloud full_checks 2 maximum_area_error 8.7766238721087575e-11 deformation_scale 0 body_builds 1 import_ms 531.06060000000002 setup_ms 1898.9603 p50_ms 13.6426 p95_ms 28.733699999999999 fps 58.88845104235012 actual_redraw 1 original_FE 1 target 1",
+      "CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario rotating mask 3 backend auto display_mode cloud full_checks 2 maximum_area_error 0.00013833563525622594 deformation_scale 0 body_builds 1 import_ms 488.9676 setup_ms 1800.4409000000001 p50_ms 42.796999999999997 p95_ms 45.4893 fps 23.563032978624598 actual_redraw 1 original_FE 1 target 1",
+      "CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario deformed mask 3 backend auto display_mode cloud full_checks 2 maximum_area_error 0.00011227197228436125 deformation_scale 0.10000000000000001 body_builds 1 import_ms 487.79930000000002 setup_ms 1882.6342999999999 p50_ms 40.323500000000003 p95_ms 49.7181 fps 25.767224476973656 actual_redraw 1 original_FE 1 target 1"
+    ]
+  },
+  {
+    "gpu": "MX450",
+    "model": "tetra_60.vtu",
+    "displayMode": "wire",
+    "directory": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\perf-t08-matrix\\MX450\\tetra_60.vtu\\wire",
+    "frames": 12,
+    "results": [
+      "Draw[1]> CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario crossing mask 3 backend auto display_mode wire full_checks 2 maximum_area_error 8.7766238721087575e-11 deformation_scale 0 body_builds 1 import_ms 493.70749999999998 setup_ms 1832.6129000000001 p50_ms 21.852599999999999 p95_ms 40.824399999999997 fps 43.102008445838557 actual_redraw 1 original_FE 1 target 1",
+      "CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario rotating mask 3 backend auto display_mode wire full_checks 2 maximum_area_error 0.00013833563525622594 deformation_scale 0 body_builds 1 import_ms 480.26920000000001 setup_ms 1741.1315 p50_ms 46.601799999999997 p95_ms 52.196899999999999 fps 21.581615916297864 actual_redraw 1 original_FE 1 target 1",
+      "CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario deformed mask 3 backend auto display_mode wire full_checks 2 maximum_area_error 0.00011227197228436125 deformation_scale 0.10000000000000001 body_builds 1 import_ms 498.05599999999998 setup_ms 1832.5065 p50_ms 43.246499999999997 p95_ms 53.429699999999997 fps 23.594746079241386 actual_redraw 1 original_FE 1 target 1"
+    ]
+  },
+  {
+    "gpu": "MX450",
+    "model": "tetra_60.vtu",
+    "displayMode": "cloud_wire",
+    "directory": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\perf-t08-matrix\\MX450\\tetra_60.vtu\\cloud_wire",
+    "frames": 12,
+    "results": [
+      "Draw[1]> CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario crossing mask 3 backend auto display_mode cloud_wire full_checks 2 maximum_area_error 8.7766238721087575e-11 deformation_scale 0 body_builds 1 import_ms 756.09559999999999 setup_ms 2217.1387 p50_ms 30.7454 p95_ms 47.696399999999997 fps 29.023209376818485 actual_redraw 1 original_FE 1 target 1",
+      "CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario rotating mask 3 backend auto display_mode cloud_wire full_checks 2 maximum_area_error 0.00013833563525622594 deformation_scale 0 body_builds 1 import_ms 490.55410000000001 setup_ms 1834.578 p50_ms 52.836599999999997 p95_ms 60.194499999999998 fps 18.571280443358368 actual_redraw 1 original_FE 1 target 1",
+      "CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario deformed mask 3 backend auto display_mode cloud_wire full_checks 2 maximum_area_error 0.00011227197228436125 deformation_scale 0.10000000000000001 body_builds 1 import_ms 484.19029999999998 setup_ms 1895.6586 p50_ms 51.151299999999999 p95_ms 65.875600000000006 fps 19.605213091511743 actual_redraw 1 original_FE 1 target 1"
+    ]
+  },
+  {
+    "gpu": "MX450",
+    "model": "tetra_60.vtk",
+    "displayMode": "cloud",
+    "directory": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\perf-t08-matrix\\MX450\\tetra_60.vtk\\cloud",
+    "frames": 12,
+    "results": [
+      "Draw[1]> CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario crossing mask 3 backend auto display_mode cloud full_checks 2 maximum_area_error 8.7766238721087575e-11 deformation_scale 0 body_builds 1 import_ms 9661.2798000000003 setup_ms 11017.6206 p50_ms 20.632899999999999 p95_ms 39.3752 fps 39.992308146066563 actual_redraw 1 original_FE 1 target 1",
+      "CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario rotating mask 3 backend auto display_mode cloud full_checks 2 maximum_area_error 0.00013833563525622594 deformation_scale 0 body_builds 1 import_ms 9606.9107000000004 setup_ms 10924.2003 p50_ms 42.093000000000004 p95_ms 46.919400000000003 fps 23.768480736537679 actual_redraw 1 original_FE 1 target 1",
+      "CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario deformed mask 3 backend auto display_mode cloud full_checks 2 maximum_area_error 0.00011227197228436125 deformation_scale 0.10000000000000001 body_builds 1 import_ms 9692.2060000000001 setup_ms 11045.966899999999 p50_ms 38.9709 p95_ms 49.980800000000002 fps 25.965033754543878 actual_redraw 1 original_FE 1 target 1"
+    ]
+  },
+  {
+    "gpu": "MX450",
+    "model": "tetra_60.vtk",
+    "displayMode": "wire",
+    "directory": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\perf-t08-matrix\\MX450\\tetra_60.vtk\\wire",
+    "frames": 12,
+    "results": [
+      "Draw[1]> CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario crossing mask 3 backend auto display_mode wire full_checks 2 maximum_area_error 8.7766238721087575e-11 deformation_scale 0 body_builds 1 import_ms 9559.1615999999995 setup_ms 10891.2364 p50_ms 24.333500000000001 p95_ms 43.8172 fps 35.334346840181873 actual_redraw 1 original_FE 1 target 1",
+      "CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario rotating mask 3 backend auto display_mode wire full_checks 2 maximum_area_error 0.00013833563525622594 deformation_scale 0 body_builds 1 import_ms 9660.1491999999998 setup_ms 11041.547699999999 p50_ms 45.819000000000003 p95_ms 49.962400000000002 fps 21.66731427861566 actual_redraw 1 original_FE 1 target 1",
+      "CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario deformed mask 3 backend auto display_mode wire full_checks 2 maximum_area_error 0.00011227197228436125 deformation_scale 0.10000000000000001 body_builds 1 import_ms 9604.9236999999994 setup_ms 10959.9262 p50_ms 43.061100000000003 p95_ms 52.353299999999997 fps 23.745881079044494 actual_redraw 1 original_FE 1 target 1"
+    ]
+  },
+  {
+    "gpu": "MX450",
+    "model": "tetra_60.vtk",
+    "displayMode": "cloud_wire",
+    "directory": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\perf-t08-matrix\\MX450\\tetra_60.vtk\\cloud_wire",
+    "frames": 12,
+    "results": [
+      "Draw[1]> CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario crossing mask 3 backend auto display_mode cloud_wire full_checks 2 maximum_area_error 8.7766238721087575e-11 deformation_scale 0 body_builds 1 import_ms 9724.4210000000003 setup_ms 11091.7243 p50_ms 29.8522 p95_ms 48.533200000000001 fps 29.497038620226853 actual_redraw 1 original_FE 1 target 1",
+      "CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario rotating mask 3 backend auto display_mode cloud_wire full_checks 2 maximum_area_error 0.00013833563525622594 deformation_scale 0 body_builds 1 import_ms 9696.0277999999998 setup_ms 11072.158100000001 p50_ms 54.542700000000004 p95_ms 59.564799999999998 fps 18.435139342000713 actual_redraw 1 original_FE 1 target 1",
+      "CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario deformed mask 3 backend auto display_mode cloud_wire full_checks 2 maximum_area_error 0.00011227197228436125 deformation_scale 0.10000000000000001 body_builds 1 import_ms 9684.3914999999997 setup_ms 11025.962799999999 p50_ms 51.131399999999999 p95_ms 66.417000000000002 fps 19.463387907591731 actual_redraw 1 original_FE 1 target 1"
+    ]
+  },
+  {
+    "gpu": "MX450",
+    "model": "mixed_70.vtu",
+    "displayMode": "cloud",
+    "directory": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\perf-t08-matrix\\MX450\\mixed_70.vtu\\cloud",
+    "frames": 12,
+    "results": [
+      "Draw[1]> CUT_BENCHMARK_RESULT cells 1019200 frames 12 scenario crossing mask 3 backend auto display_mode cloud full_checks 2 maximum_area_error 2.3292159312404692e-09 deformation_scale 0 body_builds 1 import_ms 713.32029999999997 setup_ms 2262.5587999999998 p50_ms 26.1587 p95_ms 48.665500000000002 fps 39.138024155988504 actual_redraw 1 original_FE 1 target 1",
+      "CUT_BENCHMARK_RESULT cells 1019200 frames 12 scenario rotating mask 3 backend auto display_mode cloud full_checks 2 maximum_area_error 1.4188117347657681e-10 deformation_scale 0 body_builds 1 import_ms 541.52350000000001 setup_ms 2014.1126999999999 p50_ms 52.6556 p95_ms 77.408299999999997 fps 18.206664762047236 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1019200 frames 12 scenario deformed mask 3 backend auto display_mode cloud full_checks 2 maximum_area_error 0.00029625930619658902 deformation_scale 0.10000000000000001 body_builds 1 import_ms 505.74810000000002 setup_ms 1956.6431 p50_ms 48.862299999999998 p95_ms 68.219700000000003 fps 20.973839853896227 actual_redraw 1 original_FE 1 target 0"
+    ]
+  },
+  {
+    "gpu": "MX450",
+    "model": "mixed_70.vtu",
+    "displayMode": "wire",
+    "directory": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\perf-t08-matrix\\MX450\\mixed_70.vtu\\wire",
+    "frames": 12,
+    "results": [
+      "Draw[1]> CUT_BENCHMARK_RESULT cells 1019200 frames 12 scenario crossing mask 3 backend auto display_mode wire full_checks 2 maximum_area_error 2.3292159312404692e-09 deformation_scale 0 body_builds 1 import_ms 520.55139999999994 setup_ms 2074.0659999999998 p50_ms 27.726600000000001 p95_ms 51.616599999999998 fps 37.236551398853116 actual_redraw 1 original_FE 1 target 1",
+      "CUT_BENCHMARK_RESULT cells 1019200 frames 12 scenario rotating mask 3 backend auto display_mode wire full_checks 2 maximum_area_error 1.4188117347657681e-10 deformation_scale 0 body_builds 1 import_ms 515.93240000000003 setup_ms 2072.5947999999999 p50_ms 54.812399999999997 p95_ms 82.740399999999994 fps 17.675453920386222 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1019200 frames 12 scenario deformed mask 3 backend auto display_mode wire full_checks 2 maximum_area_error 0.00029625930619658902 deformation_scale 0.10000000000000001 body_builds 1 import_ms 522.19500000000005 setup_ms 2183.1673000000001 p50_ms 51.0807 p95_ms 67.363200000000006 fps 20.217966527471582 actual_redraw 1 original_FE 1 target 0"
+    ]
+  },
+  {
+    "gpu": "MX450",
+    "model": "mixed_70.vtu",
+    "displayMode": "cloud_wire",
+    "directory": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\perf-t08-matrix\\MX450\\mixed_70.vtu\\cloud_wire",
+    "frames": 12,
+    "results": [
+      "Draw[1]> CUT_BENCHMARK_RESULT cells 1019200 frames 12 scenario crossing mask 3 backend auto display_mode cloud_wire full_checks 2 maximum_area_error 2.3292159312404692e-09 deformation_scale 0 body_builds 1 import_ms 516.02930000000003 setup_ms 2128.1066000000001 p50_ms 22.790500000000002 p95_ms 46.9343 fps 42.221394213769031 actual_redraw 1 original_FE 1 target 1",
+      "CUT_BENCHMARK_RESULT cells 1019200 frames 12 scenario rotating mask 3 backend auto display_mode cloud_wire full_checks 2 maximum_area_error 1.4188117347657681e-10 deformation_scale 0 body_builds 1 import_ms 534.43389999999999 setup_ms 2331.8283000000001 p50_ms 64.197599999999994 p95_ms 99.915499999999994 fps 14.881338070393936 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1019200 frames 12 scenario deformed mask 3 backend auto display_mode cloud_wire full_checks 2 maximum_area_error 0.00029625930619658902 deformation_scale 0.10000000000000001 body_builds 1 import_ms 564.35440000000006 setup_ms 2365.9870000000001 p50_ms 61.523899999999998 p95_ms 84.4863 fps 16.505983212589776 actual_redraw 1 original_FE 1 target 0"
+    ]
+  },
+  {
+    "gpu": "MX450",
+    "model": "hex_100_warped.vtu",
+    "displayMode": "cloud",
+    "directory": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\perf-t08-matrix\\MX450\\hex_100_warped.vtu\\cloud",
+    "frames": 12,
+    "results": [
+      "Draw[1]> CUT_BENCHMARK_RESULT cells 1000000 frames 12 scenario crossing mask 3 backend auto display_mode cloud full_checks 2 maximum_area_error 2.5465851649641991e-11 deformation_scale 0 body_builds 1 import_ms 771.52319999999997 setup_ms 2701.6644999999999 p50_ms 61.980600000000003 p95_ms 95.010199999999998 fps 20.703033615515682 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1000000 frames 12 scenario rotating mask 3 backend auto display_mode cloud full_checks 2 maximum_area_error 2.1827872842550278e-11 deformation_scale 0 body_builds 1 import_ms 756.27139999999997 setup_ms 2683.2772 p50_ms 70.459500000000006 p95_ms 76.751800000000003 fps 14.122079730437742 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1000000 frames 12 scenario deformed mask 3 backend auto display_mode cloud full_checks 2 maximum_area_error 0.00017457299509260338 deformation_scale 0.10000000000000001 body_builds 1 import_ms 708.60040000000004 setup_ms 2667.1500000000001 p50_ms 75.299400000000006 p95_ms 142.92060000000001 fps 13.034589237730705 actual_redraw 1 original_FE 1 target 0"
+    ]
+  },
+  {
+    "gpu": "MX450",
+    "model": "hex_100_warped.vtu",
+    "displayMode": "wire",
+    "directory": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\perf-t08-matrix\\MX450\\hex_100_warped.vtu\\wire",
+    "frames": 12,
+    "results": [
+      "Draw[1]> CUT_BENCHMARK_RESULT cells 1000000 frames 12 scenario crossing mask 3 backend auto display_mode wire full_checks 2 maximum_area_error 2.5465851649641991e-11 deformation_scale 0 body_builds 1 import_ms 760.94190000000003 setup_ms 2744.4982 p50_ms 56.041600000000003 p95_ms 90.215599999999995 fps 21.94845989485956 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1000000 frames 12 scenario rotating mask 3 backend auto display_mode wire full_checks 2 maximum_area_error 2.1827872842550278e-11 deformation_scale 0 body_builds 1 import_ms 745.95399999999995 setup_ms 2739.6649000000002 p50_ms 75.351500000000001 p95_ms 88.845500000000001 fps 13.131132854564934 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1000000 frames 12 scenario deformed mask 3 backend auto display_mode wire full_checks 2 maximum_area_error 0.00017457299509260338 deformation_scale 0.10000000000000001 body_builds 1 import_ms 717.38819999999998 setup_ms 2799.1262000000002 p50_ms 77.710099999999997 p95_ms 141.0778 fps 12.86022563694554 actual_redraw 1 original_FE 1 target 0"
+    ]
+  },
+  {
+    "gpu": "MX450",
+    "model": "hex_100_warped.vtu",
+    "displayMode": "cloud_wire",
+    "directory": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\perf-t08-matrix\\MX450\\hex_100_warped.vtu\\cloud_wire",
+    "frames": 12,
+    "results": [
+      "Draw[1]> CUT_BENCHMARK_RESULT cells 1000000 frames 12 scenario crossing mask 3 backend auto display_mode cloud_wire full_checks 2 maximum_area_error 2.5465851649641991e-11 deformation_scale 0 body_builds 1 import_ms 781.35479999999995 setup_ms 2858.8986 p50_ms 69.9208 p95_ms 112.902 fps 18.089239645945344 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1000000 frames 12 scenario rotating mask 3 backend auto display_mode cloud_wire full_checks 2 maximum_area_error 2.1827872842550278e-11 deformation_scale 0 body_builds 1 import_ms 957.63969999999995 setup_ms 3067.1952999999999 p50_ms 82.478300000000004 p95_ms 99.805599999999998 fps 12.078661072367685 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1000000 frames 12 scenario deformed mask 3 backend auto display_mode cloud_wire full_checks 2 maximum_area_error 0.00017457299509260338 deformation_scale 0.10000000000000001 body_builds 1 import_ms 774.78549999999996 setup_ms 2916.6390000000001 p50_ms 88.997100000000003 p95_ms 155.44460000000001 fps 10.689663220378632 actual_redraw 1 original_FE 1 target 0"
+    ]
+  },
+  {
+    "gpu": "IrisXe",
+    "model": "tetra_60.vtu",
+    "displayMode": "cloud",
+    "directory": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\perf-t08-matrix\\IrisXe\\tetra_60.vtu\\cloud",
+    "frames": 12,
+    "results": [
+      "Draw[1]> CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario crossing mask 3 backend auto display_mode cloud full_checks 2 maximum_area_error 8.7766238721087575e-11 deformation_scale 0 body_builds 1 import_ms 581.66539999999998 setup_ms 2248.9355999999998 p50_ms 46.834899999999998 p95_ms 75.668800000000005 fps 18.779369172820431 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario rotating mask 3 backend auto display_mode cloud full_checks 2 maximum_area_error 0.00013833563525622594 deformation_scale 0 body_builds 1 import_ms 583.5797 setup_ms 1978.3542 p50_ms 75.692999999999998 p95_ms 78.651899999999998 fps 13.8121054126073 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario deformed mask 3 backend auto display_mode cloud full_checks 2 maximum_area_error 0.00011227197228436125 deformation_scale 0.10000000000000001 body_builds 1 import_ms 551.01009999999997 setup_ms 2056.5871000000002 p50_ms 74.931200000000004 p95_ms 76.504499999999993 fps 14.676211585474805 actual_redraw 1 original_FE 1 target 0"
+    ]
+  },
+  {
+    "gpu": "IrisXe",
+    "model": "tetra_60.vtu",
+    "displayMode": "wire",
+    "directory": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\perf-t08-matrix\\IrisXe\\tetra_60.vtu\\wire",
+    "frames": 12,
+    "results": [
+      "Draw[1]> CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario crossing mask 3 backend auto display_mode wire full_checks 2 maximum_area_error 8.7766238721087575e-11 deformation_scale 0 body_builds 1 import_ms 502.22789999999998 setup_ms 1911.0734 p50_ms 45.401800000000001 p95_ms 61.266199999999998 fps 20.234340643775781 actual_redraw 1 original_FE 1 target 1",
+      "CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario rotating mask 3 backend auto display_mode wire full_checks 2 maximum_area_error 0.00013833563525622594 deformation_scale 0 body_builds 1 import_ms 523.35619999999994 setup_ms 2086.4805000000001 p50_ms 76.399000000000001 p95_ms 78.184299999999993 fps 13.197594606407035 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario deformed mask 3 backend auto display_mode wire full_checks 2 maximum_area_error 0.00011227197228436125 deformation_scale 0.10000000000000001 body_builds 1 import_ms 523.39649999999995 setup_ms 2111.5634 p50_ms 75.420500000000004 p95_ms 83.084100000000007 fps 14.234014312301392 actual_redraw 1 original_FE 1 target 0"
+    ]
+  },
+  {
+    "gpu": "IrisXe",
+    "model": "tetra_60.vtu",
+    "displayMode": "cloud_wire",
+    "directory": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\perf-t08-matrix\\IrisXe\\tetra_60.vtu\\cloud_wire",
+    "frames": 12,
+    "results": [
+      "Draw[1]> CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario crossing mask 3 backend auto display_mode cloud_wire full_checks 2 maximum_area_error 8.7766238721087575e-11 deformation_scale 0 body_builds 1 import_ms 524.74249999999995 setup_ms 2000.2497000000001 p50_ms 46.212400000000002 p95_ms 76.427599999999998 fps 18.360816670764699 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario rotating mask 3 backend auto display_mode cloud_wire full_checks 2 maximum_area_error 0.00013833563525622594 deformation_scale 0 body_builds 1 import_ms 549.13499999999999 setup_ms 2123.1831000000002 p50_ms 76.086399999999998 p95_ms 79.584699999999998 fps 13.228888320291672 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario deformed mask 3 backend auto display_mode cloud_wire full_checks 2 maximum_area_error 0.00011227197228436125 deformation_scale 0.10000000000000001 body_builds 1 import_ms 572.66899999999998 setup_ms 2205.7640000000001 p50_ms 75.316000000000003 p95_ms 76.635900000000007 fps 13.705089990476106 actual_redraw 1 original_FE 1 target 0"
+    ]
+  },
+  {
+    "gpu": "IrisXe",
+    "model": "tetra_60.vtk",
+    "displayMode": "cloud",
+    "directory": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\perf-t08-matrix\\IrisXe\\tetra_60.vtk\\cloud",
+    "frames": 12,
+    "results": [
+      "Draw[1]> CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario crossing mask 3 backend auto display_mode cloud full_checks 2 maximum_area_error 8.7766238721087575e-11 deformation_scale 0 body_builds 1 import_ms 10196.612300000001 setup_ms 11919.200699999999 p50_ms 46.597200000000001 p95_ms 61.263300000000001 fps 19.848450464552979 actual_redraw 1 original_FE 1 target 1",
+      "CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario rotating mask 3 backend auto display_mode cloud full_checks 2 maximum_area_error 0.00013833563525622594 deformation_scale 0 body_builds 1 import_ms 10189.780699999999 setup_ms 11587.135399999999 p50_ms 74.597700000000003 p95_ms 76.662700000000001 fps 13.998420044990922 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario deformed mask 3 backend auto display_mode cloud full_checks 2 maximum_area_error 0.00011227197228436125 deformation_scale 0.10000000000000001 body_builds 1 import_ms 10121.797699999999 setup_ms 11628.930899999999 p50_ms 75.718299999999999 p95_ms 86.0565 fps 13.993110025841776 actual_redraw 1 original_FE 1 target 0"
+    ]
+  },
+  {
+    "gpu": "IrisXe",
+    "model": "tetra_60.vtk",
+    "displayMode": "wire",
+    "directory": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\perf-t08-matrix\\IrisXe\\tetra_60.vtk\\wire",
+    "frames": 12,
+    "results": [
+      "Draw[1]> CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario crossing mask 3 backend auto display_mode wire full_checks 2 maximum_area_error 8.7766238721087575e-11 deformation_scale 0 body_builds 1 import_ms 10027.4773 setup_ms 11578.7621 p50_ms 45.826700000000002 p95_ms 61.555799999999998 fps 20.148836094087681 actual_redraw 1 original_FE 1 target 1",
+      "CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario rotating mask 3 backend auto display_mode wire full_checks 2 maximum_area_error 0.00013833563525622594 deformation_scale 0 body_builds 1 import_ms 10235.634899999999 setup_ms 11894.035099999999 p50_ms 76.2119 p95_ms 80.1648 fps 13.26317408977047 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario deformed mask 3 backend auto display_mode wire full_checks 2 maximum_area_error 0.00011227197228436125 deformation_scale 0.10000000000000001 body_builds 1 import_ms 10407.9372 setup_ms 11976.924199999999 p50_ms 76.361999999999995 p95_ms 81.755600000000001 fps 13.519749650289143 actual_redraw 1 original_FE 1 target 0"
+    ]
+  },
+  {
+    "gpu": "IrisXe",
+    "model": "tetra_60.vtk",
+    "displayMode": "cloud_wire",
+    "directory": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\perf-t08-matrix\\IrisXe\\tetra_60.vtk\\cloud_wire",
+    "frames": 12,
+    "results": [
+      "Draw[1]> CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario crossing mask 3 backend auto display_mode cloud_wire full_checks 2 maximum_area_error 8.7766238721087575e-11 deformation_scale 0 body_builds 1 import_ms 10568.833199999999 setup_ms 12251.3667 p50_ms 46.567700000000002 p95_ms 76.001099999999994 fps 18.562934923764349 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario rotating mask 3 backend auto display_mode cloud_wire full_checks 2 maximum_area_error 0.00013833563525622594 deformation_scale 0 body_builds 1 import_ms 10914.07 setup_ms 12607.577799999999 p50_ms 75.951700000000002 p95_ms 90.098399999999998 fps 12.919244280193 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1296000 frames 12 scenario deformed mask 3 backend auto display_mode cloud_wire full_checks 2 maximum_area_error 0.00011227197228436125 deformation_scale 0.10000000000000001 body_builds 1 import_ms 11112.756100000001 setup_ms 12867.9511 p50_ms 75.925899999999999 p95_ms 88.753 fps 13.437044925080077 actual_redraw 1 original_FE 1 target 0"
+    ]
+  },
+  {
+    "gpu": "IrisXe",
+    "model": "mixed_70.vtu",
+    "displayMode": "cloud",
+    "directory": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\perf-t08-matrix\\IrisXe\\mixed_70.vtu\\cloud",
+    "frames": 12,
+    "results": [
+      "Draw[1]> CUT_BENCHMARK_RESULT cells 1019200 frames 12 scenario crossing mask 3 backend auto display_mode cloud full_checks 2 maximum_area_error 2.3292159312404692e-09 deformation_scale 0 body_builds 1 import_ms 619.81320000000005 setup_ms 2420.8519000000001 p50_ms 58.946300000000001 p95_ms 78.152299999999997 fps 17.750888468948887 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1019200 frames 12 scenario rotating mask 3 backend auto display_mode cloud full_checks 2 maximum_area_error 1.4188117347657681e-10 deformation_scale 0 body_builds 1 import_ms 613.73260000000005 setup_ms 2596.3508000000002 p50_ms 92.682699999999997 p95_ms 142.69110000000001 fps 10.018910693934803 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1019200 frames 12 scenario deformed mask 3 backend auto display_mode cloud full_checks 2 maximum_area_error 0.00029625930619658902 deformation_scale 0.10000000000000001 body_builds 1 import_ms 630.89729999999997 setup_ms 2511.1408999999999 p50_ms 91.962900000000005 p95_ms 100.974 fps 11.728021321542762 actual_redraw 1 original_FE 1 target 0"
+    ]
+  },
+  {
+    "gpu": "IrisXe",
+    "model": "mixed_70.vtu",
+    "displayMode": "wire",
+    "directory": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\perf-t08-matrix\\IrisXe\\mixed_70.vtu\\wire",
+    "frames": 12,
+    "results": [
+      "Draw[1]> CUT_BENCHMARK_RESULT cells 1019200 frames 12 scenario crossing mask 3 backend auto display_mode wire full_checks 2 maximum_area_error 2.3292159312404692e-09 deformation_scale 0 body_builds 1 import_ms 602.55560000000003 setup_ms 2432.5846000000001 p50_ms 58.920900000000003 p95_ms 77.247699999999995 fps 17.660015561417044 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1019200 frames 12 scenario rotating mask 3 backend auto display_mode wire full_checks 2 maximum_area_error 1.4188117347657681e-10 deformation_scale 0 body_builds 1 import_ms 594.35239999999999 setup_ms 2548.8557000000001 p50_ms 92.991699999999994 p95_ms 109.3532 fps 10.632113714709023 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1019200 frames 12 scenario deformed mask 3 backend auto display_mode wire full_checks 2 maximum_area_error 0.00029625930619658902 deformation_scale 0.10000000000000001 body_builds 1 import_ms 649.49220000000003 setup_ms 2647.4965000000002 p50_ms 92.273799999999994 p95_ms 111.75 fps 11.75107463577544 actual_redraw 1 original_FE 1 target 0"
+    ]
+  },
+  {
+    "gpu": "IrisXe",
+    "model": "mixed_70.vtu",
+    "displayMode": "cloud_wire",
+    "directory": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\perf-t08-matrix\\IrisXe\\mixed_70.vtu\\cloud_wire",
+    "frames": 12,
+    "results": [
+      "Draw[1]> CUT_BENCHMARK_RESULT cells 1019200 frames 12 scenario crossing mask 3 backend auto display_mode cloud_wire full_checks 2 maximum_area_error 2.3292159312404692e-09 deformation_scale 0 body_builds 1 import_ms 650.37789999999995 setup_ms 2598.471 p50_ms 59.6203 p95_ms 77.938900000000004 fps 17.831192104348137 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1019200 frames 12 scenario rotating mask 3 backend auto display_mode cloud_wire full_checks 2 maximum_area_error 1.4188117347657681e-10 deformation_scale 0 body_builds 1 import_ms 693.86580000000004 setup_ms 2808.3507 p50_ms 92.436099999999996 p95_ms 126.0331 fps 10.461827798140078 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1019200 frames 12 scenario deformed mask 3 backend auto display_mode cloud_wire full_checks 2 maximum_area_error 0.00029625930619658902 deformation_scale 0.10000000000000001 body_builds 1 import_ms 656.72580000000005 setup_ms 2773.8164000000002 p50_ms 92.780199999999994 p95_ms 117.7864 fps 11.028643408850742 actual_redraw 1 original_FE 1 target 0"
+    ]
+  },
+  {
+    "gpu": "IrisXe",
+    "model": "hex_100_warped.vtu",
+    "displayMode": "cloud",
+    "directory": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\perf-t08-matrix\\IrisXe\\hex_100_warped.vtu\\cloud",
+    "frames": 12,
+    "results": [
+      "Draw[1]> CUT_BENCHMARK_RESULT cells 1000000 frames 12 scenario crossing mask 3 backend auto display_mode cloud full_checks 2 maximum_area_error 2.5465851649641991e-11 deformation_scale 0 body_builds 1 import_ms 837.13340000000005 setup_ms 3109.0396000000001 p50_ms 91.890799999999999 p95_ms 141.4478 fps 12.581810602230458 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1000000 frames 12 scenario rotating mask 3 backend auto display_mode cloud full_checks 2 maximum_area_error 2.1827872842550278e-11 deformation_scale 0 body_builds 1 import_ms 909.53420000000006 setup_ms 3137.2312000000002 p50_ms 108.5505 p95_ms 154.72739999999999 fps 8.7632210533464736 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1000000 frames 12 scenario deformed mask 3 backend auto display_mode cloud full_checks 2 maximum_area_error 0.00017457299509260338 deformation_scale 0.10000000000000001 body_builds 1 import_ms 843.76490000000001 setup_ms 3160.1468 p50_ms 122.9096 p95_ms 205.10480000000001 fps 8.360281889197978 actual_redraw 1 original_FE 1 target 0"
+    ]
+  },
+  {
+    "gpu": "IrisXe",
+    "model": "hex_100_warped.vtu",
+    "displayMode": "wire",
+    "directory": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\perf-t08-matrix\\IrisXe\\hex_100_warped.vtu\\wire",
+    "frames": 12,
+    "results": [
+      "Draw[1]> CUT_BENCHMARK_RESULT cells 1000000 frames 12 scenario crossing mask 3 backend auto display_mode wire full_checks 2 maximum_area_error 2.5465851649641991e-11 deformation_scale 0 body_builds 1 import_ms 994.72649999999999 setup_ms 3243.8020999999999 p50_ms 108.0864 p95_ms 148.2818 fps 11.366693315247661 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1000000 frames 12 scenario rotating mask 3 backend auto display_mode wire full_checks 2 maximum_area_error 2.1827872842550278e-11 deformation_scale 0 body_builds 1 import_ms 901.06359999999995 setup_ms 3083.9767000000002 p50_ms 108.33069999999999 p95_ms 140.21610000000001 fps 9.0772004552216021 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1000000 frames 12 scenario deformed mask 3 backend auto display_mode wire full_checks 2 maximum_area_error 0.00017457299509260338 deformation_scale 0.10000000000000001 body_builds 1 import_ms 876.09090000000003 setup_ms 3222.8593999999998 p50_ms 123.50069999999999 p95_ms 193.4897 fps 8.3662580446800021 actual_redraw 1 original_FE 1 target 0"
+    ]
+  },
+  {
+    "gpu": "IrisXe",
+    "model": "hex_100_warped.vtu",
+    "displayMode": "cloud_wire",
+    "directory": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\perf-t08-matrix\\IrisXe\\hex_100_warped.vtu\\cloud_wire",
+    "frames": 12,
+    "results": [
+      "Draw[1]> CUT_BENCHMARK_RESULT cells 1000000 frames 12 scenario crossing mask 3 backend auto display_mode cloud_wire full_checks 2 maximum_area_error 2.5465851649641991e-11 deformation_scale 0 body_builds 1 import_ms 930.52239999999995 setup_ms 3264.6165000000001 p50_ms 92.947100000000006 p95_ms 134.5077 fps 12.670029151625407 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1000000 frames 12 scenario rotating mask 3 backend auto display_mode cloud_wire full_checks 2 maximum_area_error 2.1827872842550278e-11 deformation_scale 0 body_builds 1 import_ms 947.56299999999999 setup_ms 3181.8692000000001 p50_ms 108.3511 p95_ms 155.58529999999999 fps 8.642797708189331 actual_redraw 1 original_FE 1 target 0",
+      "CUT_BENCHMARK_RESULT cells 1000000 frames 12 scenario deformed mask 3 backend auto display_mode cloud_wire full_checks 2 maximum_area_error 0.00017457299509260338 deformation_scale 0.10000000000000001 body_builds 1 import_ms 879.87630000000001 setup_ms 3284.9416000000001 p50_ms 123.8443 p95_ms 183.21619999999999 fps 8.1845847574795005 actual_redraw 1 original_FE 1 target 0"
+    ]
+  }
+]
