@@ -20,18 +20,20 @@ ci_run freetype-download curl --fail --location --retry 3 --show-error --silent 
     -o "$ci_work/freetype.tar.gz"
 mkdir -p "$ci_work/freetype-source"
 tar -xf "$ci_work/freetype.tar.gz" -C "$ci_work/freetype-source" --strip-components=1
-ci_run freetype-configure cmake -S "$ci_work/freetype-source" -B "$ci_work/freetype-build" -G Ninja \
-    "-DCMAKE_TOOLCHAIN_FILE=$ci_toolchain" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF \
-    "-DCMAKE_INSTALL_PREFIX=$ci_work/freetype-install" \
-    -DFT_DISABLE_ZLIB=ON -DFT_DISABLE_BZIP2=ON -DFT_DISABLE_PNG=ON \
-    -DFT_DISABLE_HARFBUZZ=ON -DFT_DISABLE_BROTLI=ON
-ci_run freetype-build cmake --build "$ci_work/freetype-build" --parallel "$ci_jobs"
-ci_run freetype-install cmake --install "$ci_work/freetype-build"
-
 ci_run zlib-port embuilder build zlib
 ci_sysroot="$EMSDK/upstream/emscripten/cache/sysroot"
 ci_zlib="$ci_sysroot/lib/wasm32-emscripten/libz.a"
 test -f "$ci_zlib"
+
+ci_run freetype-configure cmake -S "$ci_work/freetype-source" -B "$ci_work/freetype-build" -G Ninja \
+    "-DCMAKE_TOOLCHAIN_FILE=$ci_toolchain" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF \
+    "-DCMAKE_INSTALL_PREFIX=$ci_work/freetype-install" \
+    -DFT_DISABLE_ZLIB=OFF -DFT_REQUIRE_ZLIB=ON \
+    "-DZLIB_INCLUDE_DIR=$ci_sysroot/include" "-DZLIB_LIBRARY=$ci_zlib" \
+    -DFT_DISABLE_BZIP2=ON -DFT_DISABLE_PNG=ON \
+    -DFT_DISABLE_HARFBUZZ=ON -DFT_DISABLE_BROTLI=ON
+ci_run freetype-build cmake --build "$ci_work/freetype-build" --parallel "$ci_jobs"
+ci_run freetype-install cmake --install "$ci_work/freetype-build"
 
 ci_run occt-configure cmake -S "$ci_occt_source" -B "$ci_work/occt-build" -G Ninja \
     "${ci_occt_args[@]}" "-DCMAKE_TOOLCHAIN_FILE=$ci_toolchain" -DBUILD_LIBRARY_TYPE=Static \
@@ -46,7 +48,8 @@ ci_run occt-install cmake --install "$ci_work/occt-build"
 
 ci_run viewer-configure cmake -S "$ci_repo" -B "$ci_work/viewer" -G Ninja \
     "${ci_viewer_args[@]}" "-DCMAKE_TOOLCHAIN_FILE=$ci_toolchain" \
-    "-DFREETYPE_ROOT_DIR=$ci_work/freetype-install" "-DRapidJSON_ROOT_DIR=$ci_work/rapidjson" \
+    "-DFREETYPE_ROOT_DIR=$ci_work/freetype-install" "-Dfreetype_DIR=$ci_work/freetype-install/lib/cmake/freetype" \
+    "-DRapidJSON_ROOT_DIR=$ci_work/rapidjson" "-DRAPIDJSON_INCLUDE_DIRS=$ci_work/rapidjson/include" \
     "-DZLIB_INCLUDE_DIR=$ci_sysroot/include" "-DZLIB_LIBRARY=$ci_zlib" \
     -DCMAKE_C_FLAGS=-sUSE_ZLIB=1 -DCMAKE_CXX_FLAGS=-sUSE_ZLIB=1 \
     -DOCCTV_BUILD_TESTS=OFF -DOCCTV_BUILD_WEB_VIEWER=ON \
@@ -56,4 +59,5 @@ ci_run viewer-build cmake --build "$ci_work/viewer" --parallel "$ci_jobs"
 ci_run viewer-install cmake --install "$ci_work/viewer"
 test -s "$ci_work/viewer-install/wasm32/Viewer-wasm.wasm"
 test -s "$ci_work/viewer-install/wasm32/Viewer-wasm.js"
+ci_run wasm-validate node "$ci_repo/adm/ci/verify-wasm.cjs" "$ci_work/viewer-install/wasm32/Viewer-wasm.wasm"
 echo CI_WASM_BUILD_PASS | tee "$ci_work/logs/result.txt"

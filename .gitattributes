@@ -1,1 +1,2 @@
 adm/ci/*.sh text eol=lf
+DOCUMENT/test-results/github-actions-*/** -text

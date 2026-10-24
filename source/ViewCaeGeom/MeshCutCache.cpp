@@ -1,5 +1,6 @@
 #include <ViewCaeGeom/MeshCutCache.h>
 #include <stdexcept>
+#include <string>
 #include <algorithm>
 namespace ViewCaeGeom {
 struct MeshCutCache::State { MeshCutCacheStatistics Statistics; };
