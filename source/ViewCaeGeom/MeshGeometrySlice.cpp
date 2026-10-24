@@ -103,10 +103,10 @@ public:
             else { for(size_t i=0;i<count;++i) { cut(0,(int)i); } }
             work.CutMs+=std::chrono::duration<double,std::milli>(Clock::now()-start).count();
             start=Clock::now();
+            appendBatch(begin,count,sections,work,launcher);
             for(size_t i=0;i<count;++i) {
                 checkCancelled(); const auto id=myCandidates[begin+i]; const auto& element=mesh->IndexedElements()[id];
-                if(sections[i].Valid) { appendHex(element,sections[i],&work); }
-                else {
+                if(!sections[i].Valid) {
                     const auto fallbackStart=Clock::now();
                     switch(sections[i].Reason) {
                         case FallbackReason::Unsupported: ++work.Unsupported; break;
@@ -231,6 +231,88 @@ protected:
     mutable std::unordered_map<RWCae::MeshEntityId,Graphic3d_Vec3d> myNodePositions;
 
 private:
+    // Prefix ranges are fixed before any worker starts writing. OCCT vectors
+    // and provenance maps are grown only on this thread; workers never append
+    // or change hash tables. Fallbacks subsequently reuse these canonical edges.
+    void appendBatch(size_t begin,size_t count,std::vector<HexSection>& sections,
+        ViewCaeGeom::MeshSliceWork& work,OSD_ThreadPool::Launcher& launcher)
+    {
+        using Clock=std::chrono::steady_clock;
+        auto start=Clock::now();
+        const auto mesh=myMeshGeom->GetMeshData();
+        const size_t firstNode=mySliceMeshData->NbNodes(),firstElement=mySliceMeshData->NbIndexedElems();
+        std::vector<Vertex*> fresh; fresh.reserve(count*3);
+        for(size_t i=0;i<count;++i) {
+            auto& section=sections[i]; if(!section.Valid || section.Count<3) { continue; }
+            for(size_t n=0;n<section.Count;++n) {
+                auto& vertex=section.Vertices[n];
+                const uint64_t key=((uint64_t)std::min(vertex.A,vertex.B)<<32)|std::max(vertex.A,vertex.B);
+                const auto found=myAffineEdges.find(key);
+                if(found!=myAffineEdges.end()) { vertex.Node=found->second; continue; }
+                bool reused=false;
+                if(myUseAddedNodes) {
+                    ViewCaeGeom::MeshInterpolatedNode origin; origin.AddBaseNode(vertex.A,1-vertex.T); origin.AddBaseNode(vertex.B,vertex.T);
+                    reused=myAddedNodes.Find(origin,vertex.Node);
+                }
+                if(!reused) { vertex.Node=(RWCae::MeshEntityId)(firstNode+fresh.size()); fresh.push_back(&vertex); }
+                myAffineEdges.emplace(key,vertex.Node);
+            }
+        }
+        auto grow=[](auto& values,size_t end,const auto& value) {
+            if(end>(size_t)std::numeric_limits<int>::max()) { throw std::length_error("Section output exceeds native index capacity"); }
+            if(end>(size_t)values.Size()) { values.SetValue((int)end-1,value); }
+        };
+        auto& positions=mySliceMeshData->ChangeNodes();
+        grow(positions,firstNode+fresh.size(),Graphic3d_Vec3(0));
+        std::vector<ViewCaeGeom::MeshInterpolatedNode> origins(fresh.size());
+        const auto fillNode=[&](int,int i) {
+            const auto& vertex=*fresh[i]; positions[vertex.Node]=Graphic3d_Vec3(vertex.Point);
+            origins[i].AddBaseNode(vertex.A,1-vertex.T); origins[i].AddBaseNode(vertex.B,vertex.T);
+        };
+        if(fresh.size()>=512) { launcher.Perform(0,(int)fresh.size(),fillNode); }
+        else { for(size_t i=0;i<fresh.size();++i) { fillNode(0,(int)i); } }
+        for(size_t i=0;i<fresh.size();++i) {
+            if(myUseAddedNodes) { myAddedNodes.Bind(origins[i],fresh[i]->Node); }
+            auto* mapped=myGenNodes->Bound(fresh[i]->Node,std::make_pair(myMeshGeom.get(),ViewCaeGeom::MeshInterpolatedNode()));
+            mapped->second=std::move(origins[i]);
+        }
+        mySliceMeshData->SetCachedMinMax(Bnd_Box());
+        work.SharedPointMs+=std::chrono::duration<double,std::milli>(Clock::now()-start).count();
+        start=Clock::now();
+        const RWCae::MeshElemType types[]={RWCae::MeshElemType::Triangle,RWCae::MeshElemType::Quad,RWCae::MeshElemType::Polygon};
+        struct Span { size_t Global=0,Local=0,Nodes=0; int Type=-1; };
+        std::vector<Span> spans(count);
+        size_t elementEnds[3],nodeEnds[3],output=firstElement;
+        for(int t=0;t<3;++t) { const auto& cells=mySliceMeshData->Elements(types[t]); elementEnds[t]=cells.NbElements(); nodeEnds[t]=cells.Nodes().Size(); }
+        for(size_t i=0;i<count;++i) {
+            const auto& section=sections[i]; if(!section.Valid || section.Count<3) { continue; }
+            const int t=section.Count==3?0:section.Count==4?1:2;
+            spans[i]={output++,elementEnds[t]++,nodeEnds[t],t}; nodeEnds[t]+=section.Count;
+        }
+        auto& indexed=mySliceMeshData->ChangeIndexedElements(); grow(indexed,output,RWCae::MeshData::IndexedElement());
+        for(int t=0;t<3;++t) {
+            auto& cells=mySliceMeshData->ChangeElements(types[t]);
+            grow(cells.Nodes(),nodeEnds[t],RWCae::MeshEntityId(0)); grow(cells.GlobalIndices(),elementEnds[t],0);
+            if(t==2) { grow(cells.NodesOffsets(),elementEnds[t],RWCae::MeshElemEntityOffset(0)); }
+        }
+        const auto fillElement=[&](int,int i) {
+            const auto& span=spans[i]; if(span.Type<0) { return; }
+            const auto& section=sections[i]; auto& cells=mySliceMeshData->ChangeElements(types[span.Type]);
+            for(size_t n=0;n<section.Count;++n) { cells.Nodes()[(int)(span.Nodes+n)]=section.Vertices[n].Node; }
+            cells.GlobalIndices()[(int)span.Local]=(int)span.Global;
+            if(span.Type==2) { cells.NodesOffsets()[(int)span.Local]=(RWCae::MeshElemEntityOffset)(span.Nodes+section.Count); }
+            indexed[(int)span.Global]=RWCae::MeshData::IndexedElement(types[span.Type],(RWCae::MeshEntityId)span.Local);
+        };
+        if(count>=512) { launcher.Perform(0,(int)count,fillElement); }
+        else { for(size_t i=0;i<count;++i) { fillElement(0,(int)i); } }
+        for(size_t i=0;i<count;++i) {
+            const auto& span=spans[i]; if(span.Type<0) { continue; }
+            const auto& source=mesh->IndexedElements()[myCandidates[begin+i]];
+            myGenElems->Bind(ViewCaeGeom::MeshGeomElem((RWCae::MeshEntityId)span.Local,types[span.Type],false),
+                std::make_pair(myMeshGeom.get(),ViewCaeGeom::MeshGeomElem(source.Index,source.Type,false)));
+        }
+        work.AppendMs+=std::chrono::duration<double,std::milli>(Clock::now()-start).count();
+    }
     void prepareFallback(RWCae::MeshEntityId element)
     {
         if(myUseAddedNodes) { return; }

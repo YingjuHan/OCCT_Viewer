@@ -11,7 +11,7 @@
 static void largePlaneSection()
 {
     using namespace ViewCaeGeom;
-    const int n=64;
+    const int n=100; // One million cells; several output blocks and mixed fast/fallback paths.
     Handle(RWCae::MeshData) source=new RWCae::MeshData();
     const auto id=[&](int x,int y,int z) { return (RWCae::MeshEntityId)(x+(n+1)*(y+(n+1)*z)); };
     for(int z=0;z<=n;++z) { for(int y=0;y<=n;++y) { for(int x=0;x<=n;++x) { source->AddNodePosition(Graphic3d_Vec3(x,y,z)); } } }
@@ -60,6 +60,9 @@ static void largePlaneSection()
     const double slope=.2137,offset=32.25;
     manager.SetPlane("large",Graphic3d_Vec4d(1,slope,0,-offset));
     const auto result=manager.EvaluateSectionForDisplay("large",field);
+    if(manager.LastTimings().Fallbacks==0 || manager.LastTimings().Fallbacks>=manager.LastTimings().Candidates) {
+        throw std::runtime_error("Million-cell oblique reference did not exercise mixed fast/fallback output");
+    }
     const auto section=Handle(MeshGeometryTraceSection)::DownCast(result.Portions[1]);
     const auto mesh=section->GetMeshData();
     std::vector<Graphic3d_Vec3d> positions(mesh->NbNodes());
