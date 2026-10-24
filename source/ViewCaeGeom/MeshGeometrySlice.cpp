@@ -298,16 +298,19 @@ private:
         };
         auto& positions=mySliceMeshData->ChangeNodes();
         grow(positions,firstNode+fresh.size(),Graphic3d_Vec3(0));
-        std::vector<ViewCaeGeom::MeshInterpolatedNode> origins(fresh.size());
+        // Empty copies avoid the default one-weight allocation before each
+        // worker creates the actual two-weight edge sample.
+        std::vector<ViewCaeGeom::MeshInterpolatedNode> origins(fresh.size(),ViewCaeGeom::MeshInterpolatedNode(0));
         const auto fillNode=[&](int,int i) {
             const auto& vertex=*fresh[i]; positions[vertex.Node]=Graphic3d_Vec3(vertex.Point);
-            origins[i].AddBaseNode(vertex.A,1-vertex.T); origins[i].AddBaseNode(vertex.B,vertex.T);
+            auto& weights=origins[i].BaseNodes(); weights.resize(2);
+            weights[0]={vertex.A,1-vertex.T}; weights[1]={vertex.B,vertex.T};
         };
         if(fresh.size()>=512) { launcher.Perform(0,(int)fresh.size(),fillNode); }
         else { for(size_t i=0;i<fresh.size();++i) { fillNode(0,(int)i); } }
         for(size_t i=0;i<fresh.size();++i) {
             if(myUseAddedNodes) { myAddedNodes.Bind(origins[i],fresh[i]->Node); }
-            auto* mapped=myGenNodes->Bound(fresh[i]->Node,std::make_pair(myMeshGeom.get(),ViewCaeGeom::MeshInterpolatedNode()));
+            auto* mapped=myGenNodes->Bound(fresh[i]->Node,std::make_pair(myMeshGeom.get(),ViewCaeGeom::MeshInterpolatedNode(0)));
             mapped->second=std::move(origins[i]);
         }
         mySliceMeshData->SetCachedMinMax(Bnd_Box());

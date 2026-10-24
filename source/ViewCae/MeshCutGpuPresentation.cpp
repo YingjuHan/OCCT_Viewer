@@ -118,6 +118,14 @@ uint64_t publishSlice(const Handle(Graphic3d_ArrayOfPrimitives)& array,const std
 }
 
 namespace ViewCae {
+struct MeshCutGpuPresentation::Scratch {
+    struct Span { RWCae::MeshElemType Type; RWCae::MeshEntityId Global; size_t Begin=0,Count=0,Face=0,Edge=0; };
+    std::vector<SliceVertex> Vertices,Edges;
+    std::vector<Graphic3d_Vec3> Positions;
+    std::vector<Graphic3d_Vec2> UVs;
+    std::vector<Span> Spans;
+};
+MeshCutGpuPresentation::MeshCutGpuPresentation()=default;
 MeshCutGpuPresentation::~MeshCutGpuPresentation() { Reset(); }
 void MeshCutGpuPresentation::Reset()
 {
@@ -125,6 +133,7 @@ void MeshCutGpuPresentation::Reset()
     if (!myBodyStructure.IsNull()) { myBodyStructure->Remove(); }
     myBodyStructure.Nullify(); myParent.Nullify(); mySliceGroup.Nullify(); mySliceEdgeGroup.Nullify();
     myBodyConnected = false;
+    myScratch.reset();
 }
 
 void MeshCutGpuPresentation::Update(const Handle(MeshPresentationScalar)& body,
@@ -207,8 +216,8 @@ void MeshCutGpuPresentation::Update(const Handle(MeshPresentationScalar)& body,
             }
         }
     }
-    std::vector<SliceVertex> vertices;
-    std::vector<SliceVertex> edgeVertices;
+    if(!myScratch) { myScratch=std::make_unique<Scratch>(); }
+    auto& vertices=myScratch->Vertices; auto& edgeVertices=myScratch->Edges; vertices.clear(); edgeVertices.clear();
     const int cap = (mask & 2) != 0 ? 1 : (mask & 1) != 0 ? 0 : 2;
     const auto& capStyle = styles[cap];
     const bool sliceFaces = capStyle.Mode != InteractiveCaeMeshPrsMode::MeshEdges;
@@ -222,76 +231,73 @@ void MeshCutGpuPresentation::Update(const Handle(MeshPresentationScalar)& body,
         const auto values = field.IsNull() ? Handle(RWCae::MeshScalarPropertyBase)() : field->GetRawComponent(component);
         const bool nodal = !field.IsNull() && field->IsNodal();
         const bool nodeVector = !field.IsNull() && field->HasNodeVecComponents();
+        const bool modifyNodes=source->HasNodeModifiers();
+        const auto& origins=section.Portions[1]->GetNodesMap();
+        const auto* first=origins.Seek(0);
+        auto* directSource=first?first->first:nullptr;
+        if(directSource && (!directSource->GetParent().IsNull() || directSource->GetMeshData()!=sourceMesh)) { directSource=nullptr; }
+        const auto coordinates=directSource?source->GetBvhData()->PreparedNodePositions(directSource):nullptr;
         double minimum = 0, maximum = 1;
         if (!section.SourceField.IsNull()) { section.SourceField->GetRawComponent(component)->ValueRange().GetBounds(minimum,maximum); }
-        std::vector<Graphic3d_Vec3> localPositions(mesh->NbNodes());
-        std::vector<Graphic3d_Vec2> nodeUVs(nodal ? mesh->NbNodes() : 0);
+        auto& localPositions=myScratch->Positions; localPositions.resize(mesh->NbNodes());
+        auto& nodeUVs=myScratch->UVs; nodeUVs.resize(nodal?mesh->NbNodes():0);
         const auto prepareNode = [&](int, int node) {
             Graphic3d_Vec3d position(mesh->Nodes()[node]);
-            ViewCaeGeom::MeshInterpolatedNode weights;
-            if (section.Portions[1]->OriginNode(node,weights)) {
-                position = Graphic3d_Vec3d(0);
-                for (const auto& weight : weights.BaseNodes()) {
-                    auto p = sourceMesh->Nodes()[weight.first]; source->ModifyNode(weight.first,p);
-                    position += Graphic3d_Vec3d(p)*weight.second;
+            const auto reconstruct=[&](const ViewCaeGeom::MeshInterpolatedNode& weights,bool cached) {
+                position=Graphic3d_Vec3d(0);
+                for(const auto& weight:weights.BaseNodes()) {
+                    auto p=cached && coordinates?(*coordinates)[weight.first]:sourceMesh->Nodes()[weight.first];
+                    if(!(cached && coordinates) && modifyNodes) { source->ModifyNode(weight.first,p); }
+                    position+=Graphic3d_Vec3d(p)*weight.second;
                 }
+            };
+            const auto* direct=origins.Seek(node);
+            if(directSource && direct && direct->first==directSource) { reconstruct(direct->second,true); }
+            else {
+                ViewCaeGeom::MeshInterpolatedNode weights(0);
+                if(section.Portions[1]->OriginNode(node,weights)) { reconstruct(weights,false); }
             }
-            localPositions[node] = Graphic3d_Vec3(position-origin);
-            if (nodal) {
-                const double value = values->Value(RWCae::MeshPropertyEntityInfo(node,nodeVector ? node : -1));
-                nodeUVs[node] = CaeMeshTools::GetUVCoords(value,minimum,maximum,CaeMeshTools::NbColorscaleColors);
-            }
+            localPositions[node]=Graphic3d_Vec3(position-origin);
+            if(nodal) { nodeUVs[node]=CaeMeshTools::GetUVCoords(values->Value(RWCae::MeshPropertyEntityInfo(node,nodeVector?node:-1)),minimum,maximum,CaeMeshTools::NbColorscaleColors); }
         };
-        // Geometry and field data are materialized above. Workers only read
-        // provenance/modifiers and write their own positions and color entries.
-        if (mesh->NbNodes() >= 4096) {
-            OSD_ThreadPool::Launcher launcher(*OSD_ThreadPool::DefaultPool(),4);
-            launcher.Perform(0,(int)mesh->NbNodes(),prepareNode);
-        } else {
-            for (RWCae::MeshEntityId node = 0; node < mesh->NbNodes(); ++node) { prepareNode(0,(int)node); }
+        OSD_ThreadPool::Launcher launcher(*OSD_ThreadPool::DefaultPool(),4);
+        if(mesh->NbNodes()>=4096) { launcher.Perform(0,(int)mesh->NbNodes(),prepareNode); }
+        else { for(RWCae::MeshEntityId node=0;node<mesh->NbNodes();++node) { prepareNode(0,(int)node); } }
+        auto& spans=myScratch->Spans; spans.resize(mesh->NbIndexedElems());
+        size_t faceCount=0,edgeCount=0;
+        for(RWCae::MeshEntityId e=0;e<mesh->NbIndexedElems();++e) {
+            auto& span=spans[e]; span.Count=0;
+            const auto& indexed=mesh->IndexedElements()[e];
+            if(indexed.Type!=RWCae::MeshElemType::Triangle && indexed.Type!=RWCae::MeshElemType::Quad && indexed.Type!=RWCae::MeshElemType::Polygon) { continue; }
+            const auto& cells=mesh->Elements(indexed.Type); RWCae::MeshElemEntityOffset begin,end; cells.GetElemNodesRange(indexed.Index,&begin,&end);
+            if(end-begin<3) { continue; }
+            span={indexed.Type,(RWCae::MeshEntityId)cells.GlobalIndex(indexed.Index),(size_t)begin,(size_t)(end-begin),faceCount,edgeCount};
+            if(sliceFaces) { faceCount+=3*(span.Count-2); } if(sliceEdges) { edgeCount+=2*span.Count; }
         }
-        if (sliceFaces) { vertices.reserve((size_t)mesh->NbElems2d()*6); }
-        if (sliceEdges) { edgeVertices.reserve((size_t)mesh->NbElems2d()*8); }
-        Graphic3d_Vec3 lower(std::numeric_limits<float>::max()), upper(std::numeric_limits<float>::lowest());
-        Graphic3d_Vec3 normal((float)definition.Plane.x(),(float)definition.Plane.y(),(float)definition.Plane.z());
-        if ((mask & 5) == 4) { normal = -normal; }
-        auto process = [&](const auto& adaptor) {
-            for (RWCae::MeshEntityId e = 0; e < adaptor.NbElements(); ++e) {
-                const auto& element = adaptor.GetElement(e);
-                Graphic3d_Vec2 elementUV(0);
-                if (!values.IsNull() && !nodal && !nodeVector) {
-                    elementUV = CaeMeshTools::GetUVCoords(values->Value(RWCae::MeshPropertyEntityInfo(element.GlobalIndex())),
-                        minimum,maximum,CaeMeshTools::NbColorscaleColors);
-                }
-                auto add = [&](int index,std::vector<SliceVertex>& target) {
-                    const auto node = element[index];
-                    // Reconstruct original FE position in double before storing
-                    // in the shared local GPU frame. Physical data stay unchanged.
-                    SliceVertex vertex{localPositions[node],normal,Graphic3d_Vec2(0)};
-                    if (nodal) { vertex.UV = nodeUVs[node]; }
-                    else if (nodeVector) {
-                        const double value = values->Value(RWCae::MeshPropertyEntityInfo(element.GlobalIndex(),(int)node));
-                        vertex.UV = Graphic3d_Vec2(CaeMeshTools::GetUVCoords(value,minimum,maximum,CaeMeshTools::NbColorscaleColors));
-                    } else { vertex.UV = elementUV; }
-                    for (int axis = 0; axis < 3; ++axis) {
-                        lower[axis] = std::min(lower[axis],vertex.Position[axis]);
-                        upper[axis] = std::max(upper[axis],vertex.Position[axis]);
-                    }
-                    target.push_back(vertex);
-                };
-                if (sliceFaces) {
-                    for (int n = 1; n+1 < element.NbNodes(); ++n) { add(0,vertices); add(n,vertices); add(n+1,vertices); }
-                }
-                // FE section polygon perimeter, never the triangulation fan's diagonals.
-                if (sliceEdges) {
-                    for (int n = 0; n < element.NbNodes(); ++n) { add(n,edgeVertices); add((n+1)%element.NbNodes(),edgeVertices); }
-                }
-            }
+        if(std::max(faceCount,edgeCount)>(size_t)std::numeric_limits<int>::max()/2) { throw std::length_error("Display slice exceeds buffer capacity"); }
+        vertices.resize(faceCount); edgeVertices.resize(edgeCount);
+        Graphic3d_Vec3 normal((float)definition.Plane.x(),(float)definition.Plane.y(),(float)definition.Plane.z()); if((mask&5)==4) { normal=-normal; }
+        const auto fill=[&](int,int e) {
+            const auto& span=spans[e]; if(span.Count<3) { return; }
+            const auto& cells=mesh->Elements(span.Type); Graphic3d_Vec2 elementUV(0);
+            if(!values.IsNull() && !nodal && !nodeVector) { elementUV=CaeMeshTools::GetUVCoords(values->Value(RWCae::MeshPropertyEntityInfo(span.Global)),minimum,maximum,CaeMeshTools::NbColorscaleColors); }
+            const auto vertex=[&](size_t n) {
+                const auto node=cells.Nodes()[(int)(span.Begin+n)]; Graphic3d_Vec2 uv=elementUV;
+                if(nodal) { uv=nodeUVs[node]; }
+                else if(nodeVector) { uv=Graphic3d_Vec2(CaeMeshTools::GetUVCoords(values->Value(RWCae::MeshPropertyEntityInfo(span.Global,(int)node)),minimum,maximum,CaeMeshTools::NbColorscaleColors)); }
+                return SliceVertex{localPositions[node],normal,uv};
+            };
+            size_t face=span.Face,edge=span.Edge;
+            if(sliceFaces) { for(size_t n=1;n+1<span.Count;++n) { vertices[face++]=vertex(0); vertices[face++]=vertex(n); vertices[face++]=vertex(n+1); } }
+            // FE polygon perimeter only: never expose triangulation diagonals.
+            if(sliceEdges) { for(size_t n=0;n<span.Count;++n) { edgeVertices[edge++]=vertex(n); edgeVertices[edge++]=vertex((n+1)%span.Count); } }
         };
-        RWCae::MeshAdaptorsIterator2dElems::For(process,mesh);
-        if (!vertices.empty() || !edgeVertices.empty()) {
-            sliceBounds.Update(lower.x()+origin.x(),lower.y()+origin.y(),lower.z()+origin.z(),
-                upper.x()+origin.x(),upper.y()+origin.y(),upper.z()+origin.z());
+        if(spans.size()>=2048) { launcher.Perform(0,(int)spans.size(),fill); }
+        else { for(size_t e=0;e<spans.size();++e) { fill(0,(int)e); } }
+        if(!vertices.empty() || !edgeVertices.empty()) {
+            Graphic3d_Vec3 lower(std::numeric_limits<float>::max()),upper(std::numeric_limits<float>::lowest());
+            for(const auto& point:localPositions) { for(int axis=0;axis<3;++axis) { lower[axis]=std::min(lower[axis],point[axis]); upper[axis]=std::max(upper[axis],point[axis]); } }
+            sliceBounds.Update(lower.x()+origin.x(),lower.y()+origin.y(),lower.z()+origin.z(),upper.x()+origin.x(),upper.y()+origin.y(),upper.z()+origin.z());
         }
     }
     auto slice = mySlice;

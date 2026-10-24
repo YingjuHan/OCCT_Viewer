@@ -11,6 +11,7 @@ namespace ViewCae {
 //! them; it never recreates the body's OpenGL primitive arrays.
 class MeshCutGpuPresentation {
 public:
+    MeshCutGpuPresentation();
     ~MeshCutGpuPresentation();
     void Update(const Handle(MeshPresentationScalar)& body,
         const ViewCaeGeom::MeshCutResult& section,
@@ -27,6 +28,8 @@ public:
     const Handle(Graphic3d_ArrayOfTriangles)& SliceArray() const { return mySlice; }
     const Handle(Graphic3d_ArrayOfSegments)& SliceEdgesArray() const { return mySliceEdges; }
 private:
+    struct Scratch;
+    std::unique_ptr<Scratch> myScratch;
     void updateStructures();
     Handle(MeshPresentationScalar) myBody;
     std::vector<Handle(Graphic3d_ArrayOfPrimitives)> myBodyArrays;
