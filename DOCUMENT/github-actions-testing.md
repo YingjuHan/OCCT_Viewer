@@ -87,11 +87,12 @@ CI_BUILD_JOBS=2 bash adm/ci/build-wasm.sh \
 | --- | --- | --- |
 | CI01 工作流与依赖来源 | 已完成，d5b5578 | 修复无效 action；拉取指定定制 OCCT；添加共用构建脚本、真实 CTest、JUnit 和日志 artifact；actionlint/Bash 检查通过 |
 | CI02 Linux 编译与测试 | 已完成，7e768b3 | Ubuntu 24.04 / GCC；共享 SDK、本项目和独立 native Viewer 构建通过，33/33 原生 CTest 通过 |
-| CI03 Wasm 编译与安装 | 已完成（提交号后补） | Emscripten 3.1.58；FreeType、zlib、静态 SDK和本项目编译安装通过；最终模块格式验证通过 |
+| CI03 Wasm 编译与安装 | 已完成，ed5aa82 | Emscripten 3.1.58；FreeType、zlib、静态 SDK和本项目编译安装通过；最终模块格式验证通过 |
 
 每项完成后独立提交、刷新 codebase-memory 索引，再推进下一项；提交号在后续记录中补录。
 
 - 已通过 actionlint 1.7.12 和 Bash 语法检查。
+- Wasm 校验器额外使用损坏模块做负向核验，按预期返回失败；日志 artifact 保留构建和校验的失败状态。
 - 已确认远端 `ViewCaeGeom` 与本机 OCCT 提交一致。
 - Linux 实编译修正了后续依赖问题：显式构建 `TKOpenGl`；移除 Gmsh reader 未使用的 `Interface_Static.hxx` 引用。新增独立 native Viewer 配置，避免 DRAW 关闭时漏测 native API。
 - Linux 共享 SDK、本项目及独立 native Viewer 构建通过，33/33 原生 CTest 通过，测试耗时 59.15 秒。包含 native cut/timeline/analysis/session，关闭窗口型 DRAW 测试；与 Windows 的 85 项集合不同。[JUnit](test-results/github-actions-2026-10-24/linux/ctest.xml)、[测试日志](test-results/github-actions-2026-10-24/linux/ctest.log)、[版本/源码指纹](test-results/github-actions-2026-10-24/linux/manifest.json) 已归档。归档为修正后的最终增量构建轮次，CI 首次运行需要从源码全量编译 SDK。
