@@ -13,7 +13,7 @@ set(_draco_target draco::draco)
 simake_additional_search_dirs (${_draco_package} "draco-")
 # Find draco library
 if (NOT TARGET ${_draco_target})
-  find_package (${_draco_package} REQUIRED CMAKE_FIND_ROOT_PATH_BOTH)
+  find_package (${_draco_package} REQUIRED)
 else()
   set(draco_FOUND ON)
 endif()

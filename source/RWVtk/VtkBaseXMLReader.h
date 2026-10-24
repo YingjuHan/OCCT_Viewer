@@ -44,7 +44,7 @@ public:
         std::vector<TCollection_AsciiString> Components;
         DataFormat                           Format;
         Handle(VtkAbstractArray)             Data;
-        int                                  Offset = 0;
+        size_t                               Offset = 0;
 
         void Reset()
         {
@@ -58,6 +58,7 @@ public:
     };
 
 protected:
+    Standard_EXPORT int readCount(const LDOM_Element& element, const char* name, const char* alias, bool optional = false);
     //! Helper function that attempts to get an XML attribute using two aliases.
     static LDOMString getXmlAttribute(const LDOM_Element& theElem,
                                       const LDOMString&   theName1,
@@ -102,6 +103,10 @@ protected:
     LDOM_Document myDOM;
     LDOM_Element  myDataElement;
     LDOMString    myAppendedData;
+
+    std::string myRawAppendedData;
+    std::string myCompressor;
+    bool myAppendedIsRaw = false;
 
     int       myHeaderSize = 4;
     ByteOrder myByteOrder  = ByteOrder::LittleEndian;

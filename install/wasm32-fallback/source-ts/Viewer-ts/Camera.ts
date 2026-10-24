@@ -1,6 +1,3 @@
-// Created by: Kirill Gavrilov
-// Copyright (c) 2022 Huawei Technologies Co., Ltd.
-
 import type {CameraOrientation, ICameraViewPoint, IBndBox3, ViewId} from './CommonTools.js';
 import {BndBox3} from './CommonTools.js';
 import type {ViewManager} from './ViewManager.js';

@@ -10,6 +10,7 @@
 #include <RWBase/JsonHelper.h>
 
 #include <vector>
+#include <memory>
 
 namespace ViewCaeGeom {
 typedef NCollection_DataMap<TCollection_AsciiString, RWCae::MeshPropertyComponent>    MapOfMeshGeomScalarProps;
@@ -143,12 +144,18 @@ struct MeshGeomElem {
 //! or can store some modifiers for parent geometries (or both).
 class MeshGeometry : public Standard_Transient {
 public:
+    void RetainCacheLease(const std::shared_ptr<void>& lease) { myCacheLeases.push_back(lease); }
+private:
+    std::vector<std::shared_ptr<void>> myCacheLeases;
+public:
     typedef NCollection_DataMap<RWCae::MeshEntityId, std::pair<MeshGeometry*, MeshInterpolatedNode>> NodesMap;
     typedef NCollection_DataMap<MeshGeomElem, std::pair<MeshGeometry*, MeshGeomElem>, MeshGeomElem>    ElementsMap;
 
 public:
     //! Constructor.
     Standard_EXPORT explicit MeshGeometry(const Handle(MeshBvhData)& theBvhData);
+
+    Standard_EXPORT ~MeshGeometry() override;
 
     //! Return calculated mesh data.
     Standard_EXPORT const Handle(RWCae::MeshData)& GetMeshData();
@@ -221,6 +228,8 @@ public:
 
     //! Apply node modifiers of all children.
     Standard_EXPORT void ModifyNode(const RWCae::MeshEntityId theNodeIdx, Graphic3d_Vec3& theNode) const;
+    //! Query once before preparing immutable node snapshots.
+    Standard_EXPORT bool HasNodeModifiers() const;
 
     //! Apply accept modifiers of all children for mesh element.
     Standard_EXPORT bool AcceptElement(const RWCae::MeshEntityId theElemIdx) const;

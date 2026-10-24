@@ -1,6 +1,3 @@
-// Created by: Kirill Gavrilov
-// Copyright (c) 2022 Huawei Technologies Co., Ltd.
-
 /**
  * IPromise interface which allows to run callback written on js from c++.
  * For using this interface please use its implementation from {@link SCwebviewer.IPromise}.implement.

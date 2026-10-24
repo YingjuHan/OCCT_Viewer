@@ -1,0 +1,23 @@
+-- Info: FreeType is used by OCCT
+-- Info: The directories of 3rdparty headers: 
+	/home/htf/occtviewer-ci/wasm/freetype-install/include/freetype2
+	/home/htf/occtviewer-ci/emsdk/upstream/emscripten/cache/sysroot/include
+	/home/htf/occtviewer-ci/wasm/rapidjson/include
+CMake Warning at CMakeLists.txt:883 (message):
+  Could not find libraries of used third-party products:
+  3RDPARTY_FREETYPE_LIBRARY_DIR 3RDPARTY_EGL_LIBRARY_DIR_EGL
+  3RDPARTY_EGL_LIBRARY_DIR_GLESv2 3RDPARTY_GLES2_LIBRARY_DIR_EGL
+  3RDPARTY_GLES2_LIBRARY_DIR_GLESv2
+
+
+-- 
+Info: (19:39:14) Start collecting all OCCT header files into /home/htf/occtviewer-ci/wasm/occt-build/inc ...
+-- Info: (19:39:14) Compare FILES with files in package directories...
+-- Info: (19:39:15) Create header-links in inc folder...
+-- Info: (19:39:15) Checking headers in inc folder...
+-- Info: (19:39:16) End the collecting
+-- Info: (19:39:16) OCCT toolkits processed
+-- Info: (19:39:16) OCCT configuration files prepared
+-- Configuring done (9.7s)
+-- Generating done (0.1s)
+-- Build files have been written to: /home/htf/occtviewer-ci/wasm/occt-build

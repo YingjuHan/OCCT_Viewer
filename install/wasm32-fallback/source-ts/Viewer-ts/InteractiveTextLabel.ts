@@ -1,6 +1,3 @@
-// Created by: Kirill Gavrilov
-// Copyright (c) 2023 Huawei Technologies Co., Ltd.
-
 import type {IManager, ObjectId, IVec3} from './CommonTools.js';
 import {Vec3} from './CommonTools.js';
 import {InteractiveObject, TypeOfMarker} from './InteractiveObject.js';

@@ -1,0 +1,33 @@
+{
+  "gpu": "MX450",
+  "mode": "All",
+  "started": "2026-10-24T17:30:50.5384074+08:00",
+  "frames": 60,
+  "repetitions": 3,
+  "displayMode": "cloud",
+  "cellTopologyReuse": false,
+  "parallelPlaneQuery": true,
+  "fullValidation": false,
+  "repository": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer",
+  "build": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\mingw-deformation",
+  "executable": "D:\\workspace\\OpenCASCADE\\OCCT_private\\install\\mingw\\win64\\gcc\\bin\\DRAWEXE.exe",
+  "model": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\large-vtk-deformed\\hex_150.vtu",
+  "revision": "49df48cb8c05b18e78bc2f2dcbdb19fc6173f0ea",
+  "succeeded": true,
+  "trackedWorkingTreeChanges": [
+    " M source-draw/ViewCaeTest/CutBenchmarkCommands.cpp",
+    " M test/analyze-cut-profile.py",
+    " M test/run-cut-view-gpu-tests.ps1"
+  ],
+  "preferenceBefore": {
+    "exists": false,
+    "value": null,
+    "kind": ""
+  },
+  "preferenceDuring": "GpuPreference=2;",
+  "functionalPassed": true,
+  "largePassed": true,
+  "performanceCompleted": true,
+  "preferenceRestored": true,
+  "finished": "2026-10-24T17:48:53.4320469+08:00"
+}

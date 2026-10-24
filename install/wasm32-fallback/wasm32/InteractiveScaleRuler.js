@@ -1,5 +1,3 @@
-// Created by: Kirill Gavrilov
-// Copyright (c) 2023 Huawei Technologies Co., Ltd.
 import { InteractiveObject } from './InteractiveObject.js';
 /**
  * Represents Scale Ruler property manager.

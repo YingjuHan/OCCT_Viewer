@@ -1,8 +1,7 @@
-// Created by: Kirill Gavrilov
-// Copyright (c) 2022 Huawei Technologies Co., Ltd.
 import { ColorTools, Vec3, ViewCorner, BndBox3, Trsf } from './CommonTools.js';
 import { Subview } from './Subview.js';
 import { ViewerEventTarget } from './ViewerEventTarget.js';
+import { SceneGraph } from './SceneGraph.js';
 /**
  * Font aspect defined by `Font_FontAspect` enumeration.
  */
@@ -347,7 +346,15 @@ export class InteractiveObject extends ViewerEventTarget {
     /** Return view corner offset of 2D presentation; has no meaning for 3D objects. */
     get viewCornerOffset() { var _a, _b; return (_b = (_a = this.objMgr) === null || _a === void 0 ? void 0 : _a.getViewCornerOffset(this._myObjId)) !== null && _b !== void 0 ? _b : { x: 0, y: 0 }; }
     /** Return local transformation. */
-    get localTransformation() { var _a, _b; return (_b = (_a = this.objMgr) === null || _a === void 0 ? void 0 : _a.getLocalTransformation(this._myObjId)) !== null && _b !== void 0 ? _b : new Trsf(); }
+    get localTransformation() {
+        var _a;
+        const aMgr = this.objMgr;
+        const aGetter = aMgr === null || aMgr === void 0 ? void 0 : aMgr.getLocalTransformation;
+        if (typeof aGetter === 'function') {
+            return (_a = aGetter.call(aMgr, this._myObjId)) !== null && _a !== void 0 ? _a : new Trsf();
+        }
+        return new Trsf();
+    }
     /** Return object AABB (axes-aligned bounding box). */
     get minMax() { var _a, _b; return (_b = (_a = this.objMgr) === null || _a === void 0 ? void 0 : _a.getMinMax(this._myObjId)) !== null && _b !== void 0 ? _b : BndBox3.voidBox(); }
     /** Return object's Z-Layer. */
@@ -598,6 +605,61 @@ export class InteractiveContextExtensions {
                 theObj.remove(); // invalidate objects
             });
             return aCppRemoveAllObjects() || anObjsToRemove.length !== 0;
+        };
+        theCtx.getSceneGraph = function (theIdPrefix = '') {
+            const aJson = theCtx.getSceneGraphJson(theIdPrefix);
+            return SceneGraph.parseJson(aJson);
+        };
+        const filterObjectIds = function (theObjIds, theAction) {
+            if (!Array.isArray(theObjIds) || theObjIds.length === 0) {
+                return [];
+            }
+            const missing = [];
+            const existing = [];
+            for (const anId of theObjIds) {
+                if (!anId) {
+                    continue;
+                }
+                const anObj = theCtx.findInteractiveObject(anId);
+                if (anObj == null) {
+                    missing.push(anId);
+                }
+                else {
+                    existing.push(anId);
+                }
+            }
+            if (missing.length > 0) {
+                console.warn(`InteractiveContext.${theAction}: skip missing objects: ${missing.join(', ')}`);
+            }
+            return existing;
+        };
+        theCtx.setVisibleManyObjects = function (theObjIds, theToShow) {
+            const ids = filterObjectIds(theObjIds, 'setVisibleManyObjects');
+            if (ids.length === 0) {
+                return;
+            }
+            theCtx.setVisibleMany(ids.join('\n'), theToShow);
+        };
+        theCtx.setVisibleOnlyObjects = function (theObjIds) {
+            const ids = filterObjectIds(theObjIds, 'setVisibleOnlyObjects');
+            if (ids.length === 0) {
+                return;
+            }
+            theCtx.setVisibleOnly(ids.join('\n'));
+        };
+        theCtx.setTransparencyManyObjects = function (theObjIds, theTransparency) {
+            const aMgr = theViewer.interactiveAspectsManager;
+            if (!aMgr) {
+                return;
+            }
+            const ids = filterObjectIds(theObjIds, 'setTransparencyManyObjects');
+            if (ids.length === 0) {
+                return;
+            }
+            const aClamped = Math.min(1.0, Math.max(0.0, theTransparency));
+            for (const anId of ids) {
+                aMgr.setTransparency(anId, aClamped);
+            }
         };
     }
 }

@@ -1,6 +1,3 @@
-// Created by: Kirill Gavrilov
-// Copyright (c) 2022 Huawei Technologies Co., Ltd.
-
 import type {IManager, ColorString, IVisMaterial, IVec3, IAx2,
              ObjectId, IShapeInfo, ICylinderParams, IConeParams, ITrsf} from './CommonTools.js';
 import {Vec3, ShapeInfo, Trsf, ShapeEnum} from './CommonTools.js';
@@ -81,6 +78,93 @@ export enum ShapeObjectSelMode {
   CompSolid = 0x0040,
   /** Selection of groups. */
   Group = 0x0080
+};
+
+export interface IShapeMassProps {
+  area: number;
+  volume: number | null;
+  centroid: IVec3;
+  centroidSource: 'surface' | 'volume';
+  volumeValid: boolean;
+};
+
+export class ShapeMassProps {
+  public static parseJson(theJson: string): IShapeMassProps | null {
+    if (!theJson) {
+      return null;
+    }
+
+    let aParsed: any;
+    try {
+      aParsed = JSON.parse(theJson);
+    } catch {
+      return null;
+    }
+
+    if (!aParsed || !aParsed.centroid) {
+      return null;
+    }
+
+    const aCentroid = aParsed.centroid;
+    if (typeof aCentroid.x !== 'number' || typeof aCentroid.y !== 'number' || typeof aCentroid.z !== 'number') {
+      return null;
+    }
+
+    const volumeValid = aParsed.volumeValid === true || typeof aParsed.volume === 'number';
+    const volume = volumeValid && typeof aParsed.volume === 'number' ? aParsed.volume : null;
+    const centroidSource = aParsed.centroidSource === 'volume' ? 'volume' : 'surface';
+
+    return {
+      area: typeof aParsed.area === 'number' ? aParsed.area : Number(aParsed.area ?? 0),
+      volume,
+      centroid: {x: aCentroid.x, y: aCentroid.y, z: aCentroid.z},
+      centroidSource,
+      volumeValid,
+    };
+  }
+};
+
+export interface IInterferenceResult {
+  objId1: ObjectId;
+  objId2: ObjectId;
+  bboxHit: boolean;
+  exactDone: boolean;
+  distance: number | null;
+  interferes: boolean;
+};
+
+export class InterferenceResult {
+  public static parseJson(theJson: string): IInterferenceResult | null {
+    if (!theJson) {
+      return null;
+    }
+
+    let aParsed: any;
+    try {
+      aParsed = JSON.parse(theJson);
+    } catch {
+      return null;
+    }
+
+    if (!aParsed) {
+      return null;
+    }
+
+    const objId1 = typeof aParsed.objId1 === 'string' ? aParsed.objId1 : '';
+    const objId2 = typeof aParsed.objId2 === 'string' ? aParsed.objId2 : '';
+    if (!objId1 || !objId2) {
+      return null;
+    }
+
+    return {
+      objId1,
+      objId2,
+      bboxHit: aParsed.bboxHit === true,
+      exactDone: aParsed.exactDone === true,
+      distance: typeof aParsed.distance === 'number' ? aParsed.distance : null,
+      interferes: aParsed.interferes === true,
+    };
+  }
 };
 
 /**
@@ -473,7 +557,7 @@ Location:  ${aLoc}
 
   /** Return initial root shape location WITHOUT considering local transformation of interactive object. */
   public get shapeLocation(): ITrsf {
-    return this.shapeMgr?.getSubshapeInfo(this._myObjId, ShapeObjectSelMode.Global, 0, false).location ?? new Trsf();
+    return this.getSubshapeInfo(ShapeObjectSelMode.Global, 0, false).location;
   }
 
   /** Return multiplication of initial root shape location and local transformation of interactive object. */
@@ -1142,8 +1226,81 @@ Location:  ${aLoc}
     return this.shapeMgr?.getSubshapeDump(this._myObjId, theElemType, theIndex) ?? '';
   }
 
+  private getRootShapeInfo(theToExplore: boolean): IShapeInfo {
+    const aMgr: any = this.shapeMgr;
+    if (aMgr && typeof aMgr.getShapeInfo === 'function') {
+      const aMgrInfo = aMgr.getShapeInfo(this._myObjId, theToExplore);
+      const aRes = Object.assign(new ShapeInfo(), aMgrInfo);
+      aRes.objectId = this._myObjId;
+      return aRes;
+    }
+
+    const aInfo = new ShapeInfo();
+    aInfo.objectId = this._myObjId;
+
+    const aLoc = this.getAnySubshapeLocation();
+    if (aLoc) {
+      aInfo.location = aLoc;
+    }
+
+    if (theToExplore && this.shapeMgr) {
+      const aFaces = this.getSubshapesIndexes(ShapeObjectSelMode.Face, false);
+      if (aFaces.length > 0) {
+        const aFaceInfos = this.getSubshapesInfo(ShapeObjectSelMode.Face, aFaces, false);
+        for (const aFaceInfo of aFaceInfos) {
+          aInfo.nbTriangles += aFaceInfo.nbTriangles;
+          aInfo.nbTriNodes += aFaceInfo.nbTriNodes;
+        }
+      }
+
+      const anEdges = this.getSubshapesIndexes(ShapeObjectSelMode.Edge, false);
+      if (anEdges.length > 0) {
+        const anEdgeInfos = this.getSubshapesInfo(ShapeObjectSelMode.Edge, anEdges, false);
+        for (const anEdgeInfo of anEdgeInfos) {
+          aInfo.nbPolySegments += anEdgeInfo.nbPolySegments;
+        }
+      }
+    }
+
+    return aInfo;
+  }
+
+  private getAnySubshapeLocation(): ITrsf | null {
+    if (!this.shapeMgr) {
+      return null;
+    }
+
+    const aTypes: ShapeObjectSelMode[] = [
+      ShapeObjectSelMode.Face,
+      ShapeObjectSelMode.Edge,
+      ShapeObjectSelMode.Wire,
+      ShapeObjectSelMode.Vertex,
+      ShapeObjectSelMode.Shell,
+      ShapeObjectSelMode.Solid,
+      ShapeObjectSelMode.CompSolid,
+      ShapeObjectSelMode.Group,
+    ];
+
+    for (const aType of aTypes) {
+      const aIds = this.getSubshapesIndexes(aType, false);
+      if (aIds.length === 0) {
+        continue;
+      }
+
+      const aInfo = this.shapeMgr.getSubshapeInfo(this._myObjId, aType, aIds[0], false);
+      if (aInfo && aInfo.location) {
+        return aInfo.location;
+      }
+    }
+
+    return null;
+  }
+
   /** @internal Return subshape info */
   public getSubshapeInfo(theElemType: ShapeObjectSelMode, theIndex: number, theToExplore: boolean = true): IShapeInfo {
+    if (theElemType === ShapeObjectSelMode.Global) {
+      return this.getRootShapeInfo(theToExplore);
+    }
     let anInfo = this.shapeMgr?.getSubshapeInfo(this._myObjId, theElemType, theIndex, theToExplore) ?? new ShapeInfo();
     let aRes = Object.assign(new ShapeInfo(), anInfo);
     aRes.objectId = this._myObjId; // avoid duplicating string - rely on JS sharing
@@ -1379,6 +1536,19 @@ export interface InteractiveShapeManager extends IManager {
 
   /** @internal Get subshape dump or empty string. */
   getSubshapeDump: (theObjId: ObjectId, theElemType: number, theIndex: number) => string;
+
+  /** @internal Measure minimal distance between two shapes/subshapes and return JSON string. */
+  measureDistanceJson: (theObjId1: ObjectId, theSelMode1: number, theEntityId1: number,
+                        theObjId2: ObjectId, theSelMode2: number, theEntityId2: number) => string;
+
+  /** @internal Return circle params for specified subshape (Edge/Face) as JSON string. */
+  getCircleParamsJson: (theObjId: ObjectId, theSelMode: number, theEntityId: number) => string;
+
+  /** @internal Return mass properties for specified shape as JSON string. */
+  getMassPropsJson: (theObjId: ObjectId) => string;
+
+  /** @internal Return interference results for specified shape pair as JSON string. */
+  checkInterferenceJson: (theObjId1: ObjectId, theObjId2: ObjectId, theTolerance: number) => string;
 
   /** @internal Remove all selection groups. */
   clearSelectionGroups: (theObjId: ObjectId) => void;

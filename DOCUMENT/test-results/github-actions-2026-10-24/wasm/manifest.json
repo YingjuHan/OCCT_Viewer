@@ -1,0 +1,42 @@
+{
+  "platform": "WSL Ubuntu 24.04",
+  "emscripten": "3.1.58",
+  "typescript": "5.4.5",
+  "occt_revision": "db3716c9f9189391d2b5f6b469bce3963ae99afa",
+  "viewer_base_revision": "7e768b3153d5f9a64281915720c9352decad4406",
+  "validation": {
+    "file": "/home/htf/occtviewer-ci/wasm/viewer-install/wasm32/Viewer-wasm.wasm",
+    "bytes": 17816162,
+    "sha256": "ddd105e70a58da350bb440d6c585512e2cbff4a0af8017cf1d0917b002409340",
+    "valid": true
+  },
+  "outputs": {
+    "Viewer-wasm.js": {
+      "bytes": 367021,
+      "sha256": "0a54c063c9fb01b17489b865a414f89413e1789b9d0f195cf42e91127fd3517c"
+    },
+    "Viewer-wasm.wasm": {
+      "bytes": 17816162,
+      "sha256": "ddd105e70a58da350bb440d6c585512e2cbff4a0af8017cf1d0917b002409340"
+    }
+  },
+  "configuration": "Release, wasm32, single thread, JS exceptions, shared Emscripten zlib port for FreeType and viewer",
+  "build_notes": "Final incremental successful round after full SDK build; local compilation changed from 2 to 4 jobs. No browser interaction test. GitHub hosted run pending source secret and push.",
+  "source_sha256": {
+    "adm/ci/build-wasm.sh": "e244d5bf8f8918b34e2fbb20fedd9c95208f436df4f301ab56343c4eec44e799",
+    "adm/ci/common.sh": "897492dde7c87fcc9d553a0263601cf611657c7d88ba02a95a2eb07ee05ecc6d",
+    "adm/ci/verify-wasm.cjs": "40adcc7ddcc90757cfef6d18c5c82e1c2527ab99a8334acc1a51fe34b762a1a4",
+    "source/ViewCaeGeom/MeshCutCache.cpp": "5e93c7628c67d77647edf9e6a6c3311560330df3fe264524aec0cda7464891ae"
+  },
+  "evidence_sha256": {
+    "freetype-configure.log": "6ca38c00b49cc695bf0755350f808e1056553d0bf8b16653fbab27502dca4e8c",
+    "occt-build.log": "a054daa7102a47bbd6ce43996d98d443a1320b9572a10c3d4ad2f99beb107fbd",
+    "occt-configure.log": "aad0808a1728ee5d25abce7eb46aba8b4dd2639fb86d74cb9dfcb25c5c72784d",
+    "result.txt": "a460e3de205ea18d2e461353883976a891f7e31cb922e4a7b2cc53320d89f2c5",
+    "versions.txt": "bc38b39b24f211e59a3e677ff81309718f7fc500f83f0e51e64d2fc276203e99",
+    "viewer-build.log": "d647a4ab20f59092a72371998c1862f332d5352f6e9f2e906ab537e0b333b2ab",
+    "viewer-configure.log": "c60235806de320a07084cd9e6b160265eba11171150ef077646886c775d06c7a",
+    "wasm-validate.log": "2e30e61bf758c15608e697ff190657a137406592e254dc110dbc34c8c91c759a",
+    "zlib-port.log": "16daa27f2c59791a8fb8380273b3e721ad4dc6ae1c0da581736b9f9f1f2eb1ec"
+  }
+}

@@ -1,0 +1,11 @@
+<VTKFile type="UnstructuredGrid" byte_order="LittleEndian">
+  <UnstructuredGrid><Piece NumberOfPoints="5" NumberOfCells="2">
+    <Points><DataArray type="Float64" NumberOfComponents="3" format="ascii">0 0 0 1 0 0 0 1 0 0 0 1 0 0 -1</DataArray></Points>
+    <Cells>
+      <DataArray type="Int32" Name="connectivity" format="ascii">0 1 2 3 0 2 1 4</DataArray>
+      <DataArray type="Int32" Name="offsets" format="ascii">4 8</DataArray>
+      <DataArray type="UInt8" Name="types" format="ascii">10 10</DataArray>
+    </Cells>
+    <CellData><DataArray type="Float64" Name="pressure" format="ascii">2 6</DataArray></CellData>
+  </Piece></UnstructuredGrid>
+</VTKFile>

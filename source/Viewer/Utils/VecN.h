@@ -94,6 +94,14 @@ public:
     }
 };
 
+//! Represents 4x4 matrix struct.
+struct Mat4 {
+    Vec4 row1;
+    Vec4 row2;
+    Vec4 row3;
+    Vec4 row4;
+};
+
 //! Represents an axes-aligned 3D bounding box defined by it's corner points.
 //! Invalid (void) bounding box is defined by negative extent.
 class BndBox3 : public Graphic3d_BndBox3d {

@@ -85,6 +85,14 @@ EMSCRIPTEN_BINDINGS(Vec4)
         .field("z", &Vec4::Z, &Vec4::SetZ)
         .field("w", &Vec4::W, &Vec4::SetW);
 }
+EMSCRIPTEN_BINDINGS(Mat4)
+{
+    emscripten::value_object<Mat4>("Mat4")
+        .field("row1", &Mat4::row1)
+        .field("row2", &Mat4::row2)
+        .field("row3", &Mat4::row3)
+        .field("row4", &Mat4::row4);
+}
 EMSCRIPTEN_BINDINGS(BndBox3)
 {
     emscripten::value_object<BndBox3>("BndBox3")

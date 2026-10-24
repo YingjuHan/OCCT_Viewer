@@ -23,7 +23,8 @@ static constexpr ViewCae::MeshPartType PARTS_LIST[] = {ViewCae::MeshPartType::Tr
                                                         ViewCae::MeshPartType::Centroids3d,
                                                         ViewCae::MeshPartType::Centroids2d,
                                                         ViewCae::MeshPartType::MinMaxAnnotations,
-                                                        ViewCae::MeshPartType::GroupsInfo};
+                                                        ViewCae::MeshPartType::GroupsInfo,
+                                                        ViewCae::MeshPartType::GeneralCells};
 
 static constexpr const char* NAME_MIN_VALUE = "min";
 static constexpr const char* NAME_MAX_VALUE = "max";
@@ -155,11 +156,12 @@ void MeshPresentationScalar::updateElementsVisibility()
 
     myDrawer->FillAreaAspect3d()->SetInteriorStyle(toShow3d ? Aspect_IS_SOLID : Aspect_IS_EMPTY);
     myDrawer->CentroidAspect3d()->SetMarkerType(toShowCentr && toShow3d ? Aspect_TOM_POINT : Aspect_TOM_EMPTY);
-    myDrawer->LineAspect3d()->SetLineType(toShow3d ? Aspect_TOL_SOLID : Aspect_TOL_EMPTY);
+    const auto edgeType = myDrawer->LineAspect()->Aspect()->Type();
+    myDrawer->LineAspect3d()->SetLineType(toShow3d ? edgeType : Aspect_TOL_EMPTY);
 
     myDrawer->FillAreaAspect2d()->SetInteriorStyle(toShow2d ? Aspect_IS_SOLID : Aspect_IS_EMPTY);
     myDrawer->CentroidAspect2d()->SetMarkerType(toShowCentr && toShow2d ? Aspect_TOM_POINT : Aspect_TOM_EMPTY);
-    myDrawer->LineAspect2d()->SetLineType(toShow2d ? Aspect_TOL_SOLID : Aspect_TOL_EMPTY);
+    myDrawer->LineAspect2d()->SetLineType(toShow2d ? edgeType : Aspect_TOL_EMPTY);
 
     myDrawer->PointAspect()->Aspect()->SetMarkerType(toShowNodes ? Aspect_TOM_POINT : Aspect_TOM_EMPTY);
     myDrawer->Elem0dAspect()->SetMarkerType(toShow0d ? Aspect_TOM_PLUS : Aspect_TOM_EMPTY);
@@ -191,6 +193,7 @@ void MeshPresentationScalar::updateElementsVisibility()
     aParts(MeshPartType::Centroids2d)->SetShow(toShow2d && toShowCentr);
     aParts(MeshPartType::MinMaxAnnotations)->SetShow(aPrsProps->ToShowMinMax());
     aParts(MeshPartType::GroupsInfo)->SetShow(aPrsProps->ToShowGroupsInfo());
+    aParts(MeshPartType::GeneralCells)->SetShow(true);
 }
 
 // ================================================================
@@ -261,6 +264,7 @@ void MeshPresentationScalar::updateUsedProps()
         for (const TCollection_AsciiString& aPropId : aPropsToAdd) {
             addUsedPerPartProp(MeshPartType::Triangles3d, aPropId);
             addUsedPerPartProp(MeshPartType::Triangles2d, aPropId);
+            addUsedPerPartProp(MeshPartType::GeneralCells, aPropId);
             addUsedPerPartProp(MeshPartType::MinMaxAnnotations, aPropId);
             if (aProp.Property->IsNodal()) {
                 addUsedPerPartProp(MeshPartType::Points, aPropId);
@@ -801,6 +805,7 @@ void MeshPresentationScalar::OnPropertiesUpdated(const NCollection_Map<Handle(RW
     std::vector<MeshPartType> aPartsToUpdate;
     aPartsToUpdate.push_back(MeshPartType::Triangles3d);
     aPartsToUpdate.push_back(MeshPartType::Triangles2d);
+    aPartsToUpdate.push_back(MeshPartType::GeneralCells);
     aPartsToUpdate.push_back(MeshPartType::MinMaxAnnotations);
     if (aProp->IsNodal()) {
         aPartsToUpdate.push_back(MeshPartType::Points);

@@ -1,0 +1,72 @@
+Internal ctest changing into directory: /home/htf/occtviewer-ci/linux/viewer
+Test project /home/htf/occtviewer-ci/linux/viewer
+      Start  1: vtk_reader
+ 1/33 Test  #1: vtk_reader .......................   Passed    0.06 sec
+      Start  2: vtk_format
+ 2/33 Test  #2: vtk_format .......................   Passed    0.02 sec
+      Start  3: vtk_series
+ 3/33 Test  #3: vtk_series .......................   Passed    0.02 sec
+      Start  4: vtk_safety
+ 4/33 Test  #4: vtk_safety .......................   Passed    0.02 sec
+      Start  5: vtk_limits
+ 5/33 Test  #5: vtk_limits .......................   Passed    0.07 sec
+      Start  6: vtk_reference
+ 6/33 Test  #6: vtk_reference ....................   Passed    0.05 sec
+      Start  7: vtk_import
+ 7/33 Test  #7: vtk_import .......................   Passed    0.04 sec
+      Start  8: cut_view
+ 8/33 Test  #8: cut_view .........................   Passed    0.16 sec
+      Start  9: cut_display
+ 9/33 Test  #9: cut_display ......................   Passed    0.02 sec
+      Start 10: cut_slicing
+10/33 Test #10: cut_slicing ......................   Passed    2.70 sec
+      Start 11: cut_linear_batch
+11/33 Test #11: cut_linear_batch .................   Passed    3.94 sec
+      Start 12: cut_placement
+12/33 Test #12: cut_placement ....................   Passed    0.02 sec
+      Start 13: cut_material
+13/33 Test #13: cut_material .....................   Passed    1.24 sec
+      Start 14: cut_sine_plate
+14/33 Test #14: cut_sine_plate ...................   Passed   18.27 sec
+      Start 15: cut_cache
+15/33 Test #15: cut_cache ........................   Passed    0.02 sec
+      Start 16: cut_physics
+16/33 Test #16: cut_physics ......................   Passed    0.05 sec
+      Start 17: native_cut
+17/33 Test #17: native_cut .......................   Passed    0.06 sec
+      Start 18: native_timeline
+18/33 Test #18: native_timeline ..................   Passed    0.06 sec
+      Start 19: native_analysis
+19/33 Test #19: native_analysis ..................   Passed    0.04 sec
+      Start 20: native_session
+20/33 Test #20: native_session ...................   Passed    0.28 sec
+      Start 21: quadric_cut
+21/33 Test #21: quadric_cut ......................   Passed    0.40 sec
+      Start 22: cut_recovery
+22/33 Test #22: cut_recovery .....................   Passed    0.02 sec
+      Start 23: cut_tensor
+23/33 Test #23: cut_tensor .......................   Passed    0.02 sec
+      Start 24: cut_trace_binding
+24/33 Test #24: cut_trace_binding ................   Passed    0.07 sec
+      Start 25: cut_union
+25/33 Test #25: cut_union ........................   Passed    2.83 sec
+      Start 26: cut_interface
+26/33 Test #26: cut_interface ....................   Passed    0.25 sec
+      Start 27: vtk_cell_cut
+27/33 Test #27: vtk_cell_cut .....................   Passed    6.34 sec
+      Start 28: general_cut_cache
+28/33 Test #28: general_cut_cache ................   Passed    1.41 sec
+      Start 29: cut_geometry
+29/33 Test #29: cut_geometry .....................   Passed    9.06 sec
+      Start 30: cut_analytic
+30/33 Test #30: cut_analytic .....................   Passed    2.14 sec
+      Start 31: cut_reference
+31/33 Test #31: cut_reference ....................   Passed    4.77 sec
+      Start 32: cut_iso
+32/33 Test #32: cut_iso ..........................   Passed    4.64 sec
+      Start 33: cell_kernel
+33/33 Test #33: cell_kernel ......................   Passed    0.02 sec
+
+100% tests passed, 0 tests failed out of 33
+
+Total Test time (real) =  59.15 sec

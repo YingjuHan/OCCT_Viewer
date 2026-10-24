@@ -2,6 +2,17 @@
 
 #include "WasmViewer.h"
 
+#include <NCollection_Mat4.hxx>
+#include <cmath>
+#include <Precision.hxx>
+#include <gp_Ax1.hxx>
+#include <gp_Dir.hxx>
+#include <gp_EulerSequence.hxx>
+#include <gp_Pnt.hxx>
+#include <gp_Quaternion.hxx>
+#include <gp_Trsf.hxx>
+#include <gp_Vec.hxx>
+
 #include <ViewBase/BaseDefaultDrawer.h>
 #include <ViewBase/UnitManager.h>
 
@@ -12,6 +23,42 @@
 #endif
 
 namespace Viewer {
+namespace {
+gp_Quaternion toQuat(const Vec4& theRot)
+{
+    return gp_Quaternion(theRot.X(), theRot.Y(), theRot.Z(), theRot.W());
+}
+
+gp_Vec toVec(const Vec3& theVec)
+{
+    return gp_Vec(theVec.X(), theVec.Y(), theVec.Z());
+}
+
+gp_Trsf toTrsf(const Location& theLoc)
+{
+    gp_Trsf aTrsf;
+    const double aScale = (std::abs(theLoc.scale) <= Precision::Confusion()) ? 1.0 : theLoc.scale;
+    aTrsf.SetRotationPart(toQuat(theLoc.rotation));
+    aTrsf.SetTranslationPart(toVec(theLoc.translation));
+    if (std::abs(aScale - 1.0) > Precision::Confusion()) {
+        aTrsf.SetScaleFactor(aScale);
+    }
+    return aTrsf;
+}
+
+Mat4 toMat4(const gp_Trsf& theTrsf)
+{
+    NCollection_Mat4<double> aMat;
+    theTrsf.GetMat4(aMat);
+    Mat4 aRes;
+    aRes.row1 = Vec4(aMat.GetValue(0, 0), aMat.GetValue(0, 1), aMat.GetValue(0, 2), aMat.GetValue(0, 3));
+    aRes.row2 = Vec4(aMat.GetValue(1, 0), aMat.GetValue(1, 1), aMat.GetValue(1, 2), aMat.GetValue(1, 3));
+    aRes.row3 = Vec4(aMat.GetValue(2, 0), aMat.GetValue(2, 1), aMat.GetValue(2, 2), aMat.GetValue(2, 3));
+    aRes.row4 = Vec4(aMat.GetValue(3, 0), aMat.GetValue(3, 1), aMat.GetValue(3, 2), aMat.GetValue(3, 3));
+    return aRes;
+}
+} // namespace
+
 #ifdef __EMSCRIPTEN__
 //! Callback for units changes.
 EM_JS(bool, jsOnUnitsChanged, (int theQuantType, int theSection), {
@@ -204,6 +251,100 @@ double UnitManager::SystemFromSI(int theQuantity, double theSIVal) const
     return aMgr->SystemFromSI((ViewBase::QuantityType)theQuantity, theSIVal);
 }
 
+// ================================================================
+// Function : TrsfMultiply
+// ================================================================
+Location UnitManager::TrsfMultiply(const Location& theLoc1, const Location& theLoc2) const
+{
+    gp_Trsf aTrsf1 = toTrsf(theLoc1);
+    gp_Trsf aTrsf2 = toTrsf(theLoc2);
+    gp_Trsf aRes   = aTrsf1.Multiplied(aTrsf2);
+    return Location(aRes);
+}
+
+// ================================================================
+// Function : TrsfInvert
+// ================================================================
+Location UnitManager::TrsfInvert(const Location& theLoc) const
+{
+    gp_Trsf aTrsf = toTrsf(theLoc);
+    aTrsf.Invert();
+    return Location(aTrsf);
+}
+
+// ================================================================
+// Function : TrsfGetMat4
+// ================================================================
+Mat4 UnitManager::TrsfGetMat4(const Location& theLoc) const
+{
+    gp_Trsf aTrsf = toTrsf(theLoc);
+    return toMat4(aTrsf);
+}
+
+// ================================================================
+// Function : TrsfGetEulerAngles
+// ================================================================
+Vec3 UnitManager::TrsfGetEulerAngles(const Location& theLoc, int theSeq) const
+{
+    gp_Trsf aTrsf = toTrsf(theLoc);
+    gp_Quaternion aRot = aTrsf.GetRotation();
+    Standard_Real anAlpha = 0.0;
+    Standard_Real aBeta = 0.0;
+    Standard_Real aGamma = 0.0;
+    aRot.GetEulerAngles(static_cast<gp_EulerSequence>(theSeq), anAlpha, aBeta, aGamma);
+    return Vec3(gp_XYZ(anAlpha, aBeta, aGamma));
+}
+
+// ================================================================
+// Function : TrsfSetEulerAngles
+// ================================================================
+Location UnitManager::TrsfSetEulerAngles(const Location& theLoc, const Vec3& theAngles, int theSeq) const
+{
+    gp_Trsf aTrsf = toTrsf(theLoc);
+    gp_Quaternion aRot;
+    aRot.SetEulerAngles(static_cast<gp_EulerSequence>(theSeq), theAngles.X(), theAngles.Y(), theAngles.Z());
+    aTrsf.SetRotationPart(aRot);
+    return Location(aTrsf);
+}
+
+// ================================================================
+// Function : TrsfRotateAroundAxis
+// ================================================================
+Location UnitManager::TrsfRotateAroundAxis(const Vec3& theDir, double theAngle, const Vec3& theOrigin) const
+{
+    gp_Vec aDirVec = toVec(theDir);
+    if (aDirVec.SquareMagnitude() <= Precision::Confusion() * Precision::Confusion()) {
+        return Location();
+    }
+
+    gp_Ax1 anAxis(gp_Pnt(theOrigin.X(), theOrigin.Y(), theOrigin.Z()), gp_Dir(aDirVec));
+    gp_Trsf aTrsf;
+    aTrsf.SetRotation(anAxis, theAngle);
+    return Location(aTrsf);
+}
+
+// ================================================================
+// Function : TrsfTransformPnt
+// ================================================================
+Vec3 UnitManager::TrsfTransformPnt(const Location& theLoc, const Vec3& thePnt) const
+{
+    gp_Trsf aTrsf = toTrsf(theLoc);
+    gp_Pnt aPnt(thePnt.X(), thePnt.Y(), thePnt.Z());
+    aPnt.Transform(aTrsf);
+    return Vec3(aPnt.XYZ());
+}
+
+// ================================================================
+// Function : TrsfTransformDir
+// ================================================================
+Vec3 UnitManager::TrsfTransformDir(const Location& theLoc, const Vec3& theDir) const
+{
+    gp_Trsf aTrsf = toTrsf(theLoc);
+    gp_Vec aVec(theDir.X(), theDir.Y(), theDir.Z());
+    aVec.Transform(aTrsf);
+    return Vec3(aVec.XYZ());
+}
+
 // Module exports
 #ifdef __EMSCRIPTEN__
 EMSCRIPTEN_BINDINGS(UnitManager)
@@ -220,7 +361,15 @@ EMSCRIPTEN_BINDINGS(UnitManager)
         .function("systemToDisplay", &UnitManager::SystemToDisplay)
         .function("systemFromDisplay", &UnitManager::SystemFromDisplay)
         .function("systemToSI", &UnitManager::SystemToSI)
-        .function("systemFromSI", &UnitManager::SystemFromSI);
+        .function("systemFromSI", &UnitManager::SystemFromSI)
+        .function("trsfMultiply", &UnitManager::TrsfMultiply)
+        .function("trsfInvert", &UnitManager::TrsfInvert)
+        .function("trsfGetMat4", &UnitManager::TrsfGetMat4)
+        .function("trsfGetEulerAngles", &UnitManager::TrsfGetEulerAngles)
+        .function("trsfSetEulerAngles", &UnitManager::TrsfSetEulerAngles)
+        .function("trsfRotateAroundAxis", &UnitManager::TrsfRotateAroundAxis)
+        .function("trsfTransformPnt", &UnitManager::TrsfTransformPnt)
+        .function("trsfTransformDir", &UnitManager::TrsfTransformDir);
 }
 #endif
 

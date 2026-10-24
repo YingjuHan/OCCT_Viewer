@@ -1,0 +1,964 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="(empty)"
+	tests="85"
+	failures="0"
+	disabled="0"
+	skipped="0"
+	hostname=""
+	time="750"
+	timestamp="2026-10-24T17:30:59"
+	>
+	<testcase name="vtk_reader" classname="vtk_reader" time="0.0738017" status="run">
+		<properties/>
+		<system-out>[ERR_VTK_IMPORT] Tuple count mismatch in CellData 'pressure'
+[ERR_VTK_IMPORT] VTK cell connectivity has incorrect type/node count/degrees
+[ERR_VTK_IMPORT] Invalid or missing VTK polyhedron face arrays
+[ERR_VTK_IMPORT] PolyData point index out of range
+[ERR_VTK_IMPORT] VTK integer value exceeds supported range or is not integral
+[ERR_VTK_IMPORT] Invalid PolyData connectivity offset or cell node count
+[ERR_VTK_IMPORT] Invalid PolyData connectivity offset or cell node count
+[ERR_VTK_IMPORT] Array 'connectivity': stoll
+[ERR_VTK_IMPORT] Invalid PolyData connectivity or offset count
+[ERR_VTK_IMPORT] Composite 'D:/workspace/OpenCASCADE/OCCT_Viewer/test/native/fixtures/broken.vtm', block 'dataset_1', reference 'missing.vtu', resolved 'D:/workspace/OpenCASCADE/OCCT_Viewer/test/native/fixtures/missing.vtu'
+[ERR_VTK_IMPORT] VTK series files must be a nonempty array
+VTK reader tests passed
+</system-out>
+	</testcase>
+	<testcase name="vtk_format" classname="vtk_format" time="0.0586142" status="run">
+		<properties/>
+		<system-out>VTK_FORMAT_PASS
+</system-out>
+	</testcase>
+	<testcase name="vtk_series" classname="vtk_series" time="0.0901224" status="run">
+		<properties/>
+		<system-out>VTK_SERIES_PASS
+</system-out>
+	</testcase>
+	<testcase name="vtk_safety" classname="vtk_safety" time="0.0701103" status="run">
+		<properties/>
+		<system-out>VTK_SAFETY_PASS
+</system-out>
+	</testcase>
+	<testcase name="vtk_limits" classname="vtk_limits" time="0.0819674" status="run">
+		<properties/>
+		<system-out>MEMORY_PASS arrays=4 payload_bytes=2097152
+MEMORY_PEAK_BYTES 21577728
+VTK_LIMITS_PASS
+</system-out>
+	</testcase>
+	<testcase name="vtk_reference" classname="vtk_reference" time="0.182682" status="run">
+		<properties/>
+		<system-out>[ERR_VTK_IMPORT] VTK reference staging 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/missing.vtm' into 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/stage': Reference 'B/absent.vtu' from 'd:/workspace/opencascade/occt_viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/missing.vtm', resolved 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/B/absent.vtu': filesystem error: cannot make canonical path: No such file or directory [D:\workspace\OpenCASCADE\OCCT_Viewer\build\mingw-deformation\test\native\vtk-reference-fixtures\src\B/absent.vtu]
+[ERR_VTK_IMPORT] VTK reference staging 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/cycle.vtm' into 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/stage': Reference 'cycle.vtm' from 'd:/workspace/op...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="vtk_import" classname="vtk_import" time="0.103367" status="run">
+		<properties/>
+		<system-out>[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/invalid.vtu: portable: Invalid byte order: 'invalid'
+Reading mapping file version '0.0'
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/polyline.vtu: Cannot find component 'missing' for property 'temperature'
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/polyline.vtu: Failed to parse mapping for property 'temperature'
+Reading mapping file version '0.0'
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/tetra.vtu: Cannot find component 'missing' for property 'temperature'
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/tetra.vtu: Failed to parse mapping for property 'temperature'
+Reading mapping file version '0.0'
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="cut_view" classname="cut_view" time="0.397398" status="run">
+		<properties/>
+		<system-out>Cut view numerical tests passed
+</system-out>
+	</testcase>
+	<testcase name="cut_display" classname="cut_display" time="0.127736" status="run">
+		<properties/>
+		<system-out>CUT_DISPLAY_PASS
+</system-out>
+	</testcase>
+	<testcase name="cut_slicing" classname="cut_slicing" time="2.27667" status="run">
+		<properties/>
+		<system-out>CUT_SLICING_PASS
+</system-out>
+	</testcase>
+	<testcase name="cut_linear_batch" classname="cut_linear_batch" time="2.99019" status="run">
+		<properties/>
+		<system-out>LINEAR_BATCH type 6 cells 1296000 candidates 25560 topology_hits 0 fallbacks 0 elapsed_ms 877.013
+LINEAR_BATCH type 6 cells 1296000 candidates 25560 topology_hits 11973 fallbacks 0 elapsed_ms 910.202
+LINEAR_BATCH type 6 cells 1296000 candidates 25560 topology_hits 11347 fallbacks 0 elapsed_ms 942.032
+LINEAR_BATCH type 6 cells 1296000 candidates 25200 topology_hits 0 fallbacks 0 elapsed_ms 977.067
+LINEAR_BATCH type 10 cells 1024000 candidates 15040 topology_hits 0 fallbacks 0 elapsed_ms 844.377
+LINEAR_BATCH type 10 cells 1024000 candidates 15040 topology_hits 15038 fallbacks 0 elapsed_ms 867.666
+LINEAR_BATCH type 10 cells 1024000 candidates 15040 topology_hits 14398 fallbacks 0 elapsed_ms 889.604
+LINEAR_BATCH type 10 cells 1024000 candidates 15040 topology_hits 0 fallbacks 0 elapsed_ms 919.657
+LINEAR_BATCH type 8 cells 1053696 candidates 18424 topology_hits 0 fallbacks 0 elapsed_ms 827.536
+LINEAR_BATCH type 8 cells 1053696 candidates 18424 topology_hits 17046 fallbacks 0 elapsed_ms 870.903
+LINEAR_BATCH type 8 ...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="cut_placement" classname="cut_placement" time="0.0482463" status="run">
+		<properties/>
+		<system-out>CUT_PLACEMENT_PASS
+</system-out>
+	</testcase>
+	<testcase name="cut_material" classname="cut_material" time="1.39634" status="run">
+		<properties/>
+		<system-out>CUT_MATERIAL_PASS
+</system-out>
+	</testcase>
+	<testcase name="cut_sine_plate" classname="cut_sine_plate" time="42.1788" status="run">
+		<properties/>
+		<system-out>SINE_PLATE_SECTION vtk plane 0 source_cells 6
+SINE_PLATE_SECTION vtk plane 1 source_cells 12
+SINE_PLATE_SECTION vtk plane 2 source_cells 24
+SINE_PLATE_SECTION vtk plane 3 source_cells 12
+SINE_PLATE_SECTION vtk plane 4 source_cells 18
+SINE_PLATE_SECTION vtk plane 5 source_cells 18
+SINE_PLATE_SECTION vtk plane 6 source_cells 12
+SINE_PLATE_SECTION vtk plane 7 source_cells 24
+SINE_PLATE_SECTION vtk plane 8 source_cells 0
+SINE_PLATE_SECTION vtk plane 9 source_cells 0
+SINE_PLATE_BODY plane 0 sign 1 mask 3
+SINE_PLATE_BODY plane 0 sign 1 mask 6
+SINE_PLATE_BODY plane 0 sign 1 mask 7
+SINE_PLATE_BODY plane 0 sign -1 mask 3
+SINE_PLATE_BODY plane 0 sign -1 mask 6
+SINE_PLATE_BODY plane 0 sign -1 mask 7
+SINE_PLATE_SECTION vtu plane 0 source_cells 6
+SINE_PLATE_SECTION vtu plane 1 source_cells 12
+SINE_PLATE_BODY plane 2 sign 1 mask 3
+SINE_PLATE_BODY plane 2 sign 1 mask 6
+SINE_PLATE_BODY plane 2 sign 1 mask 7
+SINE_PLATE_BODY plane 2 sign -1 mask 3
+SINE_PLATE_BODY plane 2 sign -1 mask 6
+SINE_PLATE_BODY plane 2 sign -1 mask 7
+SI...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="cut_cache" classname="cut_cache" time="0.0562168" status="run">
+		<properties/>
+		<system-out>CUT_CACHE_PASS
+</system-out>
+	</testcase>
+	<testcase name="cut_physics" classname="cut_physics" time="0.13109" status="run">
+		<properties/>
+		<system-out>CUT_PHYSICS_PASS
+</system-out>
+	</testcase>
+	<testcase name="native_cut" classname="native_cut" time="0.0974289" status="run">
+		<properties/>
+		<system-out>NATIVE_CUT_PASS
+</system-out>
+	</testcase>
+	<testcase name="native_timeline" classname="native_timeline" time="0.104395" status="run">
+		<properties/>
+		<system-out></system-out>
+	</testcase>
+	<testcase name="native_analysis" classname="native_analysis" time="0.0747046" status="run">
+		<properties/>
+		<system-out></system-out>
+	</testcase>
+	<testcase name="native_session" classname="native_session" time="1.25996" status="run">
+		<properties/>
+		<system-out>[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/native-session\remeshed\model.vtm.series: Series geometry/topology changes: the initial Viewer mesh exposes only first-step fields; use SeriesSteps for later geometry
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/native-session/remeshed/series.json.assets/vtk-import-809444323277200-8/0/model.vtm.series: Series geometry/topology changes: the initial Viewer mesh exposes only first-step fields; use SeriesSteps for later geometry
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/native-session/remeshed/series.json.assets/vtk-import-809444323277200-8/0/model.vtm.series: Series geometry/topology changes: the initial Viewer mesh exposes only first-step fields; use SeriesSteps for later geometry
+[VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/native-session/remeshed/series.json.assets/vtk-import-809444358939300-9/0/model...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="quadric_cut" classname="quadric_cut" time="1.16165" status="run">
+		<properties/>
+		<system-out>Curved cut numerical tests passed
+</system-out>
+	</testcase>
+	<testcase name="cut_recovery" classname="cut_recovery" time="0.0669932" status="run">
+		<properties/>
+		<system-out>CUT_RECOVERY_PASS
+</system-out>
+	</testcase>
+	<testcase name="cut_tensor" classname="cut_tensor" time="0.138809" status="run">
+		<properties/>
+		<system-out>CUT_TENSOR_PASS
+</system-out>
+	</testcase>
+	<testcase name="cut_trace_binding" classname="cut_trace_binding" time="0.158712" status="run">
+		<properties/>
+		<system-out>CUT_TRACE_BINDING_PASS
+</system-out>
+	</testcase>
+	<testcase name="cut_union" classname="cut_union" time="5.96785" status="run">
+		<properties/>
+		<system-out>CUT_UNION_PASS
+</system-out>
+	</testcase>
+	<testcase name="cut_interface" classname="cut_interface" time="0.593678" status="run">
+		<properties/>
+		<system-out>CUT_INTERFACE_SOURCE_PASS 12 bend 0 deformed 0 numerical 0
+CUT_INTERFACE_SOURCE_PASS 11 bend 0 deformed 0 numerical 0
+CUT_INTERFACE_SOURCE_PASS 25 bend 0 deformed 0 numerical 0
+CUT_INTERFACE_SOURCE_PASS 72 bend 0 deformed 0 numerical 0
+CUT_INTERFACE_SOURCE_PASS 42 bend 0 deformed 0 numerical 0
+CUT_INTERFACE_SOURCE_PASS 12 bend 0 deformed 1 numerical 0
+CUT_INTERFACE_SOURCE_PASS 25 bend 0.08 deformed 0 numerical 0
+CUT_INTERFACE_SOURCE_PASS 72 bend 0.08 deformed 1 numerical 0
+CUT_INTERFACE_SOURCE_PASS 25 bend 0.08 deformed 0 numerical 1
+CUT_INTERFACE_NATIVE_PASS
+</system-out>
+	</testcase>
+	<testcase name="vtk_cell_cut" classname="vtk_cell_cut" time="15.3414" status="run">
+		<properties/>
+		<system-out>VTK_CELL_CHECK 0 nodes 0
+VTK_CELL_PASS 0 MeshCellKernel
+VTK_CELL_CHECK 1 nodes 1
+VTK_CELL_PASS 1 MeshCellKernel
+VTK_CELL_CHECK 2 nodes 3
+VTK_CELL_PASS 2 MeshCellKernel
+VTK_CELL_CHECK 3 nodes 2
+VTK_CELL_PASS 3 MeshCellKernel
+VTK_CELL_CHECK 4 nodes 3
+VTK_CELL_PASS 4 MeshCellKernel
+VTK_CELL_CHECK 5 nodes 3
+VTK_CELL_PASS 5 MeshCellKernel
+VTK_CELL_CHECK 6 nodes 4
+VTK_CELL_PASS 6 MeshCellKernel
+VTK_CELL_CHECK 7 nodes 5
+VTK_CELL_PASS 7 MeshCellKernel
+VTK_CELL_CHECK 8 nodes 4
+VTK_CELL_PASS 8 MeshCellKernel
+VTK_CELL_CHECK 9 nodes 4
+VTK_CELL_PASS 9 MeshCellKernel
+VTK_CELL_CHECK 10 nodes 4
+VTK_CELL_PASS 10 MeshCellKernel
+VTK_CELL_CHECK 11 nodes 8
+VTK_CELL_PASS 11 MeshCellKernel
+VTK_CELL_CHECK 12 nodes 8
+VTK_CELL_PASS 12 MeshCellKernel
+VTK_CELL_CHECK 13 nodes 6
+VTK_CELL_PASS 13 MeshCellKernel
+VTK_CELL_CHECK 14 nodes 5
+VTK_CELL_PASS 14 MeshCellKernel
+VTK_CELL_CHECK 15 nodes 10
+VTK_CELL_PASS 15 MeshCellKernel
+VTK_CELL_CHECK 16 nodes 12
+VTK_CELL_PASS 16 MeshCellKernel
+VTK_CELL_CHECK 21 nodes 3
+VTK_CELL_PASS 21 MeshCellKerne...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="general_cut_cache" classname="general_cut_cache" time="3.29889" status="run">
+		<properties/>
+		<system-out>GENERAL_ADJACENCY_PASS 12
+GENERAL_ADJACENCY_PASS 11
+GENERAL_ADJACENCY_PASS 25
+GENERAL_ADJACENCY_PASS 72
+GENERAL_ADJACENCY_PASS 42
+GENERAL_CACHE_PASS combined_reference_test_ms 320.805 (not a frame benchmark)
+GENERAL_CACHE_NATIVE_PASS
+</system-out>
+	</testcase>
+	<testcase name="cut_geometry" classname="cut_geometry" time="21.5669" status="run">
+		<properties/>
+		<system-out>CUT_GEOMETRY_CONVERGENCE tolerance 0.025 area_error 0.00416665 primitives 102
+CUT_GEOMETRY_CONVERGENCE tolerance 0.007 area_error 0.00104165 primitives 390
+CUT_GEOMETRY_CONVERGENCE tolerance 0.002 area_error 0.000260401 primitives 1542
+CUT_GEOMETRY_CURVED_ADJACENCY type 25 rational 0
+CUT_GEOMETRY_CURVED_ADJACENCY type 29 rational 0
+CUT_GEOMETRY_CURVED_ADJACENCY type 72 rational 0
+CUT_GEOMETRY_CURVED_ADJACENCY type 79 rational 1
+CUT_GEOMETRY_NATIVE_PASS
+</system-out>
+	</testcase>
+	<testcase name="cut_analytic" classname="cut_analytic" time="5.53936" status="run">
+		<properties/>
+		<system-out>CUT_ANALYTIC_BOX_PASS 25
+CUT_ANALYTIC_BOX_PASS 29
+CUT_ANALYTIC_BOX_PASS 33
+CUT_ANALYTIC_BOX_PASS 72
+CUT_ANALYTIC_BOX_PASS 79
+CUT_ANALYTIC_WEDGE_PASS 26 rational 0
+CUT_ANALYTIC_WEDGE_PASS 31 rational 0
+CUT_ANALYTIC_WEDGE_PASS 32 rational 0
+CUT_ANALYTIC_WEDGE_PASS 73 rational 0
+CUT_ANALYTIC_WEDGE_PASS 80 rational 0
+CUT_ANALYTIC_WEDGE_PASS 80 rational 1
+CUT_ANALYTIC_PYRAMID_PASS 27
+CUT_ANALYTIC_PYRAMID_PASS 37
+CUT_ANALYTIC_TETRA_PASS
+CUT_ANALYTIC_CURVE_FALLBACK_PASS
+CUT_ANALYTIC_POLYGON_PASS
+CUT_ANALYTIC_NATIVE_PASS
+</system-out>
+	</testcase>
+	<testcase name="cut_reference" classname="cut_reference" time="14.7854" status="run">
+		<properties/>
+		<system-out>CUT_REFERENCE_CHECK 21 rational 0 degree 2
+CUT_REFERENCE_CHECK 35 rational 0 degree 2
+CUT_REFERENCE_CHECK 68 rational 0 degree 2
+CUT_REFERENCE_CHECK 75 rational 0 degree 2
+CUT_REFERENCE_CHECK 22 rational 0 degree 2
+CUT_REFERENCE_CHECK 23 rational 0 degree 2
+CUT_REFERENCE_CHECK 28 rational 0 degree 2
+CUT_REFERENCE_CHECK 30 rational 0 degree 2
+CUT_REFERENCE_CHECK 34 rational 0 degree 2
+CUT_REFERENCE_CHECK 69 rational 0 degree 2
+CUT_REFERENCE_CHECK 70 rational 0 degree 2
+CUT_REFERENCE_CHECK 76 rational 0 degree 2
+CUT_REFERENCE_CHECK 77 rational 0 degree 2
+CUT_REFERENCE_CHECK 71 rational 0 degree 2
+CUT_REFERENCE_CHECK 78 rational 0 degree 2
+CUT_REFERENCE_CHECK 75 rational 1 degree 2
+CUT_REFERENCE_CHECK 76 rational 1 degree 2
+CUT_REFERENCE_CHECK 77 rational 1 degree 2
+CUT_REFERENCE_CHECK 78 rational 1 degree 2
+CUT_REFERENCE_CHECK 68 rational 0 degree 6
+CUT_REFERENCE_CHECK 75 rational 1 degree 6
+CUT_REFERENCE_CHECK 70 rational 0 degree 2
+CUT_REFERENCE_CHECK 77 rational 1 degree 2
+CUT_REFERENCE_CHECK 70 rational 0 d...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="cut_iso" classname="cut_iso" time="4.95184" status="run">
+		<properties/>
+		<system-out>ISO_CHART 3
+ISO_CHART 5
+ISO_CHART 8
+ISO_CHART 9
+ISO_CHART 10
+ISO_CHART 11
+ISO_CHART 12
+ISO_CHART 13
+ISO_CHART 14
+ISO_CHART 21
+ISO_CHART 22
+ISO_CHART 23
+ISO_CHART 24
+ISO_CHART 25
+ISO_CHART 26
+ISO_CHART 27
+ISO_CHART 28
+ISO_CHART 29
+ISO_CHART 30
+ISO_CHART 31
+ISO_CHART 32
+ISO_CHART 33
+ISO_CHART 34
+ISO_CHART 35
+ISO_CHART 37
+ISO_CHART 68
+ISO_CHART 69
+ISO_CHART 70
+ISO_CHART 71
+ISO_CHART 72
+ISO_CHART 73
+ISO_CHART 75
+ISO_CHART 76
+ISO_CHART 77
+ISO_CHART 78
+ISO_CHART 79
+ISO_CHART 80
+CUT_ISO_PASS
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view" classname="draw_cut_view" time="0.203939" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_VIEW_DRAW_PASS
+</system-out>
+	</testcase>
+	<testcase name="draw_vtk_import" classname="draw_vtk_import" time="0.126724" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/invalid.vtu: portable: Invalid byte order: 'invalid'
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/unsupported_section.vtk: portable: Unsupported legacy VTK section: UNSUPPORTED_SECTION
+VTK_IMPORT_DRAW_PASS
+</system-out>
+	</testcase>
+	<testcase name="draw_vtk_reference" classname="draw_vtk_reference" time="0.138471" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+[ERR_VTK_IMPORT] VTK reference staging 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/missing.vtm' into 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/draw-stage': Reference 'B/absent.vtu' from 'd:/workspace/opencascade/occt_viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/missing.vtm', resolved 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/B/absent.vtu': filesystem error: cannot make canonical path: No such file or directory [D:\workspace\OpenCASCADE\OCCT_Viewer\build\mingw-deformation\test\native\vtk-reference-fixtures\src\B/absent.vtu]
+[ERR_VTK_IMPORT] VTK reference staging 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/cycle.vtm' into 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/draw-stage': Ref...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_iso" classname="draw_cut_view_iso" time="0.207643" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_VIEW_DRAW_PASS
+CUT_VIEW_ISO_PASS
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_tensor" classname="draw_cut_view_tensor" time="0.12901" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_VIEW_TENSOR_PASS
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_trace" classname="draw_cut_view_trace" time="0.12084" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_VIEW_TRACE_PASS
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_union" classname="draw_cut_view_union" time="0.38569" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_VIEW_DRAW_PASS
+CUT_VIEW_UNION_PASS
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_quadric" classname="draw_cut_view_quadric" time="0.574237" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_VIEW_QUADRIC_PASS
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_high_order_iso" classname="draw_cut_view_high_order_iso" time="1.41564" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_VIEW_HIGH_ORDER_ISO_PASS
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_references" classname="draw_cut_view_references" time="13.5558" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_VIEW_REFERENCE_FAMILY_PASS 21
+CUT_VIEW_REFERENCE_FAMILY_PASS 35
+CUT_VIEW_REFERENCE_FAMILY_PASS 68
+CUT_VIEW_REFERENCE_FAMILY_PASS 75
+CUT_VIEW_REFERENCE_FAMILY_PASS 22
+CUT_VIEW_REFERENCE_FAMILY_PASS 23
+CUT_VIEW_REFERENCE_FAMILY_PASS 28
+CUT_VIEW_REFERENCE_FAMILY_PASS 30
+CUT_VIEW_REFERENCE_FAMILY_PASS 34
+CUT_VIEW_REFERENCE_FAMILY_PASS 69
+CUT_VIEW_REFERENCE_FAMILY_PASS 70
+CUT_VIEW_REFERENCE_FAMILY_PASS 76
+CUT_VIEW_REFERENCE_FAMILY_PASS 77
+CUT_VIEW_REFERENCE_FAMILY_PASS 71
+CUT_VIEW_REFERENCE_FAMILY_PASS 78
+CUT_VIEW_REFERENCE_FAMILY_PASS 75_rational
+CUT_VIEW_REFERENCE_FAMILY_PASS 76_rational
+CUT_VIEW_REFERENCE_FAMILY_PASS 77_rational
+CUT_VIEW_REFERENCE_FAMILY_PASS 78_rational
+CUT_VIEW_REFERENCE_FAMILY_PASS 68_d6x0
+CUT_VIEW_REFERENCE_FAMILY_PASS 75_rational_d6x0
+CUT_VIEW_REFERENCE_FAMILY_PASS 70_d2x3
+CUT_VIEW_REFERENCE_FAMILY_PASS 77_rational_d2x3
+CUT_VIEW_REFERENCE_FAMILY_PASS 70_d6x2
+CUT_VIEW_REFERENCE_PASS
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_analytic" classname="draw_cut_view_analytic" time="3.06" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_wedge_26
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_wedge_31
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_wedge_32
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_wedge_73
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_wedge_80
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_wedge_80_rational
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_pyramid_27
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_pyramid_37
+CUT_VIEW_ANALYTIC_PASS
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_geometry" classname="draw_cut_view_geometry" time="0.521427" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_VIEW_GEOMETRY_PASS
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_cache" classname="draw_cut_view_cache" time="0.739843" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_VIEW_CACHE_PASS
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_vtk_cells" classname="draw_cut_view_vtk_cells" time="29.7807" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_VIEW_VTK_CELL_PASS 1
+CUT_VIEW_VTK_CELL_PASS 2
+CUT_VIEW_VTK_CELL_PASS 3
+CUT_VIEW_VTK_CELL_PASS 4
+CUT_VIEW_VTK_CELL_PASS 5
+CUT_VIEW_VTK_CELL_PASS 6
+CUT_VIEW_VTK_CELL_PASS 7
+CUT_VIEW_VTK_CELL_PASS 8
+CUT_VIEW_VTK_CELL_PASS 9
+CUT_VIEW_VTK_CELL_PASS 10
+CUT_VIEW_VTK_CELL_PASS 11
+CUT_VIEW_VTK_CELL_PASS 12
+CUT_VIEW_VTK_CELL_PASS 13
+CUT_VIEW_VTK_CELL_PASS 14
+CUT_VIEW_VTK_CELL_PASS 15
+CUT_VIEW_VTK_CELL_PASS 16
+CUT_VIEW_VTK_CELL_PASS 21
+CUT_VIEW_VTK_CELL_PASS 22
+CUT_VIEW_VTK_CELL_PASS 23
+CUT_VIEW_VTK_CELL_PASS 24
+CUT_VIEW_VTK_CELL_PASS 25
+CUT_VIEW_VTK_CELL_PASS 26
+CUT_VIEW_VTK_CELL_PASS 27
+CUT_VIEW_VTK_CELL_PASS 28
+CUT_VIEW_VTK_CELL_PASS 29
+CUT_VIEW_VTK_CELL_PASS 30
+CUT_VIEW_VTK_CELL_PASS 31
+CUT_VIEW_VTK_CELL_PASS 32
+CUT_VIEW_VTK_CELL_PASS 33
+CUT_VIEW_VTK_CELL_PASS 34
+CUT_VIEW_VTK_CELL_PASS 35
+CUT_VIEW_VTK_CELL_PASS 36
+CUT_VIEW_VTK_CELL_PASS 37
+CUT_VIEW_VTK_CELL_PASS 41
+CUT_VIEW_VTK_CELL_PASS 42
+CUT_VIEW_VTK_CELL_PASS 68
+CUT_VIEW_VTK_CELL_PASS 69
+CUT_VIEW_VTK_CELL_PASS 70
+CUT_VIEW_VTK_CE...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_recovery" classname="draw_cut_view_recovery" time="13.6763" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_VIEW_RECOVERY_PASS
+</system-out>
+	</testcase>
+	<testcase name="generate_large_vtk_smoke" classname="generate_large_vtk_smoke" time="0.100342" status="run">
+		<properties/>
+		<system-out>{"file": "hex_6.vtk", "grid": 6, "points": 343, "cells": 216, "bytes": 25751, "deformation": true, "seconds": 0.001}
+{"file": "hex_6.vtu", "grid": 6, "points": 343, "cells": 216, "bytes": 25969, "deformation": true, "seconds": 0.001}
+</system-out>
+	</testcase>
+	<testcase name="draw_large_vtk_smoke" classname="draw_large_vtk_smoke" time="3.07053" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+LARGE_VTK_RESULT vtk cells 216 frames 3 scenario crossing mask 2 backend auto display_mode cloud full_checks 0 maximum_area_error 0 deformation_scale 0 body_builds 0 import_ms 4.4580000000000002 setup_ms 111.9845 p50_ms 2.1920000000000002 p95_ms 4.6279000000000003 fps 339.47788301592152 actual_redraw 1 original_FE 1 target 1
+LARGE_VTK_RESULT vtk cells 216 frames 3 scenario crossing mask 3 backend auto display_mode cloud full_checks 0 maximum_area_error 0 deformation_scale 0 body_builds 1 import_ms 7.2735000000000003 setup_ms 19.362100000000002 p50_ms 1.8447 p95_ms 4.4485999999999999 fps 384.48229459033411 actual_redraw 1 original_FE 1 target 1
+LARGE_VTK_RESULT vtk cells 216 frames 3 scenario crossing mask 5 backend auto display_mode cloud full_checks 0 maximum_area_error 0 deformation_scale 0 body_builds 1 import_ms 4.4711999999999996 setup_ms 12.444599999999999 p50_ms 1.8674999999999999 p95_ms 4.5868000000000002 fps 394.47731755424059 actual_redraw 1 original_FE 1 target 1
+LARGE...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_session" classname="draw_cut_view_session" time="2.91223" status="run">
+		<properties/>
+		<system-out>Draw[1]&gt; after#0
+Draw[2]&gt; SESSION_DIALOG_BACKEND Tk (Windows shell dialogs excluded)
+CUT_VIEW_SESSION_COVERAGE 6/6
+3D View - Driver1/Viewer1/NativeSession was deleted.
+
+CUT_VIEW_SESSION_PASS
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_benchmark_smoke" classname="draw_cut_view_benchmark_smoke" time="0.815369" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_BENCHMARK_RESULT cells 216 frames 3 scenario crossing mask 2 backend auto display_mode cloud full_checks 0 maximum_area_error 0 deformation_scale 0 body_builds 0 import_ms 0 setup_ms 79.573800000000006 p50_ms 3.2378999999999998 p95_ms 5.2382999999999997 fps 300.9781790820166 actual_redraw 1 original_FE 1 target 1
+CUT_BENCHMARK_RESULT cells 216 frames 3 scenario rotating mask 2 backend auto display_mode cloud full_checks 0 maximum_area_error 0 deformation_scale 0 body_builds 0 import_ms 0 setup_ms 12.241099999999999 p50_ms 2.2435999999999998 p95_ms 5.3516000000000004 fps 325.48551589454274 actual_redraw 1 original_FE 1 target 1
+CUT_BENCHMARK_RESULT cells 216 frames 3 scenario deformed mask 2 backend auto display_mode cloud full_checks 0 maximum_area_error 0 deformation_scale 0.0050000000000000001 body_builds 0 import_ms 0 setup_ms 9.9029000000000007 p50_ms 1.6201000000000001 p95_ms 4.6928000000000001 fps 380.3293652302894 actual_redraw 1 original_FE 1 target 1
+CUT_BENCHMARK_PA...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_physics" classname="draw_cut_view_physics" time="2.52218" status="run">
+		<properties/>
+		<system-out>Draw[1]&gt; CUT_VIEW_PHYSICS_COVERAGE 31/31
+CUT_VIEW_PHYSICS_PASS D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/draw-physics
+3D View - Driver1/Viewer1/NativePhysics was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="draw_vtk_reference_visual" classname="draw_vtk_reference_visual" time="0.954414" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+[ERR_VTK_IMPORT] VTK reference staging 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/missing.vtm' into 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/draw-stage': Reference 'B/absent.vtu' from 'd:/workspace/opencascade/occt_viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/missing.vtm', resolved 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/B/absent.vtu': filesystem error: cannot make canonical path: No such file or directory [D:\workspace\OpenCASCADE\OCCT_Viewer\build\mingw-deformation\test\native\vtk-reference-fixtures\src\B/absent.vtu]
+[ERR_VTK_IMPORT] VTK reference staging 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/src/cycle.vtm' into 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-reference-fixtures/draw-stage': Ref...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="draw_vtk_import_visual" classname="draw_vtk_import_visual" time="1.68925" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/invalid.vtu: portable: Invalid byte order: 'invalid'
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/unsupported_section.vtk: portable: Unsupported legacy VTK section: UNSUPPORTED_SECTION
+[ERR_MESH_LOAD] Input file is not accessible: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/absent.vtu
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/invalid.vtu: portable: Invalid byte order: 'invalid'
+[ERR_VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/missing.vtm: portable: Child 'D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-import-fixtures/absent.vtu': Input file is not accessible: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mi...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_recovery_visual" classname="draw_cut_view_recovery_visual" time="15.4341" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_VIEW_RECOVERY_PASS
+3D View - Driver1/Viewer1/RecoveryCut was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_high_order_iso_visual" classname="draw_cut_view_high_order_iso_visual" time="3.70186" status="run">
+		<properties/>
+		<system-out>Draw[1]&gt; CUT_VIEW_HIGH_ORDER_ISO_PASS
+3D View - Driver1/Viewer1/HighOrderIso was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_references_visual" classname="draw_cut_view_references_visual" time="17.8984" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_VIEW_REFERENCE_FAMILY_PASS 21
+CUT_VIEW_REFERENCE_FAMILY_PASS 35
+CUT_VIEW_REFERENCE_FAMILY_PASS 68
+CUT_VIEW_REFERENCE_FAMILY_PASS 75
+CUT_VIEW_REFERENCE_FAMILY_PASS 22
+CUT_VIEW_REFERENCE_FAMILY_PASS 23
+CUT_VIEW_REFERENCE_FAMILY_PASS 28
+CUT_VIEW_REFERENCE_FAMILY_PASS 30
+CUT_VIEW_REFERENCE_FAMILY_PASS 34
+CUT_VIEW_REFERENCE_FAMILY_PASS 69
+CUT_VIEW_REFERENCE_FAMILY_PASS 70
+CUT_VIEW_REFERENCE_FAMILY_PASS 76
+CUT_VIEW_REFERENCE_FAMILY_PASS 77
+CUT_VIEW_REFERENCE_FAMILY_PASS 71
+CUT_VIEW_REFERENCE_FAMILY_PASS 78
+CUT_VIEW_REFERENCE_FAMILY_PASS 75_rational
+CUT_VIEW_REFERENCE_FAMILY_PASS 76_rational
+CUT_VIEW_REFERENCE_FAMILY_PASS 77_rational
+CUT_VIEW_REFERENCE_FAMILY_PASS 78_rational
+CUT_VIEW_REFERENCE_FAMILY_PASS 68_d6x0
+CUT_VIEW_REFERENCE_FAMILY_PASS 75_rational_d6x0
+CUT_VIEW_REFERENCE_FAMILY_PASS 70_d2x3
+CUT_VIEW_REFERENCE_FAMILY_PASS 77_rational_d2x3
+CUT_VIEW_REFERENCE_FAMILY_PASS 70_d6x2
+CUT_VIEW_REFERENCE_PASS
+3D View - Driver1/Viewer1/CurvedReferences was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_analytic_visual" classname="draw_cut_view_analytic_visual" time="4.23972" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_wedge_26
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_wedge_31
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_wedge_32
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_wedge_73
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_wedge_80
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_wedge_80_rational
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_pyramid_27
+CUT_VIEW_ANALYTIC_FAMILY_PASS curved_pyramid_37
+CUT_VIEW_ANALYTIC_PASS
+3D View - Driver1/Viewer1/AnalyticCut was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_geometry_visual" classname="draw_cut_view_geometry_visual" time="1.88754" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_VIEW_GEOMETRY_PASS
+3D View - Driver1/Viewer1/CurvedGeometry was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_cache_visual" classname="draw_cut_view_cache_visual" time="1.83943" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_VIEW_CACHE_PASS
+3D View - Driver1/Viewer1/CachedCut was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_vtk_cells_visual" classname="draw_cut_view_vtk_cells_visual" time="47.9414" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_VIEW_VTK_CELL_PASS 1
+CUT_VIEW_VTK_CELL_PASS 2
+CUT_VIEW_VTK_CELL_PASS 3
+CUT_VIEW_VTK_CELL_PASS 4
+CUT_VIEW_VTK_CELL_PASS 5
+CUT_VIEW_VTK_CELL_PASS 6
+CUT_VIEW_VTK_CELL_PASS 7
+CUT_VIEW_VTK_CELL_PASS 8
+CUT_VIEW_VTK_CELL_PASS 9
+CUT_VIEW_VTK_CELL_PASS 10
+CUT_VIEW_VTK_CELL_PASS 11
+CUT_VIEW_VTK_CELL_PASS 12
+CUT_VIEW_VTK_CELL_PASS 13
+CUT_VIEW_VTK_CELL_PASS 14
+CUT_VIEW_VTK_CELL_PASS 15
+CUT_VIEW_VTK_CELL_PASS 16
+CUT_VIEW_VTK_CELL_PASS 21
+CUT_VIEW_VTK_CELL_PASS 22
+CUT_VIEW_VTK_CELL_PASS 23
+CUT_VIEW_VTK_CELL_PASS 24
+CUT_VIEW_VTK_CELL_PASS 25
+CUT_VIEW_VTK_CELL_PASS 26
+CUT_VIEW_VTK_CELL_PASS 27
+CUT_VIEW_VTK_CELL_PASS 28
+CUT_VIEW_VTK_CELL_PASS 29
+CUT_VIEW_VTK_CELL_PASS 30
+CUT_VIEW_VTK_CELL_PASS 31
+CUT_VIEW_VTK_CELL_PASS 32
+CUT_VIEW_VTK_CELL_PASS 33
+CUT_VIEW_VTK_CELL_PASS 34
+CUT_VIEW_VTK_CELL_PASS 35
+CUT_VIEW_VTK_CELL_PASS 36
+CUT_VIEW_VTK_CELL_PASS 37
+CUT_VIEW_VTK_CELL_PASS 41
+CUT_VIEW_VTK_CELL_PASS 42
+CUT_VIEW_VTK_CELL_PASS 68
+CUT_VIEW_VTK_CELL_PASS 69
+CUT_VIEW_VTK_CELL_PASS 70
+CUT_VIEW_VTK_CE...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_quadric_visual" classname="draw_cut_view_quadric_visual" time="7.40449" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_VIEW_QUADRIC_PASS
+3D View - Driver1/Viewer1/CurvedCutView was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_controls" classname="draw_cut_view_controls" time="18.4106" status="run">
+		<properties/>
+		<system-out>Draw[1]&gt; CONTROL_DIALOG_BACKEND Tk (Windows shell dialogs excluded)
+CONTROL_CLICK .scvcutmanager.options
+CONTROL_CLICK .scvcutmanager.actions.rename
+CONTROL_CLICK .scvcutmanager.tools
+CONTROL_TREE x #0
+CONTROL_MENU .scvcutmanager.traces.displayPolicy negative
+CONTROL_CLICK .scvcutmanager.traces.displayApply
+CONTROL_MENU .scvcutmanager.traces.displayPolicy positive
+CONTROL_CLICK .scvcutmanager.traces.displayApply
+CONTROL_MENU .scvcutmanager.traces.displayPolicy lowest
+CONTROL_CLICK .scvcutmanager.traces.displayApply
+CONTROL_MENU .scvcutmanager.traces.displayPolicy region
+CONTROL_ENTRY .scvcutmanager.traces.displayRegion -9223372036854775808 enter=0
+CONTROL_ENTRY .scvcutmanager.traces.displayRegions -9223372036854775808 enter=0
+CONTROL_CLICK .scvcutmanager.traces.displayApply
+CONTROL_ENTRY .scvcutmanager.traces.displayRegion 1.5 enter=1
+CONTROL_ENTRY .scvcutmanager.traces.displayRegion -9223372036854775808 enter=1
+CONTROL_MENU .scvcutmanager.traces.displayPolicy lowest
+CONTROL_CLICK .scvcutmanager.traces.displa...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_tools" classname="draw_cut_view_tools" time="4.67837" status="run">
+		<properties/>
+		<system-out>Draw[1]&gt; CUT_VIEW_CACHE_COVERAGE 7/7
+CUT_VIEW_TOOLS_COVERAGE 40/40
+CUT_VIEW_TOOLS_PASS D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/draw-tools
+3D View - Driver1/Viewer1/NativeTools was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_plot_options" classname="draw_cut_view_plot_options" time="1.63505" status="run">
+		<properties/>
+		<system-out>Draw[1]&gt; CUT_VIEW_PLOT_OPTIONS_PASS D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/draw-plot-options
+3D View - Driver1/Viewer1/CutView was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_placement" classname="draw_cut_view_placement" time="1.63218" status="run">
+		<properties/>
+		<system-out>Draw[1]&gt; CUT_VIEW_PLACEMENT_PASS
+3D View - Driver1/Viewer1/CutView was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_material" classname="draw_cut_view_material" time="1.7445" status="run">
+		<properties/>
+		<system-out>Draw[1]&gt; CUT_VIEW_MATERIAL_PASS
+3D View - Driver1/Viewer1/CutMaterial was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_free_body" classname="draw_cut_view_free_body" time="0.817716" status="run">
+		<properties/>
+		<system-out>Draw[1]&gt; CUT_VIEW_FREE_BODY_PASS
+3D View - Driver1/Viewer1/FreeBody was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_iso_binding" classname="draw_cut_view_iso_binding" time="0.761803" status="run">
+		<properties/>
+		<system-out>Draw[1]&gt; CUT_VIEW_ISO_BINDING_PASS
+3D View - Driver1/Viewer1/IsoBinding was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_slices" classname="draw_cut_view_slices" time="0.784114" status="run">
+		<properties/>
+		<system-out>Draw[1]&gt; CUT_VIEW_SLICES_PASS
+3D View - Driver1/Viewer1/SliceCollections was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_plot_parity" classname="draw_cut_view_plot_parity" time="1.45931" status="run">
+		<properties/>
+		<system-out>Draw[1]&gt; CUT_VIEW_PLOT_PARITY_PASS
+3D View - Driver1/Viewer1/PlotParity was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_automatic" classname="draw_cut_view_automatic" time="0.910864" status="run">
+		<properties/>
+		<system-out>Draw[1]&gt; CUT_VIEW_AUTOMATIC_PASS
+3D View - Driver1/Viewer1/AutomaticCuts was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_scope" classname="draw_cut_view_scope" time="1.64864" status="run">
+		<properties/>
+		<system-out>Draw[1]&gt; CUT_VIEW_SCOPE_PASS
+3D View - Driver1/Viewer1/ScopeB was deleted.
+
+3D View - Driver1/Viewer1/ScopeA was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_time" classname="draw_cut_view_time" time="2.6912" status="run">
+		<properties/>
+		<system-out>Draw[1]&gt; [VTK_IMPORT] D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/vtk-series-fixtures/native-moving.vtm.series: Series geometry/topology changes: the initial Viewer mesh exposes only first-step fields; use SeriesSteps for later geometry
+CUT_VIEW_TIME_COVERAGE 26/26
+CUT_VIEW_TIME_PASS D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/draw-time
+3D View - Driver1/Viewer1/NativeTime was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_tensor_visual" classname="draw_cut_view_tensor_visual" time="1.0469" status="run">
+		<properties/>
+		<system-out>Draw[1]&gt; CUT_VIEW_TENSOR_PASS
+3D View - Driver1/Viewer1/Tensor was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_trace_visual" classname="draw_cut_view_trace_visual" time="0.554644" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_VIEW_TRACE_PASS
+3D View - Driver1/Viewer1/CutTrace was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_union_visual" classname="draw_cut_view_union_visual" time="3.3483" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_VIEW_DRAW_PASS
+UNION_IMAGE_DIFF duplicate.png: changed 0 mean 0 maximum 0 silhouette 0
+UNION_IMAGE_DIFF contained.png: changed 16 mean 1.1111111111111112e-05 maximum 1 silhouette 0
+UNION_IMAGE_DIFF all_masks.png: changed 31 mean 2.1527777777777776e-05 maximum 1 silhouette 0
+UNION_IMAGE_DIFF constant_all_masks.png: changed 0 mean 0 maximum 0 silhouette 0
+CUT_VIEW_UNION_PASS
+3D View - Driver1/Viewer1/UnionView was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_iso_visual" classname="draw_cut_view_iso_visual" time="2.32479" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_VIEW_DRAW_PASS
+CUT_VIEW_ISO_PASS
+3D View - Driver1/Viewer1/IsoCutView was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_visual" classname="draw_cut_view_visual" time="2.29401" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_VIEW_DRAW_PASS
+CUT_VIEW_VISUAL_PASS: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/draw-images
+3D View - Driver1/Viewer1/CutView was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_gpu_plane" classname="draw_cut_view_gpu_plane" time="4.55726" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_GPU_PLANE_PASS
+3D View - Driver1/Viewer1/GpuPlane was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_display_modes" classname="draw_cut_view_display_modes" time="16.5042" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_DISPLAY_MODES_PASS
+3D View - Driver1/Viewer1/CutModes was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_deformation" classname="draw_cut_view_deformation" time="10.0039" status="run">
+		<properties/>
+		<system-out>Draw[1]&gt; CUT_DEFORMATION_PASS
+3D View - Driver1/Viewer1/CutDeformation was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_sine_plate" classname="draw_cut_view_sine_plate" time="367.288" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_SINE_PLATE_CASE_PASS vtk 0
+CUT_SINE_PLATE_CASE_PASS vtk 1
+CUT_SINE_PLATE_CASE_PASS vtk 2
+CUT_SINE_PLATE_CASE_PASS vtk 3
+CUT_SINE_PLATE_CASE_PASS vtk 4
+CUT_SINE_PLATE_CASE_PASS vtk 5
+CUT_SINE_PLATE_CASE_PASS vtu 0
+CUT_SINE_PLATE_CASE_PASS vtu 1
+CUT_SINE_PLATE_CASE_PASS vtu 2
+CUT_SINE_PLATE_CASE_PASS vtu 3
+CUT_SINE_PLATE_CASE_PASS vtu 4
+CUT_SINE_PLATE_CASE_PASS vtu 5
+CUT_SINE_PLATE_DRAW_PASS
+3D View - Driver1/Viewer1/SinePlateTest was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="draw_cut_view_interaction" classname="draw_cut_view_interaction" time="2.44848" status="run">
+		<properties/>
+		<system-out>DRAW is running in batch mode
+CUT_VIEW_INTERACTION_PASS: D:/workspace/OpenCASCADE/OCCT_Viewer/build/mingw-deformation/test/native/draw-interaction
+3D View - Driver1/Viewer1/CutView was deleted.
+
+</system-out>
+	</testcase>
+	<testcase name="cell_kernel" classname="cell_kernel" time="0.0669419" status="run">
+		<properties/>
+		<system-out>CELL_SHAPE_REFERENCE 1 maximum 0
+CELL_SHAPE_REFERENCE 3 maximum 0
+CELL_SHAPE_REFERENCE 5 maximum 0
+CELL_SHAPE_REFERENCE 8 maximum 1.11022e-16
+CELL_SHAPE_REFERENCE 9 maximum 1.11022e-16
+CELL_SHAPE_REFERENCE 10 maximum 0
+CELL_SHAPE_REFERENCE 11 maximum 1.11022e-16
+CELL_SHAPE_REFERENCE 12 maximum 1.11022e-16
+CELL_SHAPE_REFERENCE 13 maximum 8.67362e-17
+CELL_SHAPE_REFERENCE 14 maximum 2.77556e-17
+CELL_SHAPE_REFERENCE 15 maximum 8.70076e-07
+CELL_SHAPE_REFERENCE 16 maximum 7.77156e-16
+CELL_SHAPE_REFERENCE 21 maximum 1.38778e-16
+CELL_SHAPE_REFERENCE 22 maximum 2.77556e-16
+CELL_SHAPE_REFERENCE 23 maximum 1.94289e-16
+CELL_SHAPE_REFERENCE 24 maximum 4.44089e-16
+CELL_SHAPE_REFERENCE 25 maximum 2.77556e-16
+CELL_SHAPE_REFERENCE 26 maximum 2.77556e-16
+CELL_SHAPE_REFERENCE 27 maximum 5.55112e-17
+CELL_SHAPE_REFERENCE 28 maximum 2.22045e-16
+CELL_SHAPE_REFERENCE 29 maximum 1.4988e-15
+CELL_SHAPE_REFERENCE 30 maximum 1.38778e-16
+CELL_SHAPE_REFERENCE 31 maximum 1.94289e-16
+CELL_SHAPE_REFERENCE 32 maximum 7.63278e-16
+CELL_SHAPE_REF...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+</testsuite>

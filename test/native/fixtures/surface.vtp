@@ -1,0 +1,11 @@
+<VTKFile type="PolyData" byte_order="LittleEndian">
+  <PolyData><Piece NumberOfPoints="3" NumberOfVerts="0" NumberOfLines="0" NumberOfPolys="1" NumberOfStrips="0">
+    <Points><DataArray type="Float64" NumberOfComponents="3" format="ascii">0 0 0 1 0 0 0 1 0</DataArray></Points>
+    <Polys>
+      <DataArray type="Int32" Name="connectivity" format="ascii">0 1 2</DataArray>
+      <DataArray type="Int32" Name="offsets" format="ascii">3</DataArray>
+    </Polys>
+    <PointData><DataArray type="Float64" Name="temperature" format="ascii">0 1 2</DataArray></PointData>
+    <CellData><DataArray type="Float64" Name="pressure" format="ascii">13</DataArray></CellData>
+  </Piece></PolyData>
+</VTKFile>

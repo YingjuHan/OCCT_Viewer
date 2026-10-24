@@ -1,0 +1,5 @@
+2026-10-24T11:06:16Z
+cmake version 3.28.3
+viewer_revision d5b557830edc1b6a489f1fe8a41a1b7d61a1f6ef
+occt_revision db3716c9f9189391d2b5f6b469bce3963ae99afa
+build_jobs 4

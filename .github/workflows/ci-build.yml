@@ -1,0 +1,123 @@
+name: ci-build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-build-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  OCCT_REPOSITORY: YingjuHan/OCCT_private
+  OCCT_REF: ${{ vars.OCCT_REF || 'ViewCaeGeom' }}
+  CI_BUILD_JOBS: '2'
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Check OCCT source access
+        env:
+          OCCT_SOURCE_TOKEN: ${{ secrets.OCCT_SOURCE_TOKEN }}
+        run: |
+          if [ -z "$OCCT_SOURCE_TOKEN" ]; then
+            echo '::error::Set the OCCT_SOURCE_TOKEN repository secret: Contents read access to YingjuHan/OCCT_private. See DOCUMENT/github-actions-testing.md.'
+            exit 1
+          fi
+
+      - name: Checkout matching OCCT
+        uses: actions/checkout@v7.0.1
+        with:
+          repository: ${{ env.OCCT_REPOSITORY }}
+          ref: ${{ env.OCCT_REF }}
+          token: ${{ secrets.OCCT_SOURCE_TOKEN }}
+          path: build/occt-source
+          persist-credentials: false
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake ninja-build g++ git python3 rapidjson-dev zlib1g-dev \
+            libfreetype6-dev tcl-dev tk-dev \
+            libgl1-mesa-dev libglu1-mesa-dev \
+            libx11-dev libxext-dev libxi-dev libxmu-dev libxrandr-dev libxrender-dev
+          # Use Ubuntu's CMake consistently with the local Ubuntu 24.04 test.
+          echo '/usr/bin' >> "$GITHUB_PATH"
+
+      - name: Build OCCT, viewer and native tests
+        run: bash adm/ci/build-linux.sh "$GITHUB_WORKSPACE/build/occt-source" "$GITHUB_WORKSPACE/build/ci-linux-work"
+
+      - name: Upload test results and build logs
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: linux-test-results-${{ github.run_attempt }}
+          path: |
+            build/ci-linux-work/logs/
+            build/ci-linux-work/viewer/Testing/Temporary/
+          if-no-files-found: warn
+          retention-days: 14
+
+  build-wasm:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Check OCCT source access
+        env:
+          OCCT_SOURCE_TOKEN: ${{ secrets.OCCT_SOURCE_TOKEN }}
+        run: |
+          if [ -z "$OCCT_SOURCE_TOKEN" ]; then
+            echo '::error::Set the OCCT_SOURCE_TOKEN repository secret: Contents read access to YingjuHan/OCCT_private. See DOCUMENT/github-actions-testing.md.'
+            exit 1
+          fi
+
+      - name: Checkout matching OCCT
+        uses: actions/checkout@v7.0.1
+        with:
+          repository: ${{ env.OCCT_REPOSITORY }}
+          ref: ${{ env.OCCT_REF }}
+          token: ${{ secrets.OCCT_SOURCE_TOKEN }}
+          path: build/occt-source
+          persist-credentials: false
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake ninja-build git curl ca-certificates python3 rapidjson-dev
+          echo '/usr/bin' >> "$GITHUB_PATH"
+
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '22'
+
+      - name: Install TypeScript compiler
+        run: npm install -g typescript@5.4.5
+
+      - name: Setup Emscripten
+        uses: emscripten-core/setup-emsdk@4528d102f7230f0e7b276855c01ea1159be0e984 # v16
+        with:
+          version: '3.1.58'
+
+      - name: Build dependencies, OCCT and viewer (WASM)
+        run: bash adm/ci/build-wasm.sh "$GITHUB_WORKSPACE/build/occt-source" "$GITHUB_WORKSPACE/build/ci-wasm-work"
+
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: wasm-build-logs-${{ github.run_attempt }}
+          path: build/ci-wasm-work/logs/
+          if-no-files-found: warn
+          retention-days: 14

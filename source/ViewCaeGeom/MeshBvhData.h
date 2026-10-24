@@ -10,6 +10,8 @@
 #include <Bnd_Tools.hxx>
 #include <BVH_BoxSet.hxx>
 #include <Graphic3d_ClipPlane.hxx>
+#include <memory>
+#include <vector>
 
 namespace ViewCaeGeom {
 class MeshGeometry; // forward declared class due to cyclic dependency
@@ -25,6 +27,10 @@ public:
 
     //! Return computed BVH box set for specified mesh geometry.
     Standard_EXPORT const Handle(MeshBvhBoxSet)& BvhBoxSet(const Handle(MeshGeometry)& theMeshGeom);
+    //! Immutable coordinates prepared with a modified source BVH. Invalidated
+    //! by exactly the same geometry/deformation lifetime as that BVH.
+    Standard_EXPORT std::shared_ptr<const std::vector<Graphic3d_Vec3>> PreparedNodePositions(
+        const Handle(MeshGeometry)& theMeshGeom) const;
 
     //! Remove BVH box set for specified mesh geometry (if it isn't used anymore).
     Standard_EXPORT void RemoveBvhBoxSet(const Handle(MeshGeometry)& theMeshGeom);
@@ -45,6 +51,7 @@ public:
     void Clear()
     {
         myBvhBoxSets.Clear();
+        myNodePositions.Clear();
         myBvhValueSets.Clear();
     }
 
@@ -121,6 +128,7 @@ protected:
     };
 
     NCollection_DataMap<Handle(MeshGeometry), Handle(MeshBvhBoxSet)>   myBvhBoxSets;
+    NCollection_DataMap<Handle(MeshGeometry), std::shared_ptr<const std::vector<Graphic3d_Vec3>>> myNodePositions;
     NCollection_DataMap<ValueData, Handle(MeshBvhValueSet), ValueData> myBvhValueSets;
 };
 

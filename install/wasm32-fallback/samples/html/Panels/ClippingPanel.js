@@ -1,7 +1,3 @@
-/**
- * Created by: Kirill Gavrilov
- * Copyright (c) 2023 Huawei Technologies Co., Ltd.
- */
 import * as SCwebviewer from '/wasm32/SCwebviewer.js';
 import * as SCcontrols from './../SCcontrols.js';
 
@@ -41,12 +37,20 @@ export class ClippingPanel extends SCcontrols.PanelInput {
         this._scViewer.requestViewUpdate();
     });
 
+    this._presetGroup = new SCcontrols.GroupInput("Presets");
+    this._presetGroup.addControls([
+      new SCcontrols.ButtonInput("XY", () => { this.applyPreset("xy"); }, { inlineBlock: true }),
+      new SCcontrols.ButtonInput("XZ", () => { this.applyPreset("xz"); }, { inlineBlock: true }),
+      new SCcontrols.ButtonInput("YZ", () => { this.applyPreset("yz"); }, { inlineBlock: true }),
+      new SCcontrols.ButtonInput("BBox", () => { this.applyPreset("bbox"); }, { inlineBlock: true }),
+    ]);
+
     this._clipInfo = new SCcontrols.TextAreaInput("", "\n\n\n", null, {autoHeight: true, readOnly: true});
     this._clipInfo.minWidth = 240;
 
     this.addControls([this._clippingCheck, this._visibleCheck, this._enabledCheck,
       this._flipCheck, this._cappingCheck, this._matColorCheck, this._shadedCheck,
-      this._resetBtn, this._clipInfo
+      this._resetBtn, this._presetGroup, this._clipInfo
     ]);
   }
 
@@ -101,6 +105,35 @@ export class ClippingPanel extends SCcontrols.PanelInput {
                          + this.formatVal(anExt.y, 100) + "% "
                          + this.formatVal(anExt.z, 100) + "%\n";
     this._clipInfo.value = anInfo;
+  }
+
+  /** Apply clipping preset. */
+  applyPreset(thePreset) {
+    if (!this._clipBox) {
+      return;
+    }
+
+    if (thePreset === "bbox") {
+      const aViewId = this._scViewer.focusView?.id ?? -1;
+      const aBox = this._scViewer.viewManager.getSceneMinMax(aViewId, false);
+      if (SCwebviewer.BndBox3.isVoid(aBox)) {
+        console.warn("Clipping preset: bbox is void");
+        return;
+      }
+      this._clipBox.clippingBox = aBox;
+      this._clipBox.nbPlanesXYZ = { x: 2, y: 2, z: 2 };
+    } else {
+      const aCfg = { x: 0, y: 0, z: 0 };
+      if (thePreset === "xy") { aCfg.z = 1; }
+      if (thePreset === "xz") { aCfg.y = 1; }
+      if (thePreset === "yz") { aCfg.x = 1; }
+      this._clipBox.nbPlanesXYZ = aCfg;
+      this._clipBox.relativeClippingCorner = { x: 0.5, y: 0.5, z: 0.5 };
+      this._clipBox.relativeClippingExtent = { x: 0.51, y: 0.51, z: 0.51 };
+    }
+
+    this.updateClipInfo();
+    this._scViewer.requestViewUpdate();
   }
 
   /** Add configuration control. */

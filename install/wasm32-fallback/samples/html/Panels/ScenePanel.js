@@ -1,7 +1,3 @@
-/**
- * Created by: Andrey Golodyaev
- * Copyright (c) 2022 Huawei Technologies Co., Ltd.
- */
 import * as SCwebviewer from '/wasm32/SCwebviewer.js';
 import * as SCcontrols from './../SCcontrols.js';
 
@@ -22,6 +18,12 @@ export class ScenePanel extends SCcontrols.PanelInput {
     this.addSplitViewControls();
     this.addObjectSelector();
     this.addCurrentObjectControls();
+    this.addSceneGraphControls();
+    this.addSelectionControls();
+    this._measureA = null;
+    this._measureB = null;
+    this._measureDim = null;
+    this.addMeasureControls();
 
     this._viewExpGroup = new SCcontrols.GroupInput("Camera", true, false);
     this.addControl(this._viewExpGroup);
@@ -161,9 +163,8 @@ export class ScenePanel extends SCcontrols.PanelInput {
 
     let aVisGroup = new SCcontrols.GroupInput("VisibilityGroup");
     this._showAllButton = new SCcontrols.ButtonInput("Show All", () => {
-      for (let anobjIter of this._scViewer.interactiveContext.objectsInside) {
-        anobjIter.isVisible = true;
-      }
+      const anIds = this._scViewer.interactiveContext.objectsInside.map((o) => o.id);
+      this._scViewer.interactiveContext.setVisibleManyObjects(anIds, true);
       this._scViewer.requestViewUpdate();
     }, { inlineBlock: true });
 
@@ -178,13 +179,52 @@ export class ScenePanel extends SCcontrols.PanelInput {
 
     this._showOnlyButton = new SCcontrols.ButtonInput("Show Only", () => {
       if (this._selectedObject != null) {
-        this._selectedObject.doShowOnly;
+        this._scViewer.interactiveContext.setVisibleOnlyObjects([this._selectedObject.id]);
         this._scViewer.requestViewUpdate();
       }
     }, { inlineBlock: true });
 
     aVisGroup.addControls([this._showAllButton, this._showOnlyButton, this._visibleCheckbox]);
     this.addControl(aVisGroup);
+
+    let aBatchVisGroup = new SCcontrols.GroupInput("BatchVisibility");
+    const applyToSelection = (label, handler) => {
+      if (this._scViewer.interactiveContext == null || this._scViewer.selectionManager == null) {
+        console.warn(`${label}: viewer is not ready`);
+        return;
+      }
+      const ids = this._scViewer.selectionManager.selectedObjects
+        .map((obj) => obj.id)
+        .filter((id) => id !== "");
+      if (ids.length === 0) {
+        console.warn(`${label}: select at least one object`);
+        return;
+      }
+      handler(ids);
+      this._scViewer.requestViewUpdate();
+      window.dispatchEvent(new Event('sceneChanged'));
+    };
+
+    const aShowSelectedButton = new SCcontrols.ButtonInput("Show Selected", () => {
+      applyToSelection("Show Selected", (ids) => {
+        this._scViewer.interactiveContext.setVisibleManyObjects(ids, true);
+      });
+    }, { inlineBlock: true });
+
+    const aHideSelectedButton = new SCcontrols.ButtonInput("Hide Selected", () => {
+      applyToSelection("Hide Selected", (ids) => {
+        this._scViewer.interactiveContext.setVisibleManyObjects(ids, false);
+      });
+    }, { inlineBlock: true });
+
+    const aIsolateSelectedButton = new SCcontrols.ButtonInput("Isolate Selected", () => {
+      applyToSelection("Isolate Selected", (ids) => {
+        this._scViewer.interactiveContext.setVisibleOnlyObjects(ids);
+      });
+    }, { inlineBlock: true });
+
+    aBatchVisGroup.addControls([aShowSelectedButton, aHideSelectedButton, aIsolateSelectedButton]);
+    this.addControl(aBatchVisGroup);
 
     let aRemGroup = new SCcontrols.GroupInput("RemoveGroup");
     this._clearAllButton = new SCcontrols.ButtonInput("Clear Scene", ()=> {
@@ -234,6 +274,191 @@ export class ScenePanel extends SCcontrols.PanelInput {
       this._scViewer.makeScreenshot("viewer.png", -1, -1);
     }, { inlineBlock: true });
     this.addControls([this._cloneButton, this._screenshotButton]);
+  }
+
+  /**
+   * Add SceneGraph debug controls.
+   */
+  addSceneGraphControls() {
+    this.addControl(new SCcontrols.ButtonInput("Dump SceneGraph", () => {
+      const aGraph = this._scViewer.interactiveContext.getSceneGraph();
+      console.log("[SceneGraph]", aGraph);
+    }));
+  }
+
+  /**
+   * Add selection controls and box-selection hint.
+   */
+  addSelectionControls() {
+    this._selectionGroup = new SCcontrols.GroupInput("Selection", true, false);
+    this._selectionGroup.addControl(
+      new SCcontrols.LabelInput("Box selection", "Alt + LMB drag (Shift + Alt to add)", null)
+    );
+
+    this._selectionInfo = new SCcontrols.TextAreaInput("Selected objects", "", null,
+      { autoHeight: true, readOnly: true });
+    this._selectionInfo.minWidth = 240;
+    this._selectionGroup.addControl(this._selectionInfo);
+    this.addControl(this._selectionGroup);
+  }
+
+  /**
+   * Update selected objects list.
+   */
+  _updateSelectionInfo() {
+    if (!this._selectionInfo || !this._scViewer?.selectionManager) {
+      return;
+    }
+    const ids = (this._scViewer.selectionManager.selectedObjects || [])
+      .map((obj) => obj.id)
+      .filter((id) => id !== "");
+    const header = `Count: ${ids.length}`;
+    const body = ids.length ? `${header}\n${ids.join("\n")}` : header;
+    this._selectionInfo.setValue(body);
+  }
+
+  /**
+   * Capture measure target from currently detected shape element.
+   */
+  _captureMeasureTarget() {
+    const aDetObj = this._scViewer.selectionManager.lastDetectedObject;
+    if (aDetObj == null || !(aDetObj instanceof SCwebviewer.InteractiveShape)) {
+      return null;
+    }
+    const anElem = this._scViewer.selectionManager.getDetectedShapeElem(aDetObj.id);
+    return {
+      objId: aDetObj.id,
+      entityType: anElem.entityType,
+      entityId: anElem.entityId,
+    };
+  }
+
+  /**
+   * Add minimal distance measurement controls (Set A / Set B / Measure).
+   */
+  addMeasureControls() {
+    let aGroup = new SCcontrols.GroupInput("MeasureDistance", true, false);
+
+    this._measAInfo = new SCcontrols.TextInput("A", "", null, {readOnly: true});
+    this._measBInfo = new SCcontrols.TextInput("B", "", null, {readOnly: true});
+
+    const updateText = () => {
+      const fmt = (t) => t == null ? "" : `${t.objId} [mode=${t.entityType}, id=${t.entityId}]`;
+      this._measAInfo.setValue(fmt(this._measureA));
+      this._measBInfo.setValue(fmt(this._measureB));
+    };
+
+    aGroup.addControls([this._measAInfo, this._measBInfo]);
+
+    aGroup.addControl(new SCcontrols.ButtonInput("Set A (hover)", () => {
+      this._measureA = this._captureMeasureTarget();
+      updateText();
+    }, { inlineBlock: true }));
+
+    aGroup.addControl(new SCcontrols.ButtonInput("Set B (hover)", () => {
+      this._measureB = this._captureMeasureTarget();
+      updateText();
+    }, { inlineBlock: true }));
+
+    aGroup.addControl(new SCcontrols.ButtonInput("Measure shortest distance", () => {
+      if (this._measureA == null || this._measureB == null) {
+        console.warn("Measure: Please set A and B first (hover a shape and click Set A/Set B).");
+        return;
+      }
+      const aMgr = this._scViewer.interactiveShapeManager;
+      if (aMgr == null) {
+        console.warn("Measure: interactiveShapeManager is null");
+        return;
+      }
+
+      const aResStr = aMgr.measureDistanceJson(
+        this._measureA.objId, this._measureA.entityType, this._measureA.entityId,
+        this._measureB.objId, this._measureB.entityType, this._measureB.entityId
+      );
+
+      let aRes = null;
+      try { aRes = JSON.parse(aResStr); } catch { aRes = null; }
+      if (aRes == null || aRes.pnt1 == null || aRes.pnt2 == null) {
+        console.warn("Measure: failed to parse result", aResStr);
+        return;
+      }
+
+      if (this._measureDim != null && this._measureDim.isAlive) {
+        this._measureDim.remove();
+      }
+      this._measureDim = new SCwebviewer.InteractiveDimension();
+      this._measureDim.buildLength(this._scViewer, aRes.pnt1, aRes.pnt2);
+      this._measureDim.isVisible = true;
+      this._scViewer.requestViewUpdate();
+    }));
+
+    aGroup.addControl(new SCcontrols.ButtonInput("Auto Radius (hover circle edge)", () => {
+      const aTgt = this._captureMeasureTarget();
+      if (aTgt == null) {
+        console.warn("Auto Radius: hover a shape edge first");
+        return;
+      }
+      if (aTgt.entityType !== SCwebviewer.ShapeObjectSelMode.Edge
+       && aTgt.entityType !== SCwebviewer.ShapeObjectSelMode.Face) {
+        console.warn("Auto Radius: only Edge/Face selection is supported for now");
+        return;
+      }
+      const aMgr = this._scViewer.interactiveShapeManager;
+      if (aMgr == null) { return; }
+      const aStr = aMgr.getCircleParamsJson(aTgt.objId, aTgt.entityType, aTgt.entityId);
+      let aRes = null;
+      try { aRes = JSON.parse(aStr); } catch { aRes = null; }
+      if (aRes == null || aRes.ax2 == null) {
+        console.warn("Auto Radius: failed to parse circle params", aStr);
+        return;
+      }
+      let aDim = new SCwebviewer.InteractiveDimension();
+      aDim.buildRadius(this._scViewer, aRes.ax2, aRes.radius, aRes.anchor);
+      aDim.isVisible = true;
+      this._scViewer.requestViewUpdate();
+    }));
+
+    aGroup.addControl(new SCcontrols.ButtonInput("Auto Diameter (hover circle edge)", () => {
+      const aTgt = this._captureMeasureTarget();
+      if (aTgt == null) {
+        console.warn("Auto Diameter: hover a shape edge first");
+        return;
+      }
+      if (aTgt.entityType !== SCwebviewer.ShapeObjectSelMode.Edge
+       && aTgt.entityType !== SCwebviewer.ShapeObjectSelMode.Face) {
+        console.warn("Auto Diameter: only Edge/Face selection is supported for now");
+        return;
+      }
+      const aMgr = this._scViewer.interactiveShapeManager;
+      if (aMgr == null) { return; }
+      const aStr = aMgr.getCircleParamsJson(aTgt.objId, aTgt.entityType, aTgt.entityId);
+      let aRes = null;
+      try { aRes = JSON.parse(aStr); } catch { aRes = null; }
+      if (aRes == null || aRes.ax2 == null) {
+        console.warn("Auto Diameter: failed to parse circle params", aStr);
+        return;
+      }
+      let aDim = new SCwebviewer.InteractiveDimension();
+      aDim.buildRadius(this._scViewer, aRes.ax2, aRes.radius, aRes.anchor);
+      aDim.specialSymbol = "⌀";
+      aDim.isSpecialSymbolAfter = false;
+      const aDiam = 2.0 * aRes.radius;
+      aDim.textValue = this._scViewer.unitManager ? this._scViewer.unitManager.length.format(aDiam) : aDiam.toString();
+      aDim.isVisible = true;
+      this._scViewer.requestViewUpdate();
+    }));
+
+    aGroup.addControl(new SCcontrols.ButtonInput("Clear measure", () => {
+      this._measureA = null;
+      this._measureB = null;
+      updateText();
+      if (this._measureDim != null && this._measureDim.isAlive) {
+        this._measureDim.remove();
+        this._scViewer.requestViewUpdate();
+      }
+    }, { inlineBlock: true }));
+
+    this.addControl(aGroup);
   }
 
   /**
@@ -400,6 +625,7 @@ export class ScenePanel extends SCcontrols.PanelInput {
     this._infiniteCheckbox.setVisibility(this._selectedObject != null);
     this._showOnlyButton.setVisibility(this._selectedObject != null);
     this._removeButton.setVisibility(this._selectedObject != null);
+    this._updateSelectionInfo();
     if (!this._trsfExpGroup.isCollapsed) {
       this._trsfExpGroup.setVisibility(this._selectedObject != null);
     }

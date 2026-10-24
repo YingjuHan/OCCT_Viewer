@@ -33,7 +33,7 @@
 
 <script type="module">
 // library imports
-import * as SCwebviewer from '/others/wasm32/SCwebviewer.js';
+import * as SCwebviewer from '/wasm32/SCwebviewer.js';
 
 import {SCViewerSample} from './SCsample.js'
 import {ControlPanel} from './SCcontrols.js';
@@ -44,6 +44,8 @@ import {BuildersPanel} from './Panels/BuildersPanel.js'
 import {ClippingPanel} from './Panels/ClippingPanel.js'
 import {ImportPanel} from './Panels/ImportPanel.js'
 import {ScenePanel} from './Panels/ScenePanel.js'
+import {BenchmarkPanel} from './Panels/BenchmarkPanel.js'
+import {ExportPanel} from './Panels/ExportPanel.js'
 import {TemplatePanel} from './Panels/TemplatePanel.js'
 
 var scSample = window.scSample = new SCViewerSample();
@@ -57,6 +59,8 @@ aCp.addPanel(new ShapePanel(scSample));
 aCp.addPanel(new BuildersPanel(scSample));
 aCp.addPanel(new MeshPanel(scSample));
 aCp.addPanel(new ClippingPanel(scSample));
+aCp.addPanel(new ExportPanel(scSample));
+aCp.addPanel(new BenchmarkPanel(scSample));
 aCp.addPanel(new SettingsPanel(scSample));
 
 //aCp.addPanel(new TemplatePanel(scSample)); // for testing all control types

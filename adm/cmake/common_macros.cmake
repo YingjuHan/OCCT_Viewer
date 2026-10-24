@@ -188,17 +188,18 @@ ${INSTALL_DEP_DEPENDENCIES_TOOL}, only 'file' or 'get_prerequisites' are allowed
       endforeach()
     endforeach()
     list (JOIN _all_third_party_dirs_${_conf} "\n" _file_content)
-    if  (${INSTALL_DEP_DESTINATION}_${_uc_conf})
+    if (DEFINED ${INSTALL_DEP_DESTINATION}_${_uc_conf})
       set (target_dir_${_conf} ${CMAKE_INSTALL_PREFIX}/${${INSTALL_DEP_DESTINATION}_${_uc_conf}})
+    elseif (DEFINED ${INSTALL_DEP_DESTINATION})
+      set (target_dir_${_conf} ${CMAKE_INSTALL_PREFIX}/${${INSTALL_DEP_DESTINATION}})
     else()
       set (target_dir_${_conf} ${INSTALL_DEP_DESTINATION})
     endif()
-    if (${INSTALL_DEP_EXECUTABLES_DESTINATION}_${_uc_conf})
+
+    if (DEFINED ${INSTALL_DEP_EXECUTABLES_DESTINATION}_${_uc_conf})
       set (exec_target_dir_${_conf} ${CMAKE_INSTALL_PREFIX}/${${INSTALL_DEP_EXECUTABLES_DESTINATION}_${_uc_conf}})
-    else()
-      if(INSTALL_DEP_EXECUTABLE_DESTINATION)
-        set (exec_target_dir_${_conf} ${INSTALL_DEP_EXECUTABLES_DESTINATION}})
-      endif()
+    elseif (DEFINED ${INSTALL_DEP_EXECUTABLES_DESTINATION})
+      set (exec_target_dir_${_conf} ${CMAKE_INSTALL_PREFIX}/${${INSTALL_DEP_EXECUTABLES_DESTINATION}})
     endif()
   endforeach()
 
@@ -633,29 +634,19 @@ macro (OCCTViewer_install_targets)
   # Install executables
   if (OCCTViewer_INSTALL_EXECUTABLES)
     install (TARGETS ${OCCTViewer_INSTALL_EXECUTABLES}
-              CONFIGURATIONS "Release"
-              DESTINATION "${OCCTViewer_INSTALL_BIN_RELEASE}")
-    install (TARGETS "${OCCTViewer_INSTALL_EXECUTABLES}"
-              CONFIGURATIONS "Debug"
-              DESTINATION "${OCCTViewer_INSTALL_BIN_DEBUG}")
+             RUNTIME DESTINATION "$<IF:$<CONFIG:Debug>,${OCCTV_INSTALL_BIN_DEBUG},${OCCTV_INSTALL_BIN_RELEASE}>")
   endif()
 
   # Install libraries
   if (OCCTViewer_INSTALL_LIBRARIES)
     install (TARGETS ${OCCTViewer_INSTALL_LIBRARIES}
-              EXPORT ${OCCTVieweriewer_PACKAGE}
-              CONFIGURATIONS "Release"
-              RUNTIME DESTINATION "${OCCTViewer_INSTALL_DLL_RELEASE}"
-              LIBRARY DESTINATION "${OCCTViewer_INSTALL_LIB_RELEASE}"
-              ARCHIVE DESTINATION "${OCCTViewer_INSTALL_LIB_RELEASE}")
-    install (TARGETS "${OCCTViewer_INSTALL_LIBRARIES}"
-              CONFIGURATIONS "Debug"
-              RUNTIME DESTINATION "${OCCTViewer_INSTALL_DLL_DEBUG}"
-              LIBRARY DESTINATION "${OCCTViewer_INSTALL_LIB_DEBUG}"
-              ARCHIVE DESTINATION "${OCCTViewer_INSTALL_LIB_DEBUG}")
+              EXPORT ${OCCTViewer_PACKAGE}Targets
+              RUNTIME DESTINATION "$<IF:$<CONFIG:Debug>,${OCCTV_INSTALL_DLL_DEBUG},${OCCTV_INSTALL_DLL_RELEASE}>"
+              LIBRARY DESTINATION "$<IF:$<CONFIG:Debug>,${OCCTV_INSTALL_LIB_DEBUG},${OCCTV_INSTALL_LIB_RELEASE}>"
+              ARCHIVE DESTINATION "$<IF:$<CONFIG:Debug>,${OCCTV_INSTALL_LIB_DEBUG},${OCCTV_INSTALL_LIB_RELEASE}>")
     if (OCCTViewer_INSTALL_HEADERS)
       foreach (target ${OCCTViewer_INSTALL_LIBRARIES})
-        target_include_directories (${target} PUBLIC $<INSTALL_INTERFACE:${OCCTViewer_INSTALL_INCLUDE}>)
+        target_include_directories (${target} PUBLIC $<INSTALL_INTERFACE:${OCCTV_INSTALL_INCLUDE}>)
       endforeach()
     endif()
   endif()
@@ -663,6 +654,6 @@ macro (OCCTViewer_install_targets)
   # Install headers
   if (OCCTViewer_INSTALL_HEADERS)
     install (FILES ${OCCTViewer_INSTALL_HEADERS}
-              DESTINATION "${OCCTViewer_INSTALL_INCLUDE}/${OCCTViewer_INSTALL_HEADERS_SUBDIR}")
+              DESTINATION "${OCCTV_INSTALL_INCLUDE}/${OCCTViewer_INSTALL_HEADERS_SUBDIR}")
   endif()
 endmacro()

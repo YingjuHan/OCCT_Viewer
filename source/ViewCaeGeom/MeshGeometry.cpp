@@ -12,11 +12,11 @@
 #include <RWCae/MeshScalarProperty.h>
 
 #include <Standard_Atomic.hxx>
+#include <limits>
 
 namespace {
 static volatile int g_meshGeomCounter = 0; //!< counter used in auto-generated mesh geometry id
 
-static constexpr double RATIO_CONFUSION = 1e-3;
 }
 
 namespace ViewCaeGeom {
@@ -25,13 +25,18 @@ namespace ViewCaeGeom {
 // =======================================================================
 int MeshInterpolatedNode::HashCode(const MeshInterpolatedNode& theElem, const int theUpper)
 {
-    unsigned int aHashCode = 0;
+    // Avalanche each original ID before combining. Plain XOR collapses regular
+    // grid edges (e.g. every even/odd consecutive pair) into the same bucket.
+    uint64_t aHashCode = 0;
     for (const std::pair<RWCae::MeshEntityId, double>& aNode : theElem.BaseNodes()) {
         if (aNode.second >= myRatioConfusion) {
-            aHashCode = aHashCode ^ ::HashCode(aNode.first, theUpper);
+            uint64_t value=(uint64_t)aNode.first+0x9e3779b97f4a7c15ULL;
+            value=(value^(value>>30))*0xbf58476d1ce4e5b9ULL;
+            value=(value^(value>>27))*0x94d049bb133111ebULL;
+            aHashCode ^= value^(value>>31);
         }
     }
-    return int(static_cast<unsigned int>(aHashCode & 0x7fffffff)) % theUpper + 1;
+    return (int)(aHashCode%(uint64_t)theUpper)+1;
 }
 
 // =======================================================================
@@ -61,6 +66,9 @@ bool MeshInterpolatedNode::IsEqual(const MeshInterpolatedNode& theElem1, const M
     }
 
     if (theElem1.BaseNodes().size() == aTwo && theElem2.BaseNodes().size() == aTwo) {
+        const bool near1=theElem1.BaseNodes()[0].second<myRatioConfusion || theElem1.BaseNodes()[1].second<myRatioConfusion;
+        const bool near2=theElem2.BaseNodes()[0].second<myRatioConfusion || theElem2.BaseNodes()[1].second<myRatioConfusion;
+        if (near1 || near2) { return IsEqualGeneral(theElem1,theElem2); }
         if (theElem1.BaseNodes()[0].first == theElem2.BaseNodes()[0].first
             && theElem1.BaseNodes()[1].first == theElem2.BaseNodes()[1].first) {
             return true;
@@ -110,6 +118,11 @@ bool MeshInterpolatedNode::IsEqualGeneral(const MeshInterpolatedNode& theElem1, 
     std::sort(aNodes2.begin(), aNodes2.end());
     return aNodes1 == aNodes2;
 }
+
+// =======================================================================
+// function : ~MeshGeometry
+// =======================================================================
+MeshGeometry::~MeshGeometry() = default;
 
 // =======================================================================
 // function : MeshGeometry
@@ -260,15 +273,16 @@ void MeshGeometry::SetToUpdate()
 // =======================================================================
 void MeshGeometry::ModifyNode(const RWCae::MeshEntityId theNodeIdx, Graphic3d_Vec3& theNode) const
 {
-    bool canModifyNodes = false;
-    for (MeshGeometry* aChild : MeshGeomChildren(myChildGeometry.get())) {
-        if (aChild->myCanModifyNodes) {
-            canModifyNodes = true;
-            break;
-        }
+    if (!HasNodeModifiers()) {
+        return;
     }
 
-    if (!canModifyNodes) {
+    if(myParentGeometry.IsNull()) {
+        // Root node IDs already index original FE nodes. A unit provenance
+        // allocation/walk adds no information; modifiers support direct samples.
+        for(MeshGeometry* child:MeshGeomChildren(myChildGeometry.get())) {
+            if(child->IsModifier()) { child->modifyNode(theNodeIdx,nullptr,theNode); }
+        }
         return;
     }
 
@@ -281,6 +295,17 @@ void MeshGeometry::ModifyNode(const RWCae::MeshEntityId theNodeIdx, Graphic3d_Ve
             aChild->modifyNode(theNodeIdx, &aBaseNodes, theNode);
         }
     }
+}
+
+bool MeshGeometry::HasNodeModifiers() const
+{
+    for(MeshGeometry* child:MeshGeomChildren(myChildGeometry.get())) {
+        if(!child->myCanModifyNodes) { continue; }
+        const auto* deformation=dynamic_cast<const MeshGeometryDeformed*>(child);
+        if(deformation && (deformation->DeformedProperty().IsNull() || ::IsEqual(deformation->EffectiveScale(),0.0))) { continue; }
+        return true;
+    }
+    return false;
 }
 
 // =======================================================================
@@ -467,12 +492,13 @@ void MeshGeometry::calculateScalarNodalValue(const Handle(RWCae::MeshScalarPrope
     } else {
         double aResValue = 0.0;
         for (const std::pair<RWCae::MeshEntityId, double>& aBaseNode : aLerpPnt.BaseNodes()) {
+            if (aBaseNode.second == 0.0) { continue; }
             RWCae::MeshEntityId aBaseNodeIdx = aBaseNode.first;
             if (theNodesMap != nullptr) {
                 theNodesMap->Find(aBaseNodeIdx, aBaseNodeIdx);
             }
             double aValue = theBaseComp->Value(RWCae::MeshPropertyEntityInfo(aBaseNodeIdx));
-            if (aBaseNode.second > 1.0 - RATIO_CONFUSION || RWCae::IsNaN(aValue)) {
+            if (RWCae::IsNaN(aValue)) {
                 aResValue = aValue;
                 break;
             }
@@ -587,15 +613,16 @@ void MeshGeometry::calculateNodeVecValue(const Elem_T&                          
     std::vector<int> aSubIndices;
     theBaseComp->SubIndices(theBaseElemIdx, aSubIndices);
     if (aSubIndices.empty()) {
-        theComp->SetValue(RWCae::MeshPropertyEntityInfo(thePropValIdx), 0.0, false);
+        theComp->SetValue(RWCae::MeshPropertyEntityInfo(thePropValIdx), std::numeric_limits<double>::quiet_NaN(), false);
         return;
     }
 
     auto computeLerpValue = [&theBaseComp, &theBaseElemIdx](const MeshInterpolatedNode& theLerpPnt) -> double {
         double aResValue = 0.0;
         for (const std::pair<RWCae::MeshEntityId, double>& aBaseNode : theLerpPnt.BaseNodes()) {
+            if (aBaseNode.second == 0.0) { continue; }
             double aValue = theBaseComp->Value(RWCae::MeshPropertyEntityInfo(theBaseElemIdx, aBaseNode.first));
-            if (aBaseNode.second > 1.0 - RATIO_CONFUSION || RWCae::IsNaN(aValue)) {
+            if (RWCae::IsNaN(aValue)) {
                 aResValue = aValue;
                 break;
             }

@@ -6,6 +6,8 @@ set (SRCFILES
   CaeMeshStreamlinesBuilder.cpp
   CaeMeshTools.cpp
   ColorScaleTools.cpp
+  InteractiveCaeCutView.cpp
+  InteractiveCaeCutPlane.cpp
   InteractiveCaeMesh.cpp
   InteractiveCaeMeshDrawer.cpp
   InteractiveCaeMeshOwner.cpp
@@ -16,7 +18,9 @@ set (SRCFILES
   MeshAnnotations.cpp
   MeshColorMapper.cpp
   MeshColorScaleMapper.cpp
+  MeshCutGpuPresentation.cpp
   MeshPart.cpp
+  MeshPartGeneralCells.cpp
   MeshPresentation.cpp
   MeshPresentationBase.cpp
   MeshPresentations.cpp
@@ -35,6 +39,8 @@ set (INCFILES
   CaeMeshStreamlinesBuilder.h
   CaeMeshTools.h
   ColorScaleTools.h
+  InteractiveCaeCutView.h
+  InteractiveCaeCutPlane.h
   InteractiveCaeMesh.h
   InteractiveCaeMeshDrawer.h
   InteractiveCaeMeshOwner.h
@@ -47,7 +53,9 @@ set (INCFILES
   MeshAnnotations.h
   MeshColorMapper.h
   MeshColorScaleMapper.h
+  MeshCutGpuPresentation.h
   MeshPart.h
+  MeshPartGeneralCells.h
   MeshPresentation.h
   MeshPresentationBase.h
   MeshPresentations.h

@@ -23,6 +23,9 @@ public:
     //! Return TRUE if 0d element are visible.
     bool ToShow0d() const { return (myElementTypes & (unsigned int)InteractiveCaeMeshElementType::Element0d) != 0; }
 
+    //! Return TRUE if 1d elements are visible.
+    bool ToShow1d() const { return (myElementTypes & (unsigned int)InteractiveCaeMeshElementType::Element1d) != 0; }
+
     //! Return TRUE if 2d element are visible.
     bool ToShow2d() const { return (myElementTypes & (unsigned int)InteractiveCaeMeshElementType::Face) != 0; }
 

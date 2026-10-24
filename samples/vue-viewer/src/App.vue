@@ -3,8 +3,10 @@ import Viewer from './components/Viewer.vue';
 import ControlPanel from './components/ControlPanel.vue';
 import ToolDock from './components/ToolDock.vue';
 import CaePostPanel from './components/cae/CaePostPanel.vue';
+import CaeProbePanel from './components/cae/CaeProbePanel.vue';
 import LwvAppBar from './components/layout/LwvAppBar.vue';
 import QuickRail from './components/layout/QuickRail.vue';
+import ViewerMessageToast from './components/ViewerMessageToast.vue';
 import { QUICK_ACTIONS } from './constants/quick-actions';
 import { useDockPanels } from './composables/useDockPanels';
 import { useViewerLogs } from './composables/useViewerLogs';
@@ -71,6 +73,8 @@ const handleRailAction = (action: string) => {
           <ToolDock :viewerService="viewerService" />
           <v-divider class="my-4" />
           <CaePostPanel :viewerService="viewerService" />
+          <v-divider class="my-4" />
+          <CaeProbePanel :viewerService="viewerService" />
         </v-navigation-drawer>
 
         <div class="lwv-stage">
@@ -135,6 +139,7 @@ const handleRailAction = (action: string) => {
         {{ panel.title }}
       </v-btn>
     </v-bottom-navigation>
+      <ViewerMessageToast :viewerService="viewerService" />
   </v-app>
 </template>
 

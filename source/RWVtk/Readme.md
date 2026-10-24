@@ -1,18 +1,33 @@
-## 模块概览
+# RWVtk
 
-`RWVtk` 专注于 VTK 系列文件（Legacy、XML、MultiBlock、Series）的读取，将其转换为 `RWCae::MeshData` 或中间缓存，供 `ViewCae` 等模块直接消费。模块覆盖 PolyData、UnstructuredGrid 以及基于时间序列的数据集，是连接科研数据与可视化的桥梁。
+Native VTK import into `RWCae::MeshData`: Legacy UnstructuredGrid/PolyData,
+XML VTU/VTP, VTM and `.vtm.series`. The supported formats, field semantics,
+validation rules and explicit exclusions are in
+[the import contract](../../DOCUMENT/cut-view-import.md).
 
-## 关键组件
+- `VtkBaseReader` owns message policy and reader reports.
+- `VtkBaseXMLReader` parses XML, byte order, inline/appended arrays and zlib.
+- `VtkLegacyReader` validates ASCII/big-endian sections and normalizes numeric data.
+- `VtkUnstructuredGridReader` / `VtkPolyDataReader` implement all supported concrete topology without the VTK SDK.
+- `VtkNativeReader` is a compatibility adapter to the repository-owned parser.
+- `VtkValidationReader` validates original numeric arrays/topology.
+- `VtkDatasetReader` routes dataset leaves through the same self-contained parser.
+- `VtkMultiBlockDataReader` reads referenced blocks; `VtkSeriesReader` reads manifests.
+- `VtkReferenceStager` copies/relinks local reference trees into isolated attempt directories.
+- `VtkResourceLimits` configures pre-allocation budgets shared by reader children.
+- `VtkDataArray` validates numeric arrays and component roles.
 
-- `VtkBaseReader`：提供通用的文件打开、缓冲解析、错误处理逻辑。
-- `VtkBaseXMLReader`：扩展了 XML 解析与多块（PVD、PVTU 等）遍历。
-- `VtkPolyDataReader` / `VtkUnstructuredGridReader` / `VtkUnstructuredDataReader`：依数据类型将节点、单元、属性写入 `MeshData`。
-- `VtkMultiBlockDataReader`：解析多块结构并构建 `MeshDataBlock` 树，保留层级关系。
-- `VtkSeriesReader`：加载 `.series` 或多个时间步文件，提供时间轴信息。
-- `VtkDataArray`：封装 VTK array 到内部标量/向量属性的映射，支持多种数值类型与字节序。
+PVD/parallel XML and on-demand streaming are not implemented. This native track
+excludes Web/WASM. Do not infer format support from VTK SDK capabilities alone;
+the application validates and reports its own contract.
+Series snapshots retain complete per-step geometry/fields; changing geometry does
+not bind later fields to the first mesh. Animation and Viewer step coordination are
+separate work. Legacy polyhedron 42 requires VTU; general cells are always available.
 
-## 使用建议
+The repository-owned `ViewCaeGeom::MeshCellKernel` supplies topology, finite-element
+shape functions, inverse maps and triangulation. There is no external VTK build or
+runtime dependency. Current validation is in [the audit](../../DOCUMENT/vtk-independent-audit.md).
 
-- 读取大规模时可优先使用 `.series` + `VtkSeriesReader`，可在 `Viewer` 中按需 streaming。
-- 若文件包含多个 block，可在 `ViewCae` 中通过 `MeshDataBlock` 直接构建 domain 树，实现按 block 显隐。
-- `VtkBaseReader` 暴露了 `SetToSort()`，可结合 `MeshTools::SortMeshData()` 优化渲染性能。
+N04.8 final native closure: Final VTK ON **58/58**, OFF **22/22**, every case three times (174 / 66 executions; 547.47 / 41.50 seconds). DRAW/Viewer-disabled import/reference tests **2/2** each pass three times (0.52 seconds).
+This N04 record is historical; see [its audit](../../DOCUMENT/cut-view-n04-audit.md)
+for the original support boundaries and reproduction.

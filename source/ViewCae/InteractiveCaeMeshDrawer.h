@@ -104,6 +104,7 @@ public:
 
     //! Set edges color.
     Standard_EXPORT void SetEdgesColor(const Quantity_Color& theColor);
+    Standard_EXPORT void SetEdgesType(Aspect_TypeOfLine type);
 
     //! Return points color, Quantity_NOC_GRAY50 by default.
     const Quantity_Color& PointsColor() const { return myPointsColor; }

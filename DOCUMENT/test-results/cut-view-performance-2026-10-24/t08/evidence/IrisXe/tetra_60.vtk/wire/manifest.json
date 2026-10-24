@@ -1,0 +1,25 @@
+{
+  "gpu": "IrisXe",
+  "mode": "Performance",
+  "started": "2026-10-24T16:35:29.9177175+08:00",
+  "frames": 12,
+  "repetitions": 1,
+  "displayMode": "wire",
+  "cellTopologyReuse": false,
+  "fullValidation": true,
+  "repository": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer",
+  "build": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\mingw-deformation",
+  "executable": "D:\\workspace\\OpenCASCADE\\OCCT_private\\install\\mingw\\win64\\gcc\\bin\\DRAWEXE.exe",
+  "model": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\cut-nonregular\\tetra_60.vtk",
+  "revision": "57e6245ddfd0ada5bffe168219cd55038ee67fd0",
+  "succeeded": true,
+  "preferenceBefore": {
+    "exists": false,
+    "kind": "",
+    "value": null
+  },
+  "preferenceDuring": "GpuPreference=1;",
+  "performanceCompleted": true,
+  "preferenceRestored": true,
+  "finished": "2026-10-24T16:36:10.3218065+08:00"
+}

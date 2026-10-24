@@ -12,6 +12,8 @@
 
 #include <ViewCae/MeshColorMapper.h>
 #include <RWCae/MeshImportExport.h>
+#include <RWVtk/VtkImportReport.h>
+#include <RWVtk/VtkResourceLimits.h>
 
 #include <AIS_DataMapOfIOStatus.hxx>
 #include <AIS_InteractiveContext.hxx>
@@ -29,13 +31,17 @@ public:
                                                    const std::string&                    theFilePath,
                                                    const int                             theOptions = 0);
 
-    //! Open mesh model from specified file.
+    //! Open mesh model from specified file; a failed import preserves the current object.
+    //! Optional report contains the overall VTK outcome and backend attempt diagnostics.
     Standard_EXPORT static bool OpenMesh(const Handle(AIS_InteractiveContext)& theCtx,
                                          const ObjectId&                       theObjId,
                                          const std::string&                    theFilePath,
                                          const std::string&                    theMappingFilePath,
                                          const std::string&                    theArtifactFilePath,
-                                         const int theOptions = (int)RWCae::MeshDataImportExportOptions::DEFAULTS);
+                                         const int theOptions = (int)RWCae::MeshDataImportExportOptions::DEFAULTS,
+                                         RWVtk::VtkImportReport* theReport = nullptr,
+                                         const std::string& theVtkStagingDirectory = "",
+                                         const RWVtk::VtkResourceLimits& theVtkLimits = RWVtk::VtkResourceLimits());
 
 public:
     //! Main constructor

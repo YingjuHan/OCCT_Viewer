@@ -5,11 +5,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) Launch",
+            "name": "VIEWDRAW (gdb)",
             "type": "cppdbg",
             "request": "launch",
             "program": "@VSCODE_LAUNCH_EXECUTABLE@",
-            "args": [],
+            "args": ["-i", "-c", "source {@CMAKE_SOURCE_DIR@/test/cae/viewdraw_runtime.tcl}"],
             "stopAtEntry": false,
             "cwd": "@CMAKE_LIBRARY_OUTPUT_DIRECTORY@",
             "environment": [
@@ -17,8 +17,12 @@
                     "name": "@VSCODE_LAUNCH_ENV_VAR@",
                     "value": "@VSCODE_LAUNCH_PATH@"
                 },
-                {"name": "CSF_SCPRSDRAWDefaults", "value": "@CMAKE_SOURCE_DIR@/source-draw/ViewDraw"},
-                {"name": "CSF_TestScriptsPath", "value": "@CMAKE_SOURCE_DIR@/tests"},
+                {"name": "CSF_OCCTResourcePath", "value": "@OpenCASCADE_RESOURCE_DIR@"},
+                {"name": "DRAWHOME", "value": "@OpenCASCADE_RESOURCE_DIR@/DrawResources"},
+                {"name": "DRAWDEFAULT", "value": "@OpenCASCADE_RESOURCE_DIR@/DrawResources/DrawDefault"},
+                {"name": "CSF_VIEWDRAWDefaults", "value": "@CMAKE_SOURCE_DIR@/source-draw/ViewDraw"},
+                {"name": "OCCTV_DRAW_RUNTIME", "value": "@VSCODE_DRAW_RUNTIME@"},
+                {"name": "CSF_TestScriptsPath", "value": "@CMAKE_SOURCE_DIR@/test"},
                 {"name": "CSF_TestDataPath", "value": "@CMAKE_SOURCE_DIR@/resources"}
             ],
             "externalConsole": false,
@@ -28,11 +32,6 @@
                 {
                     "description": "Enable pretty-printing for gdb",
                     "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Enable break on all exceptions",
-                    "text": "catch throw",
                     "ignoreFailures": true
                 }
             ]

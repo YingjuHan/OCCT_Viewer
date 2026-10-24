@@ -1,5 +1,3 @@
-// Created by: Kirill Gavrilov
-// Copyright (c) 2023 Huawei Technologies Co., Ltd.
 import { Vec3, Ax2 } from './CommonTools.js';
 import { InteractiveObject } from './InteractiveObject.js';
 ;

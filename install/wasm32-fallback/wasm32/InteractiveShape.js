@@ -1,5 +1,3 @@
-// Created by: Kirill Gavrilov
-// Copyright (c) 2022 Huawei Technologies Co., Ltd.
 import { Vec3, ShapeInfo, Trsf, ShapeEnum } from './CommonTools.js';
 import { InteractiveObject } from './InteractiveObject.js';
 /**
@@ -76,6 +74,72 @@ export var ShapeObjectSelMode;
     /** Selection of groups. */
     ShapeObjectSelMode[ShapeObjectSelMode["Group"] = 128] = "Group";
 })(ShapeObjectSelMode || (ShapeObjectSelMode = {}));
+;
+;
+export class ShapeMassProps {
+    static parseJson(theJson) {
+        var _a;
+        if (!theJson) {
+            return null;
+        }
+        let aParsed;
+        try {
+            aParsed = JSON.parse(theJson);
+        }
+        catch (_b) {
+            return null;
+        }
+        if (!aParsed || !aParsed.centroid) {
+            return null;
+        }
+        const aCentroid = aParsed.centroid;
+        if (typeof aCentroid.x !== 'number' || typeof aCentroid.y !== 'number' || typeof aCentroid.z !== 'number') {
+            return null;
+        }
+        const volumeValid = aParsed.volumeValid === true || typeof aParsed.volume === 'number';
+        const volume = volumeValid && typeof aParsed.volume === 'number' ? aParsed.volume : null;
+        const centroidSource = aParsed.centroidSource === 'volume' ? 'volume' : 'surface';
+        return {
+            area: typeof aParsed.area === 'number' ? aParsed.area : Number((_a = aParsed.area) !== null && _a !== void 0 ? _a : 0),
+            volume,
+            centroid: { x: aCentroid.x, y: aCentroid.y, z: aCentroid.z },
+            centroidSource,
+            volumeValid,
+        };
+    }
+}
+;
+;
+export class InterferenceResult {
+    static parseJson(theJson) {
+        if (!theJson) {
+            return null;
+        }
+        let aParsed;
+        try {
+            aParsed = JSON.parse(theJson);
+        }
+        catch (_a) {
+            return null;
+        }
+        if (!aParsed) {
+            return null;
+        }
+        const objId1 = typeof aParsed.objId1 === 'string' ? aParsed.objId1 : '';
+        const objId2 = typeof aParsed.objId2 === 'string' ? aParsed.objId2 : '';
+        if (!objId1 || !objId2) {
+            return null;
+        }
+        return {
+            objId1,
+            objId2,
+            bboxHit: aParsed.bboxHit === true,
+            exactDone: aParsed.exactDone === true,
+            distance: typeof aParsed.distance === 'number' ? aParsed.distance : null,
+            interferes: aParsed.interferes === true,
+        };
+    }
+}
 ;
 /**
  * @internal Class to define detected/selected shape elements.
@@ -435,8 +499,7 @@ Location:  ${aLoc}
     }
     /** Return initial root shape location WITHOUT considering local transformation of interactive object. */
     get shapeLocation() {
-        var _a, _b;
-        return (_b = (_a = this.shapeMgr) === null || _a === void 0 ? void 0 : _a.getSubshapeInfo(this._myObjId, ShapeObjectSelMode.Global, 0, false).location) !== null && _b !== void 0 ? _b : new Trsf();
+        return this.getSubshapeInfo(ShapeObjectSelMode.Global, 0, false).location;
     }
     /** Return multiplication of initial root shape location and local transformation of interactive object. */
     get shapeFinalLocation() {
@@ -1066,9 +1129,71 @@ Location:  ${aLoc}
         var _a, _b;
         return (_b = (_a = this.shapeMgr) === null || _a === void 0 ? void 0 : _a.getSubshapeDump(this._myObjId, theElemType, theIndex)) !== null && _b !== void 0 ? _b : '';
     }
+    getRootShapeInfo(theToExplore) {
+        const aMgr = this.shapeMgr;
+        if (aMgr && typeof aMgr.getShapeInfo === 'function') {
+            const aMgrInfo = aMgr.getShapeInfo(this._myObjId, theToExplore);
+            const aRes = Object.assign(new ShapeInfo(), aMgrInfo);
+            aRes.objectId = this._myObjId;
+            return aRes;
+        }
+        const aInfo = new ShapeInfo();
+        aInfo.objectId = this._myObjId;
+        const aLoc = this.getAnySubshapeLocation();
+        if (aLoc) {
+            aInfo.location = aLoc;
+        }
+        if (theToExplore && this.shapeMgr) {
+            const aFaces = this.getSubshapesIndexes(ShapeObjectSelMode.Face, false);
+            if (aFaces.length > 0) {
+                const aFaceInfos = this.getSubshapesInfo(ShapeObjectSelMode.Face, aFaces, false);
+                for (const aFaceInfo of aFaceInfos) {
+                    aInfo.nbTriangles += aFaceInfo.nbTriangles;
+                    aInfo.nbTriNodes += aFaceInfo.nbTriNodes;
+                }
+            }
+            const anEdges = this.getSubshapesIndexes(ShapeObjectSelMode.Edge, false);
+            if (anEdges.length > 0) {
+                const anEdgeInfos = this.getSubshapesInfo(ShapeObjectSelMode.Edge, anEdges, false);
+                for (const anEdgeInfo of anEdgeInfos) {
+                    aInfo.nbPolySegments += anEdgeInfo.nbPolySegments;
+                }
+            }
+        }
+        return aInfo;
+    }
+    getAnySubshapeLocation() {
+        if (!this.shapeMgr) {
+            return null;
+        }
+        const aTypes = [
+            ShapeObjectSelMode.Face,
+            ShapeObjectSelMode.Edge,
+            ShapeObjectSelMode.Wire,
+            ShapeObjectSelMode.Vertex,
+            ShapeObjectSelMode.Shell,
+            ShapeObjectSelMode.Solid,
+            ShapeObjectSelMode.CompSolid,
+            ShapeObjectSelMode.Group,
+        ];
+        for (const aType of aTypes) {
+            const aIds = this.getSubshapesIndexes(aType, false);
+            if (aIds.length === 0) {
+                continue;
+            }
+            const aInfo = this.shapeMgr.getSubshapeInfo(this._myObjId, aType, aIds[0], false);
+            if (aInfo && aInfo.location) {
+                return aInfo.location;
+            }
+        }
+        return null;
+    }
     /** @internal Return subshape info */
     getSubshapeInfo(theElemType, theIndex, theToExplore = true) {
         var _a, _b;
+        if (theElemType === ShapeObjectSelMode.Global) {
+            return this.getRootShapeInfo(theToExplore);
+        }
         let anInfo = (_b = (_a = this.shapeMgr) === null || _a === void 0 ? void 0 : _a.getSubshapeInfo(this._myObjId, theElemType, theIndex, theToExplore)) !== null && _b !== void 0 ? _b : new ShapeInfo();
         let aRes = Object.assign(new ShapeInfo(), anInfo);
         aRes.objectId = this._myObjId; // avoid duplicating string - rely on JS sharing

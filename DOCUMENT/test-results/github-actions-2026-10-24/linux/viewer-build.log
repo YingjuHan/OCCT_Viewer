@@ -1,0 +1,285 @@
+[1/180] Linking CXX shared library lib/libRWMeshConv.so
+[2/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/CaeMeshAnimation.cpp.o
+[3/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/CaeMeshArrowsTools.cpp.o
+[4/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/CaeMeshStreamlinesBuilder.cpp.o
+[5/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/ColorScaleTools.cpp.o
+[6/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/InteractiveCaeCutPlane.cpp.o
+[7/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/CaeMeshTools.cpp.o
+[8/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/InteractiveCaeMeshDrawer.cpp.o
+[9/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/InteractiveCaeMesh.cpp.o
+[10/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/InteractiveCaeCutView.cpp.o
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCae/InteractiveCaeCutView.cpp: In member function ‘void ViewCae::InteractiveCaeCutView::Synchronize()’:
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCae/InteractiveCaeCutView.cpp:561:24: warning: declaration of ‘minimum’ shadows a previous local [-Wshadow=compatible-local]
+  561 |                 double minimum = 0, maximum = 1;
+      |                        ^~~~~~~
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCae/InteractiveCaeCutView.cpp:499:12: note: shadowed declaration is here
+  499 |     double minimum = INFINITY, maximum = -INFINITY;
+      |            ^~~~~~~
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCae/InteractiveCaeCutView.cpp:561:37: warning: declaration of ‘maximum’ shadows a previous local [-Wshadow=compatible-local]
+  561 |                 double minimum = 0, maximum = 1;
+      |                                     ^~~~~~~
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCae/InteractiveCaeCutView.cpp:499:32: note: shadowed declaration is here
+  499 |     double minimum = INFINITY, maximum = -INFINITY;
+      |                                ^~~~~~~
+[11/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/InteractiveColorScaleOwner.cpp.o
+[12/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/InteractiveSphericalAxes.cpp.o
+[13/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/InteractiveColorScale.cpp.o
+[14/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/InteractiveCaeMeshOwner.cpp.o
+[15/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/MeshColorMapper.cpp.o
+[16/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/MeshAdaptorSensitive.cpp.o
+[17/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/MeshColorScaleMapper.cpp.o
+[18/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/MeshAnnotations.cpp.o
+[19/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/MeshCutGpuPresentation.cpp.o
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCae/MeshCutGpuPresentation.cpp: In member function ‘void ViewCae::MeshCutGpuPresentation::updateStructures()’:
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCae/MeshCutGpuPresentation.cpp:408:44: warning: ‘void Graphic3d_Structure::Connect(const opencascade::handle<Graphic3d_Structure>&)’ is deprecated: Deprecated short-cut [-Wdeprecated-declarations]
+  408 |         if (myShowBody) { myParent->Connect(myBodyStructure); }
+      |                           ~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~
+In file included from /home/htf/occtviewer-ci/linux/occt-install/include/opencascade/Prs3d_Presentation.hxx:20,
+                 from /home/htf/occtviewer-ci/linux/occt-install/include/opencascade/PrsMgr_Presentation.hxx:20,
+                 from /home/htf/occtviewer-ci/linux/occt-install/include/opencascade/PrsMgr_PresentableObject.hxx:25,
+                 from /home/htf/occtviewer-ci/linux/occt-install/include/opencascade/SelectMgr_SelectableObject.hxx:20,
+                 from /home/htf/occtviewer-ci/linux/occt-install/include/opencascade/AIS_InteractiveObject.hxx:22,
+                 from /home/htf/occtviewer-ci/linux/occt-install/include/opencascade/AIS_DataMapOfIOStatus.hxx:20,
+                 from /home/htf/occtviewer-ci/linux/occt-install/include/opencascade/AIS_InteractiveContext.hxx:20,
+                 from /mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewBase/InteractiveOwner.h:4,
+                 from /mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCae/MeshAnnotations.h:4,
+                 from /mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCae/MeshPart.h:6,
+                 from /mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCae/InteractiveCaeMeshDrawer.h:6,
+                 from /mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCae/MeshPresentation.h:7,
+                 from /mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCae/MeshPresentationScalar.h:6,
+                 from /mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCae/InteractiveCaeCutView.h:4,
+                 from /mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCae/MeshCutGpuPresentation.h:4,
+                 from /mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCae/MeshCutGpuPresentation.cpp:1:
+/home/htf/occtviewer-ci/linux/occt-install/include/opencascade/Graphic3d_Structure.hxx:307:8: note: declared here
+  307 |   void Connect (const Handle(Graphic3d_Structure)& thePrs)
+      |        ^~~~~~~
+[20/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/MeshPresentation.cpp.o
+[21/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/MeshPartGeneralCells.cpp.o
+[22/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/MeshPart.cpp.o
+[23/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/MeshPresentationBase.cpp.o
+[24/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/MeshPresentations.cpp.o
+[25/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/MeshPresentationStreamlines.cpp.o
+[26/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/MeshPresentationScalar.cpp.o
+[27/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/MeshPresentationVector.cpp.o
+[28/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/MeshPropertyData.cpp.o
+[29/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/MeshPresentationTools.cpp.o
+[30/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshCutFrame.cpp.o
+[31/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/MeshSensPart.cpp.o
+[32/180] Building CXX object source/ViewCae/CMakeFiles/ViewCae.dir/MeshSubEntity.cpp.o
+[33/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshCutMaterial.cpp.o
+[34/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshCutMaterialSampling.cpp.o
+[35/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshCutSlicing.cpp.o
+[36/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshCutCache.cpp.o
+[37/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshCutAutomatic.cpp.o
+[38/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshCutPhysics.cpp.o
+[39/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshCutRecovery.cpp.o
+[40/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshCutIntegration.cpp.o
+[41/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshCutViewManager.cpp.o
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCaeGeom/MeshCutViewManager.cpp: In lambda function:
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCaeGeom/MeshCutViewManager.cpp:1173:46: warning: declaration of ‘name’ shadows a previous local [-Wshadow=compatible-local]
+ 1173 |             auto readTrace = [&](const char* name, MeshCutTraceOptions& options) {
+      |                                  ~~~~~~~~~~~~^~~~
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCaeGeom/MeshCutViewManager.cpp:1144:27: note: shadowed declaration is here
+ 1144 |         const std::string name(cut["name"].GetString(), cut["name"].GetStringLength());
+      |                           ^~~~
+[42/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshCutTensor.cpp.o
+[43/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshGeometryQuadric.cpp.o
+[44/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshBvhData.cpp.o
+[45/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshCutTrace.cpp.o
+[46/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshGeometryBlock.cpp.o
+[47/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshCutUnion.cpp.o
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCaeGeom/MeshCutUnion.cpp: In function ‘std::shared_ptr<ViewCaeGeom::MeshCutPresentation> ViewCaeGeom::BuildCutPresentationUnion(const opencascade::handle<RWCae::MeshData>&, const opencascade::handle<MeshGeometry>&, const opencascade::handle<MeshBvhData>&, const std::vector<MeshCutResult>&, const MeshCutGeometryOptions&, const std::shared_ptr<MeshCutTraceSource>&, const std::shared_ptr<MeshVtkCutSource>&)’:
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCaeGeom/MeshCutUnion.cpp:666:65: warning: declaration of ‘faces’ shadows a previous local [-Wshadow=compatible-local]
+  666 |                     TaggedShape caps; std::vector<TopoDS_Shape> faces;
+      |                                                                 ^~~~~
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCaeGeom/MeshCutUnion.cpp:628:57: note: shadowed declaration is here
+  628 |         TaggedShape boundary; std::vector<TopoDS_Shape> faces;
+      |                                                         ^~~~~
+[48/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshGeometry.cpp.o
+[49/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshGeometryDeformed.cpp.o
+[50/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshGeometryGen.cpp.o
+[51/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshGeometryIso.cpp.o
+[52/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshGeometryClip.cpp.o
+[53/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshGeometrySlice.cpp.o
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCaeGeom/MeshGeometrySlice.cpp: In member function ‘void {anonymous}::MeshSliceSelector::ProcessCandidates(ViewCaeGeom::MeshSliceWork&)’:
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCaeGeom/MeshGeometrySlice.cpp:182:75: warning: writing 1 byte into a region of size 0 [-Wstringop-overflow=]
+  182 |                     for(size_t n=0;n<section.Count;++n) { pattern.Edges[n]=(unsigned char)section.Vertices[n].Edge; }
+In file included from /usr/include/c++/13/functional:65,
+                 from /mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/RWBase/TaskManager.h:10,
+                 from /mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCaeGeom/MeshHBvhBoxSet.h:4,
+                 from /mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCaeGeom/MeshBvhData.h:5,
+                 from /mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCaeGeom/MeshGeometry.h:4,
+                 from /mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCaeGeom/MeshGeometrySlice.h:4,
+                 from /mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCaeGeom/MeshGeometrySlice.cpp:1:
+/usr/include/c++/13/array:109:55: note: at offset 12 into destination object ‘std::array<unsigned char, 12>::_M_elems’ of size 12
+  109 |       typename __array_traits<_Tp, _Nm>::_Type        _M_elems;
+      |                                                       ^~~~~~~~
+[54/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshVtkAnalytic.cpp.o
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCaeGeom/MeshVtkAnalytic.cpp: In constructor ‘{anonymous}::Map::Map(ViewCaeGeom::MeshCellKernel*)’:
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCaeGeom/MeshVtkAnalytic.cpp:77:33: warning: comparison of integer expressions of different signedness: ‘std::vector<double>::size_type’ {aka ‘long unsigned int’} and ‘int’ [-Wsign-compare]
+   77 |             if (Weights->size() != cell->GetNumberOfPoints()) { U = V = 0; return; }
+      |                 ~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCaeGeom/MeshVtkAnalytic.cpp: In member function ‘{anonymous}::HPoint {anonymous}::Map::sample(double, double) const’:
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/ViewCaeGeom/MeshVtkAnalytic.cpp:110:34: warning: comparison of integer expressions of different signedness: ‘size_t’ {aka ‘long unsigned int’} and ‘int’ [-Wsign-compare]
+  110 |             for (size_t n = 0; n < Cell->GetNumberOfPoints(); ++n) {
+      |                                ~~^~~~~~~~~~~~~~~~~~~~~~~~~~~
+[55/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshVtkCell.cpp.o
+[56/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshCellKernel.cpp.o
+[57/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshGeometryVtkCut.cpp.o
+[58/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshVtkCutSource.cpp.o
+[59/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshGeometryTools.cpp.o
+[60/180] Building CXX object source/ViewCaeGeom/CMakeFiles/ViewCaeGeom.dir/MeshGeometryVtkIso.cpp.o
+[61/180] Building CXX object source/SimMesh/CMakeFiles/SimMesh.dir/SimMesh_Attributes.cpp.o
+[62/180] Linking CXX shared library lib/libViewCaeGeom.so
+[63/180] Linking CXX shared library lib/libViewCae.so
+[64/180] Building CXX object source/SimMesh/CMakeFiles/SimMesh.dir/SimMesh.cpp.o
+[65/180] Building CXX object source/SimMesh/CMakeFiles/SimMesh.dir/SimMesh_Model.cpp.o
+[66/180] Building CXX object source/SimMesh/CMakeFiles/SimMesh.dir/SimMesh_Persistence.cpp.o
+[67/180] Building CXX object source/SimMesh/CMakeFiles/SimMesh.dir/SimMesh_VertexDataList.cpp.o
+[68/180] Building CXX object source/SimMesh/CMakeFiles/SimMesh.dir/SimMesh_Simplifier.cpp.o
+[69/180] Linking CXX shared library lib/libSimMesh.so
+[70/180] Building CXX object source/LodCae/CMakeFiles/LodCae.dir/Simplifier.cpp.o
+[71/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/IManager.cpp.o
+[72/180] Linking CXX shared library lib/libLodCae.so
+[73/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/InteractiveAspectsManager.cpp.o
+[74/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/InteractiveAxesManager.cpp.o
+[75/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/NativeCutView.cpp.o
+[76/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/InteractiveCaeMeshManager.cpp.o
+[77/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/NativeCutDigest.cpp.o
+[78/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/NativeCutTimeline.cpp.o
+[79/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/NativeCutAnalysis.cpp.o
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/Viewer/NativeCutAnalysis.cpp: In lambda function:
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/Viewer/NativeCutAnalysis.cpp:300:93: warning: declaration of ‘d’ shadows a previous local [-Wshadow=local]
+  300 |             const auto d=std::find_if(definitions.begin(),definitions.end(),[&](const auto& d) { return d.Id==entry.first; });
+      |                                                                                 ~~~~~~~~~~~~^
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/Viewer/NativeCutAnalysis.cpp:300:24: note: shadowed declaration is here
+  300 |             const auto d=std::find_if(definitions.begin(),definitions.end(),[&](const auto& d) { return d.Id==entry.first; });
+      |                        ^
+[80/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/InteractiveClippingManager.cpp.o
+[81/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/NativeCutAnalysisJson.cpp.o
+[82/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/InteractiveColorScaleManager.cpp.o
+[83/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/InteractiveDimensionManager.cpp.o
+[84/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/InteractiveContext.cpp.o
+[85/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/InteractiveScaleRulerManager.cpp.o
+[86/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/NativeCutSession.cpp.o
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/Viewer/NativeCutSession.cpp: In lambda function:
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/Viewer/NativeCutSession.cpp:321:188: warning: declaration of ‘scale’ shadows a previous local [-Wshadow=compatible-local]
+  321 |         if(doc.HasMember("camera")&&!doc["camera"].IsNull()) { const auto& c=doc["camera"]; const auto eye=vec(get(c,"eye")),center=vec(get(c,"center")),up=vec(get(c,"up")); const double scale=num(get(c,"scale")),aspect=num(get(c,"aspect")),fovy=num(get(c,"fovy")),near=num(get(c,"near")),far=num(get(c,"far")); const int projection=integer(get(c,"projection")); if((eye-center).Modulus()<=1e-12||up.Modulus()<=1e-12||Graphic3d_Vec3d::Cross(center-eye,up).Modulus()<=1e-12||scale<=0||aspect<=0||fovy<=0||fovy>=180||far<=near||projection<0||projection>4||(projection!=0&&near<=0)) { throw std::invalid_argument("Invalid session camera"); } camera=new Graphic3d_Camera(); camera->SetEyeAndCenter(gp_Pnt(eye.x(),eye.y(),eye.z()),gp_Pnt(center.x(),center.y(),center.z())); camera->SetUp(gp_Dir(up.x(),up.y(),up.z())); camera->SetProjectionType((Graphic3d_Camera::Projection)projection); camera->SetScale(scale); camera->SetAspect(aspect); camera->SetFOVy(fovy); camera->SetZRange(near,far); }
+      |                                                                                                                                                                                            ^~~~~
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/source/Viewer/NativeCutSession.cpp:231:116: note: shadowed declaration is here
+  231 |         const auto deform=doc.HasMember("deformation")?binding(doc["deformation"]):CutFieldBinding(); const double scale=doc.HasMember("deformationScale")?num(doc["deformationScale"]):0; if(!cuts.SetDeformation(staged.resolveField(deform),scale)) { throw std::invalid_argument("Invalid session deformation binding"); } timeline.myDeformation=deform; timeline.myScale=scale;
+      |                                                                                                                    ^~~~~
+[87/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/main.cpp.o
+[88/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/InteractiveTextLabelManager.cpp.o
+[89/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/InteractiveViewCubeManager.cpp.o
+[90/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/InteractiveShapeManager.cpp.o
+[91/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/RenderingParams.cpp.o
+[92/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/WasmModulePrinter.cpp.o
+[93/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/UnitManager.cpp.o
+[94/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/SelectionManager.cpp.o
+[95/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/Utils/CaeMeshInfo.cpp.o
+[96/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/Utils/CaeMeshAnnotationInfo.cpp.o
+[97/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/ViewManager.cpp.o
+[98/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/Utils/CaeMeshStreamlinesInfo.cpp.o
+[99/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/Utils/CameraViewPoint.cpp.o
+[100/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/Utils/CaeMeshPropInfo.cpp.o
+[101/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/WasmViewer.cpp.o
+[102/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/Utils/DimensionParams.cpp.o
+[103/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/Utils/SelectionShapeElems.cpp.o
+[104/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/Utils/ColorScaleParams.cpp.o
+[105/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/Utils/ShapeInfo.cpp.o
+[106/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/Utils/VecN.cpp.o
+[107/180] Building CXX object source/FileExchange/CMakeFiles/FileExchange.dir/FileExchange.cpp.o
+[108/180] Linking CXX executable bin/FileExchange
+[109/180] Building CXX object source/Viewer/CMakeFiles/Viewer.dir/Utils/SelectionMeshEntity.cpp.o
+[110/180] Linking CXX shared library lib/libViewer.so
+[111/180] Building CXX object test/native/CMakeFiles/vtk_format_tests.dir/VtkFormatTests.cpp.o
+[112/180] Linking CXX executable bin/vtk_format_tests
+[113/180] Building CXX object test/native/CMakeFiles/occtviewer_tests.dir/VtkTests.cpp.o
+[114/180] Linking CXX executable bin/occtviewer_tests
+[115/180] Building CXX object test/native/CMakeFiles/vtk_series_tests.dir/VtkSeriesTests.cpp.o
+[116/180] Linking CXX executable bin/vtk_series_tests
+[117/180] Building CXX object test/native/CMakeFiles/vtk_limits_tests.dir/VtkLimitsTests.cpp.o
+[118/180] Linking CXX executable bin/vtk_limits_tests
+[119/180] Building CXX object test/native/CMakeFiles/vtk_safety_tests.dir/VtkSafetyTests.cpp.o
+[120/180] Linking CXX executable bin/vtk_safety_tests
+[121/180] Building CXX object test/native/CMakeFiles/vtk_reference_tests.dir/VtkReferenceTests.cpp.o
+[122/180] Linking CXX executable bin/vtk_reference_tests
+[123/180] Building CXX object test/native/CMakeFiles/vtk_import_tests.dir/VtkImportTests.cpp.o
+[124/180] Building CXX object test/native/CMakeFiles/cut_display_tests.dir/CutDisplayTests.cpp.o
+[125/180] Linking CXX executable bin/vtk_import_tests
+[126/180] Linking CXX executable bin/cut_display_tests
+[127/180] Building CXX object test/native/CMakeFiles/cut_view_tests.dir/CutViewTests.cpp.o
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/test/native/CutViewTests.cpp: In function ‘void projectedCells()’:
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/test/native/CutViewTests.cpp:188:9: warning: ‘minimum’ may be used uninitialized [-Wmaybe-uninitialized]
+  188 |     near(minimum, 2, "Projected contour minimum");
+      |     ~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/test/native/CutViewTests.cpp:186:12: note: ‘minimum’ was declared here
+  186 |     double minimum, maximum;
+      |            ^~~~~~~
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/test/native/CutViewTests.cpp:189:9: warning: ‘maximum’ may be used uninitialized [-Wmaybe-uninitialized]
+  189 |     near(maximum, 6, "Projected contour maximum");
+      |     ~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/test/native/CutViewTests.cpp:186:21: note: ‘maximum’ was declared here
+  186 |     double minimum, maximum;
+      |                     ^~~~~~~
+[128/180] Linking CXX executable bin/cut_view_tests
+[129/180] Building CXX object test/native/CMakeFiles/cut_slicing_tests.dir/CutSlicingTests.cpp.o
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/test/native/CutSlicingTests.cpp: In function ‘void largePlaneSection()’:
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/test/native/CutSlicingTests.cpp:98:20: warning: declaration of ‘component’ shadows a previous local [-Wshadow=local]
+   98 |         const auto component=Handle(RWCae::MeshScalarProperty)::DownCast(displacement->GetComponent(c)); component->Init(source->NbNodes());
+      |                    ^~~~~~~~~
+/mnt/d/workspace/OpenCASCADE/OCCT_Viewer/test/native/CutSlicingTests.cpp:26:16: note: shadowed declaration is here
+   26 |     const auto component=Handle(RWCae::MeshScalarProperty)::DownCast(field->GetComponent(0)); component->Init(source->NbNodes());
+      |                ^~~~~~~~~
+[130/180] Linking CXX executable bin/cut_slicing_tests
+[131/180] Building CXX object test/native/CMakeFiles/cut_linear_batch_tests.dir/CutLinearBatchTests.cpp.o
+[132/180] Linking CXX executable bin/cut_linear_batch_tests
+[133/180] Building CXX object test/native/CMakeFiles/cut_placement_tests.dir/CutPlacementTests.cpp.o
+[134/180] Linking CXX executable bin/cut_placement_tests
+[135/180] Building CXX object test/native/CMakeFiles/cut_bvh_benchmark.dir/CutBvhBenchmark.cpp.o
+[136/180] Linking CXX executable bin/cut_bvh_benchmark
+[137/180] Building CXX object test/native/CMakeFiles/cut_sine_plate_tests.dir/CutSinePlateTests.cpp.o
+[138/180] Building CXX object test/native/CMakeFiles/cut_material_tests.dir/CutMaterialTests.cpp.o
+[139/180] Linking CXX executable bin/cut_sine_plate_tests
+[140/180] Linking CXX executable bin/cut_material_tests
+[141/180] Building CXX object test/native/CMakeFiles/cut_cache_tests.dir/CutCacheTests.cpp.o
+[142/180] Linking CXX executable bin/cut_cache_tests
+[143/180] Building CXX object test/native/CMakeFiles/cut_physics_tests.dir/CutPhysicsTests.cpp.o
+[144/180] Linking CXX executable bin/cut_physics_tests
+[145/180] Building CXX object test/native/CMakeFiles/native_cut_tests.dir/NativeCutTests.cpp.o
+[146/180] Linking CXX executable bin/native_cut_tests
+[147/180] Building CXX object test/native/CMakeFiles/native_timeline_tests.dir/NativeTimelineTests.cpp.o
+[148/180] Linking CXX executable bin/native_timeline_tests
+[149/180] Building CXX object test/native/CMakeFiles/native_analysis_tests.dir/NativeAnalysisTests.cpp.o
+[150/180] Linking CXX executable bin/native_analysis_tests
+[151/180] Building CXX object test/native/CMakeFiles/quadric_cut_tests.dir/QuadricCutTests.cpp.o
+[152/180] Linking CXX executable bin/quadric_cut_tests
+[153/180] Building CXX object test/native/CMakeFiles/cut_recovery_tests.dir/CutRecoveryTests.cpp.o
+[154/180] Linking CXX executable bin/cut_recovery_tests
+[155/180] Building CXX object test/native/CMakeFiles/cut_tensor_tests.dir/CutTensorTests.cpp.o
+[156/180] Linking CXX executable bin/cut_tensor_tests
+[157/180] Building CXX object test/native/CMakeFiles/native_session_tests.dir/NativeSessionTests.cpp.o
+[158/180] Linking CXX executable bin/native_session_tests
+[159/180] Building CXX object test/native/CMakeFiles/cut_trace_binding_tests.dir/CutTraceBindingTests.cpp.o
+[160/180] Linking CXX executable bin/cut_trace_binding_tests
+[161/180] Building CXX object test/native/CMakeFiles/cut_interface_tests.dir/CutInterfaceTests.cpp.o
+[162/180] Building CXX object test/native/CMakeFiles/cut_union_tests.dir/CutUnionTests.cpp.o
+[163/180] Linking CXX executable bin/cut_interface_tests
+[164/180] Linking CXX executable bin/cut_union_tests
+[165/180] Building CXX object test/native/CMakeFiles/vtk_cell_cut_tests.dir/VtkCellCutTests.cpp.o
+[166/180] Building CXX object test/native/CMakeFiles/general_cut_cache_tests.dir/GeneralCutCacheTests.cpp.o
+[167/180] Linking CXX executable bin/vtk_cell_cut_tests
+[168/180] Linking CXX executable bin/general_cut_cache_tests
+[169/180] Building CXX object test/native/CMakeFiles/cut_geometry_tests.dir/CutGeometryTests.cpp.o
+[170/180] Linking CXX executable bin/cut_geometry_tests
+[171/180] Building CXX object test/native/CMakeFiles/cut_analytic_tests.dir/CutAnalyticTests.cpp.o
+[172/180] Linking CXX executable bin/cut_analytic_tests
+[173/180] Building CXX object test/native/CMakeFiles/cut_reference_tests.dir/CutReferenceTests.cpp.o
+[174/180] Building CXX object test/native/CMakeFiles/cell_kernel_tests.dir/CellKernelTests.cpp.o
+[175/180] Linking CXX executable bin/cut_reference_tests
+[176/180] Building CXX object test/native/CMakeFiles/cut_view_benchmark.dir/CutViewBenchmark.cpp.o
+[177/180] Linking CXX executable bin/cell_kernel_tests
+[178/180] Linking CXX executable bin/cut_view_benchmark
+[179/180] Building CXX object test/native/CMakeFiles/cut_iso_tests.dir/CutIsoTests.cpp.o
+[180/180] Linking CXX executable bin/cut_iso_tests

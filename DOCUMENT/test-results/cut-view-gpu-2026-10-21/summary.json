@@ -1,0 +1,2305 @@
+{
+  "schema": 1,
+  "protocol": {
+    "cells": 3375000,
+    "nodes": 3442951,
+    "mask": 3,
+    "frames_per_round": 60,
+    "rounds": 3,
+    "deformation_scale": 0.1,
+    "p50": "sorted[n//2] (upper median)",
+    "p95": "nearest rank ceil(0.95*n)",
+    "fps": "1000*n/sum(total_ms)",
+    "target": "fps>=15 and p95_ms<=67"
+  },
+  "long_sample": {
+    "MX450": {
+      "directory": "build\\gpu-mx450-validation",
+      "manifest": {
+        "gpu": "MX450",
+        "mode": "All",
+        "started": "2026-10-21T11:25:00.9186908+08:00",
+        "frames": 60,
+        "repetitions": 3,
+        "repository": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer",
+        "build": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\mingw-deformation",
+        "executable": "D:\\workspace\\OpenCASCADE\\OCCT_private\\install\\mingw\\win64\\gcc\\bin\\DRAWEXE.exe",
+        "model": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\large-vtk-deformed\\hex_150.vtu",
+        "revision": "78fa2d5bf2370ac05c70ceee0195f4beb63f7ede",
+        "succeeded": true,
+        "preferenceBefore": {
+          "exists": false,
+          "value": null,
+          "kind": ""
+        },
+        "preferenceDuring": "GpuPreference=2;",
+        "functionalPassed": true,
+        "largePassed": true,
+        "performanceCompleted": true,
+        "preferenceRestored": true,
+        "finished": "2026-10-21T11:42:31.4781007+08:00"
+      },
+      "rounds": [
+        {
+          "frames": 60,
+          "p50_ms": 43.773,
+          "p95_ms": 79.5504,
+          "fps": 22.663765251439177,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 5.142716666666667,
+            "source_ms": 0.000155,
+            "intersection_ms": 9.414571666666667,
+            "slice_ms": 1.6066533333333333,
+            "trace_ms": 7.807918333333333,
+            "FE_ms": 3.7508433333333335,
+            "primitives_ms": 8.174361666666666,
+            "actual_redraw_ms": 17.639568333333333,
+            "total_ms": 44.123295,
+            "bvh_ms": 0.12212666666666666,
+            "node_prepare_ms": 2e-05,
+            "cell_cut_ms": 0.26936666666666664,
+            "merge_ms": 0.864265,
+            "trace_origins_ms": 4.539755,
+            "trace_classify_ms": 0.17986666666666667,
+            "trace_prepare_ms": 0.70263,
+            "trace_maps_ms": 0.27479333333333333,
+            "trace_fill_ms": 2.0677266666666667,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4320000.0,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round": 1,
+          "scenario": "crossing",
+          "renderer": "NVIDIA GeForce MX450/PCIe/SSE2\r\n4.6.0 NVIDIA 573.91",
+          "import_ms": 3418.8406,
+          "setup_ms": 9635.8384,
+          "csv_sha256": "e54196630122023f31368fb0cfca614966fbea74257e47523d212236dcdcdfe9",
+          "run_log_sha256": "263e2a4a598ca6831f4a0e14a3a591bc8739b61baf7b0b7b8f057b6fd435af66"
+        },
+        {
+          "frames": 60,
+          "p50_ms": 85.9188,
+          "p95_ms": 101.74,
+          "fps": 11.498775064239343,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 0.04633166666666667,
+            "source_ms": 0.000175,
+            "intersection_ms": 52.06431833333333,
+            "slice_ms": 29.857988333333335,
+            "trace_ms": 22.20633,
+            "FE_ms": 4.446931666666667,
+            "primitives_ms": 8.838498333333334,
+            "actual_redraw_ms": 21.567978333333333,
+            "total_ms": 86.965785,
+            "bvh_ms": 2.27689,
+            "node_prepare_ms": 0.00028166666666666666,
+            "cell_cut_ms": 6.162318333333333,
+            "merge_ms": 16.09043,
+            "trace_origins_ms": 1.9077316666666666,
+            "trace_classify_ms": 4.102735,
+            "trace_prepare_ms": 5.435175,
+            "trace_maps_ms": 5.615993333333333,
+            "trace_fill_ms": 4.377,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4987682.333333333,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round": 1,
+          "scenario": "rotating",
+          "renderer": "NVIDIA GeForce MX450/PCIe/SSE2\r\n4.6.0 NVIDIA 573.91",
+          "import_ms": 3645.2316,
+          "setup_ms": 9847.1075,
+          "csv_sha256": "27a4861526c738daa09568730f571f3bd57164d2a07bf4d4e807ada757d4128f",
+          "run_log_sha256": "263e2a4a598ca6831f4a0e14a3a591bc8739b61baf7b0b7b8f057b6fd435af66"
+        },
+        {
+          "frames": 60,
+          "p50_ms": 95.0493,
+          "p95_ms": 125.133,
+          "fps": 9.840778661452367,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 2.725115,
+            "source_ms": 0.00015666666666666666,
+            "intersection_ms": 63.01639166666667,
+            "slice_ms": 43.840445,
+            "trace_ms": 19.17594666666667,
+            "FE_ms": 4.063951666666667,
+            "primitives_ms": 10.346066666666667,
+            "actual_redraw_ms": 21.464828333333333,
+            "total_ms": 101.617975,
+            "bvh_ms": 2.257285,
+            "node_prepare_ms": 17.509443333333333,
+            "cell_cut_ms": 2.8271266666666666,
+            "merge_ms": 15.015601666666667,
+            "trace_origins_ms": 1.8889266666666666,
+            "trace_classify_ms": 4.001963333333333,
+            "trace_prepare_ms": 3.7269366666666666,
+            "trace_maps_ms": 5.1898333333333335,
+            "trace_fill_ms": 3.640835,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4695840.6,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round": 1,
+          "scenario": "deformed",
+          "renderer": "NVIDIA GeForce MX450/PCIe/SSE2\r\n4.6.0 NVIDIA 573.91",
+          "import_ms": 3963.4295,
+          "setup_ms": 12221.8832,
+          "csv_sha256": "db4082e9818cc27023418df66b794e13ed47ca0ab5d42054e033945a365de6a4",
+          "run_log_sha256": "263e2a4a598ca6831f4a0e14a3a591bc8739b61baf7b0b7b8f057b6fd435af66"
+        },
+        {
+          "frames": 60,
+          "p50_ms": 44.3874,
+          "p95_ms": 81.3164,
+          "fps": 20.760811062605782,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 4.80967,
+            "source_ms": 0.00016166666666666668,
+            "intersection_ms": 9.360958333333333,
+            "slice_ms": 1.4618066666666667,
+            "trace_ms": 7.899151666666667,
+            "FE_ms": 3.8820033333333335,
+            "primitives_ms": 8.69504,
+            "actual_redraw_ms": 21.418386666666667,
+            "total_ms": 48.167675,
+            "bvh_ms": 0.10831,
+            "node_prepare_ms": 1.3333333333333333e-05,
+            "cell_cut_ms": 0.28758500000000004,
+            "merge_ms": 0.7273116666666667,
+            "trace_origins_ms": 4.550021666666667,
+            "trace_classify_ms": 0.19198833333333334,
+            "trace_prepare_ms": 0.6213166666666667,
+            "trace_maps_ms": 0.24992,
+            "trace_fill_ms": 2.2504583333333334,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4320000.0,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round": 2,
+          "scenario": "crossing",
+          "renderer": "NVIDIA GeForce MX450/PCIe/SSE2\r\n4.6.0 NVIDIA 573.91",
+          "import_ms": 3732.1347,
+          "setup_ms": 10514.4449,
+          "csv_sha256": "15cef01f483e8409578b8944286d8bf9aaa221d4f5ac7849373b0a2861c7dfa4",
+          "run_log_sha256": "2a95db17fab9db0f2e230c14a9235686b01660ccd825a21459f52790bc59b68a"
+        },
+        {
+          "frames": 60,
+          "p50_ms": 89.7045,
+          "p95_ms": 109.512,
+          "fps": 10.960543286363995,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 0.058165,
+            "source_ms": 0.00017666666666666666,
+            "intersection_ms": 56.307543333333335,
+            "slice_ms": 32.506978333333336,
+            "trace_ms": 23.800565,
+            "FE_ms": 4.712113333333333,
+            "primitives_ms": 10.069055,
+            "actual_redraw_ms": 20.087645,
+            "total_ms": 91.23635333333334,
+            "bvh_ms": 2.429891666666667,
+            "node_prepare_ms": 0.0003283333333333333,
+            "cell_cut_ms": 6.612488333333333,
+            "merge_ms": 17.600386666666665,
+            "trace_origins_ms": 2.2550166666666667,
+            "trace_classify_ms": 4.521131666666666,
+            "trace_prepare_ms": 5.8234683333333335,
+            "trace_maps_ms": 5.74145,
+            "trace_fill_ms": 4.60198,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4987682.333333333,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round": 2,
+          "scenario": "rotating",
+          "renderer": "NVIDIA GeForce MX450/PCIe/SSE2\r\n4.6.0 NVIDIA 573.91",
+          "import_ms": 4113.5005,
+          "setup_ms": 11393.4121,
+          "csv_sha256": "b78b7fef2b5874608ac5be3780f39e30073b9f7679feb963445e36ee398fc0ea",
+          "run_log_sha256": "2a95db17fab9db0f2e230c14a9235686b01660ccd825a21459f52790bc59b68a"
+        },
+        {
+          "frames": 60,
+          "p50_ms": 104.674,
+          "p95_ms": 146.424,
+          "fps": 8.78508008764523,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 2.835113333333333,
+            "source_ms": 0.00023833333333333334,
+            "intersection_ms": 74.026305,
+            "slice_ms": 51.866215,
+            "trace_ms": 22.160081666666667,
+            "FE_ms": 4.651183333333333,
+            "primitives_ms": 12.408611666666667,
+            "actual_redraw_ms": 19.906283333333334,
+            "total_ms": 113.829355,
+            "bvh_ms": 2.59196,
+            "node_prepare_ms": 19.79952,
+            "cell_cut_ms": 3.393075,
+            "merge_ms": 18.399878333333334,
+            "trace_origins_ms": 2.2843666666666667,
+            "trace_classify_ms": 4.616688333333333,
+            "trace_prepare_ms": 4.147685,
+            "trace_maps_ms": 6.172878333333333,
+            "trace_fill_ms": 4.04618,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4695840.6,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round": 2,
+          "scenario": "deformed",
+          "renderer": "NVIDIA GeForce MX450/PCIe/SSE2\r\n4.6.0 NVIDIA 573.91",
+          "import_ms": 4674.6727,
+          "setup_ms": 13812.0384,
+          "csv_sha256": "71797daa92416b7884d8ffbc275887c7637e97a1b2f2d5389bac743ca2873d69",
+          "run_log_sha256": "2a95db17fab9db0f2e230c14a9235686b01660ccd825a21459f52790bc59b68a"
+        },
+        {
+          "frames": 60,
+          "p50_ms": 55.2488,
+          "p95_ms": 96.1832,
+          "fps": 17.05963148693909,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 6.1961450000000005,
+            "source_ms": 0.00020333333333333333,
+            "intersection_ms": 13.086758333333334,
+            "slice_ms": 2.1837766666666667,
+            "trace_ms": 10.902981666666667,
+            "FE_ms": 4.670685,
+            "primitives_ms": 12.221873333333333,
+            "actual_redraw_ms": 22.440718333333333,
+            "total_ms": 58.617913333333334,
+            "bvh_ms": 0.15939,
+            "node_prepare_ms": 2e-05,
+            "cell_cut_ms": 0.36412833333333333,
+            "merge_ms": 1.171245,
+            "trace_origins_ms": 6.216395,
+            "trace_classify_ms": 0.2680416666666667,
+            "trace_prepare_ms": 1.1425933333333333,
+            "trace_maps_ms": 0.446015,
+            "trace_fill_ms": 2.766548333333333,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4320000.0,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round": 3,
+          "scenario": "crossing",
+          "renderer": "NVIDIA GeForce MX450/PCIe/SSE2\r\n4.6.0 NVIDIA 573.91",
+          "import_ms": 6034.0158,
+          "setup_ms": 15612.881,
+          "csv_sha256": "3c9903fe74b587af3764b5dfeedac18382c0b76650a7c0a1d706d16a05093dc7",
+          "run_log_sha256": "e862a620751a90040a267695a148d1eaeab9920529f64388a573f9a457106ace"
+        },
+        {
+          "frames": 60,
+          "p50_ms": 110.981,
+          "p95_ms": 135.681,
+          "fps": 8.904858928853812,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 0.05558166666666667,
+            "source_ms": 0.00019833333333333335,
+            "intersection_ms": 71.17483,
+            "slice_ms": 41.91399,
+            "trace_ms": 29.26084,
+            "FE_ms": 5.49357,
+            "primitives_ms": 12.471555,
+            "actual_redraw_ms": 23.10103833333333,
+            "total_ms": 112.29824166666667,
+            "bvh_ms": 2.935678333333333,
+            "node_prepare_ms": 0.00045,
+            "cell_cut_ms": 8.171283333333333,
+            "merge_ms": 23.43599,
+            "trace_origins_ms": 2.8260283333333334,
+            "trace_classify_ms": 5.5301816666666666,
+            "trace_prepare_ms": 7.407936666666667,
+            "trace_maps_ms": 7.307065,
+            "trace_fill_ms": 5.152646666666667,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4987682.333333333,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round": 3,
+          "scenario": "rotating",
+          "renderer": "NVIDIA GeForce MX450/PCIe/SSE2\r\n4.6.0 NVIDIA 573.91",
+          "import_ms": 5239.4854,
+          "setup_ms": 13796.011,
+          "csv_sha256": "ed0be33e1945dcf331f6ce38abb5cd5b62fa8731035488565a40b98f66d4d5bf",
+          "run_log_sha256": "e862a620751a90040a267695a148d1eaeab9920529f64388a573f9a457106ace"
+        },
+        {
+          "frames": 60,
+          "p50_ms": 92.2966,
+          "p95_ms": 121.115,
+          "fps": 10.193106880892476,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 2.653335,
+            "source_ms": 0.00016666666666666666,
+            "intersection_ms": 60.58275666666667,
+            "slice_ms": 42.028758333333336,
+            "trace_ms": 18.553998333333332,
+            "FE_ms": 3.9975283333333334,
+            "primitives_ms": 9.755793333333333,
+            "actual_redraw_ms": 21.114368333333335,
+            "total_ms": 98.105515,
+            "bvh_ms": 2.2158233333333333,
+            "node_prepare_ms": 16.790286666666667,
+            "cell_cut_ms": 2.7298216666666666,
+            "merge_ms": 14.29939,
+            "trace_origins_ms": 1.8989783333333334,
+            "trace_classify_ms": 3.6171083333333334,
+            "trace_prepare_ms": 3.5914983333333335,
+            "trace_maps_ms": 5.169781666666666,
+            "trace_fill_ms": 3.60919,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4695840.6,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round": 3,
+          "scenario": "deformed",
+          "renderer": "NVIDIA GeForce MX450/PCIe/SSE2\r\n4.6.0 NVIDIA 573.91",
+          "import_ms": 4735.6346,
+          "setup_ms": 13954.1153,
+          "csv_sha256": "cbe5cb3dc42e968b6a9e105288cea5fbc8f9b54d1978fdc2946ef18e622c6fc4",
+          "run_log_sha256": "e862a620751a90040a267695a148d1eaeab9920529f64388a573f9a457106ace"
+        }
+      ],
+      "pooled": {
+        "crossing": {
+          "frames": 180,
+          "p50_ms": 47.265,
+          "p95_ms": 83.7861,
+          "fps": 19.879545416643797,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 5.382843888888889,
+            "source_ms": 0.00017333333333333334,
+            "intersection_ms": 10.620762777777777,
+            "slice_ms": 1.7507455555555556,
+            "trace_ms": 8.870017222222222,
+            "FE_ms": 4.101177222222222,
+            "primitives_ms": 9.697091666666667,
+            "actual_redraw_ms": 20.499557777777778,
+            "total_ms": 50.30296111111111,
+            "bvh_ms": 0.12994222222222224,
+            "node_prepare_ms": 1.7777777777777777e-05,
+            "cell_cut_ms": 0.30702666666666667,
+            "merge_ms": 0.9209405555555555,
+            "trace_origins_ms": 5.102057222222222,
+            "trace_classify_ms": 0.2132988888888889,
+            "trace_prepare_ms": 0.82218,
+            "trace_maps_ms": 0.3235761111111111,
+            "trace_fill_ms": 2.3615777777777778,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4320000.0,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round_fps_range": [
+            17.05963148693909,
+            22.663765251439177
+          ],
+          "round_p95_range_ms": [
+            79.5504,
+            96.1832
+          ],
+          "import_mean_ms": 4394.997033333333,
+          "setup_mean_ms": 11921.054766666666
+        },
+        "rotating": {
+          "frames": 180,
+          "p50_ms": 91.9271,
+          "p95_ms": 126.835,
+          "fps": 10.327008866563274,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 0.053359444444444445,
+            "source_ms": 0.00018333333333333334,
+            "intersection_ms": 59.84889722222222,
+            "slice_ms": 34.75965222222222,
+            "trace_ms": 25.089245,
+            "FE_ms": 4.884205,
+            "primitives_ms": 10.459702777777778,
+            "actual_redraw_ms": 21.58555388888889,
+            "total_ms": 96.83346,
+            "bvh_ms": 2.5474866666666665,
+            "node_prepare_ms": 0.0003533333333333333,
+            "cell_cut_ms": 6.98203,
+            "merge_ms": 19.042268888888888,
+            "trace_origins_ms": 2.3295922222222223,
+            "trace_classify_ms": 4.718016111111111,
+            "trace_prepare_ms": 6.222193333333333,
+            "trace_maps_ms": 6.221502777777777,
+            "trace_fill_ms": 4.710542222222222,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4987682.333333333,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round_fps_range": [
+            8.904858928853812,
+            11.498775064239343
+          ],
+          "round_p95_range_ms": [
+            101.74,
+            135.681
+          ],
+          "import_mean_ms": 4332.739166666666,
+          "setup_mean_ms": 11678.843533333333
+        },
+        "deformed": {
+          "frames": 180,
+          "p50_ms": 98.1289,
+          "p95_ms": 130.868,
+          "fps": 9.56776520398021,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 2.7378544444444444,
+            "source_ms": 0.00018722222222222222,
+            "intersection_ms": 65.87515111111111,
+            "slice_ms": 45.91180611111111,
+            "trace_ms": 19.963342222222224,
+            "FE_ms": 4.237554444444444,
+            "primitives_ms": 10.836823888888889,
+            "actual_redraw_ms": 20.828493333333334,
+            "total_ms": 104.517615,
+            "bvh_ms": 2.3550227777777777,
+            "node_prepare_ms": 18.033083333333334,
+            "cell_cut_ms": 2.983341111111111,
+            "merge_ms": 15.904956666666667,
+            "trace_origins_ms": 2.0240905555555555,
+            "trace_classify_ms": 4.078586666666666,
+            "trace_prepare_ms": 3.82204,
+            "trace_maps_ms": 5.510831111111111,
+            "trace_fill_ms": 3.7654016666666665,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4695840.6,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round_fps_range": [
+            8.78508008764523,
+            10.193106880892476
+          ],
+          "round_p95_range_ms": [
+            121.115,
+            146.424
+          ],
+          "import_mean_ms": 4457.912266666667,
+          "setup_mean_ms": 13329.345633333332
+        }
+      },
+      "hashes": [
+        {
+          "Path": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\large-vtk-deformed\\hex_150.vtu",
+          "Hash": "83180755C60EAC9064E2F2C47441B2E39ED9626E79EC2723AB36ABB02DA9C551"
+        },
+        {
+          "Path": "D:\\workspace\\OpenCASCADE\\OCCT_private\\install\\mingw\\win64\\gcc\\bin\\DRAWEXE.exe",
+          "Hash": "7E2EE3D26F528328889CA41EFA4969C76E96CC5817E693501C6EFF6908F9A8F4"
+        },
+        {
+          "Path": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\mingw-deformation\\bin\\libViewCaeTest.dll",
+          "Hash": "5472CE2D45C44A3878A802730019D7DF8883371E0A324877454C8E071378468C"
+        },
+        {
+          "Path": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\mingw-deformation\\bin\\libViewer.dll",
+          "Hash": "4B0E6B7ADAE537A033550EA549A632C7EF79C093129CE0723722582F4372603E"
+        }
+      ],
+      "hardware": {
+        "cpu": {
+          "Name": "11th Gen Intel(R) Core(TM) i7-1165G7 @ 2.80GHz",
+          "NumberOfCores": 4,
+          "NumberOfLogicalProcessors": 8
+        },
+        "adapters": [
+          {
+            "Name": "GameViewer Virtual Display Adapter",
+            "DriverVersion": "15.6.5.199"
+          },
+          {
+            "Name": "NVIDIA GeForce MX450",
+            "DriverVersion": "32.0.15.7391"
+          },
+          {
+            "Name": "Intel(R) Iris(R) Xe Graphics",
+            "DriverVersion": "32.0.101.7088"
+          }
+        ],
+        "power_plan": "电源方案 GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (平衡)"
+      },
+      "probes": {
+        "before": "Draw[1]> CUT_GPU_INFO_BEGIN\r\nOpenGL info:\r\n  GLvendor: NVIDIA Corporation\r\n  GLdevice: NVIDIA GeForce MX450/PCIe/SSE2\r\n  GLversion: 4.6.0 NVIDIA 573.91\r\n  GLSLversion: 4.60 NVIDIA\r\n  Max texture size: 32768\r\n  Max FBO dump size: 32768x32768\r\n  Max combined texture units: 192\r\n  Max MSAA samples: 32\r\n  Viewport: 900x650\r\n  Window buffer: RGB8 ALPHA0 DEPTH24 STENCIL8\r\n  GPU free memory: 1868 MiB\r\n  GPU memory: 2048 MiB\r\n  ResolutionRatio: 1\r\n  FBO buffer: GL_SRGB8_ALPHA8 GL_DEPTH24_STENCIL8\r\nCUT_GPU_INFO_END\r\nCUT_GPU_PROBE_PASS\r\n3D View - Driver1/Viewer1/CutGpuProbe was deleted.\r\n\r\n",
+        "after": "Draw[1]> CUT_GPU_INFO_BEGIN\r\nOpenGL info:\r\n  GLvendor: NVIDIA Corporation\r\n  GLdevice: NVIDIA GeForce MX450/PCIe/SSE2\r\n  GLversion: 4.6.0 NVIDIA 573.91\r\n  GLSLversion: 4.60 NVIDIA\r\n  Max texture size: 32768\r\n  Max FBO dump size: 32768x32768\r\n  Max combined texture units: 192\r\n  Max MSAA samples: 32\r\n  Viewport: 900x650\r\n  Window buffer: RGB8 ALPHA0 DEPTH24 STENCIL8\r\n  GPU free memory: 1868 MiB\r\n  GPU memory: 2048 MiB\r\n  ResolutionRatio: 1\r\n  FBO buffer: GL_SRGB8_ALPHA8 GL_DEPTH24_STENCIL8\r\nCUT_GPU_INFO_END\r\nCUT_GPU_PROBE_PASS\r\n3D View - Driver1/Viewer1/CutGpuProbe was deleted.\r\n\r\n"
+      }
+    },
+    "IrisXe": {
+      "directory": "build\\gpu-irisxe-validation",
+      "manifest": {
+        "gpu": "IrisXe",
+        "mode": "Performance",
+        "started": "2026-10-21T11:43:18.1207688+08:00",
+        "frames": 60,
+        "repetitions": 3,
+        "repository": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer",
+        "build": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\mingw-deformation",
+        "executable": "D:\\workspace\\OpenCASCADE\\OCCT_private\\install\\mingw\\win64\\gcc\\bin\\DRAWEXE.exe",
+        "model": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\large-vtk-deformed\\hex_150.vtu",
+        "revision": "78fa2d5bf2370ac05c70ceee0195f4beb63f7ede",
+        "succeeded": true,
+        "preferenceBefore": {
+          "value": null,
+          "exists": false,
+          "kind": ""
+        },
+        "preferenceDuring": "GpuPreference=1;",
+        "performanceCompleted": true,
+        "preferenceRestored": true,
+        "finished": "2026-10-21T11:45:42.1993867+08:00"
+      },
+      "rounds": [
+        {
+          "frames": 60,
+          "p50_ms": 58.9651,
+          "p95_ms": 89.7042,
+          "fps": 16.15831355465986,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 4.060355,
+            "source_ms": 0.00012666666666666666,
+            "intersection_ms": 7.80218,
+            "slice_ms": 1.843455,
+            "trace_ms": 5.958725,
+            "FE_ms": 3.035111666666667,
+            "primitives_ms": 6.654381666666667,
+            "actual_redraw_ms": 40.33426,
+            "total_ms": 61.88764666666667,
+            "bvh_ms": 0.11594,
+            "node_prepare_ms": 1.3333333333333333e-05,
+            "cell_cut_ms": 0.4404033333333333,
+            "merge_ms": 0.8871683333333333,
+            "trace_origins_ms": 3.339265,
+            "trace_classify_ms": 0.14743166666666668,
+            "trace_prepare_ms": 0.5489666666666667,
+            "trace_maps_ms": 0.22965,
+            "trace_fill_ms": 1.662945,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4320000.0,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round": 1,
+          "scenario": "crossing",
+          "renderer": "Intel(R) Iris(R) Xe Graphics\r\n4.6.0 - Build 32.0.101.7088",
+          "import_ms": 2903.2255,
+          "setup_ms": 8319.0349,
+          "csv_sha256": "eb5a728de5b5f7ccdbe09f95bff40a3409ea037d56cafaf70ac0533ebe8db3e0",
+          "run_log_sha256": "6ae182e00367c25bb6b673afd4a06a3d16282b70b8496019c17bb65e07ef2aae"
+        },
+        {
+          "frames": 60,
+          "p50_ms": 90.1236,
+          "p95_ms": 106.525,
+          "fps": 10.655813081694175,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 0.03861,
+            "source_ms": 0.00013666666666666666,
+            "intersection_ms": 44.77335333333333,
+            "slice_ms": 25.277936666666665,
+            "trace_ms": 19.495416666666667,
+            "FE_ms": 3.98139,
+            "primitives_ms": 7.3785783333333335,
+            "actual_redraw_ms": 37.67169833333333,
+            "total_ms": 93.84549,
+            "bvh_ms": 2.006266666666667,
+            "node_prepare_ms": 0.00031,
+            "cell_cut_ms": 5.225715,
+            "merge_ms": 13.579881666666667,
+            "trace_origins_ms": 1.6071133333333334,
+            "trace_classify_ms": 3.3057266666666667,
+            "trace_prepare_ms": 4.908025,
+            "trace_maps_ms": 4.988653333333334,
+            "trace_fill_ms": 3.9843883333333334,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4987682.333333333,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round": 1,
+          "scenario": "rotating",
+          "renderer": "Intel(R) Iris(R) Xe Graphics\r\n4.6.0 - Build 32.0.101.7088",
+          "import_ms": 3313.5059,
+          "setup_ms": 9133.8447,
+          "csv_sha256": "82e52c421368d8b2675c52dc49af2697f997e70704da7681ff68febd10aafc52",
+          "run_log_sha256": "6ae182e00367c25bb6b673afd4a06a3d16282b70b8496019c17bb65e07ef2aae"
+        },
+        {
+          "frames": 60,
+          "p50_ms": 105.273,
+          "p95_ms": 123.002,
+          "fps": 9.157600286254375,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 2.269915,
+            "source_ms": 0.00015166666666666668,
+            "intersection_ms": 52.877788333333335,
+            "slice_ms": 36.81209666666667,
+            "trace_ms": 16.065691666666666,
+            "FE_ms": 3.6386483333333333,
+            "primitives_ms": 8.49852,
+            "actual_redraw_ms": 41.91243,
+            "total_ms": 109.19891333333334,
+            "bvh_ms": 1.9950716666666666,
+            "node_prepare_ms": 15.086485,
+            "cell_cut_ms": 2.1648183333333333,
+            "merge_ms": 12.329708333333333,
+            "trace_origins_ms": 1.4904033333333333,
+            "trace_classify_ms": 3.0627383333333333,
+            "trace_prepare_ms": 3.09922,
+            "trace_maps_ms": 4.622013333333333,
+            "trace_fill_ms": 3.154595,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4695840.6,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round": 1,
+          "scenario": "deformed",
+          "renderer": "Intel(R) Iris(R) Xe Graphics\r\n4.6.0 - Build 32.0.101.7088",
+          "import_ms": 3277.2723,
+          "setup_ms": 10408.5332,
+          "csv_sha256": "5ff1b40a320ce547296e7d6ef25a8205b3bbfdbf89c90249958056569f6611d5",
+          "run_log_sha256": "6ae182e00367c25bb6b673afd4a06a3d16282b70b8496019c17bb65e07ef2aae"
+        },
+        {
+          "frames": 60,
+          "p50_ms": 59.2594,
+          "p95_ms": 91.4147,
+          "fps": 15.775082242733978,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 5.1745849999999995,
+            "source_ms": 0.00014833333333333335,
+            "intersection_ms": 8.605493333333333,
+            "slice_ms": 1.4690316666666667,
+            "trace_ms": 7.1364616666666665,
+            "FE_ms": 3.427025,
+            "primitives_ms": 7.936393333333333,
+            "actual_redraw_ms": 38.24597166666667,
+            "total_ms": 63.39111166666667,
+            "bvh_ms": 0.10823,
+            "node_prepare_ms": 9.999999999999999e-06,
+            "cell_cut_ms": 0.2687,
+            "merge_ms": 0.78867,
+            "trace_origins_ms": 4.076508333333333,
+            "trace_classify_ms": 0.14205833333333334,
+            "trace_prepare_ms": 0.6447466666666667,
+            "trace_maps_ms": 0.343575,
+            "trace_fill_ms": 1.88164,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4320000.0,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round": 2,
+          "scenario": "crossing",
+          "renderer": "Intel(R) Iris(R) Xe Graphics\r\n4.6.0 - Build 32.0.101.7088",
+          "import_ms": 2952.9829,
+          "setup_ms": 8560.1858,
+          "csv_sha256": "7a266dd1772ba6c8b564b1933eab4a31b19e06eb5aa7f7fb9af7f137d4a79c26",
+          "run_log_sha256": "d9a25348d3527b8a4ee03fb7254cfc256578b16140b3afcc7771546b4f829757"
+        },
+        {
+          "frames": 60,
+          "p50_ms": 90.9376,
+          "p95_ms": 119.692,
+          "fps": 10.25889203145349,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 0.042395,
+            "source_ms": 0.00014166666666666668,
+            "intersection_ms": 47.25053333333334,
+            "slice_ms": 27.190431666666665,
+            "trace_ms": 20.060101666666668,
+            "FE_ms": 4.17228,
+            "primitives_ms": 8.054995,
+            "actual_redraw_ms": 37.954115,
+            "total_ms": 97.47641333333334,
+            "bvh_ms": 2.153725,
+            "node_prepare_ms": 0.00026166666666666667,
+            "cell_cut_ms": 5.482803333333333,
+            "merge_ms": 14.688675,
+            "trace_origins_ms": 1.7665016666666666,
+            "trace_classify_ms": 3.2628033333333333,
+            "trace_prepare_ms": 5.0166,
+            "trace_maps_ms": 5.20085,
+            "trace_fill_ms": 4.095916666666667,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4987682.333333333,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round": 2,
+          "scenario": "rotating",
+          "renderer": "Intel(R) Iris(R) Xe Graphics\r\n4.6.0 - Build 32.0.101.7088",
+          "import_ms": 3847.3714,
+          "setup_ms": 9911.6662,
+          "csv_sha256": "a9ad10afc37239604d6454ea7ddf0577dfc03e6486c882965110a3a4b5b670d2",
+          "run_log_sha256": "d9a25348d3527b8a4ee03fb7254cfc256578b16140b3afcc7771546b4f829757"
+        },
+        {
+          "frames": 60,
+          "p50_ms": 105.844,
+          "p95_ms": 136.438,
+          "fps": 9.055399302963657,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 2.00034,
+            "source_ms": 0.00016166666666666668,
+            "intersection_ms": 55.42861333333333,
+            "slice_ms": 38.72732333333333,
+            "trace_ms": 16.70129,
+            "FE_ms": 3.75893,
+            "primitives_ms": 8.939608333333334,
+            "actual_redraw_ms": 40.30188833333333,
+            "total_ms": 110.43135333333333,
+            "bvh_ms": 2.0998133333333335,
+            "node_prepare_ms": 15.700116666666666,
+            "cell_cut_ms": 2.265781666666667,
+            "merge_ms": 13.025016666666666,
+            "trace_origins_ms": 1.6248433333333334,
+            "trace_classify_ms": 2.898956666666667,
+            "trace_prepare_ms": 3.3657,
+            "trace_maps_ms": 4.852805,
+            "trace_fill_ms": 3.2961566666666666,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4695840.6,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round": 2,
+          "scenario": "deformed",
+          "renderer": "Intel(R) Iris(R) Xe Graphics\r\n4.6.0 - Build 32.0.101.7088",
+          "import_ms": 3796.885,
+          "setup_ms": 11414.6692,
+          "csv_sha256": "6e2a189375fd028ebfed6a79b1baaa12ef88603c009d55036f188bf6c683685a",
+          "run_log_sha256": "d9a25348d3527b8a4ee03fb7254cfc256578b16140b3afcc7771546b4f829757"
+        },
+        {
+          "frames": 60,
+          "p50_ms": 58.824,
+          "p95_ms": 88.471,
+          "fps": 16.262203530204562,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 4.178728333333333,
+            "source_ms": 0.00014166666666666668,
+            "intersection_ms": 7.813288333333333,
+            "slice_ms": 1.5007283333333334,
+            "trace_ms": 6.31256,
+            "FE_ms": 3.1675483333333334,
+            "primitives_ms": 6.76254,
+            "actual_redraw_ms": 39.568735,
+            "total_ms": 61.49228166666666,
+            "bvh_ms": 0.102715,
+            "node_prepare_ms": 8.333333333333334e-06,
+            "cell_cut_ms": 0.26307,
+            "merge_ms": 0.8212016666666666,
+            "trace_origins_ms": 3.510796666666667,
+            "trace_classify_ms": 0.16118333333333332,
+            "trace_prepare_ms": 0.5683583333333333,
+            "trace_maps_ms": 0.23456166666666667,
+            "trace_fill_ms": 1.8018783333333332,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4320000.0,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round": 3,
+          "scenario": "crossing",
+          "renderer": "Intel(R) Iris(R) Xe Graphics\r\n4.6.0 - Build 32.0.101.7088",
+          "import_ms": 3178.7315,
+          "setup_ms": 9334.375,
+          "csv_sha256": "33b2cc92e75c8815bfb011569ba532f9310eedf18bf7fea3259a55da31de51bf",
+          "run_log_sha256": "b2197e66b4ff0bfa17802ad15812a5fed59079b533925db2295521070e49d378"
+        },
+        {
+          "frames": 60,
+          "p50_ms": 91.8393,
+          "p95_ms": 121.089,
+          "fps": 10.197031980492534,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 0.041265,
+            "source_ms": 0.00013666666666666666,
+            "intersection_ms": 48.155303333333336,
+            "slice_ms": 27.873113333333333,
+            "trace_ms": 20.28219,
+            "FE_ms": 4.1024666666666665,
+            "primitives_ms": 7.622751666666667,
+            "actual_redraw_ms": 38.144075,
+            "total_ms": 98.06775166666667,
+            "bvh_ms": 2.1149933333333335,
+            "node_prepare_ms": 0.000245,
+            "cell_cut_ms": 5.467346666666667,
+            "merge_ms": 15.49891,
+            "trace_origins_ms": 1.7015633333333333,
+            "trace_classify_ms": 3.47577,
+            "trace_prepare_ms": 5.161006666666666,
+            "trace_maps_ms": 5.134878333333333,
+            "trace_fill_ms": 4.08242,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4987682.333333333,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round": 3,
+          "scenario": "rotating",
+          "renderer": "Intel(R) Iris(R) Xe Graphics\r\n4.6.0 - Build 32.0.101.7088",
+          "import_ms": 3657.1821,
+          "setup_ms": 9565.3533,
+          "csv_sha256": "4e9a949b22ba063ec040694d5043a2105efbcee38151514e4dcf2c5e34bdca77",
+          "run_log_sha256": "b2197e66b4ff0bfa17802ad15812a5fed59079b533925db2295521070e49d378"
+        },
+        {
+          "frames": 60,
+          "p50_ms": 105.653,
+          "p95_ms": 138.03,
+          "fps": 8.788346043820567,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 2.284665,
+            "source_ms": 0.00013000000000000002,
+            "intersection_ms": 57.546171666666666,
+            "slice_ms": 40.37483666666667,
+            "trace_ms": 17.171335,
+            "FE_ms": 3.866085,
+            "primitives_ms": 8.975646666666666,
+            "actual_redraw_ms": 41.112716666666664,
+            "total_ms": 113.78705333333333,
+            "bvh_ms": 2.085278333333333,
+            "node_prepare_ms": 16.09663,
+            "cell_cut_ms": 2.302426666666667,
+            "merge_ms": 14.239446666666666,
+            "trace_origins_ms": 1.5475583333333334,
+            "trace_classify_ms": 3.2365266666666668,
+            "trace_prepare_ms": 3.5152383333333335,
+            "trace_maps_ms": 4.892596666666667,
+            "trace_fill_ms": 3.274885,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4695840.6,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round": 3,
+          "scenario": "deformed",
+          "renderer": "Intel(R) Iris(R) Xe Graphics\r\n4.6.0 - Build 32.0.101.7088",
+          "import_ms": 3570.9544,
+          "setup_ms": 11300.0176,
+          "csv_sha256": "d71e203d2994393216e0414e2e2e19714301c2fc4dce7f534cc6b428c02f4c03",
+          "run_log_sha256": "b2197e66b4ff0bfa17802ad15812a5fed59079b533925db2295521070e49d378"
+        }
+      ],
+      "pooled": {
+        "crossing": {
+          "frames": 180,
+          "p50_ms": 59.128,
+          "p95_ms": 91.4147,
+          "fps": 16.06244736871412,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 4.471222777777778,
+            "source_ms": 0.0001388888888888889,
+            "intersection_ms": 8.073653888888888,
+            "slice_ms": 1.604405,
+            "trace_ms": 6.469248888888889,
+            "FE_ms": 3.209895,
+            "primitives_ms": 7.117771666666667,
+            "actual_redraw_ms": 39.38298888888889,
+            "total_ms": 62.25701333333333,
+            "bvh_ms": 0.10896166666666667,
+            "node_prepare_ms": 1.0555555555555555e-05,
+            "cell_cut_ms": 0.3240577777777778,
+            "merge_ms": 0.8323466666666667,
+            "trace_origins_ms": 3.64219,
+            "trace_classify_ms": 0.15022444444444444,
+            "trace_prepare_ms": 0.5873572222222222,
+            "trace_maps_ms": 0.26926222222222224,
+            "trace_fill_ms": 1.7821544444444444,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4320000.0,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round_fps_range": [
+            15.775082242733978,
+            16.262203530204562
+          ],
+          "round_p95_range_ms": [
+            88.471,
+            91.4147
+          ],
+          "import_mean_ms": 3011.6466333333333,
+          "setup_mean_ms": 8737.865233333334
+        },
+        "rotating": {
+          "frames": 180,
+          "p50_ms": 90.7093,
+          "p95_ms": 119.946,
+          "fps": 10.36664562180013,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 0.04075666666666666,
+            "source_ms": 0.00013833333333333333,
+            "intersection_ms": 46.726396666666666,
+            "slice_ms": 26.780493888888888,
+            "trace_ms": 19.94590277777778,
+            "FE_ms": 4.085378888888889,
+            "primitives_ms": 7.685441666666667,
+            "actual_redraw_ms": 37.923296111111114,
+            "total_ms": 96.46321833333333,
+            "bvh_ms": 2.0916616666666665,
+            "node_prepare_ms": 0.0002722222222222222,
+            "cell_cut_ms": 5.391955,
+            "merge_ms": 14.589155555555555,
+            "trace_origins_ms": 1.691726111111111,
+            "trace_classify_ms": 3.3481,
+            "trace_prepare_ms": 5.028543888888889,
+            "trace_maps_ms": 5.1081272222222225,
+            "trace_fill_ms": 4.054241666666667,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4987682.333333333,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round_fps_range": [
+            10.197031980492534,
+            10.655813081694175
+          ],
+          "round_p95_range_ms": [
+            106.525,
+            121.089
+          ],
+          "import_mean_ms": 3606.0198,
+          "setup_mean_ms": 9536.954733333334
+        },
+        "deformed": {
+          "frames": 180,
+          "p50_ms": 105.577,
+          "p95_ms": 137.477,
+          "fps": 8.997732931210653,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 2.184973333333333,
+            "source_ms": 0.0001477777777777778,
+            "intersection_ms": 55.28419111111111,
+            "slice_ms": 38.638085555555556,
+            "trace_ms": 16.646105555555554,
+            "FE_ms": 3.7545544444444445,
+            "primitives_ms": 8.804591666666667,
+            "actual_redraw_ms": 41.10901166666667,
+            "total_ms": 111.13910666666666,
+            "bvh_ms": 2.0600544444444444,
+            "node_prepare_ms": 15.627743888888888,
+            "cell_cut_ms": 2.244342222222222,
+            "merge_ms": 13.198057222222221,
+            "trace_origins_ms": 1.5542683333333334,
+            "trace_classify_ms": 3.066073888888889,
+            "trace_prepare_ms": 3.3267194444444446,
+            "trace_maps_ms": 4.789138333333334,
+            "trace_fill_ms": 3.241878888888889,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4695840.6,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round_fps_range": [
+            8.788346043820567,
+            9.157600286254375
+          ],
+          "round_p95_range_ms": [
+            123.002,
+            138.03
+          ],
+          "import_mean_ms": 3548.370566666667,
+          "setup_mean_ms": 11041.073333333334
+        }
+      },
+      "hashes": [
+        {
+          "Path": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\large-vtk-deformed\\hex_150.vtu",
+          "Hash": "83180755C60EAC9064E2F2C47441B2E39ED9626E79EC2723AB36ABB02DA9C551"
+        },
+        {
+          "Path": "D:\\workspace\\OpenCASCADE\\OCCT_private\\install\\mingw\\win64\\gcc\\bin\\DRAWEXE.exe",
+          "Hash": "7E2EE3D26F528328889CA41EFA4969C76E96CC5817E693501C6EFF6908F9A8F4"
+        },
+        {
+          "Path": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\mingw-deformation\\bin\\libViewCaeTest.dll",
+          "Hash": "5472CE2D45C44A3878A802730019D7DF8883371E0A324877454C8E071378468C"
+        },
+        {
+          "Path": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\mingw-deformation\\bin\\libViewer.dll",
+          "Hash": "4B0E6B7ADAE537A033550EA549A632C7EF79C093129CE0723722582F4372603E"
+        }
+      ],
+      "hardware": {
+        "cpu": {
+          "Name": "11th Gen Intel(R) Core(TM) i7-1165G7 @ 2.80GHz",
+          "NumberOfCores": 4,
+          "NumberOfLogicalProcessors": 8
+        },
+        "adapters": [
+          {
+            "Name": "GameViewer Virtual Display Adapter",
+            "DriverVersion": "15.6.5.199"
+          },
+          {
+            "Name": "NVIDIA GeForce MX450",
+            "DriverVersion": "32.0.15.7391"
+          },
+          {
+            "Name": "Intel(R) Iris(R) Xe Graphics",
+            "DriverVersion": "32.0.101.7088"
+          }
+        ],
+        "power_plan": "电源方案 GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (平衡)"
+      },
+      "probes": {
+        "before": "Draw[1]> CUT_GPU_INFO_BEGIN\r\nOpenGL info:\r\n  GLvendor: Intel\r\n  GLdevice: Intel(R) Iris(R) Xe Graphics\r\n  GLversion: 4.6.0 - Build 32.0.101.7088\r\n  GLSLversion: 4.60 - Build 32.0.101.7088\r\n  Max texture size: 16384\r\n  Max FBO dump size: 4096x16384\r\n  Max combined texture units: 192\r\n  Max MSAA samples: 16\r\n  Viewport: 900x650\r\n  Window buffer: RGB8 ALPHA8 DEPTH24 STENCIL8\r\n  GPU free memory: 15987 MiB\r\n  ResolutionRatio: 1\r\n  FBO buffer: GL_SRGB8_ALPHA8 GL_DEPTH24_STENCIL8\r\nCUT_GPU_INFO_END\r\nCUT_GPU_PROBE_PASS\r\n3D View - Driver1/Viewer1/CutGpuProbe was deleted.\r\n\r\n",
+        "after": "Draw[1]> CUT_GPU_INFO_BEGIN\r\nOpenGL info:\r\n  GLvendor: Intel\r\n  GLdevice: Intel(R) Iris(R) Xe Graphics\r\n  GLversion: 4.6.0 - Build 32.0.101.7088\r\n  GLSLversion: 4.60 - Build 32.0.101.7088\r\n  Max texture size: 16384\r\n  Max FBO dump size: 4096x16384\r\n  Max combined texture units: 192\r\n  Max MSAA samples: 16\r\n  Viewport: 900x650\r\n  Window buffer: RGB8 ALPHA8 DEPTH24 STENCIL8\r\n  GPU free memory: 15987 MiB\r\n  ResolutionRatio: 1\r\n  FBO buffer: GL_SRGB8_ALPHA8 GL_DEPTH24_STENCIL8\r\nCUT_GPU_INFO_END\r\nCUT_GPU_PROBE_PASS\r\n3D View - Driver1/Viewer1/CutGpuProbe was deleted.\r\n\r\n"
+      }
+    }
+  },
+  "baseline20": {
+    "MX450": {
+      "directory": "build\\gpu-mx450-baseline20",
+      "manifest": {
+        "gpu": "MX450",
+        "mode": "Performance",
+        "started": "2026-10-21T11:24:00.4441716+08:00",
+        "frames": 20,
+        "repetitions": 1,
+        "repository": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer",
+        "build": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\mingw-deformation",
+        "executable": "D:\\workspace\\OpenCASCADE\\OCCT_private\\install\\mingw\\win64\\gcc\\bin\\DRAWEXE.exe",
+        "model": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\large-vtk-deformed\\hex_150.vtu",
+        "revision": "78fa2d5bf2370ac05c70ceee0195f4beb63f7ede",
+        "succeeded": true,
+        "preferenceBefore": {
+          "exists": false,
+          "kind": "",
+          "value": null
+        },
+        "preferenceDuring": "GpuPreference=2;",
+        "performanceCompleted": true,
+        "preferenceRestored": true,
+        "finished": "2026-10-21T11:24:43.9478905+08:00"
+      },
+      "rounds": [
+        {
+          "frames": 20,
+          "p50_ms": 39.7809,
+          "p95_ms": 77.9401,
+          "fps": 21.145480269892452,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 4.87859,
+            "source_ms": 0.00011,
+            "intersection_ms": 11.25996,
+            "slice_ms": 3.30161,
+            "trace_ms": 7.95835,
+            "FE_ms": 3.231305,
+            "primitives_ms": 6.85167,
+            "actual_redraw_ms": 21.068435,
+            "total_ms": 47.29143,
+            "bvh_ms": 0.291285,
+            "node_prepare_ms": 2.4999999999999998e-05,
+            "cell_cut_ms": 0.716405,
+            "merge_ms": 1.51092,
+            "trace_origins_ms": 3.072375,
+            "trace_classify_ms": 0.433905,
+            "trace_prepare_ms": 1.7125299999999999,
+            "trace_maps_ms": 0.915825,
+            "trace_fill_ms": 1.74674,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4320000.0,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round": 1,
+          "scenario": "crossing",
+          "renderer": "NVIDIA GeForce MX450/PCIe/SSE2\r\n4.6.0 NVIDIA 573.91",
+          "import_ms": 4631.7984,
+          "setup_ms": 13153.8533,
+          "csv_sha256": "3c22def5e8df6bd6ee667bbb31c4427c27e5a18223b57968aaa2daa63e592350",
+          "run_log_sha256": "887712f73557e4190f900a6faad2f07ad9b6487d6f5e22645331ddee4611e93a"
+        },
+        {
+          "frames": 20,
+          "p50_ms": 81.3961,
+          "p95_ms": 105.007,
+          "fps": 11.555825499639226,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 0.04591,
+            "source_ms": 0.000145,
+            "intersection_ms": 53.156655,
+            "slice_ms": 28.300585,
+            "trace_ms": 24.85607,
+            "FE_ms": 3.941415,
+            "primitives_ms": 7.7642500000000005,
+            "actual_redraw_ms": 21.626269999999998,
+            "total_ms": 86.53644,
+            "bvh_ms": 2.312,
+            "node_prepare_ms": 0.000275,
+            "cell_cut_ms": 5.357225,
+            "merge_ms": 15.336655,
+            "trace_origins_ms": 1.80413,
+            "trace_classify_ms": 3.249575,
+            "trace_prepare_ms": 9.998895,
+            "trace_maps_ms": 5.37847,
+            "trace_fill_ms": 3.716845,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4959363.8,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round": 1,
+          "scenario": "rotating",
+          "renderer": "NVIDIA GeForce MX450/PCIe/SSE2\r\n4.6.0 NVIDIA 573.91",
+          "import_ms": 3265.6721,
+          "setup_ms": 8858.7209,
+          "csv_sha256": "11fbf1a7980e80cfe9bc71835aafa4b613fbfdac0820222d1052dfa230b84d85",
+          "run_log_sha256": "887712f73557e4190f900a6faad2f07ad9b6487d6f5e22645331ddee4611e93a"
+        },
+        {
+          "frames": 20,
+          "p50_ms": 95.7766,
+          "p95_ms": 108.231,
+          "fps": 10.171653260342906,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 5.995385,
+            "source_ms": 0.000145,
+            "intersection_ms": 59.098910000000004,
+            "slice_ms": 39.03255,
+            "trace_ms": 20.06636,
+            "FE_ms": 3.626035,
+            "primitives_ms": 8.55785,
+            "actual_redraw_ms": 21.03228,
+            "total_ms": 98.312435,
+            "bvh_ms": 2.098415,
+            "node_prepare_ms": 16.16269,
+            "cell_cut_ms": 2.28624,
+            "merge_ms": 12.976595,
+            "trace_origins_ms": 1.599305,
+            "trace_classify_ms": 3.01653,
+            "trace_prepare_ms": 7.1267700000000005,
+            "trace_maps_ms": 4.77137,
+            "trace_fill_ms": 2.917475,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4695840.4,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round": 1,
+          "scenario": "deformed",
+          "renderer": "NVIDIA GeForce MX450/PCIe/SSE2\r\n4.6.0 NVIDIA 573.91",
+          "import_ms": 3226.3355,
+          "setup_ms": 10500.0647,
+          "csv_sha256": "8cc4d96ee00c5a7816879e01e61fa2270be0666292137ad43061796b0bd3660d",
+          "run_log_sha256": "887712f73557e4190f900a6faad2f07ad9b6487d6f5e22645331ddee4611e93a"
+        }
+      ],
+      "pooled": {
+        "crossing": {
+          "frames": 20,
+          "p50_ms": 39.7809,
+          "p95_ms": 77.9401,
+          "fps": 21.145480269892452,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 4.87859,
+            "source_ms": 0.00011,
+            "intersection_ms": 11.25996,
+            "slice_ms": 3.30161,
+            "trace_ms": 7.95835,
+            "FE_ms": 3.231305,
+            "primitives_ms": 6.85167,
+            "actual_redraw_ms": 21.068435,
+            "total_ms": 47.29143,
+            "bvh_ms": 0.291285,
+            "node_prepare_ms": 2.4999999999999998e-05,
+            "cell_cut_ms": 0.716405,
+            "merge_ms": 1.51092,
+            "trace_origins_ms": 3.072375,
+            "trace_classify_ms": 0.433905,
+            "trace_prepare_ms": 1.7125299999999999,
+            "trace_maps_ms": 0.915825,
+            "trace_fill_ms": 1.74674,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4320000.0,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round_fps_range": [
+            21.145480269892452,
+            21.145480269892452
+          ],
+          "round_p95_range_ms": [
+            77.9401,
+            77.9401
+          ],
+          "import_mean_ms": 4631.7984,
+          "setup_mean_ms": 13153.8533
+        },
+        "rotating": {
+          "frames": 20,
+          "p50_ms": 81.3961,
+          "p95_ms": 105.007,
+          "fps": 11.555825499639226,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 0.04591,
+            "source_ms": 0.000145,
+            "intersection_ms": 53.156655,
+            "slice_ms": 28.300585,
+            "trace_ms": 24.85607,
+            "FE_ms": 3.941415,
+            "primitives_ms": 7.7642500000000005,
+            "actual_redraw_ms": 21.626269999999998,
+            "total_ms": 86.53644,
+            "bvh_ms": 2.312,
+            "node_prepare_ms": 0.000275,
+            "cell_cut_ms": 5.357225,
+            "merge_ms": 15.336655,
+            "trace_origins_ms": 1.80413,
+            "trace_classify_ms": 3.249575,
+            "trace_prepare_ms": 9.998895,
+            "trace_maps_ms": 5.37847,
+            "trace_fill_ms": 3.716845,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4959363.8,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round_fps_range": [
+            11.555825499639226,
+            11.555825499639226
+          ],
+          "round_p95_range_ms": [
+            105.007,
+            105.007
+          ],
+          "import_mean_ms": 3265.6721,
+          "setup_mean_ms": 8858.7209
+        },
+        "deformed": {
+          "frames": 20,
+          "p50_ms": 95.7766,
+          "p95_ms": 108.231,
+          "fps": 10.171653260342906,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 5.995385,
+            "source_ms": 0.000145,
+            "intersection_ms": 59.098910000000004,
+            "slice_ms": 39.03255,
+            "trace_ms": 20.06636,
+            "FE_ms": 3.626035,
+            "primitives_ms": 8.55785,
+            "actual_redraw_ms": 21.03228,
+            "total_ms": 98.312435,
+            "bvh_ms": 2.098415,
+            "node_prepare_ms": 16.16269,
+            "cell_cut_ms": 2.28624,
+            "merge_ms": 12.976595,
+            "trace_origins_ms": 1.599305,
+            "trace_classify_ms": 3.01653,
+            "trace_prepare_ms": 7.1267700000000005,
+            "trace_maps_ms": 4.77137,
+            "trace_fill_ms": 2.917475,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4695840.4,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round_fps_range": [
+            10.171653260342906,
+            10.171653260342906
+          ],
+          "round_p95_range_ms": [
+            108.231,
+            108.231
+          ],
+          "import_mean_ms": 3226.3355,
+          "setup_mean_ms": 10500.0647
+        }
+      },
+      "hashes": [
+        {
+          "Path": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\large-vtk-deformed\\hex_150.vtu",
+          "Hash": "83180755C60EAC9064E2F2C47441B2E39ED9626E79EC2723AB36ABB02DA9C551"
+        },
+        {
+          "Path": "D:\\workspace\\OpenCASCADE\\OCCT_private\\install\\mingw\\win64\\gcc\\bin\\DRAWEXE.exe",
+          "Hash": "7E2EE3D26F528328889CA41EFA4969C76E96CC5817E693501C6EFF6908F9A8F4"
+        },
+        {
+          "Path": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\mingw-deformation\\bin\\libViewCaeTest.dll",
+          "Hash": "5472CE2D45C44A3878A802730019D7DF8883371E0A324877454C8E071378468C"
+        },
+        {
+          "Path": "D:\\workspace\\OpenCASCADE\\OCCT_Viewer\\build\\mingw-deformation\\bin\\libViewer.dll",
+          "Hash": "4B0E6B7ADAE537A033550EA549A632C7EF79C093129CE0723722582F4372603E"
+        }
+      ],
+      "hardware": {
+        "cpu": {
+          "Name": "11th Gen Intel(R) Core(TM) i7-1165G7 @ 2.80GHz",
+          "NumberOfCores": 4,
+          "NumberOfLogicalProcessors": 8
+        },
+        "adapters": [
+          {
+            "Name": "GameViewer Virtual Display Adapter",
+            "DriverVersion": "15.6.5.199"
+          },
+          {
+            "Name": "NVIDIA GeForce MX450",
+            "DriverVersion": "32.0.15.7391"
+          },
+          {
+            "Name": "Intel(R) Iris(R) Xe Graphics",
+            "DriverVersion": "32.0.101.7088"
+          }
+        ],
+        "power_plan": "电源方案 GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (平衡)"
+      },
+      "probes": {
+        "before": "Draw[1]> CUT_GPU_INFO_BEGIN\r\nOpenGL info:\r\n  GLvendor: NVIDIA Corporation\r\n  GLdevice: NVIDIA GeForce MX450/PCIe/SSE2\r\n  GLversion: 4.6.0 NVIDIA 573.91\r\n  GLSLversion: 4.60 NVIDIA\r\n  Max texture size: 32768\r\n  Max FBO dump size: 32768x32768\r\n  Max combined texture units: 192\r\n  Max MSAA samples: 32\r\n  Viewport: 900x650\r\n  Window buffer: RGB8 ALPHA0 DEPTH24 STENCIL8\r\n  GPU free memory: 1868 MiB\r\n  GPU memory: 2048 MiB\r\n  ResolutionRatio: 1\r\n  FBO buffer: GL_SRGB8_ALPHA8 GL_DEPTH24_STENCIL8\r\nCUT_GPU_INFO_END\r\nCUT_GPU_PROBE_PASS\r\n3D View - Driver1/Viewer1/CutGpuProbe was deleted.\r\n\r\n",
+        "after": "Draw[1]> CUT_GPU_INFO_BEGIN\r\nOpenGL info:\r\n  GLvendor: NVIDIA Corporation\r\n  GLdevice: NVIDIA GeForce MX450/PCIe/SSE2\r\n  GLversion: 4.6.0 NVIDIA 573.91\r\n  GLSLversion: 4.60 NVIDIA\r\n  Max texture size: 32768\r\n  Max FBO dump size: 32768x32768\r\n  Max combined texture units: 192\r\n  Max MSAA samples: 32\r\n  Viewport: 900x650\r\n  Window buffer: RGB8 ALPHA0 DEPTH24 STENCIL8\r\n  GPU free memory: 1868 MiB\r\n  GPU memory: 2048 MiB\r\n  ResolutionRatio: 1\r\n  FBO buffer: GL_SRGB8_ALPHA8 GL_DEPTH24_STENCIL8\r\nCUT_GPU_INFO_END\r\nCUT_GPU_PROBE_PASS\r\n3D View - Driver1/Viewer1/CutGpuProbe was deleted.\r\n\r\n"
+      }
+    },
+    "IrisXe": {
+      "directory": "build\\a10-full-frame-large",
+      "manifest": null,
+      "rounds": [
+        {
+          "frames": 20,
+          "p50_ms": 59.9003,
+          "p95_ms": 106.318,
+          "fps": 14.91077504046598,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 5.287165,
+            "source_ms": 0.000145,
+            "intersection_ms": 12.362215,
+            "slice_ms": 4.03757,
+            "trace_ms": 8.324645,
+            "FE_ms": 3.31374,
+            "primitives_ms": 6.712515,
+            "actual_redraw_ms": 39.38859,
+            "total_ms": 67.065595,
+            "bvh_ms": 0.31135999999999997,
+            "node_prepare_ms": 4.5e-05,
+            "cell_cut_ms": 0.707315,
+            "merge_ms": 2.134115,
+            "trace_origins_ms": 3.510915,
+            "trace_classify_ms": 0.43293,
+            "trace_prepare_ms": 1.710815,
+            "trace_maps_ms": 0.88157,
+            "trace_fill_ms": 1.709325,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4320000.0,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round": 1,
+          "scenario": "crossing",
+          "renderer": "Intel(R) Iris(R) Xe Graphics\r\n4.6.0 - Build 32.0.101.7088",
+          "import_ms": 3206.2357,
+          "setup_ms": 10253.8678,
+          "csv_sha256": "98b79b4fc169f08cccc33aae5bb1d36db16d24cf0ae02f632919bc704439935e",
+          "run_log_sha256": "6bb4a3adff4fcb7293f10a11d49a4db7d37cfcd9ecfd6a5ae884629d6f7851e7"
+        },
+        {
+          "frames": 20,
+          "p50_ms": 122.284,
+          "p95_ms": 137.278,
+          "fps": 8.054747149807584,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 0.05581,
+            "source_ms": 0.00018,
+            "intersection_ms": 69.49801,
+            "slice_ms": 37.40721,
+            "trace_ms": 32.090775,
+            "FE_ms": 4.969755,
+            "primitives_ms": 10.555860000000001,
+            "actual_redraw_ms": 39.069604999999996,
+            "total_ms": 124.15039,
+            "bvh_ms": 2.654235,
+            "node_prepare_ms": 0.000355,
+            "cell_cut_ms": 6.739555,
+            "merge_ms": 21.425045,
+            "trace_origins_ms": 2.274615,
+            "trace_classify_ms": 4.142955,
+            "trace_prepare_ms": 12.783345,
+            "trace_maps_ms": 7.41259,
+            "trace_fill_ms": 4.4220999999999995,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4959363.8,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round": 1,
+          "scenario": "rotating",
+          "renderer": "Intel(R) Iris(R) Xe Graphics\r\n4.6.0 - Build 32.0.101.7088",
+          "import_ms": 3668.0309,
+          "setup_ms": 10096.6034,
+          "csv_sha256": "6f050ea683699155b4acd9a71bd3c65660f57cc6d9ffd301c8b576a121704cb6",
+          "run_log_sha256": "6bb4a3adff4fcb7293f10a11d49a4db7d37cfcd9ecfd6a5ae884629d6f7851e7"
+        },
+        {
+          "frames": 20,
+          "p50_ms": 151.968,
+          "p95_ms": 185.005,
+          "fps": 6.684479690963134,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 8.799575,
+            "source_ms": 0.000185,
+            "intersection_ms": 83.92656,
+            "slice_ms": 55.56857,
+            "trace_ms": 28.35798,
+            "FE_ms": 4.75381,
+            "primitives_ms": 12.213355,
+            "actual_redraw_ms": 39.90524,
+            "total_ms": 149.600275,
+            "bvh_ms": 2.75386,
+            "node_prepare_ms": 21.847235,
+            "cell_cut_ms": 3.24021,
+            "merge_ms": 19.697145,
+            "trace_origins_ms": 2.19692,
+            "trace_classify_ms": 4.27877,
+            "trace_prepare_ms": 10.6646,
+            "trace_maps_ms": 6.521535,
+            "trace_fill_ms": 3.72387,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4695840.4,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round": 1,
+          "scenario": "deformed",
+          "renderer": "Intel(R) Iris(R) Xe Graphics\r\n4.6.0 - Build 32.0.101.7088",
+          "import_ms": 4472.5735,
+          "setup_ms": 13135.6419,
+          "csv_sha256": "a92ef5d2b7469a47e2ac9b66129fbff060de1dc001f63614fd116d23e8b4618b",
+          "run_log_sha256": "6bb4a3adff4fcb7293f10a11d49a4db7d37cfcd9ecfd6a5ae884629d6f7851e7"
+        }
+      ],
+      "pooled": {
+        "crossing": {
+          "frames": 20,
+          "p50_ms": 59.9003,
+          "p95_ms": 106.318,
+          "fps": 14.91077504046598,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 5.287165,
+            "source_ms": 0.000145,
+            "intersection_ms": 12.362215,
+            "slice_ms": 4.03757,
+            "trace_ms": 8.324645,
+            "FE_ms": 3.31374,
+            "primitives_ms": 6.712515,
+            "actual_redraw_ms": 39.38859,
+            "total_ms": 67.065595,
+            "bvh_ms": 0.31135999999999997,
+            "node_prepare_ms": 4.5e-05,
+            "cell_cut_ms": 0.707315,
+            "merge_ms": 2.134115,
+            "trace_origins_ms": 3.510915,
+            "trace_classify_ms": 0.43293,
+            "trace_prepare_ms": 1.710815,
+            "trace_maps_ms": 0.88157,
+            "trace_fill_ms": 1.709325,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4320000.0,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round_fps_range": [
+            14.91077504046598,
+            14.91077504046598
+          ],
+          "round_p95_range_ms": [
+            106.318,
+            106.318
+          ],
+          "import_mean_ms": 3206.2357,
+          "setup_mean_ms": 10253.8678
+        },
+        "rotating": {
+          "frames": 20,
+          "p50_ms": 122.284,
+          "p95_ms": 137.278,
+          "fps": 8.054747149807584,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 0.05581,
+            "source_ms": 0.00018,
+            "intersection_ms": 69.49801,
+            "slice_ms": 37.40721,
+            "trace_ms": 32.090775,
+            "FE_ms": 4.969755,
+            "primitives_ms": 10.555860000000001,
+            "actual_redraw_ms": 39.069604999999996,
+            "total_ms": 124.15039,
+            "bvh_ms": 2.654235,
+            "node_prepare_ms": 0.000355,
+            "cell_cut_ms": 6.739555,
+            "merge_ms": 21.425045,
+            "trace_origins_ms": 2.274615,
+            "trace_classify_ms": 4.142955,
+            "trace_prepare_ms": 12.783345,
+            "trace_maps_ms": 7.41259,
+            "trace_fill_ms": 4.4220999999999995,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4959363.8,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round_fps_range": [
+            8.054747149807584,
+            8.054747149807584
+          ],
+          "round_p95_range_ms": [
+            137.278,
+            137.278
+          ],
+          "import_mean_ms": 3668.0309,
+          "setup_mean_ms": 10096.6034
+        },
+        "deformed": {
+          "frames": 20,
+          "p50_ms": 151.968,
+          "p95_ms": 185.005,
+          "fps": 6.684479690963134,
+          "target": false,
+          "stage_means": {
+            "edit_ms": 8.799575,
+            "source_ms": 0.000185,
+            "intersection_ms": 83.92656,
+            "slice_ms": 55.56857,
+            "trace_ms": 28.35798,
+            "FE_ms": 4.75381,
+            "primitives_ms": 12.213355,
+            "actual_redraw_ms": 39.90524,
+            "total_ms": 149.600275,
+            "bvh_ms": 2.75386,
+            "node_prepare_ms": 21.847235,
+            "cell_cut_ms": 3.24021,
+            "merge_ms": 19.697145,
+            "trace_origins_ms": 2.19692,
+            "trace_classify_ms": 4.27877,
+            "trace_prepare_ms": 10.6646,
+            "trace_maps_ms": 6.521535,
+            "trace_fill_ms": 3.72387,
+            "trace_general_ms": 0.0
+          },
+          "submitted_slice_bytes_mean": 4695840.4,
+          "body_builds": [
+            1
+          ],
+          "submitted_body_bytes": [
+            0
+          ],
+          "round_fps_range": [
+            6.684479690963134,
+            6.684479690963134
+          ],
+          "round_p95_range_ms": [
+            185.005,
+            185.005
+          ],
+          "import_mean_ms": 4472.5735,
+          "setup_mean_ms": 13135.6419
+        }
+      }
+    }
+  },
+  "mx450_functional": {
+    "passed": 84,
+    "total": 84,
+    "cases": [
+      {
+        "name": "vtk_reader",
+        "seconds": 0.0717823,
+        "passed": true
+      },
+      {
+        "name": "vtk_format",
+        "seconds": 0.0662216,
+        "passed": true
+      },
+      {
+        "name": "vtk_series",
+        "seconds": 0.0798407,
+        "passed": true
+      },
+      {
+        "name": "vtk_safety",
+        "seconds": 0.0707982,
+        "passed": true
+      },
+      {
+        "name": "vtk_limits",
+        "seconds": 0.0918611,
+        "passed": true
+      },
+      {
+        "name": "vtk_reference",
+        "seconds": 0.160281,
+        "passed": true
+      },
+      {
+        "name": "vtk_import",
+        "seconds": 0.0989333,
+        "passed": true
+      },
+      {
+        "name": "cut_view",
+        "seconds": 0.35871,
+        "passed": true
+      },
+      {
+        "name": "cut_display",
+        "seconds": 0.12162,
+        "passed": true
+      },
+      {
+        "name": "cut_slicing",
+        "seconds": 0.510379,
+        "passed": true
+      },
+      {
+        "name": "cut_placement",
+        "seconds": 0.0584,
+        "passed": true
+      },
+      {
+        "name": "cut_material",
+        "seconds": 1.42905,
+        "passed": true
+      },
+      {
+        "name": "cut_sine_plate",
+        "seconds": 39.8628,
+        "passed": true
+      },
+      {
+        "name": "cut_cache",
+        "seconds": 0.05321,
+        "passed": true
+      },
+      {
+        "name": "cut_physics",
+        "seconds": 0.112986,
+        "passed": true
+      },
+      {
+        "name": "native_cut",
+        "seconds": 0.100192,
+        "passed": true
+      },
+      {
+        "name": "native_timeline",
+        "seconds": 0.106168,
+        "passed": true
+      },
+      {
+        "name": "native_analysis",
+        "seconds": 0.0776314,
+        "passed": true
+      },
+      {
+        "name": "native_session",
+        "seconds": 1.16536,
+        "passed": true
+      },
+      {
+        "name": "quadric_cut",
+        "seconds": 0.962209,
+        "passed": true
+      },
+      {
+        "name": "cut_recovery",
+        "seconds": 0.0809239,
+        "passed": true
+      },
+      {
+        "name": "cut_tensor",
+        "seconds": 0.133309,
+        "passed": true
+      },
+      {
+        "name": "cut_trace_binding",
+        "seconds": 0.14495,
+        "passed": true
+      },
+      {
+        "name": "cut_union",
+        "seconds": 5.7615,
+        "passed": true
+      },
+      {
+        "name": "cut_interface",
+        "seconds": 0.567817,
+        "passed": true
+      },
+      {
+        "name": "vtk_cell_cut",
+        "seconds": 12.6423,
+        "passed": true
+      },
+      {
+        "name": "general_cut_cache",
+        "seconds": 3.21607,
+        "passed": true
+      },
+      {
+        "name": "cut_geometry",
+        "seconds": 20.1649,
+        "passed": true
+      },
+      {
+        "name": "cut_analytic",
+        "seconds": 5.04271,
+        "passed": true
+      },
+      {
+        "name": "cut_reference",
+        "seconds": 13.549,
+        "passed": true
+      },
+      {
+        "name": "cut_iso",
+        "seconds": 4.42356,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view",
+        "seconds": 0.185244,
+        "passed": true
+      },
+      {
+        "name": "draw_vtk_import",
+        "seconds": 0.12918,
+        "passed": true
+      },
+      {
+        "name": "draw_vtk_reference",
+        "seconds": 0.138768,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_iso",
+        "seconds": 0.192772,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_tensor",
+        "seconds": 0.121926,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_trace",
+        "seconds": 0.109714,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_union",
+        "seconds": 0.367943,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_quadric",
+        "seconds": 0.514758,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_high_order_iso",
+        "seconds": 1.28593,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_references",
+        "seconds": 13.0351,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_analytic",
+        "seconds": 2.92312,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_geometry",
+        "seconds": 0.503991,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_cache",
+        "seconds": 0.692393,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_vtk_cells",
+        "seconds": 27.6628,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_recovery",
+        "seconds": 13.5833,
+        "passed": true
+      },
+      {
+        "name": "generate_large_vtk_smoke",
+        "seconds": 0.096773,
+        "passed": true
+      },
+      {
+        "name": "draw_large_vtk_smoke",
+        "seconds": 2.48174,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_session",
+        "seconds": 2.86101,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_benchmark_smoke",
+        "seconds": 0.758027,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_physics",
+        "seconds": 2.49648,
+        "passed": true
+      },
+      {
+        "name": "draw_vtk_reference_visual",
+        "seconds": 0.953738,
+        "passed": true
+      },
+      {
+        "name": "draw_vtk_import_visual",
+        "seconds": 1.69674,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_recovery_visual",
+        "seconds": 15.1697,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_high_order_iso_visual",
+        "seconds": 3.70463,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_references_visual",
+        "seconds": 17.3808,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_analytic_visual",
+        "seconds": 4.11731,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_geometry_visual",
+        "seconds": 1.83489,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_cache_visual",
+        "seconds": 1.78495,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_vtk_cells_visual",
+        "seconds": 46.5588,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_quadric_visual",
+        "seconds": 7.21269,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_controls",
+        "seconds": 20.2353,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_tools",
+        "seconds": 4.364,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_plot_options",
+        "seconds": 1.41986,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_placement",
+        "seconds": 1.27858,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_material",
+        "seconds": 1.68679,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_free_body",
+        "seconds": 0.75509,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_iso_binding",
+        "seconds": 0.699836,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_slices",
+        "seconds": 0.729128,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_plot_parity",
+        "seconds": 1.37721,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_automatic",
+        "seconds": 0.768036,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_scope",
+        "seconds": 1.60718,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_time",
+        "seconds": 2.54684,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_tensor_visual",
+        "seconds": 0.886524,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_trace_visual",
+        "seconds": 0.548755,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_union_visual",
+        "seconds": 3.38647,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_iso_visual",
+        "seconds": 2.1286,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_visual",
+        "seconds": 2.18314,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_gpu_plane",
+        "seconds": 4.47335,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_display_modes",
+        "seconds": 15.7752,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_deformation",
+        "seconds": 9.82819,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_sine_plate",
+        "seconds": 354.082,
+        "passed": true
+      },
+      {
+        "name": "draw_cut_view_interaction",
+        "seconds": 1.83705,
+        "passed": true
+      },
+      {
+        "name": "cell_kernel",
+        "seconds": 0.0526118,
+        "passed": true
+      }
+    ],
+    "elapsed_seconds": 714.61,
+    "junit_sha256": "204819ad61e16c39187921defb648c25b1cc6c96b1d816d6ac758ce984dddd81",
+    "large": {
+      "placement": {
+        "pass": "CUT_PLACEMENT_LARGE_PASS",
+        "log_sha256": "816c7faa89ff9bd185b0d8ffe8f1031207dfcd8a962486c427c218d777191db1",
+        "states": [
+          "CUT_PLACEMENT_LARGE_STATE cloud mask 2 elapsed_ms 1156.721 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 597683072 sourceEstimate 1460965248 resultEstimate 16653809856 evictions 0 request 1",
+          "CUT_PLACEMENT_LARGE_STATE cloud mask 3 elapsed_ms 1141.297 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 597683072 sourceEstimate 1460965248 resultEstimate 16653809856 evictions 0 request 1",
+          "CUT_PLACEMENT_LARGE_STATE cloud mask 7 elapsed_ms 1098.972 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 597683072 sourceEstimate 1460965248 resultEstimate 16653809856 evictions 0 request 1",
+          "CUT_PLACEMENT_LARGE_STATE wireframe mask 2 elapsed_ms 1171.057 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 597683072 sourceEstimate 1460965248 resultEstimate 16653809856 evictions 0 request 1",
+          "CUT_PLACEMENT_LARGE_STATE wireframe mask 3 elapsed_ms 1157.991 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 597683072 sourceEstimate 1460965248 resultEstimate 16653809856 evictions 0 request 1",
+          "CUT_PLACEMENT_LARGE_STATE wireframe mask 7 elapsed_ms 1108.543 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 597683072 sourceEstimate 1460965248 resultEstimate 16653809856 evictions 0 request 1",
+          "CUT_PLACEMENT_LARGE_STATE cloud_edges mask 2 elapsed_ms 1267.065 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 597683072 sourceEstimate 1460965248 resultEstimate 16653809856 evictions 0 request 1",
+          "CUT_PLACEMENT_LARGE_STATE cloud_edges mask 3 elapsed_ms 1220.457 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 597683072 sourceEstimate 1460965248 resultEstimate 16653809856 evictions 0 request 1",
+          "CUT_PLACEMENT_LARGE_STATE cloud_edges mask 7 elapsed_ms 1215.784 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 597683072 sourceEstimate 1460965248 resultEstimate 16653809856 evictions 0 request 1"
+        ]
+      },
+      "material": {
+        "pass": "CUT_MATERIAL_LARGE_PASS",
+        "log_sha256": "e5de8b4385cecd1ad1127d51d13148a9c2c952c02a2b300fed1454fe529a25dc",
+        "states": [
+          "CUT_MATERIAL_LARGE_STATE cloud elapsed_ms 1383.756 referenceBuilds 1 mappingBuilds 6 mappedNodes 136806 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1461030784 resultReserved 445418560 sourceEstimate 65536 resultEstimate 16653809856 evictions 0 request 1",
+          "CUT_MATERIAL_LARGE_STATE wireframe elapsed_ms 1334.152 referenceBuilds 1 mappingBuilds 10 mappedNodes 228010 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1461030784 resultReserved 445418560 sourceEstimate 65536 resultEstimate 16653809856 evictions 0 request 1",
+          "CUT_MATERIAL_LARGE_STATE cloud_edges elapsed_ms 1365.678 referenceBuilds 1 mappingBuilds 14 mappedNodes 319214 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1461030784 resultReserved 445418560 sourceEstimate 65536 resultEstimate 16653809856 evictions 0 request 1"
+        ]
+      },
+      "free_body": {
+        "pass": "CUT_FREE_BODY_LARGE_PASS",
+        "log_sha256": "15dc375d83722d08499ab0d04ae6da5139dce23af9e55816ed0139f05f402051",
+        "states": [
+          "CUT_FREE_BODY_LARGE_STATE elapsed_ms 492.107 area 22500 force {33749.999999999971 33749.999999999971 33749.999999999971} moment {843749.99999995506 -9.2877883162145736e-10 -843749.99999997858} heatFlow 0 samples 45000 overlays 2 centroid {0.5 75 75} sumPoint {0.5 75 75} normal {1 0 0} outputFrame {0 0 0 1 0 0 0 1 0 0 0 1 } sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 1093811072 sourceEstimate 1460965248 resultEstimate 16653809856 evictions 0 request 1"
+        ]
+      },
+      "iso_binding": {
+        "pass": "CUT_ISO_BINDING_LARGE_PASS",
+        "log_sha256": "9cf68c99b5298fc6ccf2456e6dfc5b0497520f1d646536d0b1151cb8afd4f8db",
+        "states": [
+          "CUT_ISO_BINDING_LARGE_STATE elapsed_ms 18301.4 first {44999} second {44999} sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 737329152 sourceEstimate 1460965248 resultEstimate 22498856448 evictions 0 request 1"
+        ]
+      },
+      "slices": {
+        "pass": "CUT_SLICES_LARGE_PASS",
+        "log_sha256": "0d719957edcf731bcdf0c439a006dd1a6f501e4bed263afda5791ed8f51abe0e",
+        "states": [
+          "Draw[1]> CUT_SLICES_LARGE_STATE elapsed_ms 8050.971 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 921862144 sourceEstimate 1460965248 resultEstimate 16653809856 evictions 0 request 1"
+        ]
+      },
+      "plot_options": {
+        "pass": "CUT_PLOT_OPTIONS_LARGE_PASS",
+        "log_sha256": "92abaab00ff7e65cfd2f4680d64d54a8ff3b04319ab40871f7a3a1b8eca55452",
+        "states": [
+          "CUT_PLOT_OPTIONS_LARGE_STATE cloud mask 2 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 597683072 sourceEstimate 1460965248 resultEstimate 16653809856 evictions 0 request 1",
+          "CUT_PLOT_OPTIONS_LARGE_STATE cloud mask 3 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 597683072 sourceEstimate 1460965248 resultEstimate 16653809856 evictions 0 request 1",
+          "CUT_PLOT_OPTIONS_LARGE_STATE cloud mask 7 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 597683072 sourceEstimate 1460965248 resultEstimate 16653809856 evictions 0 request 1",
+          "CUT_PLOT_OPTIONS_LARGE_STATE wireframe mask 2 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 597683072 sourceEstimate 1460965248 resultEstimate 16653809856 evictions 0 request 1",
+          "CUT_PLOT_OPTIONS_LARGE_STATE wireframe mask 3 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 597683072 sourceEstimate 1460965248 resultEstimate 16653809856 evictions 0 request 1",
+          "CUT_PLOT_OPTIONS_LARGE_STATE wireframe mask 7 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 597683072 sourceEstimate 1460965248 resultEstimate 16653809856 evictions 0 request 1",
+          "CUT_PLOT_OPTIONS_LARGE_STATE cloud_edges mask 2 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 597683072 sourceEstimate 1460965248 resultEstimate 16653809856 evictions 0 request 1",
+          "CUT_PLOT_OPTIONS_LARGE_STATE cloud_edges mask 3 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 597683072 sourceEstimate 1460965248 resultEstimate 16653809856 evictions 0 request 1",
+          "CUT_PLOT_OPTIONS_LARGE_STATE cloud_edges mask 7 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 597683072 sourceEstimate 1460965248 resultEstimate 16653809856 evictions 0 request 1",
+          "CUT_PLOT_OPTIONS_LARGE_CACHE sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 597683072 sourceEstimate 1460965248 resultEstimate 16653809856 evictions 0 request 1"
+        ]
+      },
+      "automatic": {
+        "pass": "CUT_AUTOMATIC_LARGE_PASS",
+        "log_sha256": "3272c14de0647547508ade0902a91f6ccd2a8805fc0098ce218b67af3835c64c",
+        "states": [
+          "Draw[1]> CUT_AUTOMATIC_LARGE_STATE 450.25 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 460855296 sourceEstimate 1460965248 resultEstimate 16653809856 evictions 0 request 2",
+          "CUT_AUTOMATIC_LARGE_STATE 450.75 sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 460855296 sourceEstimate 1460965248 resultEstimate 16653809856 evictions 0 request 3",
+          "CUT_AUTOMATIC_LARGE_BATCH_MS 13525.463"
+        ]
+      },
+      "scope": {
+        "pass": "CUT_SCOPE_LARGE_PASS",
+        "log_sha256": "052d8e3b1e4bd0d8125acb7610bc751e6e2a92c5a37db0305598ddfaec46ef92",
+        "states": [
+          "CUT_SCOPE_LARGE_BATCH_MS 526.542",
+          "CUT_SCOPE_LARGE_A sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 597683072 sourceEstimate 1460965248 resultEstimate 16653809856 evictions 0 request 1",
+          "CUT_SCOPE_LARGE_B sourceLimit 4294967296 resultLimit 17179869184 sourceReserved 1460965248 resultReserved 561011072 sourceEstimate 1460965248 resultEstimate 16653809856 evictions 0 request 1"
+        ]
+      }
+    }
+  }
+}

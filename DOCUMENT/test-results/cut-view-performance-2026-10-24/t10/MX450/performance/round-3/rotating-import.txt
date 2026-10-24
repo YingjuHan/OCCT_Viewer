@@ -1,0 +1,5 @@
+file D:\workspace\OpenCASCADE\OCCT_Viewer\build\large-vtk-deformed\hex_150.vtu
+backend portable
+points 3442951
+cells 3375000
+import_ms 4046.62

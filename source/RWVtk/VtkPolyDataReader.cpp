@@ -34,12 +34,21 @@ bool VtkPolyDataReader::readMeshInfo(const LDOM_Element& theElem)
         return false;
     }
 
-    getXmlAttribute(theElem, "NumberOfVerts", "numberOfVerts").GetInteger(myNbVerts);
-    getXmlAttribute(theElem, "NumberOfLines", "numberOfLines").GetInteger(myNbLines);
-    getXmlAttribute(theElem, "NumberOfStrips", "numberOfStrips").GetInteger(myNbStrips);
-    getXmlAttribute(theElem, "NumberOfPolys", "numberOfPolys").GetInteger(myNbPolys);
+    myNbVerts = myNbLines = myNbStrips = myNbPolys = 0;
+    myNbVerts=readCount(theElem,"NumberOfVerts","numberOfVerts",true);
+    myNbLines=readCount(theElem,"NumberOfLines","numberOfLines",true);
+    myNbStrips=readCount(theElem,"NumberOfStrips","numberOfStrips",true);
+    myNbPolys=readCount(theElem,"NumberOfPolys","numberOfPolys",true);
 
-    (*myStoredElements)[myCurPiece].resize(myNbVerts + myNbLines + myNbStrips + myNbPolys, 0);
+    if (myNbVerts < 0 || myNbLines < 0 || myNbStrips < 0 || myNbPolys < 0) {
+        return fail("Negative VTK PolyData cell count");
+    }
+    const size_t aNbCells = (size_t)myNbVerts + myNbLines + myNbStrips + myNbPolys;
+    VtkResourceBudget::Consume(myBudget->Cells,aNbCells,std::min(myLimits.MaxCells,(uint64_t)std::numeric_limits<int>::max()),"cells");
+    if (myToReadMeshGeometry) { (*myStoredElements)[myCurPiece].assign(aNbCells, 0); }
+    else if ((*myStoredElements)[myCurPiece].size() != aNbCells) {
+        return fail("VTK time step PolyData cell count differs from the original mesh");
+    }
 
     return true;
 }
@@ -54,32 +63,62 @@ bool VtkPolyDataReader::readMeshGeometry(const LDOM_Element& theElem)
     }
 
     LDOM_Element aVerts = getFirstElement(theElem, "Verts");
+    if (aVerts.isNull() && myNbVerts > 0) { return fail("Missing PolyData Verts"); }
     if (!aVerts.isNull() && myNbVerts > 0) {
         if (!parseVerts(aVerts)) {
             return false;
         }
     }
 
-    LDOM_Element aLines = getFirstElement(theElem, "Lines");
-    if (!aLines.isNull() && myNbLines > 0) {
-        Message::SendInfo() << "1d elements are not supported";
+    if (myNbLines > 0) {
+        MeshElements elements; parseElements(getFirstElement(theElem,"Lines"),elements);
+        if (!validateElements(elements,myNbLines,2)) { return false; }
+        int begin = 0;
+        for (int i = 0; i < myNbLines; ++i) {
+            const int end = elements.Offsets.Data->GetInt(i,0);
+            RWCae::MeshData::GenericCell cell; cell.Type = end-begin == 2 ? 3 : 4;
+            for (int n=begin;n<end;++n) { cell.Nodes.push_back(elements.Connectivity.Data->GetInt(n,0)+myNodesOffset); }
+            myMeshData->AddGenericCell(cell); (*myStoredElements)[myCurPiece][myNbProcessed+i]++; begin=end;
+        }
+        myNbProcessed += myNbLines;
     }
 
+    // VTK cell indices are ordered Verts, Lines, Polys, Strips, regardless of XML order.
+    LDOM_Element aPolys = getFirstElement(theElem, "Polys");
+    if (aPolys.isNull() && myNbPolys > 0) { return fail("Missing PolyData Polys"); }
+    if (!aPolys.isNull() && myNbPolys > 0 && !parsePolys(aPolys)) { return false; }
+
     LDOM_Element aStrips = getFirstElement(theElem, "Strips");
+    if (aStrips.isNull() && myNbStrips > 0) { return fail("Missing PolyData Strips"); }
     if (!aStrips.isNull() && myNbStrips > 0) {
         if (!parseStrips(aStrips)) {
             return false;
         }
     }
 
-    LDOM_Element aPolys = getFirstElement(theElem, "Polys");
-    if (!aPolys.isNull() && myNbPolys > 0) {
-        if (!parsePolys(aPolys)) {
-            return false;
-        }
-    }
-
     return true;
+}
+
+bool VtkPolyDataReader::validateElements(const MeshElements& theElements, int theCount, int theMinNodes)
+{
+    if (theElements.Connectivity.Data.IsNull() || theElements.Offsets.Data.IsNull()
+        || theElements.Offsets.Data->NbElements() != theCount
+        || theElements.Connectivity.Components.size() != 1 || theElements.Offsets.Components.size() != 1) {
+        return fail("Invalid PolyData connectivity or offset count");
+    }
+    int aBegin = 0;
+    for (int i = 0; i < theCount; ++i) {
+        const int anEnd = theElements.Offsets.Data->GetInt(i, 0);
+        if (anEnd - aBegin < theMinNodes || anEnd > theElements.Connectivity.Data->NbElements()) {
+            return fail("Invalid PolyData connectivity offset or cell node count");
+        }
+        for (int n = aBegin; n < anEnd; ++n) {
+            const int aNode = theElements.Connectivity.Data->GetInt(n, 0);
+            if (aNode < 0 || aNode >= myNbNodes) { return fail("PolyData point index out of range"); }
+        }
+        aBegin = anEnd;
+    }
+    return aBegin == theElements.Connectivity.Data->NbElements() || fail("Unused PolyData connectivity entries");
 }
 
 // =======================================================================
@@ -90,15 +129,14 @@ bool VtkPolyDataReader::parseVerts(const LDOM_Element& theElem)
     MeshElements aMeshElements;
     parseElements(theElem, aMeshElements);
 
+    if (!validateElements(aMeshElements, myNbVerts, 1)) { return false; }
+
     if (aMeshElements.Connectivity.Data.IsNull() || aMeshElements.Offsets.Data.IsNull()) {
-        Message::SendFail() << "Error: Failed to read verts data";
-        return false;
+        return fail("Failed to read verts data");
     }
 
     if (aMeshElements.Offsets.Data->NbElements() != myNbVerts) {
-        Message::SendFail() << "Error: Incorrect number of verts '" << aMeshElements.Offsets.Data->NbElements()
-                            << "', should be '" << myNbVerts << "'";
-        return false;
+        return fail(std::string("Incorrect number of verts '") + std::to_string(aMeshElements.Offsets.Data->NbElements()) + "', should be '" + std::to_string(myNbVerts) + "'");
     }
 
     int aCellBegin = 0;
@@ -107,6 +145,12 @@ bool VtkPolyDataReader::parseVerts(const LDOM_Element& theElem)
     RWCae::MeshElement0d anElem;
     for (int i = 0; i < myNbVerts; i++, aCellBegin = aCurOffset) {
         aCurOffset = aMeshElements.Offsets.Data->GetInt(i, 0);
+        if (myGeneralLayout) {
+            RWCae::MeshData::GenericCell cell; cell.Type = aCurOffset-aCellBegin == 1 ? 1 : 2;
+            for (int n = aCellBegin; n < aCurOffset; ++n) { cell.Nodes.push_back(aMeshElements.Connectivity.Data->GetInt(n,0)+myNodesOffset); }
+            myMeshData->AddGenericCell(cell); (*myStoredElements)[myCurPiece][myNbProcessed+i]++; continue;
+        }
+        VtkResourceBudget::Consume(myBudget->Cells,aCurOffset-aCellBegin-1,myLimits.MaxCells,"expanded cells");
         for (int aVertIter = aCellBegin; aVertIter < aCurOffset; aVertIter++) {
             uint32_t aNode = aMeshElements.Connectivity.Data->GetInt(aVertIter, 0) + myNodesOffset;
             anElem[0]      = aNode;
@@ -128,15 +172,14 @@ bool VtkPolyDataReader::parseStrips(const LDOM_Element& theElem)
     MeshElements aMeshElements;
     parseElements(theElem, aMeshElements);
 
+    if (!validateElements(aMeshElements, myNbStrips, 3)) { return false; }
+
     if (aMeshElements.Connectivity.Data.IsNull() || aMeshElements.Offsets.Data.IsNull()) {
-        Message::SendFail() << "Error: Failed to read strips data";
-        return false;
+        return fail("Failed to read strips data");
     }
 
     if (aMeshElements.Offsets.Data->NbElements() != myNbStrips) {
-        Message::SendFail() << "Error: Incorrect number of strips '" << aMeshElements.Offsets.Data->NbElements()
-                            << "', should be '" << myNbStrips << "'";
-        return false;
+        return fail(std::string("Incorrect number of strips '") + std::to_string(aMeshElements.Offsets.Data->NbElements()) + "', should be '" + std::to_string(myNbStrips) + "'");
     }
 
     constexpr int aNbTrgPnts = 3;
@@ -145,6 +188,12 @@ bool VtkPolyDataReader::parseStrips(const LDOM_Element& theElem)
     int aCurOffset = 0;
     for (int i = 0; i < myNbStrips; i++, aCellBegin = aCurOffset) {
         aCurOffset = aMeshElements.Offsets.Data->GetInt(i, 0);
+        if (myGeneralLayout) {
+            RWCae::MeshData::GenericCell cell; cell.Type = 6;
+            for (int n = aCellBegin; n < aCurOffset; ++n) { cell.Nodes.push_back(aMeshElements.Connectivity.Data->GetInt(n,0)+myNodesOffset); }
+            myMeshData->AddGenericCell(cell); (*myStoredElements)[myCurPiece][myNbProcessed+i]++; continue;
+        }
+        VtkResourceBudget::Consume(myBudget->Cells,aCurOffset-aCellBegin-3,myLimits.MaxCells,"expanded cells");
         if (aCurOffset - aCellBegin < aNbTrgPnts) {
             continue;
         }
@@ -153,7 +202,8 @@ bool VtkPolyDataReader::parseStrips(const LDOM_Element& theElem)
         int aVert2 = aMeshElements.Connectivity.Data->GetInt(aCellBegin + 1, 0) + myNodesOffset;
         for (int aVertIter = aCellBegin + 2; aVertIter < aCurOffset; aVertIter++) {
             int aVert3 = aMeshElements.Connectivity.Data->GetInt(aVertIter, 0) + myNodesOffset;
-            addElemTriangle(aVert1, aVert2, aVert3, i);
+            if ((aVertIter - aCellBegin) % 2 == 0) { addElemTriangle(aVert1, aVert2, aVert3, i); }
+            else { addElemTriangle(aVert2, aVert1, aVert3, i); }
 
             aVert1 = aVert2;
             aVert2 = aVert3;
@@ -173,15 +223,14 @@ bool VtkPolyDataReader::parsePolys(const LDOM_Element& theElem)
     MeshElements aMeshElements;
     parseElements(theElem, aMeshElements);
 
+    if (!validateElements(aMeshElements, myNbPolys, 3)) { return false; }
+
     if (aMeshElements.Connectivity.Data.IsNull() || aMeshElements.Offsets.Data.IsNull()) {
-        Message::SendFail() << "Error: Failed to read polys data";
-        return false;
+        return fail("Failed to read polys data");
     }
 
     if (aMeshElements.Offsets.Data->NbElements() != myNbPolys) {
-        Message::SendFail() << "Error: Incorrect number of polys '" << aMeshElements.Offsets.Data->NbElements()
-                            << "', should be '" << myNbPolys << "'";
-        return false;
+        return fail(std::string("Incorrect number of polys '") + std::to_string(aMeshElements.Offsets.Data->NbElements()) + "', should be '" + std::to_string(myNbPolys) + "'");
     }
 
     constexpr int aNbTrgPnts = 3;
@@ -190,6 +239,11 @@ bool VtkPolyDataReader::parsePolys(const LDOM_Element& theElem)
     int aCurOffset = 0;
     for (int i = 0; i < myNbPolys; i++, aCellBegin = aCurOffset) {
         aCurOffset = aMeshElements.Offsets.Data->GetInt(i, 0);
+        if (myGeneralLayout) {
+            RWCae::MeshData::GenericCell cell; cell.Type = aCurOffset-aCellBegin == 3 ? 5 : aCurOffset-aCellBegin == 4 ? 9 : 7;
+            for (int n = aCellBegin; n < aCurOffset; ++n) { cell.Nodes.push_back(aMeshElements.Connectivity.Data->GetInt(n,0)+myNodesOffset); }
+            myMeshData->AddGenericCell(cell); (*myStoredElements)[myCurPiece][myNbProcessed+i]++; continue;
+        }
         if (aCurOffset - aCellBegin < aNbTrgPnts) {
             continue;
         }

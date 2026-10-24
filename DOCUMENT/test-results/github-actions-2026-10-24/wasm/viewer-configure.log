@@ -1,0 +1,15 @@
+git commit: 7e768b3153d5f9a64281915720c9352decad4406 date: 26-10-24
+-- PTHREADS is disabled, prepare single-thread mode build
+Configuring OCCTViewer version: '26.10.24'
+-- OpenCASCADE library has been found: /home/htf/occtviewer-ci/wasm/occt-install
+-- OpenCASCADE include directories: /home/htf/occtviewer-ci/wasm/occt-install/include/opencascade
+-- OpenCASCADE library directories: /home/htf/occtviewer-ci/wasm/occt-install/lib
+-- OpenCASCADE binary: /home/htf/occtviewer-ci/wasm/occt-install/bin
+rapidjson include dirs: /home/htf/occtviewer-ci/wasm/rapidjson/include
+-- freetype library has been found:
+--   freetype include dir(s): /home/htf/occtviewer-ci/wasm/freetype-install/include/freetype2
+--   freetype library (Release) dir(s): /home/htf/occtviewer-ci/wasm/freetype-install/lib
+/home/htf/occtviewer-ci/wasm/viewer/source-ts/Viewer-ts
+-- Configuring done (2.4s)
+-- Generating done (0.1s)
+-- Build files have been written to: /home/htf/occtviewer-ci/wasm/viewer

@@ -45,6 +45,14 @@ const Handle(MeshBvhData::MeshBvhBoxSet)& MeshBvhData::BvhBoxSet(const Handle(Me
 void MeshBvhData::RemoveBvhBoxSet(const Handle(MeshGeometry)& theMeshGeom)
 {
     myBvhBoxSets.UnBind(theMeshGeom);
+    myNodePositions.UnBind(theMeshGeom);
+}
+
+std::shared_ptr<const std::vector<Graphic3d_Vec3>> MeshBvhData::PreparedNodePositions(
+    const Handle(MeshGeometry)& geometry) const
+{
+    const auto* positions=myNodePositions.Seek(geometry);
+    return positions ? *positions : nullptr;
 }
 
 // =======================================================================
@@ -64,6 +72,15 @@ void MeshBvhData::fillBvhBoxSet(const Handle(MeshGeometry)& theMeshGeom, Handle(
     }
 
     RWCae::MeshEntityId aNbElems = aMeshData->NbIndexedElems();
+    std::shared_ptr<std::vector<Graphic3d_Vec3>> positions;
+    // A source epoch is immutable during traversal. Prepare modifiers once per
+    // original node, rather than once per incident cell or every plane revision.
+    if(theMeshGeom->HasNodeModifiers()) {
+        positions=std::make_shared<std::vector<Graphic3d_Vec3>>(aMeshData->NbNodes());
+        for(RWCae::MeshEntityId n=0;n<aMeshData->NbNodes();++n) {
+            auto point=aMeshData->Nodes()[n]; theMeshGeom->ModifyNode(n,point); (*positions)[n]=point;
+        }
+    }
 
     int                   aNbThreads     = RWBase::TaskManager::Instance()->NbDefaultThreadsToLaunch();
     RWCae::MeshEntityId aSubSetNbElems = std::max(aNbElems / aNbThreads, MIN_NB_SUBSETS_ELEMS);
@@ -82,14 +99,15 @@ void MeshBvhData::fillBvhBoxSet(const Handle(MeshGeometry)& theMeshGeom, Handle(
         BVH_Box<float, BVH_DIM> aBox;
         for (RWCae::MeshElemEntityOffset i = aNodesStart; i < aNodesEnd; i++) {
             RWCae::MeshEntityId aNodeIdx = anElems.Nodes()[static_cast<int>(i)];
-            Graphic3d_Vec3        aNode    = aMeshData->Nodes()[aNodeIdx];
-            theMeshGeom->ModifyNode(aNodeIdx, aNode);
+            Graphic3d_Vec3 aNode=positions ? (*positions)[aNodeIdx] : aMeshData->Nodes()[aNodeIdx];
+            if(!positions) { theMeshGeom->ModifyNode(aNodeIdx, aNode); }
             aBox.Add(BVH_Vec3f(aNode.x(), aNode.y(), aNode.z()));
         }
         theBvhBoxSet->AddElement(Min(anElemIter / aSubSetNbElems, aNbSubSets - 1), anElemIter, aBox);
     }
 
     theBvhBoxSet->Update();
+    if(positions) { myNodePositions.Bind(theMeshGeom,positions); }
 }
 
 // =======================================================================

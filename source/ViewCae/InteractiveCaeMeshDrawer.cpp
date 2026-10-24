@@ -113,6 +113,7 @@ void InteractiveCaeMeshDrawer::UpdateAspects(const Handle(Prs3d_Drawer)& theDraw
     SetShadingColor(aDrawer->ShadingColor());
     SetPointsColor(aDrawer->PointsColor());
     SetEdgesColor(aDrawer->EdgesColor());
+    SetEdgesType(aDrawer->LineAspect()->Aspect()->Type());
     SetVectorsColor(aDrawer->VectorsColor());
     SetStreamlinesColor(aDrawer->StreamlinesColor());
     SetEdgesWidth(aDrawer->EdgesWidth());
@@ -255,6 +256,12 @@ void InteractiveCaeMeshDrawer::SetEdgesColor(const Quantity_Color& theColor)
     LineAspect()->SetColor(theColor);
     myLineAspect3d->SetColor(theColor);
     myLineAspect2d->SetColor(theColor);
+    FaceBoundaryAspect()->SetColor(theColor); FreeBoundaryAspect()->SetColor(theColor);
+}
+void InteractiveCaeMeshDrawer::SetEdgesType(Aspect_TypeOfLine type)
+{
+    LineAspect()->SetTypeOfLine(type); myLineAspect3d->SetType(type); myLineAspect2d->SetType(type);
+    FaceBoundaryAspect()->SetTypeOfLine(type); FreeBoundaryAspect()->SetTypeOfLine(type);
 }
 
 // =======================================================================

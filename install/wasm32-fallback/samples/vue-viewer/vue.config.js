@@ -11,7 +11,7 @@ module.exports = defineConfig({
   chainWebpack: config => {
     config.plugin('copy')
           .tap(args => {
-            let path1 = path.resolve(__dirname, 'node_modules/@hw/SCwebviewer/wasm32');
+            let path1 = path.resolve(__dirname, 'node_modules/@hyj/SCwebviewer/wasm32');
             if (fs.existsSync(path1)) {
               args[0].patterns.push({
                 from: path1,
@@ -19,7 +19,7 @@ module.exports = defineConfig({
                 toType: 'dir'
               })
             }
-            let path2 = path.resolve(__dirname, 'node_modules/@hw/SCwebviewer/wasm32-pthread');
+            let path2 = path.resolve(__dirname, 'node_modules/@hyj/SCwebviewer/wasm32-pthread');
             if (fs.existsSync(path2)) {
               args[0].patterns.push({
                 from: path2,
@@ -40,6 +40,14 @@ module.exports = defineConfig({
               args[0].patterns.push({
                 from: path4,
                 to: path.resolve(__dirname, 'dist/models'),
+                toType: 'dir'
+              })
+            }
+            let path5 = path.resolve(__dirname, 'node_modules/@hyj/SCwebviewer/fonts');
+            if (fs.existsSync(path5)) {
+              args[0].patterns.push({
+                from: path5,
+                to: path.resolve(__dirname, 'dist/others/fonts'),
                 toType: 'dir'
               })
             }

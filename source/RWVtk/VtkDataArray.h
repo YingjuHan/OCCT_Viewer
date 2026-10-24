@@ -4,6 +4,8 @@
 #include <NCollection_Buffer.hxx>
 #include <NCollection_Vector.hxx>
 #include <TCollection_AsciiString.hxx>
+#include <cstring>
+#include <stdexcept>
 
 namespace RWVtk {
 
@@ -74,7 +76,12 @@ protected:
     //! Return element for specified index and component.
     T getElement(int theIndex, int theComp) const
     {
-        return *((T*)(myData->Data() + myOffset) + myNbComponents * theIndex + theComp);
+        if (theIndex < 0 || theIndex >= NbElements() || theComp < 0 || theComp >= myNbComponents) {
+            throw std::out_of_range("VTK array index out of range");
+        }
+        T result;
+        std::memcpy(&result, myData->Data() + myOffset + sizeof(T) * (myNbComponents * theIndex + theComp), sizeof(T));
+        return result;
     }
 
 protected:
@@ -103,7 +110,13 @@ public:
 
 protected:
     //! Return element for specified index and component.
-    T getElement(int theIndex, int theComp) const { return myData[theIndex * myNbComponents + theComp]; }
+    T getElement(int theIndex, int theComp) const
+    {
+        if (theIndex < 0 || theIndex >= NbElements() || theComp < 0 || theComp >= myNbComponents) {
+            throw std::out_of_range("VTK array index out of range");
+        }
+        return myData[theIndex * myNbComponents + theComp];
+    }
 
     //! Read data from buffer with ascii characters.
     template<typename ET>

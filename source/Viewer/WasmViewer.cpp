@@ -1019,17 +1019,26 @@ void WasmViewer::ConfigureFocusView()
                              (Viewer::MouseGesture)myViewManager->getMouseGesture(aViewId, mBtnId2),
                              mySelManager->ToAllowMultiselection());
 
-    const AIS_SelectionScheme anAltSelScheme = mySelManager->ToAllowMultiselection() ? AIS_SelectionScheme_XOR
-                                                                                     : AIS_SelectionScheme_Replace;
+    const bool isMultiSelection = mySelManager->ToAllowMultiselection();
+    const AIS_SelectionScheme aToggleScheme = isMultiSelection ? AIS_SelectionScheme_XOR
+                                                               : AIS_SelectionScheme_Replace;
+    const AIS_SelectionScheme aAddScheme = isMultiSelection ? AIS_SelectionScheme_Add
+                                                            : AIS_SelectionScheme_Replace;
 
     myMouseSelectionSchemes = myMouseDefaultSchemesMap;
     for (Standard_UInteger aModif :
          {(Standard_UInteger)Aspect_VKeyFlags_CTRL,
           (Standard_UInteger)Aspect_VKeyFlags_CTRL | (Standard_UInteger)Aspect_VKeyFlags_ALT,
-          (Standard_UInteger)Aspect_VKeyFlags_SHIFT,
-          (Standard_UInteger)Aspect_VKeyFlags_SHIFT | (Standard_UInteger)Aspect_VKeyFlags_ALT}) {
-        myMouseSelectionSchemes.Bind((Standard_UInteger)Aspect_VKeyMouse_LeftButton | aModif, anAltSelScheme);
+           (Standard_UInteger)Aspect_VKeyFlags_SHIFT}) {
+        myMouseSelectionSchemes.Bind((Standard_UInteger)Aspect_VKeyMouse_LeftButton | aModif, aToggleScheme);
     }
+    myMouseSelectionSchemes.Bind((Standard_UInteger)Aspect_VKeyMouse_LeftButton
+                                     | (Standard_UInteger)Aspect_VKeyFlags_ALT,
+                                 AIS_SelectionScheme_Replace);
+    myMouseSelectionSchemes.Bind((Standard_UInteger)Aspect_VKeyMouse_LeftButton
+                                     | (Standard_UInteger)Aspect_VKeyFlags_SHIFT
+                                     | (Standard_UInteger)Aspect_VKeyFlags_ALT,
+                                 aAddScheme);
 }
 
 // ================================================================

@@ -1,0 +1,7 @@
+{
+  "file-series-version": "1.0",
+  "files": [
+    {"name": "tetra.vtm", "time": 0.25},
+    {"name": "tetra.vtm", "time": 1.75}
+  ]
+}

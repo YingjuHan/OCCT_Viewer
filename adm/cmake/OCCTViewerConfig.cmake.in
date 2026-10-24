@@ -3,25 +3,28 @@
 
 @PACKAGE_INIT@
 
-if(NOT TARGET SCRWBase)
-  include(${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@Targets.cmake)
+if (NOT TARGET RWBase)
+  include (${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@Targets.cmake)
 endif()
 
 # Libraries
 # =========
-set(@PROJECT_NAME@_LIBRARIES
+set (_@PROJECT_NAME@_KNOWN_LIBRARIES
   RWBase
   ViewBase
-  RWRWShape
+  RWShape
   RWShapeConv
   ViewShape
+  ViewDim
   RWCae
   RWMed
   RWVtk
   RWMeshConv
   RWMeshExchanger
   ViewCae
+  ViewCaeGeom
   Viewer
+  FileExchange
   DrawBase
   RWCaeTest
   RWShapeTest
@@ -29,4 +32,11 @@ set(@PROJECT_NAME@_LIBRARIES
   ViewCaeTest
   ViewShapeTest
   ViewDraw
-  )
+)
+
+set(@PROJECT_NAME@_LIBRARIES "")
+foreach (_lib IN LISTS _@PROJECT_NAME@_KNOWN_LIBRARIES)
+  if (TARGET ${_lib})
+    list (APPEND @PROJECT_NAME@_LIBRARIES ${_lib})
+  endif()
+endforeach()

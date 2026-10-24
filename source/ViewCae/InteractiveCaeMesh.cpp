@@ -340,6 +340,7 @@ void InteractiveCaeMesh::SetElementTypes(const TCollection_AsciiString& thePrsId
     unsigned int aChangedTypes = aVisProps->ElementTypes() ^ theElementTypes;
 
     aVisProps->SetElementTypes(theElementTypes);
+    aPrs->ClearPart(MeshPartType::GeneralCells, -1, true, false);
 
     if ((aChangedTypes & (unsigned int)InteractiveCaeMeshElementType::Element0d) != 0) {
         aPrs->ClearPart(MeshPartType::Elems0d, -1, true, false);
@@ -1071,6 +1072,7 @@ void InteractiveCaeMesh::SetPresentationMode(const TCollection_AsciiString& theP
     }
 
     aProps->SetPresentationMode(theMode);
+    aPrs->ClearPart(MeshPartType::GeneralCells, -1, true, false);
 
     UpdateAspects();
     SetDeferredUpdate();

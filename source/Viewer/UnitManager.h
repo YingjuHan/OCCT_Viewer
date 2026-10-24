@@ -2,6 +2,7 @@
 #define _UNITMANAGER_HEADERFILE
 
 #include "IManager.h"
+#include "Utils/VecN.h"
 
 namespace Viewer {
 //! Class provides public interface for managing units.
@@ -47,6 +48,30 @@ public:
 
     //! Convert value from SI units into system units.
     Standard_EXPORT double SystemFromSI(int theQuantity, double theSIVal) const;
+
+    //! Multiply two transformations in specified order.
+    Standard_EXPORT Location TrsfMultiply(const Location& theLoc1, const Location& theLoc2) const;
+
+    //! Compute inverted transformation.
+    Standard_EXPORT Location TrsfInvert(const Location& theLoc) const;
+
+    //! Return 4x4 matrix from transformation.
+    Standard_EXPORT Mat4 TrsfGetMat4(const Location& theLoc) const;
+
+    //! Return rotation part as 3 Euler angles.
+    Standard_EXPORT Vec3 TrsfGetEulerAngles(const Location& theLoc, int theSeq) const;
+
+    //! Set rotation part from 3 Euler angles.
+    Standard_EXPORT Location TrsfSetEulerAngles(const Location& theLoc, const Vec3& theAngles, int theSeq) const;
+
+    //! Setup rotation transformation around specified axis and angle in radians.
+    Standard_EXPORT Location TrsfRotateAroundAxis(const Vec3& theDir, double theAngle, const Vec3& theOrigin) const;
+
+    //! Return transformed 3D point.
+    Standard_EXPORT Vec3 TrsfTransformPnt(const Location& theLoc, const Vec3& thePnt) const;
+
+    //! Return transformed 3D direction.
+    Standard_EXPORT Vec3 TrsfTransformDir(const Location& theLoc, const Vec3& theDir) const;
 };
 
 } // namespace

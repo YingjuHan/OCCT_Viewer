@@ -60,6 +60,11 @@ export declare const UserEvents: {
      * Event definition: {@link MeshGenGeomRequestedEvent}.
      */
     onMeshGenGeomRequested: string;
+    /**
+     * Called when Viewer emits a log/error message.
+     * Event definition: {@link ViewerMessageEvent}.
+     */
+    onViewerMessage: string;
 };
 /**
  * {@link InteractiveObject} dragging event {@link UserEvents.onObjectDragged}.
@@ -213,6 +218,21 @@ export declare class MeshGenGeomRequestedEvent extends Event {
     constructor(theType: string);
 }
 /**
+ * Viewer message event, {@link UserEvents.onViewerMessage}.
+ */
+export declare class ViewerMessageEvent extends Event {
+    /** Message text without error code prefix. */
+    message: string;
+    /** Raw message as received from C++ side. */
+    rawMessage: string;
+    /** Message gravity as number (see MessageGravity). */
+    gravity: number;
+    /** Parsed error code if present. */
+    errorCode: string | null;
+    /** Main constructor. */
+    constructor(theType: string);
+}
+/**
  * Event Manager is a global object accessible via {@link SCwebviewer.eventManager},
  * responsible for managing event handlers (subscribing and unsubscribing callbacks).
  */
@@ -242,4 +262,6 @@ export declare class ViewerEventManager extends ViewerEventTarget {
     protected onMeshPropertiesRequested(theMeshId: ObjectId, theTimeStep: number, thePropsToLoad: string): void;
     /** Emit mesh geometry request event */
     protected onMeshGenGeomRequested(theMeshId: ObjectId, thePrsId: string, thePartId: number, theParameters: string): void;
+    /** Emit viewer message event. */
+    onViewerMessage(theMessage: string, theGravity: number, theErrorCode: string | null, theRawMessage: string): void;
 }

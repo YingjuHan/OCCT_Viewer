@@ -1,0 +1,551 @@
+[
+  {
+    "file": "build\\perf-t10-mx450\\performance\\round-1\\crossing.csv",
+    "frames": 60,
+    "fps": 26.80506059887062,
+    "p50_ms": 37.3702,
+    "p95_ms": 51.9664,
+    "target": true,
+    "mean_ms": {
+      "edit_ms": 5.121336666666667,
+      "source_ms": 0.00015666666666666666,
+      "intersection_ms": 7.448651666666667,
+      "slice_ms": 1.16607,
+      "trace_ms": 6.282581666666666,
+      "FE_ms": 4.013668333333333,
+      "primitives_ms": 5.344103333333333,
+      "actual_redraw_ms": 15.377243333333334,
+      "total_ms": 37.30638833333333,
+      "bvh_ms": 0.06593,
+      "node_prepare_ms": 6.666666666666667e-06,
+      "cell_cut_ms": 0.29148833333333335,
+      "merge_ms": 0.521265,
+      "trace_origins_ms": 4.0063233333333335,
+      "trace_classify_ms": 0.12600666666666666,
+      "trace_prepare_ms": 3e-05,
+      "trace_maps_ms": 0.11115833333333333,
+      "trace_fill_ms": 2.0298233333333333,
+      "trace_general_ms": 0.0,
+      "shared_point_ms": 0.27170333333333335,
+      "append_ms": 0.24032833333333334,
+      "fallback_ms": 0.0
+    },
+    "counts": {
+      "fallback_unsupported": 0.0,
+      "fallback_near_plane": 0.0,
+      "fallback_warped": 0.0,
+      "fallback_degenerate": 0.0,
+      "fallback_near_endpoint": 0.0,
+      "candidates": 67500.0,
+      "fallbacks": 0.0,
+      "topology_hits": 56.0,
+      "topology_cell_hits": 0.0,
+      "topology_cell_misses": 67500.0
+    },
+    "memory_bytes": {
+      "process_private_bytes": {
+        "first": 1181884416.0,
+        "last": 1193504768.0,
+        "maximum": 1226088448.0
+      },
+      "process_working_set_bytes": {
+        "first": 999288832.0,
+        "last": 1003642880.0,
+        "maximum": 1022529536.0
+      },
+      "process_peak_working_set_bytes": {
+        "first": 1541033984.0,
+        "last": 1541033984.0,
+        "maximum": 1541033984.0
+      }
+    }
+  },
+  {
+    "file": "build\\perf-t10-mx450\\performance\\round-1\\deformed.csv",
+    "frames": 60,
+    "fps": 15.012032143763227,
+    "p50_ms": 64.2608,
+    "p95_ms": 74.3584,
+    "target": false,
+    "mean_ms": {
+      "edit_ms": 2.1748533333333335,
+      "source_ms": 0.00019833333333333335,
+      "intersection_ms": 34.32098166666667,
+      "slice_ms": 24.414881666666666,
+      "trace_ms": 9.9061,
+      "FE_ms": 3.835025,
+      "primitives_ms": 5.055561666666667,
+      "actual_redraw_ms": 21.225493333333333,
+      "total_ms": 66.61323333333333,
+      "bvh_ms": 1.597765,
+      "node_prepare_ms": 0.00019333333333333333,
+      "cell_cut_ms": 5.912013333333333,
+      "merge_ms": 12.052086666666666,
+      "trace_origins_ms": 0.41993,
+      "trace_classify_ms": 2.7069016666666665,
+      "trace_prepare_ms": 0.001875,
+      "trace_maps_ms": 2.3305083333333334,
+      "trace_fill_ms": 4.289916666666667,
+      "trace_general_ms": 0.0,
+      "shared_point_ms": 6.179583333333333,
+      "append_ms": 5.011378333333333,
+      "fallback_ms": 0.523855
+    },
+    "counts": {
+      "fallback_unsupported": 0.0,
+      "fallback_near_plane": 0.0,
+      "fallback_warped": 0.0,
+      "fallback_degenerate": 0.0,
+      "fallback_near_endpoint": 4500.0,
+      "candidates": 1443300.0,
+      "fallbacks": 4500.0,
+      "topology_hits": 0.0,
+      "topology_cell_hits": 0.0,
+      "topology_cell_misses": 1443300.0
+    },
+    "memory_bytes": {
+      "process_private_bytes": {
+        "first": 1247010816.0,
+        "last": 1244651520.0,
+        "maximum": 1267281920.0
+      },
+      "process_working_set_bytes": {
+        "first": 1070247936.0,
+        "last": 1071218688.0,
+        "maximum": 1083334656.0
+      },
+      "process_peak_working_set_bytes": {
+        "first": 1673486336.0,
+        "last": 1673486336.0,
+        "maximum": 1673486336.0
+      }
+    }
+  },
+  {
+    "file": "build\\perf-t10-mx450\\performance\\round-1\\rotating.csv",
+    "frames": 60,
+    "fps": 14.239938646749676,
+    "p50_ms": 70.0698,
+    "p95_ms": 78.7055,
+    "target": false,
+    "mean_ms": {
+      "edit_ms": 0.044151666666666665,
+      "source_ms": 0.00015000000000000001,
+      "intersection_ms": 38.32255333333333,
+      "slice_ms": 27.281765,
+      "trace_ms": 11.040788333333333,
+      "FE_ms": 4.13818,
+      "primitives_ms": 5.9484433333333335,
+      "actual_redraw_ms": 21.770356666666668,
+      "total_ms": 70.22502166666666,
+      "bvh_ms": 1.578525,
+      "node_prepare_ms": 0.00022666666666666666,
+      "cell_cut_ms": 6.711548333333333,
+      "merge_ms": 13.780596666666666,
+      "trace_origins_ms": 0.4400516666666667,
+      "trace_classify_ms": 2.935235,
+      "trace_prepare_ms": 0.000855,
+      "trace_maps_ms": 2.6132033333333333,
+      "trace_fill_ms": 4.895145,
+      "trace_general_ms": 0.0,
+      "shared_point_ms": 7.355401666666666,
+      "append_ms": 5.472288333333333,
+      "fallback_ms": 0.6212416666666667
+    },
+    "counts": {
+      "fallback_unsupported": 0.0,
+      "fallback_near_plane": 600.0,
+      "fallback_warped": 0.0,
+      "fallback_degenerate": 0.0,
+      "fallback_near_endpoint": 5550.0,
+      "candidates": 1559100.0,
+      "fallbacks": 6150.0,
+      "topology_hits": 0.0,
+      "topology_cell_hits": 0.0,
+      "topology_cell_misses": 1559100.0
+    },
+    "memory_bytes": {
+      "process_private_bytes": {
+        "first": 1190100992.0,
+        "last": 1210056704.0,
+        "maximum": 1211445248.0
+      },
+      "process_working_set_bytes": {
+        "first": 1019539456.0,
+        "last": 1033109504.0,
+        "maximum": 1034534912.0
+      },
+      "process_peak_working_set_bytes": {
+        "first": 1622126592.0,
+        "last": 1622126592.0,
+        "maximum": 1622126592.0
+      }
+    }
+  },
+  {
+    "file": "build\\perf-t10-mx450\\performance\\round-2\\crossing.csv",
+    "frames": 60,
+    "fps": 25.707900239122036,
+    "p50_ms": 38.0197,
+    "p95_ms": 53.7657,
+    "target": true,
+    "mean_ms": {
+      "edit_ms": 5.206428333333333,
+      "source_ms": 0.00016333333333333334,
+      "intersection_ms": 8.007578333333333,
+      "slice_ms": 1.2247483333333333,
+      "trace_ms": 6.78283,
+      "FE_ms": 4.036355,
+      "primitives_ms": 5.674963333333333,
+      "actual_redraw_ms": 15.971731666666667,
+      "total_ms": 38.89854833333333,
+      "bvh_ms": 0.062189999999999995,
+      "node_prepare_ms": 1.6666666666666667e-05,
+      "cell_cut_ms": 0.29240499999999997,
+      "merge_ms": 0.5648166666666666,
+      "trace_origins_ms": 4.2138,
+      "trace_classify_ms": 0.12799,
+      "trace_prepare_ms": 2.9999999999999997e-05,
+      "trace_maps_ms": 0.10611833333333334,
+      "trace_fill_ms": 2.3234416666666666,
+      "trace_general_ms": 0.0,
+      "shared_point_ms": 0.31455666666666665,
+      "append_ms": 0.24177333333333334,
+      "fallback_ms": 0.0
+    },
+    "counts": {
+      "fallback_unsupported": 0.0,
+      "fallback_near_plane": 0.0,
+      "fallback_warped": 0.0,
+      "fallback_degenerate": 0.0,
+      "fallback_near_endpoint": 0.0,
+      "candidates": 67500.0,
+      "fallbacks": 0.0,
+      "topology_hits": 56.0,
+      "topology_cell_hits": 0.0,
+      "topology_cell_misses": 67500.0
+    },
+    "memory_bytes": {
+      "process_private_bytes": {
+        "first": 1175343104.0,
+        "last": 1186746368.0,
+        "maximum": 1221197824.0
+      },
+      "process_working_set_bytes": {
+        "first": 998633472.0,
+        "last": 1001959424.0,
+        "maximum": 1020751872.0
+      },
+      "process_peak_working_set_bytes": {
+        "first": 1541492736.0,
+        "last": 1541492736.0,
+        "maximum": 1541492736.0
+      }
+    }
+  },
+  {
+    "file": "build\\perf-t10-mx450\\performance\\round-2\\deformed.csv",
+    "frames": 60,
+    "fps": 14.117993530994184,
+    "p50_ms": 68.2221,
+    "p95_ms": 79.3888,
+    "target": false,
+    "mean_ms": {
+      "edit_ms": 2.2924116666666663,
+      "source_ms": 0.00015833333333333335,
+      "intersection_ms": 36.83374833333333,
+      "slice_ms": 26.1429,
+      "trace_ms": 10.690848333333333,
+      "FE_ms": 4.187953333333334,
+      "primitives_ms": 6.237936666666666,
+      "actual_redraw_ms": 21.278103333333334,
+      "total_ms": 70.83159500000001,
+      "bvh_ms": 1.5371383333333333,
+      "node_prepare_ms": 0.00022833333333333334,
+      "cell_cut_ms": 6.497158333333333,
+      "merge_ms": 13.22317,
+      "trace_origins_ms": 0.42395333333333335,
+      "trace_classify_ms": 2.9614616666666667,
+      "trace_prepare_ms": 0.0013433333333333333,
+      "trace_maps_ms": 2.5555583333333334,
+      "trace_fill_ms": 4.567985,
+      "trace_general_ms": 0.0,
+      "shared_point_ms": 6.747763333333333,
+      "append_ms": 5.4496883333333335,
+      "fallback_ms": 0.6431666666666667
+    },
+    "counts": {
+      "fallback_unsupported": 0.0,
+      "fallback_near_plane": 0.0,
+      "fallback_warped": 0.0,
+      "fallback_degenerate": 0.0,
+      "fallback_near_endpoint": 4500.0,
+      "candidates": 1443300.0,
+      "fallbacks": 4500.0,
+      "topology_hits": 0.0,
+      "topology_cell_hits": 0.0,
+      "topology_cell_misses": 1443300.0
+    },
+    "memory_bytes": {
+      "process_private_bytes": {
+        "first": 1241960448.0,
+        "last": 1257254912.0,
+        "maximum": 1264553984.0
+      },
+      "process_working_set_bytes": {
+        "first": 1069408256.0,
+        "last": 1078329344.0,
+        "maximum": 1084559360.0
+      },
+      "process_peak_working_set_bytes": {
+        "first": 1675796480.0,
+        "last": 1675796480.0,
+        "maximum": 1675796480.0
+      }
+    }
+  },
+  {
+    "file": "build\\perf-t10-mx450\\performance\\round-2\\rotating.csv",
+    "frames": 60,
+    "fps": 14.247229804254934,
+    "p50_ms": 69.8251,
+    "p95_ms": 78.6611,
+    "target": false,
+    "mean_ms": {
+      "edit_ms": 0.04525833333333333,
+      "source_ms": 0.00016333333333333334,
+      "intersection_ms": 37.867736666666666,
+      "slice_ms": 26.934038333333334,
+      "trace_ms": 10.933698333333334,
+      "FE_ms": 4.17115,
+      "primitives_ms": 6.573101666666667,
+      "actual_redraw_ms": 21.53039,
+      "total_ms": 70.18908333333333,
+      "bvh_ms": 1.5721366666666667,
+      "node_prepare_ms": 0.00023,
+      "cell_cut_ms": 6.940515,
+      "merge_ms": 13.335938333333333,
+      "trace_origins_ms": 0.42092999999999997,
+      "trace_classify_ms": 2.91853,
+      "trace_prepare_ms": 0.0006933333333333333,
+      "trace_maps_ms": 2.43896,
+      "trace_fill_ms": 5.00088,
+      "trace_general_ms": 0.0,
+      "shared_point_ms": 7.225186666666667,
+      "append_ms": 5.1616333333333335,
+      "fallback_ms": 0.6386216666666666
+    },
+    "counts": {
+      "fallback_unsupported": 0.0,
+      "fallback_near_plane": 600.0,
+      "fallback_warped": 0.0,
+      "fallback_degenerate": 0.0,
+      "fallback_near_endpoint": 5550.0,
+      "candidates": 1559100.0,
+      "fallbacks": 6150.0,
+      "topology_hits": 0.0,
+      "topology_cell_hits": 0.0,
+      "topology_cell_misses": 1559100.0
+    },
+    "memory_bytes": {
+      "process_private_bytes": {
+        "first": 1184514048.0,
+        "last": 1205714944.0,
+        "maximum": 1208602624.0
+      },
+      "process_working_set_bytes": {
+        "first": 1011089408.0,
+        "last": 1029443584.0,
+        "maximum": 1029443584.0
+      },
+      "process_peak_working_set_bytes": {
+        "first": 1612959744.0,
+        "last": 1612959744.0,
+        "maximum": 1612959744.0
+      }
+    }
+  },
+  {
+    "file": "build\\perf-t10-mx450\\performance\\round-3\\crossing.csv",
+    "frames": 60,
+    "fps": 23.664444798797593,
+    "p50_ms": 42.1403,
+    "p95_ms": 61.6329,
+    "target": true,
+    "mean_ms": {
+      "edit_ms": 5.1029116666666665,
+      "source_ms": 0.00017,
+      "intersection_ms": 8.181873333333334,
+      "slice_ms": 1.4058066666666666,
+      "trace_ms": 6.776066666666667,
+      "FE_ms": 4.237911666666666,
+      "primitives_ms": 5.742515,
+      "actual_redraw_ms": 18.990843333333334,
+      "total_ms": 42.257488333333335,
+      "bvh_ms": 0.10363833333333333,
+      "node_prepare_ms": 1.1666666666666666e-05,
+      "cell_cut_ms": 0.31181333333333333,
+      "merge_ms": 0.628995,
+      "trace_origins_ms": 4.242221666666667,
+      "trace_classify_ms": 0.145515,
+      "trace_prepare_ms": 5.1666666666666664e-05,
+      "trace_maps_ms": 0.12559666666666666,
+      "trace_fill_ms": 2.25294,
+      "trace_general_ms": 0.0,
+      "shared_point_ms": 0.35095000000000004,
+      "append_ms": 0.26743,
+      "fallback_ms": 0.0
+    },
+    "counts": {
+      "fallback_unsupported": 0.0,
+      "fallback_near_plane": 0.0,
+      "fallback_warped": 0.0,
+      "fallback_degenerate": 0.0,
+      "fallback_near_endpoint": 0.0,
+      "candidates": 67500.0,
+      "fallbacks": 0.0,
+      "topology_hits": 56.0,
+      "topology_cell_hits": 0.0,
+      "topology_cell_misses": 67500.0
+    },
+    "memory_bytes": {
+      "process_private_bytes": {
+        "first": 1176518656.0,
+        "last": 1188196352.0,
+        "maximum": 1223897088.0
+      },
+      "process_working_set_bytes": {
+        "first": 998547456.0,
+        "last": 1002094592.0,
+        "maximum": 1021022208.0
+      },
+      "process_peak_working_set_bytes": {
+        "first": 1540923392.0,
+        "last": 1540923392.0,
+        "maximum": 1540923392.0
+      }
+    }
+  },
+  {
+    "file": "build\\perf-t10-mx450\\performance\\round-3\\deformed.csv",
+    "frames": 60,
+    "fps": 13.64320508356736,
+    "p50_ms": 72.822,
+    "p95_ms": 81.9712,
+    "target": false,
+    "mean_ms": {
+      "edit_ms": 2.3187066666666665,
+      "source_ms": 0.00016333333333333334,
+      "intersection_ms": 38.74440166666667,
+      "slice_ms": 27.52396166666667,
+      "trace_ms": 11.22044,
+      "FE_ms": 4.290098333333333,
+      "primitives_ms": 6.117211666666667,
+      "actual_redraw_ms": 21.824765,
+      "total_ms": 73.29656,
+      "bvh_ms": 1.7134516666666666,
+      "node_prepare_ms": 0.00022833333333333332,
+      "cell_cut_ms": 6.457273333333333,
+      "merge_ms": 13.775848333333334,
+      "trace_origins_ms": 0.43117666666666665,
+      "trace_classify_ms": 3.2642783333333334,
+      "trace_prepare_ms": 0.0012583333333333333,
+      "trace_maps_ms": 2.6287,
+      "trace_fill_ms": 4.748061666666667,
+      "trace_general_ms": 0.0,
+      "shared_point_ms": 7.139526666666667,
+      "append_ms": 5.73166,
+      "fallback_ms": 0.5889083333333334
+    },
+    "counts": {
+      "fallback_unsupported": 0.0,
+      "fallback_near_plane": 0.0,
+      "fallback_warped": 0.0,
+      "fallback_degenerate": 0.0,
+      "fallback_near_endpoint": 4500.0,
+      "candidates": 1443300.0,
+      "fallbacks": 4500.0,
+      "topology_hits": 0.0,
+      "topology_cell_hits": 0.0,
+      "topology_cell_misses": 1443300.0
+    },
+    "memory_bytes": {
+      "process_private_bytes": {
+        "first": 1247707136.0,
+        "last": 1265197056.0,
+        "maximum": 1272238080.0
+      },
+      "process_working_set_bytes": {
+        "first": 1067327488.0,
+        "last": 1080561664.0,
+        "maximum": 1085460480.0
+      },
+      "process_peak_working_set_bytes": {
+        "first": 1668300800.0,
+        "last": 1668300800.0,
+        "maximum": 1668300800.0
+      }
+    }
+  },
+  {
+    "file": "build\\perf-t10-mx450\\performance\\round-3\\rotating.csv",
+    "frames": 60,
+    "fps": 13.081573794433227,
+    "p50_ms": 75.4151,
+    "p95_ms": 89.2182,
+    "target": false,
+    "mean_ms": {
+      "edit_ms": 0.049501666666666666,
+      "source_ms": 0.000175,
+      "intersection_ms": 42.46409833333333,
+      "slice_ms": 29.980878333333333,
+      "trace_ms": 12.48322,
+      "FE_ms": 4.48982,
+      "primitives_ms": 7.229895,
+      "actual_redraw_ms": 22.20869666666667,
+      "total_ms": 76.44340166666667,
+      "bvh_ms": 1.7555416666666666,
+      "node_prepare_ms": 0.00027833333333333334,
+      "cell_cut_ms": 7.43504,
+      "merge_ms": 14.900725,
+      "trace_origins_ms": 0.4554316666666667,
+      "trace_classify_ms": 3.453378333333333,
+      "trace_prepare_ms": 0.0007166666666666667,
+      "trace_maps_ms": 2.8772433333333334,
+      "trace_fill_ms": 5.539841666666667,
+      "trace_general_ms": 0.0,
+      "shared_point_ms": 7.950083333333334,
+      "append_ms": 5.869165,
+      "fallback_ms": 0.7199383333333333
+    },
+    "counts": {
+      "fallback_unsupported": 0.0,
+      "fallback_near_plane": 600.0,
+      "fallback_warped": 0.0,
+      "fallback_degenerate": 0.0,
+      "fallback_near_endpoint": 5550.0,
+      "candidates": 1559100.0,
+      "fallbacks": 6150.0,
+      "topology_hits": 0.0,
+      "topology_cell_hits": 0.0,
+      "topology_cell_misses": 1559100.0
+    },
+    "memory_bytes": {
+      "process_private_bytes": {
+        "first": 1188130816.0,
+        "last": 1207377920.0,
+        "maximum": 1210515456.0
+      },
+      "process_working_set_bytes": {
+        "first": 1008787456.0,
+        "last": 1026408448.0,
+        "maximum": 1026412544.0
+      },
+      "process_peak_working_set_bytes": {
+        "first": 1605996544.0,
+        "last": 1605996544.0,
+        "maximum": 1605996544.0
+      }
+    }
+  }
+]

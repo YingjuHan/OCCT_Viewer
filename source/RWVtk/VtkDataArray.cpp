@@ -2,6 +2,22 @@
 #include <RWVtk/VtkDataArray.h>
 
 #include <Standard_ArrayStreamBuffer.hxx>
+#include <cmath>
+#include <limits>
+#include <cerrno>
+
+namespace {
+template<typename T>
+int checkedInt(T theValue)
+{
+    const long double aValue = static_cast<long double>(theValue);
+    if (!std::isfinite(aValue) || aValue < std::numeric_limits<int>::min()
+        || aValue > std::numeric_limits<int>::max() || std::trunc(aValue) != aValue) {
+        throw std::out_of_range("VTK integer value exceeds supported range or is not integral");
+    }
+    return static_cast<int>(theValue);
+}
+}
 
 namespace RWVtk {
 
@@ -29,7 +45,7 @@ double VtkBinaryArray<T>::GetDouble(int theIndex, int theComp) const
 template<typename T>
 int VtkBinaryArray<T>::GetInt(int theIndex, int theComp) const
 {
-    return static_cast<int>(getElement(theIndex, theComp));
+    return checkedInt(getElement(theIndex, theComp));
 }
 
 // ================================================================
@@ -151,7 +167,7 @@ double VtkAsciiArray<T>::GetDouble(int theIndex, int theComp) const
 template<typename T>
 int VtkAsciiArray<T>::GetInt(int theIndex, int theComp) const
 {
-    return static_cast<int>(getElement(theIndex, theComp));
+    return checkedInt(getElement(theIndex, theComp));
 }
 
 // ================================================================
@@ -206,10 +222,25 @@ void VtkAsciiArray<T>::readFromIStream(const char* theData, int theLength)
     std::istream               aStream(&aStreamBuffer);
     aStream.imbue(std::locale::classic());
 
-    ET aValue;
-
-    while (aStream >> aValue) {
+    std::string token;
+    while (aStream >> token) {
+        size_t used = 0;
+        long double aValue;
+        if (std::numeric_limits<T>::is_signed) { aValue = std::stoll(token, &used); }
+        else {
+            if (token[0] == '-') { throw std::out_of_range("Negative unsigned VTK value"); }
+            aValue = std::stoull(token, &used);
+        }
+        if (used != token.size()) { throw std::invalid_argument("Invalid VTK ASCII integer token"); }
+        const long double aNumber = static_cast<long double>(aValue);
+        if (aNumber < std::numeric_limits<T>::lowest() || aNumber > std::numeric_limits<T>::max()) {
+            throw std::out_of_range("VTK ASCII value exceeds declared type range");
+        }
         myData.Append(static_cast<T>(aValue));
+    }
+    if (!aStream.eof()) { throw std::invalid_argument("Invalid VTK ASCII integer token"); }
+    if (myNbComponents <= 0 || myData.Length() % myNbComponents != 0) {
+        throw std::invalid_argument("Invalid VTK ASCII component count");
     }
 }
 
@@ -226,7 +257,20 @@ void VtkAsciiArray<T>::readRealFromIStream(const char* theData, int theLength)
     TCollection_AsciiString aCheckStr;
 
     while (aStream >> aCheckStr) {
-        myData.Append(static_cast<T>(Strtod(aCheckStr.ToCString(), nullptr)));
+        char* anEnd = nullptr;
+        errno = 0;
+        const double aValue = Strtod(aCheckStr.ToCString(), &anEnd);
+        if (anEnd == aCheckStr.ToCString() || *anEnd != '\0') {
+            throw std::invalid_argument("Invalid VTK ASCII real token");
+        }
+        if ((errno == ERANGE && !std::isfinite(aValue))
+            || (std::isfinite(aValue) && std::abs(aValue) > std::numeric_limits<T>::max())) {
+            throw std::out_of_range("VTK ASCII real exceeds declared type range");
+        }
+        myData.Append(static_cast<T>(aValue));
+    }
+    if (myNbComponents <= 0 || myData.Length() % myNbComponents != 0) {
+        throw std::invalid_argument("Invalid VTK ASCII component count");
     }
 }
 
