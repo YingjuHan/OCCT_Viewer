@@ -72,6 +72,15 @@ template<class Work> void sectionWork(int count,const Work& work)
     if(count>=2048) { OSD_ThreadPool::Launcher launcher(*OSD_ThreadPool::DefaultPool(),4); launcher.Perform(0,count,work); }
     else { for(int i=0;i<count;++i) { work(0,i); } }
 }
+bool directSectionOrigins(const MeshGeometrySlice& section,const MeshGeometry& source,int nodes)
+{
+    if(!source.GetParent().IsNull() || section.GetNodesMap().Extent()!=nodes) { return false; }
+    for(int n=0;n<nodes;++n) {
+        const auto* origin=section.GetNodesMap().Seek(n);
+        if(!origin || origin->first!=&source) { return false; }
+    }
+    return true;
+}
 }
 const MeshCutPrimitiveTrace& MeshGeometryTraceSection::PhysicalProvenance(size_t primitive,
     const MeshCutTraceOptions& options, const SignedValue& signedValue, double tolerance, bool lines) const
@@ -272,6 +281,28 @@ void MeshCutTraceSource::UpdateInteriorTrace(MeshCutPrimitiveTrace& trace,RWCae:
     trace.Interior=cell.Interior; trace.InteriorWeights=cell.InteriorWeights; trace.Weights.Assign(nodes,origins);
 }
 
+void MeshCutTraceSource::UpdateInteriorTraceDirect(MeshCutPrimitiveTrace& trace,RWCae::MeshEntityId element,
+    const std::vector<RWCae::MeshEntityId>& nodes,const MeshGeometry::NodesMap& origins,
+    const std::vector<Graphic3d_Vec3>* coordinates) const
+{
+    const auto& data=*myData;
+    if(!data.Compact || (data.ModifyNodes && !coordinates)
+        || (coordinates && coordinates->size()!=data.Mesh->NbNodes())) {
+        throw std::logic_error("Direct interior trace requires immutable source coordinates");
+    }
+    const auto& indexed=data.Mesh->IndexedElements()[element]; const auto& cells=data.Mesh->Elements(indexed.Type);
+    RWCae::MeshElemEntityOffset begin,end; cells.GetElemNodesRange(indexed.Index,&begin,&end);
+    trace.Element=element; trace.Ambiguous=false; trace.Interior=Graphic3d_Vec3d(0);
+    trace.InteriorWeights.BaseNodes().clear(); trace.InteriorWeights.BaseNodes().reserve(end-begin);
+    for(auto i=begin;i<end;++i) {
+        const auto node=cells.Nodes()[i];
+        trace.Interior+=Graphic3d_Vec3d(coordinates?(*coordinates)[node]:data.Mesh->Nodes()[node]);
+        trace.InteriorWeights.AddBaseNode(node,1.0/(end-begin));
+    }
+    if(end>begin) { trace.Interior/=(double)(end-begin); }
+    trace.Weights.Assign(nodes,origins);
+}
+
 std::vector<MeshCutPrimitiveTrace> MeshCutTraceSource::Traces(RWCae::MeshEntityId element,
     const std::vector<MeshInterpolatedNode>& weights, const std::vector<Graphic3d_Vec3d>& positions,
     const std::vector<RWCae::MeshEntityId>* sampleNodes) const
@@ -353,14 +384,21 @@ MeshGeometryTraceSection::MeshGeometryTraceSection(const Handle(MeshBvhData)& bv
     if(input->NbIndexedElems()>=2048 && section->SlicePlanes().Size()==1) { myElementsMap.Clear(new NCollection_IncAllocator()); myElementsMap.ReSize(input->NbIndexedElems()); }
     bool deduplicated=false;
     std::vector<std::vector<MeshCutPrimitiveTrace>> interiorTraces;
-    auto& origins=myOriginScratch; origins.resize(input->NbNodes());
-    sectionWork(input->NbNodes(),[&](int,int n) { if(!sectionOrigin(*section,*source,n,origins[n])) { throw std::runtime_error("Section node has no original FE provenance"); } });
+    const bool directOrigins=directSectionOrigins(*section,*source,input->NbNodes());
+    auto& origins=myOriginScratch;
+    if(!directOrigins) {
+        origins.resize(input->NbNodes());
+        sectionWork(input->NbNodes(),[&](int,int n) { if(!sectionOrigin(*section,*source,n,origins[n])) { throw std::runtime_error("Section node has no original FE provenance"); } });
+    }
     myNodesMap.ReSize(input->NbNodes());
-    for(RWCae::MeshEntityId n=0;n<input->NbNodes();++n) { myNodesMap.Bind(n,std::make_pair(source.get(),std::move(origins[n]))); }
+    for(RWCae::MeshEntityId n=0;n<input->NbNodes();++n) {
+        auto* target=myNodesMap.Bound(n,std::make_pair(source.get(),MeshInterpolatedNode(0)));
+        if(directOrigins) { target->second=section->GetNodesMap().Find(n).second; }
+        else { target->second=std::move(origins[n]); }
+    }
     myTraceWork.OriginsMs=elapsed();
     if(input->NbIndexedElems()>=2048 && section->Lines().empty() && topology->IsCompact()) {
-        struct Primitive { RWCae::MeshEntityId Element; std::vector<RWCae::MeshEntityId> Nodes; };
-        std::vector<Primitive> primitives(input->NbIndexedElems()); std::vector<unsigned char> interiors(primitives.size());
+        auto& primitives=myPrimitiveScratch; primitives.resize(input->NbIndexedElems()); std::vector<unsigned char> interiors(primitives.size());
         sectionWork(input->NbIndexedElems(),[&](int,int e) {
             const auto& indexed=input->IndexedElements()[e]; auto& primitive=primitives[e];
             if(!sectionElement(*section,*source,*originalMesh,indexed,primitive.Element)) { throw std::runtime_error("Missing section element provenance"); }
@@ -374,12 +412,15 @@ MeshGeometryTraceSection::MeshGeometryTraceSection(const Handle(MeshBvhData)& bv
             // cannot lie on an interface; pure FE work is independent and keeps
             // stable input order. AIS publication stays on the Viewer thread.
             myElementTraces.resize(primitives.size());
-            std::vector<RWCae::MeshEntityId> elements; elements.reserve(primitives.size()); for(const auto& p:primitives) { elements.push_back(p.Element); } topology->PrepareInteriors(elements);
+            const auto coordinates=myBvhData->PreparedNodePositions(source);
+            const bool direct=!source->HasNodeModifiers() || (directOrigins && coordinates);
+            if(!direct) { std::vector<RWCae::MeshEntityId> elements; elements.reserve(primitives.size()); for(const auto& p:primitives) { elements.push_back(p.Element); } topology->PrepareInteriors(elements); }
             myTraceWork.PrepareMs=elapsed();
             for(RWCae::MeshEntityId e=0;e<input->NbIndexedElems();++e) { const auto& indexed=input->IndexedElements()[e]; const auto& original=source->GetMeshData()->IndexedElements()[primitives[e].Element]; myElementsMap.Bind(MeshGeomElem(indexed.Index,indexed.Type,false),std::make_pair(source.get(),MeshGeomElem(original.Index,original.Type,false))); }
             myTraceWork.MapsMs=elapsed();
             const auto work=[&](int,int e) { const auto& primitive=primitives[e]; myElementTraces[e].resize(1);
-                topology->UpdateInteriorTrace(myElementTraces[e][0],primitive.Element,primitive.Nodes,myNodesMap);
+                if(direct) { topology->UpdateInteriorTraceDirect(myElementTraces[e][0],primitive.Element,primitive.Nodes,myNodesMap,coordinates.get()); }
+                else { topology->UpdateInteriorTrace(myElementTraces[e][0],primitive.Element,primitive.Nodes,myNodesMap); }
             };
             OSD_ThreadPool::Launcher launcher(*OSD_ThreadPool::DefaultPool(),4); launcher.Perform(0,(int)primitives.size(),work);
             myTraceWork.FillMs=elapsed();
@@ -482,28 +523,58 @@ void MeshGeometryTraceSection::Refresh(const Handle(MeshGeometrySlice)& section,
     if (unchanged) { return; }
     if(input!=myInput && input->NbIndexedElems()>=2048 && section->Lines().empty() && topology->IsCompact()
         && myLineTraces.empty() && std::all_of(myElementTraces.begin(),myElementTraces.end(),[](const auto& t) { return t.size()==1 && !t[0].Ambiguous; })) {
-        struct Primitive { RWCae::MeshEntityId Element; std::vector<RWCae::MeshEntityId> Nodes; };
-        std::vector<Primitive> primitives(input->NbIndexedElems()); auto& origins=myOriginScratch; origins.resize(input->NbNodes()); std::vector<unsigned char> interiors(primitives.size());
-        sectionWork(input->NbNodes(),[&](int,int n) { if(!sectionOrigin(*section,*mySource,n,origins[n])) { throw std::runtime_error("Missing updated section provenance"); } });
+          auto& primitives=myPrimitiveScratch; primitives.resize(input->NbIndexedElems()); auto& origins=myOriginScratch; std::vector<unsigned char> interiors(primitives.size());
+          const bool directOrigins=directSectionOrigins(*section,*mySource,input->NbNodes());
+          if(!directOrigins) {
+              origins.resize(input->NbNodes());
+              sectionWork(input->NbNodes(),[&](int,int n) { if(!sectionOrigin(*section,*mySource,n,origins[n])) { throw std::runtime_error("Missing updated section provenance"); } });
+          }
         myTraceWork.OriginsMs=elapsed();
         sectionWork(input->NbIndexedElems(),[&](int,int e) {
             auto& primitive=primitives[e]; const auto& indexed=input->IndexedElements()[e]; if(!sectionElement(*section,*mySource,*originalMesh,indexed,primitive.Element)) { throw std::runtime_error("Missing updated section element provenance"); }
             input->ElementNodes(e,primitive.Nodes);
-            interiors[e]=interiorSupport(primitive.Nodes,[&](auto n)->const MeshInterpolatedNode& { return origins[n]; },*originalMesh,primitive.Element);
+              interiors[e]=interiorSupport(primitive.Nodes,[&](auto n)->const MeshInterpolatedNode& { return directOrigins?section->GetNodesMap().Find(n).second:origins[n]; },*originalMesh,primitive.Element);
         });
         const bool interiorOnly=std::all_of(interiors.begin(),interiors.end(),[](auto value) { return value!=0; });
         myTraceWork.ClassifyMs=elapsed();
         if(interiorOnly) {
-            std::vector<RWCae::MeshEntityId> elements; elements.reserve(primitives.size()); for(const auto& p:primitives) { elements.push_back(p.Element); } topology->PrepareInteriors(elements);
+              const auto coordinates=myBvhData->PreparedNodePositions(mySource);
+              const bool direct=!mySource->HasNodeModifiers() || (directOrigins && coordinates);
+              if(!direct) { std::vector<RWCae::MeshEntityId> elements; elements.reserve(primitives.size()); for(const auto& p:primitives) { elements.push_back(p.Element); } topology->PrepareInteriors(elements); }
             myTraceWork.PrepareMs=elapsed();
             const auto oldCount=myMeshData->NbNodes();
-            for(RWCae::MeshEntityId n=0;n<input->NbNodes();++n) { auto* origin=myNodesMap.ChangeSeek(n); if(origin) { origin->second=origins[n]; } else { myNodesMap.Bind(n,std::make_pair(mySource.get(),origins[n])); } }
+              std::vector<std::pair<MeshGeometry*,MeshInterpolatedNode>*> targetNodes(input->NbNodes());
+              for(RWCae::MeshEntityId n=0;n<input->NbNodes();++n) {
+                  targetNodes[n]=myNodesMap.ChangeSeek(n);
+                  if(!targetNodes[n]) { targetNodes[n]=myNodesMap.Bound(n,std::make_pair(mySource.get(),MeshInterpolatedNode(0))); }
+              }
             for(RWCae::MeshEntityId n=input->NbNodes();n<oldCount;++n) { myNodesMap.UnBind(n); }
-            myElementsMap.Clear(new NCollection_IncAllocator()); myElementsMap.ReSize((int)primitives.size());
-            for(RWCae::MeshEntityId e=0;e<input->NbIndexedElems();++e) { const auto& indexed=input->IndexedElements()[e]; const auto& original=mySource->GetMeshData()->IndexedElements()[primitives[e].Element]; myElementsMap.Bind(MeshGeomElem(indexed.Index,indexed.Type,false),std::make_pair(mySource.get(),MeshGeomElem(original.Index,original.Type,false))); }
+              for(int t=0;t<RWCae::MeshElemNbTypes;++t) {
+                  const auto type=(RWCae::MeshElemType)t;
+                  for(auto e=input->NbElems(type);e<myMeshData->NbElems(type);++e) { myElementsMap.UnBind(MeshGeomElem(e,type,false)); }
+              }
+              myElementsMap.ReSize((int)primitives.size());
+              std::vector<std::pair<MeshGeometry*,MeshGeomElem>*> targetElements(primitives.size());
+              for(RWCae::MeshEntityId e=0;e<input->NbIndexedElems();++e) {
+                  const auto& indexed=input->IndexedElements()[e];
+                  targetElements[e]=myElementsMap.Bound(MeshGeomElem(indexed.Index,indexed.Type,false),
+                      std::make_pair(mySource.get(),MeshGeomElem(0,indexed.Type,false)));
+              }
+              // Hash-table structure is fixed before workers update independent
+              // existing values. Old published sections keep their own maps.
+              sectionWork((int)std::max(targetNodes.size(),targetElements.size()),[&](int,int i) {
+                  if((size_t)i<targetNodes.size()) { targetNodes[i]->second=directOrigins?section->GetNodesMap().Find(i).second:origins[i]; }
+                  if((size_t)i<targetElements.size()) {
+                      const auto& original=originalMesh->IndexedElements()[primitives[i].Element];
+                      targetElements[i]->second=MeshGeomElem(original.Index,original.Type,false);
+                  }
+              });
             myTraceWork.MapsMs=elapsed();
             myElementTraces.resize(primitives.size());
-            const auto work=[&](int,int e) { myElementTraces[e].resize(1); topology->UpdateInteriorTrace(myElementTraces[e][0],primitives[e].Element,primitives[e].Nodes,myNodesMap); };
+              const auto work=[&](int,int e) { myElementTraces[e].resize(1);
+                  if(direct) { topology->UpdateInteriorTraceDirect(myElementTraces[e][0],primitives[e].Element,primitives[e].Nodes,myNodesMap,coordinates.get()); }
+                  else { topology->UpdateInteriorTrace(myElementTraces[e][0],primitives[e].Element,primitives[e].Nodes,myNodesMap); }
+              };
             OSD_ThreadPool::Launcher launcher(*OSD_ThreadPool::DefaultPool(),4); launcher.Perform(0,(int)primitives.size(),work);
             myTraceWork.FillMs=elapsed();
             myInput=input; myMeshData=input; return;

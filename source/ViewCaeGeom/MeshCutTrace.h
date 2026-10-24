@@ -51,6 +51,11 @@ public:
     Standard_EXPORT void PrepareInteriors(const std::vector<RWCae::MeshEntityId>& elements);
     Standard_EXPORT void UpdateInteriorTrace(MeshCutPrimitiveTrace& trace,RWCae::MeshEntityId element,
         const std::vector<RWCae::MeshEntityId>& nodes,const MeshGeometry::NodesMap& origins) const;
+    //! Pure per-cell work for verified interior sections. Coordinates must be
+    //! from the same deformation epoch, or null for an unmodified source.
+    Standard_EXPORT void UpdateInteriorTraceDirect(MeshCutPrimitiveTrace& trace,RWCae::MeshEntityId element,
+        const std::vector<RWCae::MeshEntityId>& nodes,const MeshGeometry::NodesMap& origins,
+        const std::vector<Graphic3d_Vec3>* coordinates) const;
     Standard_EXPORT std::vector<MeshCutPrimitiveTrace> Traces(RWCae::MeshEntityId element,
         const std::vector<MeshInterpolatedNode>& weights, const std::vector<Graphic3d_Vec3d>& positions,
         const std::vector<RWCae::MeshEntityId>* sampleNodes = nullptr) const;
@@ -104,6 +109,8 @@ private:
     MeshTraceWork myTraceWork;
     //! Reuse per-node FE vector capacity across large plane revisions.
     std::vector<MeshInterpolatedNode> myOriginScratch;
+    struct Primitive { RWCae::MeshEntityId Element; std::vector<RWCae::MeshEntityId> Nodes; };
+    std::vector<Primitive> myPrimitiveScratch;
 };
 }
 #endif

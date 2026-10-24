@@ -77,6 +77,13 @@ static void largePlaneSection()
     double area=0;
     for(RWCae::MeshEntityId e=0;e<mesh->NbIndexedElems();++e) {
         if(section->ElementTraces()[e].size()!=1 || section->ElementTraces()[e][0].Ambiguous) { throw std::runtime_error("Hex corner misclassified as interface"); }
+        const auto& trace=section->ElementTraces()[e][0]; std::vector<RWCae::MeshEntityId> sourceNodes;
+        source->ElementNodes(trace.Element,sourceNodes); Graphic3d_Vec3d center(0),weightedCenter(0); double weightSum=0;
+        for(auto node:sourceNodes) { center+=Graphic3d_Vec3d(source->Nodes()[node])/(double)sourceNodes.size(); }
+        for(const auto& w:trace.InteriorWeights.BaseNodes()) { weightedCenter+=Graphic3d_Vec3d(source->Nodes()[w.first])*w.second; weightSum+=w.second; }
+        if((trace.Interior-center).Modulus()>1e-9 || (weightedCenter-center).Modulus()>1e-9 || std::abs(weightSum-1)>1e-12) {
+            throw std::runtime_error("Direct trace lost analytic cell interior or FE support");
+        }
         std::vector<RWCae::MeshEntityId> nodes; mesh->ElementNodes(e,nodes);
         for(size_t i=1;i+1<nodes.size();++i) { area+=Graphic3d_Vec3d::Cross(positions[nodes[i]]-positions[nodes[0]],positions[nodes[i+1]]-positions[nodes[0]]).Modulus()*.5; }
     }
