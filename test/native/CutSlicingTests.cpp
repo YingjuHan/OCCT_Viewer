@@ -5,6 +5,7 @@
 #include <ViewCaeGeom/MeshGeometrySlice.h>
 #include <ViewCaeGeom/MeshCutTrace.h>
 #include <RWCae/MeshScalarProperty.h>
+#include <ViewCaeGeom/MeshGeometryDeformed.h>
 
 // Exceeds the native staging threshold and the compact trace threshold.
 // Verify analytic geometry and original FE identities, not thread scheduling.
@@ -80,6 +81,35 @@ static void largePlaneSection()
         for(size_t i=1;i+1<nodes.size();++i) { area+=Graphic3d_Vec3d::Cross(positions[nodes[i]]-positions[nodes[0]],positions[nodes[i+1]]-positions[nodes[0]]).Modulus()*.5; }
     }
     if(std::abs(area-n*n*std::sqrt(1+slope*slope))>1e-7) { throw std::runtime_error("Oblique section has missing/duplicate area"); }
+
+    // A source snapshot is tied to its BVH, not to the last plane. Keeping an
+    // old shared snapshot alive also checks atomic replacement after invalidation.
+    Handle(RWCae::MeshNVecProperty) displacement=new RWCae::MeshNVecProperty("displacement",3,
+        RWCae::MeshPropertyBase::MappingType::Nodal,RWCae::MeshNVecPropertyType::Vector);
+    displacement->Init<RWCae::MeshScalarProperty>();
+    for(int c=0;c<3;++c) {
+        const auto component=Handle(RWCae::MeshScalarProperty)::DownCast(displacement->GetComponent(c)); component->Init(source->NbNodes());
+        for(RWCae::MeshEntityId node=0;node<source->NbNodes();++node) { component->SetValue(RWCae::MeshPropertyEntityInfo(node),c==0?1:0); }
+    }
+    displacement->UpdateComponents();
+    Handle(MeshBvhData) bvh=new MeshBvhData(); Handle(MeshGeometry) root=new MeshGeometryBase(bvh,source);
+    Handle(MeshGeometryDeformed) deformed=new MeshGeometryDeformed(bvh); root->Append(deformed); deformed->SetDeformedProperty(displacement);
+    std::shared_ptr<const std::vector<Graphic3d_Vec3>> previous;
+    for(double scale:{.1,.2,0.0}) {
+        deformed->SetDeformedScaleCoeff(scale);
+        if(bvh->PreparedNodePositions(root)) { throw std::runtime_error("Deformation update retained stale node snapshot"); }
+        bvh->BvhBoxSet(root); const auto snapshot=bvh->PreparedNodePositions(root);
+        if(scale==0) { if(snapshot) { throw std::runtime_error("Zero deformation allocated a node snapshot"); } continue; }
+        if(!snapshot || snapshot==previous || snapshot!=bvh->PreparedNodePositions(root) || snapshot->size()!=source->NbNodes()) {
+            throw std::runtime_error("Modified source snapshot lifetime mismatch");
+        }
+        for(RWCae::MeshEntityId node=0;node<source->NbNodes();node+=997) {
+            auto expected=source->Nodes()[node]; root->ModifyNode(node,expected);
+            if((*snapshot)[node]!=expected) { throw std::runtime_error("Cached deformation differs from modifier"); }
+        }
+        previous=snapshot;
+    }
+    root->RemoveChildren(); bvh->Clear();
 }
 
 using namespace ViewCaeGeom;

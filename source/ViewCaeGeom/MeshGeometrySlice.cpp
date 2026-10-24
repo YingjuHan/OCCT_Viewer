@@ -45,16 +45,17 @@ public:
                                NodesMap*                                 theGenNodes,
                                ElementsMap*                              theGenElems,
                                std::vector<ViewCaeGeom::MeshSliceLine>*   theLines,
-                               const std::shared_ptr<ViewCaeGeom::MeshCutCancellation>& cancellation)
+                               const std::shared_ptr<ViewCaeGeom::MeshCutCancellation>& cancellation,
+                               const std::shared_ptr<const std::vector<Graphic3d_Vec3>>& positions=nullptr)
         : myMeshGeom(theMeshGeom),
           mySlicePlane(theSlicePlane),
           mySliceMeshData(theSliceMeshData),
           myGenNodes(theGenNodes),
           myGenElems(theGenElems),
-          myLines(theLines),myCancellation(cancellation)
+          myLines(theLines),myCancellation(cancellation),myPreparedPositions(positions)
     {
         myEquation=mySlicePlane->GetEquation();
-        myModifyNodes=myMeshGeom->HasNodeModifiers();
+        myModifyNodes=!myPreparedPositions && myMeshGeom->HasNodeModifiers();
         myTolerance=CONFUSION*std::sqrt(myEquation.x()*myEquation.x()+myEquation.y()*myEquation.y()+myEquation.z()*myEquation.z());
         const int hint=(int)std::min<size_t>(myMeshGeom->GetMeshData()->NbNodes(),32768);
         myAddedNodes.ReSize(hint); myAffineEdges.reserve(hint);
@@ -221,6 +222,7 @@ protected:
     AddedNodeMap                       myAddedNodes;
     std::vector<ViewCaeGeom::MeshSliceLine>* myLines;
     std::shared_ptr<ViewCaeGeom::MeshCutCancellation> myCancellation;
+    std::shared_ptr<const std::vector<Graphic3d_Vec3>> myPreparedPositions;
     size_t myVisited=0;
     Graphic3d_Vec4d myEquation;
     double myTolerance=0;
@@ -357,7 +359,8 @@ private:
                 const auto found=myNodePositions.find(id);
                 if(found!=myNodePositions.end()) { input.Points[i]=found->second; continue; }
             }
-            auto point=mesh->Nodes()[id]; if(myModifyNodes) { myMeshGeom->ModifyNode(id,point); } input.Points[i]=Graphic3d_Vec3d(point);
+            auto point=myPreparedPositions ? (*myPreparedPositions)[id] : mesh->Nodes()[id];
+            if(myModifyNodes) { myMeshGeom->ModifyNode(id,point); } input.Points[i]=Graphic3d_Vec3d(point);
             if(myCollect && myModifyNodes) { myNodePositions.emplace(id,input.Points[i]); }
         }
         return true;
@@ -511,8 +514,10 @@ void MeshGeometrySlice::generateMeshData()
         const Handle(RWCae::MeshData)& aParentMeshData = aParent->GetMeshData();
         if (!aParentMeshData.IsNull()) {
             for (Graphic3d_SequenceOfHClipPlane::Iterator anIter(mySlicePlanes); anIter.More(); anIter.Next()) {
-                MeshSliceSelector aSelector(aParent, anIter.Value(), myMeshData, &myNodesMap, &myElementsMap, &myLines,myCancellation);
-                aSelector.SetBVHSet(myBvhData->BvhBoxSet(aParent).get());
+                const auto boxes=myBvhData->BvhBoxSet(aParent);
+                MeshSliceSelector aSelector(aParent, anIter.Value(), myMeshData, &myNodesMap, &myElementsMap, &myLines,myCancellation,
+                    myBvhData->PreparedNodePositions(aParent));
+                aSelector.SetBVHSet(boxes.get());
                 const bool staged=mySlicePlanes.Size()==1 && aParentMeshData->NbIndexedElems()>=65536;
                 aSelector.CollectCandidates(staged);
                 const auto start=std::chrono::steady_clock::now();

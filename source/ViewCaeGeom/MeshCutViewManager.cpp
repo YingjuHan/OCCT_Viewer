@@ -1886,6 +1886,7 @@ uint64_t MeshCutViewManager::EstimatedSourceBytes() const
     for(int t=0;t<RWCae::MeshElemNbTypes;++t) { const auto type=(RWCae::MeshElemType)t; nonSimplex|=myMesh->NbElems(type)>0 && type!=RWCae::MeshElemType::Triangle && type!=RWCae::MeshElemType::Tetrahedron; }
     if(nonSimplex) { for(const auto& entry:myEntries) { if(entry.second->Definition.Shape==MeshCutShape::Sphere || entry.second->Definition.Shape==MeshCutShape::Cylinder) { compact=false; } } }
     return 65536 + (uint64_t)myMesh->NbNodes()*128 + (uint64_t)myMesh->NbIndexedElems()*(compact?128:65536)
+        + (myDeformationField.IsNull()?0:(uint64_t)myMesh->NbNodes()*sizeof(Graphic3d_Vec3)*(3*myEntries.size()+1))
         + (compact?std::min<uint64_t>((uint64_t)myMesh->NbIndexedElems()+2,8194)*65536+std::min<uint64_t>(myMesh->NbIndexedElems(),100000)*512:myGeometryOptions.MaxSourcePrimitives*512);
 }
 uint64_t MeshCutViewManager::EstimatedResultBytes(const Handle(RWCae::MeshNVecProperty)& field) const

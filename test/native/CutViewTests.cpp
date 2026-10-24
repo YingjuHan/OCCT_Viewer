@@ -798,7 +798,7 @@ static void gpuDeformedHex()
         view->SetMeshDisplayMode(mode);
         for (const double scale : {.3,-.2,0.0}) {
             require(cuts.SetDeformation(displacement,scale),"Hex deformation rejected"); view->Synchronize();
-            require(cuts.CacheStatistics().SourceReserved == used.SourceReserved,"Deformed trace source leaked its geometry chain");
+            require(cuts.CacheStatistics().SourceReserved == cuts.EstimatedSourceBytes(),"Deformed trace source retained an old epoch or omitted snapshot accounting");
             const double k = cuts.EffectiveDeformationScale();
             require(view->RenderStatistics().GpuPlane,"Deformation left GPU plane path");
             const auto builds = view->RenderStatistics().BodyBuilds;
