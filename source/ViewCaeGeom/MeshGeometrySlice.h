@@ -8,6 +8,7 @@
 
 namespace ViewCaeGeom {
 struct MeshCutCancellation;
+struct MeshLinearSliceCache;
 //! Wall times partition a rebuilt native single-plane section (not cache hits).
 struct MeshSliceWork {
     double BvhMs=0, PrepareMs=0, CutMs=0, MergeMs=0;
@@ -15,6 +16,7 @@ struct MeshSliceWork {
     double SharedPointMs=0, AppendMs=0, FallbackMs=0;
     size_t Candidates=0, Fallbacks=0;
     size_t Unsupported=0, NearPlane=0, Warped=0, Degenerate=0, NearEndpoint=0;
+    size_t TopologyCellHits=0,TopologyCellMisses=0;
 };
 //! Endpoints index the slice mesh nodes; source element indexes the original mesh.
 struct MeshSliceLine {
@@ -33,6 +35,9 @@ public:
     void SetCancellation(const std::shared_ptr<MeshCutCancellation>& token) { myCancellation=token; }
     const MeshSliceWork& LastWork() const { return myLastWork; }
     size_t WorkGeneration() const { return myWorkGeneration; }
+    static constexpr uint64_t TopologyCacheBytes=65536ULL*32;
+    //! Experimental until full-frame measurements justify its default cost.
+    Standard_EXPORT static bool CellTopologyReuseEnabled();
     //! Same conservative BVH plane test as cutting, without creating output primitives.
     Standard_EXPORT static size_t CountPlaneCandidates(const Handle(MeshBvhData)& bvh,
         const Handle(MeshGeometry)& source, const Graphic3d_Vec4d& plane);
@@ -86,6 +91,7 @@ protected:
     std::shared_ptr<MeshCutCancellation> myCancellation;
     MeshSliceWork myLastWork;
     size_t myWorkGeneration=0;
+    std::shared_ptr<MeshLinearSliceCache> myLinearCache;
 };
 
 } // namespace

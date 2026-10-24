@@ -1,4 +1,5 @@
 #include <ViewCaeGeom/MeshCutViewManager.h>
+#include <ViewCaeGeom/MeshGeometrySlice.h>
 #include <RWCae/MeshScalarProperty.h>
 #include <chrono>
 #include <cmath>
@@ -33,11 +34,17 @@ static void check(RWCae::MeshElemType type,int n)
     field->Init<RWCae::MeshScalarProperty>(); const auto scalar=Handle(RWCae::MeshScalarProperty)::DownCast(field->GetComponent(0)); scalar->Init(mesh->NbNodes());
     for(RWCae::MeshEntityId node=0;node<mesh->NbNodes();++node) { const auto& p=mesh->Nodes()[node]; scalar->SetValue(RWCae::MeshPropertyEntityInfo(node),p.x()+2*p.y()+3*p.z()); }
     field->UpdateComponents();
-    MeshCutViewManager cuts(mesh); const double slope=std::sqrt(.03),offset=n*.5+.371;
-    require(cuts.AddPlane("p",Graphic3d_Vec4d(1,slope,0,-offset)),"Linear batch plane rejected");
+    MeshCutViewManager cuts(mesh); const double initialOffset=n*.5+.371;
+    for(double movement:{0.0,.01,-.02,1.37}) {
+    const double slope=std::sqrt(.03)+(movement==.01?1e-4:0);
+    const double offset=initialOffset+movement;
+    if(movement==0) { require(cuts.AddPlane("p",Graphic3d_Vec4d(1,slope,0,-offset)),"Linear batch plane rejected"); }
+    else { require(cuts.SetPlane("p",Graphic3d_Vec4d(1,slope,0,-offset)),"Incremental linear plane rejected"); }
     const auto result=cuts.EvaluateSectionForDisplay("p",field); const auto section=result.Portions[1]; const auto output=section->GetMeshData();
     const auto timings=cuts.LastTimings();
     require(timings.Candidates>4096 && timings.Fallbacks<timings.Candidates,"Parallel linear batch path was not exercised");
+    if(movement==.01 && MeshGeometrySlice::CellTopologyReuseEnabled()) { require(timings.TopologyCellHits>0,"Small plane translation did not reuse cell topology"); }
+    require(timings.TopologyCellHits+timings.TopologyCellMisses==timings.Candidates,"Cell topology counters do not partition candidates");
     require(timings.Unsupported==0 && timings.Warped==0 && timings.Degenerate==0,"Regular linear cells unexpectedly used unsupported/warped fallback");
     std::vector<Graphic3d_Vec3d> positions(output->NbNodes());
     for(RWCae::MeshEntityId node=0;node<output->NbNodes();++node) {
@@ -54,7 +61,8 @@ static void check(RWCae::MeshElemType type,int n)
     }
     require(std::abs(area-n*n*std::sqrt(1+slope*slope))<1e-5,"Million-cell linear section has missing or duplicate area");
     std::cout<<"LINEAR_BATCH type "<<(int)type<<" cells "<<mesh->NbIndexedElems()<<" candidates "<<timings.Candidates
-             <<" fallbacks "<<timings.Fallbacks<<" elapsed_ms "<<std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count()<<'\n';
+             <<" topology_hits "<<timings.TopologyCellHits<<" fallbacks "<<timings.Fallbacks<<" elapsed_ms "<<std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count()<<'\n';
+    }
 }
 int main()
 {

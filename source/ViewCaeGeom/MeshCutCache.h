@@ -38,6 +38,7 @@ struct MeshCutFrameTimings {
     double TraceOriginsMs=0,TraceClassifyMs=0,TracePrepareMs=0,TraceMapsMs=0,TraceFillMs=0,TraceGeneralMs=0;
     uint64_t Candidates=0,Fallbacks=0;
     uint64_t Unsupported=0,NearPlane=0,Warped=0,Degenerate=0,NearEndpoint=0,TopologyHits=0;
+    uint64_t TopologyCellHits=0,TopologyCellMisses=0;
 };
 }
 #endif

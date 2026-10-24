@@ -19,6 +19,8 @@ def summarize(path):
             raise ValueError(f"Invalid counter: {path}:{index + 2}")
         if row["fallbacks"] != sum(row[key] for key in reasons):
             raise ValueError(f"Fallback reasons do not partition work: {path}:{index + 2}")
+        if "topology_cell_hits" in row and row["topology_cell_hits"] + row["topology_cell_misses"] != row["candidates"]:
+            raise ValueError(f"Cell topology counters do not partition candidates: {path}:{index + 2}")
         if sum(row[key] for key in ["shared_point_ms", "append_ms", "fallback_ms"]) > row["merge_ms"] + 0.001:
             raise ValueError(f"Merge subphases overlap: {path}:{index + 2}")
         if row["submitted_body_bytes"] != 0 or row["body_builds"] != 1:
@@ -26,6 +28,9 @@ def summarize(path):
     total = sorted(row["total_ms"] for row in rows)
     timings = {key: mean(row[key] for row in rows) for key in rows[0] if key.endswith("_ms")}
     counts = {key: sum(row[key] for row in rows) for key in reasons + ["candidates", "fallbacks", "topology_hits"]}
+    for key in ["topology_cell_hits", "topology_cell_misses"]:
+        if key in rows[0]:
+            counts[key] = sum(row[key] for row in rows)
     fps = 1000 * len(rows) / sum(total)
     p95 = total[math.ceil(0.95 * len(total)) - 1]
     return dict(file=str(path), frames=len(rows), fps=fps, p50_ms=total[len(total) // 2],

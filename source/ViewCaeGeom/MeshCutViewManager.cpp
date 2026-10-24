@@ -1623,6 +1623,7 @@ MeshCutResult MeshCutViewManager::evaluate(const std::string& theId,
             myTimings.SharedPointMs+=work.SharedPointMs; myTimings.AppendMs+=work.AppendMs; myTimings.FallbackMs+=work.FallbackMs;
             myTimings.Unsupported+=work.Unsupported; myTimings.NearPlane+=work.NearPlane; myTimings.Warped+=work.Warped;
             myTimings.Degenerate+=work.Degenerate; myTimings.NearEndpoint+=work.NearEndpoint;
+            myTimings.TopologyCellHits+=work.TopologyCellHits; myTimings.TopologyCellMisses+=work.TopologyCellMisses;
             myTimings.Candidates+=work.Candidates; myTimings.Fallbacks+=work.Fallbacks;
         }
         { const double time=elapsed(); myTimings.IntersectionMs+=time; myTimings.SliceMs+=time; } checkRequest(request);
@@ -1946,6 +1947,10 @@ void MeshCutViewManager::prepareCache(Entry& entry,const Handle(RWCae::MeshNVecP
             const uint64_t components = field.IsNull() ? 0 : field->NbRawComponents();
             estimate = std::min(estimate,65536+entry.SectionBytes*(8192+components*2048));
         }
+    }
+    if((mask&2) && entry.Definition.Shape==MeshCutShape::Plane && myMesh->NbIndexedElems()>=65536 && !needsGeneralPlane()
+        && MeshGeometrySlice::CellTopologyReuseEnabled()) {
+        estimate+=MeshGeometrySlice::TopologyCacheBytes;
     }
     if(!entry.Lease) {
         const auto bytes=estimate;

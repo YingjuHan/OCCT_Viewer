@@ -13,8 +13,25 @@
 #include <cmath>
 #include <limits>
 #include <chrono>
+#include <cstdlib>
 #include <OSD_ThreadPool.hxx>
 #include <NCollection_IncAllocator.hxx>
+
+namespace ViewCaeGeom {
+struct MeshLinearSliceCache {
+    struct Pattern {
+        RWCae::MeshEntityId Element=std::numeric_limits<RWCae::MeshEntityId>::max();
+        uint16_t Mask=0; unsigned char Count=0;
+        RWCae::MeshElemType Type=RWCae::MeshElemType::Tetrahedron;
+        std::array<unsigned char,12> Edges;
+    };
+    Handle(MeshBvhData::MeshBvhBoxSet) Source;
+    static constexpr size_t Capacity=65536;
+    std::vector<Pattern> Cells=std::vector<Pattern>(Capacity);
+    static size_t Index(RWCae::MeshEntityId element) { return (uint64_t(element)*0x9e3779b97f4a7c15ULL)>>48; }
+};
+static_assert(sizeof(MeshLinearSliceCache::Pattern)<=32,"Update the native topology cache budget");
+}
 
 namespace {
 static constexpr double CONFUSION = 1e-5;
@@ -34,9 +51,9 @@ using AddedNodeMap       = ViewCaeGeom::MeshGeometryTools::AddedNodeMap;
 //! Selector for overlapped with slice plane mesh elements.
 struct MeshSliceSelector : public ViewCaeGeom::MeshHBvhBoxSetTraverse<ViewCaeGeom::MeshBvhData::MeshBvhBoxSet> {
     enum class FallbackReason { Unsupported, NearPlane, Warped, Degenerate, NearEndpoint };
-    struct Vertex { RWCae::MeshEntityId A,B,Node; double T,Angle; Graphic3d_Vec3d Point; };
+    struct Vertex { RWCae::MeshEntityId A,B,Node; double T,Angle; Graphic3d_Vec3d Point; int Edge=0; };
     struct LinearInput { RWCae::MeshEntityId Ids[8]; Graphic3d_Vec3d Points[8]; RWCae::MeshElemType Type; int Count=0; bool Valid=false; };
-    struct LinearSection { std::array<Vertex,12> Vertices; size_t Count=0; bool Valid=false; FallbackReason Reason=FallbackReason::Unsupported; };
+    struct LinearSection { std::array<Vertex,12> Vertices; size_t Count=0; bool Valid=false,Reused=false; uint16_t Mask=0; FallbackReason Reason=FallbackReason::Unsupported; };
 public:
     //! Constructor
     explicit MeshSliceSelector(const Handle(ViewCaeGeom::MeshGeometry)& theMeshGeom,
@@ -46,13 +63,14 @@ public:
                                ElementsMap*                              theGenElems,
                                std::vector<ViewCaeGeom::MeshSliceLine>*   theLines,
                                const std::shared_ptr<ViewCaeGeom::MeshCutCancellation>& cancellation,
-                               const std::shared_ptr<const std::vector<Graphic3d_Vec3>>& positions=nullptr)
+                               const std::shared_ptr<const std::vector<Graphic3d_Vec3>>& positions=nullptr,
+                               const std::shared_ptr<ViewCaeGeom::MeshLinearSliceCache>& topology=nullptr)
         : myMeshGeom(theMeshGeom),
           mySlicePlane(theSlicePlane),
           mySliceMeshData(theSliceMeshData),
           myGenNodes(theGenNodes),
           myGenElems(theGenElems),
-          myLines(theLines),myCancellation(cancellation),myPreparedPositions(positions)
+          myLines(theLines),myCancellation(cancellation),myPreparedPositions(positions),myTopology(topology)
     {
         myEquation=mySlicePlane->GetEquation();
         myModifyNodes=!myPreparedPositions && myMeshGeom->HasNodeModifiers();
@@ -93,17 +111,30 @@ public:
             work.PrepareMs+=std::chrono::duration<double,std::milli>(Clock::now()-start).count();
             start=Clock::now();
             const auto cut=[&](int,int i) {
-                checkCancelled(); sections[i].Count=0; sections[i].Reason=FallbackReason::Unsupported;
+                checkCancelled(); sections[i].Count=0; sections[i].Reused=false; sections[i].Reason=FallbackReason::Unsupported;
                 if(!myModifyNodes) {
                     const auto& element=mesh->IndexedElements()[myCandidates[begin+i]];
                     inputs[i].Valid=prepareLinear(element,inputs[i]);
                 }
-                sections[i].Valid=inputs[i].Valid && computeLinear(inputs[i],sections[i]);
+                sections[i].Valid=inputs[i].Valid && computeLinear(inputs[i],sections[i],myCandidates[begin+i]);
             };
             if(count>=512) { launcher.Perform(0,(int)count,cut); }
             else { for(size_t i=0;i<count;++i) { cut(0,(int)i); } }
             work.CutMs+=std::chrono::duration<double,std::milli>(Clock::now()-start).count();
             start=Clock::now();
+            if(myTopology) {
+                // Only this thread publishes cache entries, after worker reads
+                // have finished. Cache limits affect reuse, never geometry.
+                for(size_t i=0;i<count;++i) {
+                    const auto& section=sections[i];
+                    if(section.Reused) { ++work.TopologyCellHits; } else { ++work.TopologyCellMisses; }
+                    if(!section.Valid) { continue; }
+                    const auto id=myCandidates[begin+i];
+                    auto& pattern=myTopology->Cells[ViewCaeGeom::MeshLinearSliceCache::Index(id)];
+                    pattern.Element=id; pattern.Type=inputs[i].Type; pattern.Mask=section.Mask; pattern.Count=(unsigned char)section.Count;
+                    for(size_t n=0;n<section.Count;++n) { pattern.Edges[n]=(unsigned char)section.Vertices[n].Edge; }
+                }
+            } else { work.TopologyCellMisses+=count; }
             appendBatch(begin,count,sections,work,launcher);
             for(size_t i=0;i<count;++i) {
                 checkCancelled(); const auto id=myCandidates[begin+i]; const auto& element=mesh->IndexedElements()[id];
@@ -223,6 +254,7 @@ protected:
     std::vector<ViewCaeGeom::MeshSliceLine>* myLines;
     std::shared_ptr<ViewCaeGeom::MeshCutCancellation> myCancellation;
     std::shared_ptr<const std::vector<Graphic3d_Vec3>> myPreparedPositions;
+    std::shared_ptr<ViewCaeGeom::MeshLinearSliceCache> myTopology;
     size_t myVisited=0;
     Graphic3d_Vec4d myEquation;
     double myTolerance=0;
@@ -369,28 +401,36 @@ private:
         }
         return true;
     }
-    bool computeLinear(const LinearInput& input,LinearSection& section) const
+    bool computeLinear(const LinearInput& input,LinearSection& section,RWCae::MeshEntityId element=0) const
     {
         const auto& p=input.Points; const auto& ids=input.Ids; double values[8],magnitude=1;
         const auto& plane=myEquation;
-        for(int i=0;i<input.Count;++i) { magnitude=std::max(magnitude,p[i].Dot(p[i])); values[i]=plane.x()*p[i].x()+plane.y()*p[i].y()+plane.z()*p[i].z()+plane.w(); if(std::abs(values[i])<=CONFUSION) { section.Reason=FallbackReason::NearPlane; return false; } }
+        section.Mask=0;
+        for(int i=0;i<input.Count;++i) { magnitude=std::max(magnitude,p[i].Dot(p[i])); values[i]=plane.x()*p[i].x()+plane.y()*p[i].y()+plane.z()*p[i].z()+plane.w(); if(std::abs(values[i])<=CONFUSION) { section.Reason=FallbackReason::NearPlane; return false; } if(values[i]>0) { section.Mask|=uint16_t(1)<<i; } }
         using T=RWCae::MeshElemType;
-        const auto x=p[1]-p[0];
-        const auto y=(input.Type==T::Hexahedron || input.Type==T::Pyramid?p[3]:p[2])-p[0];
-        const auto z=(input.Type==T::Hexahedron || input.Type==T::Pyramid?p[4]:p[3])-p[0];
-        const double tolerance=8*std::numeric_limits<float>::epsilon()*std::sqrt(magnitude);
-        if(std::abs(x.Dot(Graphic3d_Vec3d::Cross(y,z)))<=1e-12*x.Modulus()*y.Modulus()*z.Modulus()) { section.Reason=FallbackReason::Degenerate; return false; }
-        if(input.Type==T::Hexahedron) {
-            if((p[2]-p[0]-x-y).Modulus()>tolerance || (p[5]-p[0]-x-z).Modulus()>tolerance
-                || (p[7]-p[0]-y-z).Modulus()>tolerance || (p[6]-p[0]-x-y-z).Modulus()>tolerance) { section.Reason=FallbackReason::Warped; return false; }
-        } else if(input.Type==T::Prism) {
-            if((p[4]-p[1]-z).Modulus()>tolerance || (p[5]-p[2]-z).Modulus()>tolerance) { section.Reason=FallbackReason::Warped; return false; }
-        } else if(input.Type==T::Pyramid) {
-            const auto normal=Graphic3d_Vec3d::Cross(x,y);
-            if(std::abs(normal.Dot(p[2]-p[0]))>tolerance*normal.Modulus()) { section.Reason=FallbackReason::Warped; return false; }
-            for(int i=0;i<4;++i) {
-                const auto a=p[(i+1)%4]-p[i],b=p[(i+2)%4]-p[(i+1)%4];
-                if(Graphic3d_Vec3d::Cross(a,b).Dot(normal)<=1e-12*a.Modulus()*b.Modulus()*normal.Modulus()) { section.Reason=FallbackReason::Degenerate; return false; }
+        const ViewCaeGeom::MeshLinearSliceCache::Pattern* pattern=nullptr;
+        if(myTopology) {
+            const auto& cached=myTopology->Cells[ViewCaeGeom::MeshLinearSliceCache::Index(element)];
+            if(cached.Element==element && cached.Type==input.Type) { pattern=&cached; }
+        }
+        if(!pattern) {
+            const auto x=p[1]-p[0];
+            const auto y=(input.Type==T::Hexahedron || input.Type==T::Pyramid?p[3]:p[2])-p[0];
+            const auto z=(input.Type==T::Hexahedron || input.Type==T::Pyramid?p[4]:p[3])-p[0];
+            const double tolerance=8*std::numeric_limits<float>::epsilon()*std::sqrt(magnitude);
+            if(std::abs(x.Dot(Graphic3d_Vec3d::Cross(y,z)))<=1e-12*x.Modulus()*y.Modulus()*z.Modulus()) { section.Reason=FallbackReason::Degenerate; return false; }
+            if(input.Type==T::Hexahedron) {
+                if((p[2]-p[0]-x-y).Modulus()>tolerance || (p[5]-p[0]-x-z).Modulus()>tolerance
+                    || (p[7]-p[0]-y-z).Modulus()>tolerance || (p[6]-p[0]-x-y-z).Modulus()>tolerance) { section.Reason=FallbackReason::Warped; return false; }
+            } else if(input.Type==T::Prism) {
+                if((p[4]-p[1]-z).Modulus()>tolerance || (p[5]-p[2]-z).Modulus()>tolerance) { section.Reason=FallbackReason::Warped; return false; }
+            } else if(input.Type==T::Pyramid) {
+                const auto normal=Graphic3d_Vec3d::Cross(x,y);
+                if(std::abs(normal.Dot(p[2]-p[0]))>tolerance*normal.Modulus()) { section.Reason=FallbackReason::Warped; return false; }
+                for(int i=0;i<4;++i) {
+                    const auto a=p[(i+1)%4]-p[i],b=p[(i+2)%4]-p[(i+1)%4];
+                    if(Graphic3d_Vec3d::Cross(a,b).Dot(normal)<=1e-12*a.Modulus()*b.Modulus()*normal.Modulus()) { section.Reason=FallbackReason::Degenerate; return false; }
+                }
             }
         }
         static constexpr int hexEdges[12][2]={{0,1},{1,2},{2,3},{3,0},{4,5},{5,6},{6,7},{7,4},{0,4},{1,5},{2,6},{3,7}};
@@ -400,12 +440,19 @@ private:
         const int (*edges)[2]=input.Type==T::Tetrahedron?tetraEdges:input.Type==T::Prism?prismEdges:input.Type==T::Pyramid?pyramidEdges:hexEdges;
         const int edgeCount=input.Type==T::Tetrahedron?6:input.Type==T::Prism?9:input.Type==T::Pyramid?8:12;
         auto& vertices=section.Vertices; auto& count=section.Count; Graphic3d_Vec3d center(0);
+        const auto intersect=[&](int e) {
+            int a=edges[e][0],b=edges[e][1]; if(ids[a]>ids[b]) { std::swap(a,b); }
+            const double t=values[a]/(values[a]-values[b]); if(t<=.001||t>=.999) { section.Reason=FallbackReason::NearEndpoint; return false; }
+            const auto point=p[a]*(1-t)+p[b]*t; vertices[count++]={ids[a],ids[b],0,t,0,point,e}; center+=point; return true;
+        };
+        if(pattern && pattern->Mask==section.Mask) {
+            for(int n=0;n<pattern->Count;++n) { if(!intersect(pattern->Edges[n])) { return false; } }
+            section.Reused=true; return true;
+        }
         for(int e=0;e<edgeCount;++e) { int a=edges[e][0],b=edges[e][1]; if((values[a]>0)==(values[b]>0)) { continue; }
             // Canonical original-edge direction yields identical FE weights and
             // positions in adjacent cells, independent of worker scheduling.
-            if(ids[a]>ids[b]) { std::swap(a,b); }
-            const double t=values[a]/(values[a]-values[b]); if(t<=.001||t>=.999) { section.Reason=FallbackReason::NearEndpoint; return false; }
-            const auto point=p[a]*(1-t)+p[b]*t; vertices[count++]={ids[a],ids[b],0,t,0,point}; center+=point;
+            if(!intersect(e)) { return false; }
         }
         if(count<3) { return true; }
         center/=(double)count; const Graphic3d_Vec3d normal(plane.x(),plane.y(),plane.z());
@@ -522,9 +569,12 @@ void MeshGeometrySlice::generateMeshData()
     myLastWork={};
     ++myWorkGeneration;
     myMeshData = new RWCae::MeshData();
-    const auto parentMesh=myParentGeometry.IsNull()?Handle(RWCae::MeshData)():myParentGeometry->GetMeshData();
+    const auto parentMesh=myParentGeometry.IsNull()?Handle(RWCae::MeshData)():myParentGeometry->GetFirstParent()->GetMeshData();
     const bool pooled=mySlicePlanes.Size()==1 && !parentMesh.IsNull()
         && parentMesh->NbIndexedElems()>=65536;
+    const bool reuseTopology=pooled && CellTopologyReuseEnabled();
+    if(reuseTopology && !myLinearCache) { myLinearCache=std::make_shared<MeshLinearSliceCache>(); }
+    if(!reuseTopology) { myLinearCache.reset(); }
     if(pooled) {
         // Both maps are fully replaced on a rebuild. Their node storage can be
         // freed in bulk with the old allocator, without accumulating generations.
@@ -538,8 +588,10 @@ void MeshGeometrySlice::generateMeshData()
         if (!aParentMeshData.IsNull()) {
             for (Graphic3d_SequenceOfHClipPlane::Iterator anIter(mySlicePlanes); anIter.More(); anIter.Next()) {
                 const auto boxes=myBvhData->BvhBoxSet(aParent);
+                const auto topology=reuseTopology?myLinearCache:nullptr;
+                if(topology && topology->Source!=boxes) { topology->Cells.assign(MeshLinearSliceCache::Capacity,MeshLinearSliceCache::Pattern()); topology->Source=boxes; }
                 MeshSliceSelector aSelector(aParent, anIter.Value(), myMeshData, &myNodesMap, &myElementsMap, &myLines,myCancellation,
-                    myBvhData->PreparedNodePositions(aParent));
+                    myBvhData->PreparedNodePositions(aParent),topology);
                 aSelector.SetBVHSet(boxes.get());
                 const bool staged=mySlicePlanes.Size()==1 && aParentMeshData->NbIndexedElems()>=65536;
                 aSelector.CollectCandidates(staged);
@@ -556,6 +608,12 @@ void MeshGeometrySlice::generateMeshData()
             break;
         }
     }
+}
+
+bool MeshGeometrySlice::CellTopologyReuseEnabled()
+{
+    const auto* value=std::getenv("OCCTV_CUT_CELL_TOPOLOGY_CACHE");
+    return value && value[0]=='1' && value[1]=='\0';
 }
 
 size_t MeshGeometrySlice::CountPlaneCandidates(const Handle(MeshBvhData)& bvh,
